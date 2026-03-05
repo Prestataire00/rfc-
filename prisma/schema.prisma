@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUMS ───────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  FORMATEUR
+  CLIENT
+  STAGIAIRE
+}
+
+enum FormationCategory {
+  BUREAUTIQUE
+  INFORMATIQUE
+  MANAGEMENT
+  LANGUES
+  SECURITE
+  REGLEMENTAIRE
+  SOFT_SKILLS
+  AUTRE
+}
+
+enum SessionStatus {
+  PLANIFIEE
+  CONFIRMEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+enum SessionModality {
+  PRESENTIEL
+  DISTANCIEL
+  MIXTE
+}
+
+enum EnrollmentStatus {
+  INSCRIT
+  CONFIRME
+  PRESENT
+  ABSENT
+  ANNULE
+}
+
+enum EnrollmentOrigin {
+  INDIVIDUEL
+  ENTREPRISE
+  CENTRE
+}
+
+// ─── USERS & AUTH ────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  role          Role      @default(STAGIAIRE)
+  image         String?
+  emailVerified DateTime?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  accounts Account[]
+  sessions Session[]
+
+  // Formation relations
+  formateurSessions    SessionFormation[] @relation("FormateurSessions")
+  stagiaireEnrollments Enrollment[]       @relation("StagiaireEnrollments")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Organization {
+  id      String  @id @default(cuid())
+  name    String
+  siret   String? @unique
+  address String?
+  phone   String?
+  email   String?
+
+  users       User[]
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── CATALOGUE DE FORMATIONS ─────────────────────────────
+
+model Formation {
+  id            String            @id @default(cuid())
+  title         String
+  description   String?           @db.Text
+  objectives    String?           @db.Text
+  program       String?           @db.Text
+  durationHours Int
+  price         Decimal           @db.Decimal(10, 2)
+  category      FormationCategory @default(AUTRE)
+  isActive      Boolean           @default(true)
+
+  certificationName String?
+  certificationBody String?
+  prerequisites     String?       @db.Text
+
+  sessions SessionFormation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── SESSIONS DE FORMATION ───────────────────────────────
+
+model SessionFormation {
+  id          String @id @default(cuid())
+  formationId String
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  startDate DateTime
+  endDate   DateTime
+
+  modality SessionModality @default(PRESENTIEL)
+  location String?
+
+  maxParticipants Int @default(12)
+  minParticipants Int @default(1)
+
+  formateurId String?
+  formateur   User?   @relation("FormateurSessions", fields: [formateurId], references: [id])
+  trainerCost Decimal? @db.Decimal(10, 2)
+
+  status SessionStatus @default(PLANIFIEE)
+  notes  String?       @db.Text
+
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([formationId])
+  @@index([formateurId])
+  @@index([startDate])
+  @@index([status])
+}
+
+// ─── INSCRIPTIONS ────────────────────────────────────────
+
+model Enrollment {
+  id        String           @id @default(cuid())
+  sessionId String
+  session   SessionFormation @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  stagiaireId String
+  stagiaire   User @relation("StagiaireEnrollments", fields: [stagiaireId], references: [id])
+
+  origin   EnrollmentOrigin @default(INDIVIDUEL)
+  clientId String?
+  client   Organization?    @relation(fields: [clientId], references: [id])
+
+  status EnrollmentStatus @default(INSCRIT)
+  notes  String?          @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, stagiaireId])
+  @@index([sessionId])
+  @@index([stagiaireId])
+  @@index([clientId])
+}

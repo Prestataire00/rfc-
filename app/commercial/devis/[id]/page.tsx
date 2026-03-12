@@ -1,0 +1,349 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Edit, Trash2, FileText, Receipt } from "lucide-react";
+import { StatutBadge } from "@/components/shared/StatutBadge";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Button } from "@/components/ui/button";
+import { DEVIS_STATUTS, FACTURE_STATUTS, TVA_RATE } from "@/lib/constants";
+import { formatDate, formatCurrency } from "@/lib/utils";
+
+type LigneDevis = {
+  id: string;
+  designation: string;
+  quantite: number;
+  prixUnitaire: number;
+  montant: number;
+};
+
+type Facture = {
+  id: string;
+  numero: string;
+  statut: string;
+  montantTTC: number;
+  dateEcheance: string;
+};
+
+type Devis = {
+  id: string;
+  numero: string;
+  objet: string;
+  statut: string;
+  montantHT: number;
+  tauxTVA: number;
+  montantTTC: number;
+  dateValidite: string;
+  notes: string | null;
+  createdAt: string;
+  entreprise: { id: string; nom: string } | null;
+  contact: { id: string; nom: string; prenom: string; email: string } | null;
+  lignes: LigneDevis[];
+  factures: Facture[];
+};
+
+export default function DevisDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [devis, setDevis] = useState<Devis | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [generatingFacture, setGeneratingFacture] = useState(false);
+  const [genError, setGenError] = useState("");
+  const [updatingStatut, setUpdatingStatut] = useState(false);
+
+  const fetchDevis = useCallback(async () => {
+    const res = await fetch(`/api/devis/${id}`);
+    if (res.ok) setDevis(await res.json());
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    fetchDevis();
+  }, [fetchDevis]);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await fetch(`/api/devis/${id}`, { method: "DELETE" });
+    router.push("/commercial");
+  };
+
+  const handleStatutChange = async (newStatut: string) => {
+    setUpdatingStatut(true);
+    const res = await fetch(`/api/devis/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statut: newStatut }),
+    });
+    if (res.ok) {
+      await fetchDevis();
+    }
+    setUpdatingStatut(false);
+  };
+
+  const handleGenererFacture = async () => {
+    setGeneratingFacture(true);
+    setGenError("");
+    const res = await fetch(`/api/devis/${id}/generer-facture`, { method: "POST" });
+    if (res.ok) {
+      const facture = await res.json();
+      router.push(`/commercial/factures/${facture.id}`);
+    } else {
+      const data = await res.json();
+      setGenError(data.error || "Erreur lors de la génération de la facture");
+      setGeneratingFacture(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!devis) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">Devis non trouvé</p>
+        <Link href="/commercial" className="mt-4 inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+          <ArrowLeft className="h-4 w-4" /> Retour au commercial
+        </Link>
+      </div>
+    );
+  }
+
+  const st = DEVIS_STATUTS[devis.statut as keyof typeof DEVIS_STATUTS];
+  const montantTVA = devis.montantHT * (devis.tauxTVA / 100);
+  const hasFacture = devis.factures.length > 0;
+  const canGenererFacture = devis.statut === "accepte" && !hasFacture;
+
+  const nextStatuts = Object.keys(DEVIS_STATUTS).filter((k) => k !== devis.statut);
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-6">
+        <Link
+          href="/commercial"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" /> Retour au commercial
+        </Link>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-sm font-mono text-gray-500">{devis.numero}</span>
+              {st && <StatutBadge label={st.label} color={st.color} />}
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">{devis.objet}</h1>
+            <p className="text-gray-500">
+              {devis.entreprise ? (
+                <Link href={`/entreprises/${devis.entreprise.id}`} className="text-blue-600 hover:underline">
+                  {devis.entreprise.nom}
+                </Link>
+              ) : devis.contact ? (
+                <Link href={`/contacts/${devis.contact.id}`} className="text-blue-600 hover:underline">
+                  {devis.contact.prenom} {devis.contact.nom}
+                </Link>
+              ) : (
+                "Aucun client"
+              )}
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Link
+              href={`/commercial/devis/${id}/modifier`}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Edit className="h-4 w-4" /> Modifier
+            </Link>
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-1" /> Supprimer
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        {/* Infos + Actions */}
+        <div className="col-span-1 space-y-4">
+          {/* Info card */}
+          <div className="rounded-lg border bg-white p-4 space-y-3">
+            <h2 className="font-semibold text-gray-900">Informations</h2>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-gray-500">Date de validité</p>
+                <p className="font-medium">{formatDate(devis.dateValidite)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Créé le</p>
+                <p className="font-medium">{formatDate(devis.createdAt)}</p>
+              </div>
+              {devis.entreprise && (
+                <div>
+                  <p className="text-gray-500">Entreprise</p>
+                  <Link href={`/entreprises/${devis.entreprise.id}`} className="font-medium text-blue-600 hover:underline">
+                    {devis.entreprise.nom}
+                  </Link>
+                </div>
+              )}
+              {devis.contact && (
+                <div>
+                  <p className="text-gray-500">Contact</p>
+                  <Link href={`/contacts/${devis.contact.id}`} className="font-medium text-blue-600 hover:underline">
+                    {devis.contact.prenom} {devis.contact.nom}
+                  </Link>
+                  <p className="text-gray-400 text-xs">{devis.contact.email}</p>
+                </div>
+              )}
+              {devis.notes && (
+                <div>
+                  <p className="text-gray-500">Notes</p>
+                  <p className="font-medium whitespace-pre-wrap">{devis.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions statut */}
+          <div className="rounded-lg border bg-white p-4 space-y-3">
+            <h2 className="font-semibold text-gray-900">Changer le statut</h2>
+            <div className="space-y-2">
+              {nextStatuts.map((key) => {
+                const s = DEVIS_STATUTS[key as keyof typeof DEVIS_STATUTS];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleStatutChange(key)}
+                    disabled={updatingStatut}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium border transition-colors hover:opacity-80 disabled:opacity-50 ${s.color}`}
+                  >
+                    Marquer comme {s.label.toLowerCase()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Générer facture */}
+          {(canGenererFacture || hasFacture) && (
+            <div className="rounded-lg border bg-white p-4 space-y-3">
+              <h2 className="font-semibold text-gray-900">Facturation</h2>
+              {genError && (
+                <p className="text-sm text-red-600">{genError}</p>
+              )}
+              {hasFacture ? (
+                <div className="space-y-2">
+                  {devis.factures.map((f) => {
+                    const fst = FACTURE_STATUTS[f.statut as keyof typeof FACTURE_STATUTS];
+                    return (
+                      <Link
+                        key={f.id}
+                        href={`/commercial/factures/${f.id}`}
+                        className="flex items-center justify-between p-2 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                      >
+                        <div>
+                          <p className="text-sm font-medium font-mono">{f.numero}</p>
+                          <p className="text-xs text-gray-500">{formatCurrency(f.montantTTC)}</p>
+                        </div>
+                        {fst && <StatutBadge label={fst.label} color={fst.color} />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Button
+                  onClick={handleGenererFacture}
+                  disabled={generatingFacture}
+                  className="w-full"
+                >
+                  <Receipt className="h-4 w-4 mr-2" />
+                  {generatingFacture ? "Génération..." : "Générer une facture"}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Lignes devis */}
+        <div className="col-span-2">
+          <div className="rounded-lg border bg-white overflow-hidden">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold text-gray-900">Lignes du devis</h2>
+            </div>
+            {devis.lignes.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p>Aucune ligne</p>
+              </div>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Désignation</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-600">Qté</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-600">Prix unitaire HT</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-600">Montant HT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {devis.lignes.map((ligne) => (
+                      <tr key={ligne.id} className="border-b last:border-0">
+                        <td className="px-4 py-3 text-gray-800">{ligne.designation}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">{ligne.quantite}</td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {formatCurrency(ligne.prixUnitaire)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-800">
+                          {formatCurrency(ligne.montant)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Totaux */}
+                <div className="p-4 border-t bg-gray-50">
+                  <div className="flex flex-col items-end gap-1 text-sm">
+                    <div className="flex gap-8">
+                      <span className="text-gray-600">Montant HT</span>
+                      <span className="font-medium text-gray-800 w-28 text-right">
+                        {formatCurrency(devis.montantHT)}
+                      </span>
+                    </div>
+                    <div className="flex gap-8">
+                      <span className="text-gray-600">TVA ({devis.tauxTVA}%)</span>
+                      <span className="font-medium text-gray-800 w-28 text-right">
+                        {formatCurrency(montantTVA)}
+                      </span>
+                    </div>
+                    <div className="flex gap-8 pt-1 border-t border-gray-200 mt-1">
+                      <span className="font-semibold text-gray-900">Montant TTC</span>
+                      <span className="font-bold text-lg text-gray-900 w-28 text-right">
+                        {formatCurrency(devis.montantTTC)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Supprimer le devis ?"
+        description="Cette action est irréversible. Le devis sera définitivement supprimé."
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
+    </div>
+  );
+}

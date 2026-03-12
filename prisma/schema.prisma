@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== AUTHENTICATION ====================
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email    String @unique
+  password String
+  nom      String
+  prenom   String
+  role     String @default("admin") // admin, formateur, client
+  actif    Boolean @default(true)
+
+  formateurId  String?  @unique
+  formateur    Formateur? @relation(fields: [formateurId], references: [id])
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id])
+}
+
+// ==================== CORE MODELS ====================
+
+model Entreprise {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom        String
+  secteur    String?
+  adresse    String?
+  ville      String?
+  codePostal String?
+  siret      String?  @unique
+  email      String?
+  telephone  String?
+  site       String?
+  notes      String?
+
+  contacts    Contact[]
+  devis       Devis[]
+  factures    Facture[]
+  users       User[]
+  documents   Document[]
+  besoins     BesoinFormation[]
+  financements Financement[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom       String
+  prenom    String
+  email     String  @unique
+  telephone String?
+  poste     String?
+  notes     String?
+  type      String  @default("prospect") // prospect, client, stagiaire
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  inscriptions Inscription[]
+  devis        Devis[]
+  attestations Attestation[]
+  evaluations  Evaluation[]
+}
+
+model Formateur {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom             String
+  prenom          String
+  email           String  @unique
+  telephone       String?
+  specialites     String  @default("[]")
+  tarifJournalier Float?
+  cv              String?
+  notes           String?
+  actif           Boolean @default(true)
+
+  sessions       Session[]
+  disponibilites Disponibilite[]
+  documents      Document[]
+  feedbacks      FeedbackFormateur[]
+  user           User?
+}
+
+model Formation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  titre       String
+  description String?
+  duree       Int      // en heures
+  tarif       Float
+  niveau      String   @default("tous")
+  prerequis   String?
+  objectifs   String?
+  categorie   String?
+  actif       Boolean  @default(true)
+  certifiante Boolean  @default(false)
+  codeRNCP    String?
+
+  sessions Session[]
+  besoins  BesoinFormation[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dateDebut     DateTime
+  dateFin       DateTime
+  lieu          String?
+  capaciteMax   Int     @default(10)
+  statut        String  @default("planifiee") // planifiee, confirmee, en_cours, terminee, annulee
+  tokenInscription String? @unique
+  notes         String?
+  coutFormateur Float?
+
+  formationId String
+  formation   Formation  @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  formateurId String?
+  formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
+
+  inscriptions  Inscription[]
+  feuillesPresence FeuillePresence[]
+  attestations  Attestation[]
+  evaluations   Evaluation[]
+  feedbacks     FeedbackFormateur[]
+  documents     Document[]
+}
+
+model Inscription {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  statut          String   @default("en_attente") // en_attente, confirmee, annulee, presente, absente
+  dateInscription DateTime @default(now())
+  notes           String?
+
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, sessionId])
+}
+
+// ==================== COMMERCIAL ====================
+
+model BesoinFormation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  titre       String
+  description String?
+  origine     String  @default("client") // client, stagiaire, centre
+  statut      String  @default("nouveau") // nouveau, qualifie, devis_envoye, accepte, refuse, archive
+  priorite    String  @default("normale") // basse, normale, haute, urgente
+  nbStagiaires Int?
+  datesSouhaitees String?
+  budget      Float?
+  notes       String?
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  formationId  String?
+  formation    Formation?  @relation(fields: [formationId], references: [id], onDelete: SetNull)
+
+  devisId      String?
+  devis        Devis?      @relation(fields: [devisId], references: [id], onDelete: SetNull)
+}
+
+model Devis {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  numero       String   @unique
+  objet        String
+  montantHT    Float
+  tauxTVA      Float    @default(20)
+  montantTTC   Float
+  dateEmission DateTime @default(now())
+  dateValidite DateTime
+  dateSigne    DateTime?
+  signatureUrl String?
+  notes        String?
+  statut       String   @default("brouillon") // brouillon, envoye, signe, refuse, expire
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  lignes   LigneDevis[]
+  factures Facture[]
+  besoins  BesoinFormation[]
+}
+
+model LigneDevis {
+  id String @id @default(cuid())
+
+  designation  String
+  quantite     Int   @default(1)
+  prixUnitaire Float
+  montant      Float
+
+  devisId String
+  devis   Devis  @relation(fields: [devisId], references: [id], onDelete: Cascade)
+}
+
+model Facture {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  numero       String   @unique
+  montantHT    Float
+  tauxTVA      Float    @default(20)
+  montantTTC   Float
+  dateEmission DateTime @default(now())
+  dateEcheance DateTime
+  datePaiement DateTime?
+  notes        String?
+  statut       String   @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
+
+  devisId String?
+  devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+}
+
+// ==================== FORMATEUR ====================
+
+model Disponibilite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  dateDebut DateTime
+  dateFin   DateTime
+  type      String   @default("disponible") // disponible, indisponible
+  notes     String?
+
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+}
+
+model FeedbackFormateur {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  noteGlobale       Int     // 1-5
+  commentaire       String?
+  conditionsMat     String? // conditions matérielles
+  dynamiqueGroupe   String?
+  suggestions       String?
+
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([formateurId, sessionId])
+}
+
+// ==================== DOCUMENTS ====================
+
+model Document {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  nom        String
+  type       String  // convention, feuille_presence, convocation, attestation, contrat, autre
+  chemin     String  // file path or URL
+  taille     Int?    // file size in bytes
+
+  sessionId    String?
+  session      Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  formateurId  String?
+  formateur    Formateur?  @relation(fields: [formateurId], references: [id], onDelete: SetNull)
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+}
+
+// ==================== EVALUATIONS & ATTESTATIONS ====================
+
+model Evaluation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  type         String  // satisfaction_chaud, satisfaction_froid, acquis
+  cible        String  // stagiaire, client, formateur
+  noteGlobale  Int?    // 1-5
+  reponses     String  @default("{}") // JSON des réponses
+  commentaire  String?
+  estComplete  Boolean @default(false)
+  tokenAcces   String? @unique // pour accès par lien unique
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+}
+
+model Attestation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  type         String  @default("fin_formation") // fin_formation, presence, competences
+  statut       String  @default("generee") // generee, validee, envoyee
+  chemin       String? // file path
+  dateValidation DateTime?
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, contactId, type])
+}
+
+model FeuillePresence {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  date      DateTime
+  matin     Boolean @default(false)
+  apresMidi Boolean @default(false)
+  signature String? // could be a signature data URL
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  contactId String
+}
+
+// ==================== BPF ====================
+
+model Financement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  type       String  // opco, entreprise, personnel, pole_emploi, cpf, autre
+  organisme  String?
+  montant    Float
+  reference  String?
+  statut     String  @default("en_cours") // en_cours, accorde, refuse
+  notes      String?
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+}

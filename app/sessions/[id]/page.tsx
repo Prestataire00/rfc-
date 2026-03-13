@@ -223,10 +223,10 @@ export default function SessionDetailPage() {
         <Link href="/sessions" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
           <ArrowLeft className="h-4 w-4" /> Retour aux sessions
         </Link>
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-gray-900">
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 <Link href={`/formations/${session.formation.id}`} className="hover:text-blue-600">
                   {session.formation.titre}
                 </Link>
@@ -249,9 +249,9 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Info + Documents column */}
-        <div className="col-span-1 space-y-4">
+        <div className="lg:col-span-1 space-y-4">
           {/* Info card */}
           <div className="rounded-lg border bg-white p-4 space-y-4">
             <h2 className="font-semibold text-gray-900">Informations</h2>
@@ -408,9 +408,9 @@ export default function SessionDetailPage() {
         </div>
 
         {/* Inscriptions */}
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <div className="rounded-lg border bg-white overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Participants ({session.inscriptions.length}/{session.capaciteMax})

@@ -241,7 +241,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard icon={CalendarDays} label="Sessions a venir" value={stats.sessionsAVenir} href="/sessions" color="bg-amber-500" />
         <StatCard icon={ClipboardList} label="Besoins en cours" value={stats.nbBesoinsEnCours} href="/besoins" color="bg-orange-500" />
         <StatCard icon={Users} label="Contacts" value={stats.nbContacts} href="/contacts" color="bg-blue-500" />
@@ -261,8 +261,8 @@ export default function DashboardPage() {
             {sessionsAujourdhui.map((s) => {
               const st = SESSION_STATUTS[s.statut as keyof typeof SESSION_STATUTS];
               return (
-                <Link key={s.id} href={`/sessions/${s.id}`} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50">
-                  <div className="text-sm font-mono text-gray-500 w-32">
+                <Link key={s.id} href={`/sessions/${s.id}`} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 hover:bg-gray-50">
+                  <div className="text-xs sm:text-sm font-mono text-gray-500 w-24 sm:w-32 shrink-0">
                     {new Date(s.dateDebut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     {" - "}
                     {new Date(s.dateFin).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
@@ -285,13 +285,14 @@ export default function DashboardPage() {
 
       {/* Planning semaine */}
       <div className="rounded-lg border bg-white mb-6 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b">
           <h2 className="font-semibold text-gray-900">Planning de la semaine</h2>
           <Link href="/sessions" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
             Voir tout <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-7 divide-x">
+        <div className="overflow-x-auto">
+        <div className="grid grid-cols-7 divide-x min-w-[640px]">
           {weekDates.map((date, idx) => {
             const today = isSameDay(date, now);
             const daySessions = sessionsSemaine.filter((s) =>
@@ -327,10 +328,11 @@ export default function DashboardPage() {
             );
           })}
         </div>
+        </div>
       </div>
 
       {/* Bottom panels */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Prochaines sessions */}
         <div className="rounded-lg border bg-white overflow-hidden">
           <div className="flex items-center justify-between px-6 py-4 border-b">

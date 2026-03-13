@@ -210,8 +210,8 @@ export default function SessionsPage() {
             />
           ) : (
             <>
-              <div className="rounded-lg border bg-white overflow-hidden">
-                <table className="w-full text-sm">
+              <div className="rounded-lg border bg-white overflow-x-auto">
+                <table className="w-full text-sm min-w-[700px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-gray-600">Formation</th>

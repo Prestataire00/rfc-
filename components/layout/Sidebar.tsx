@@ -4,31 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  BookOpen,
-  CalendarDays,
-  GraduationCap,
-  TrendingUp,
-  FileText,
-  ClipboardList,
-  BarChart3,
-  Calendar,
-  FolderOpen,
-  MessageSquare,
-  Award,
-  LogOut,
-  Settings,
-  Shield,
+  LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
+  TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
+  MessageSquare, Award, LogOut, Shield, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ElementType;
-};
+type NavItem = { href: string; label: string; icon: React.ElementType };
 
 const adminNav: NavItem[] = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -64,33 +46,42 @@ const clientNav: NavItem[] = [
   { href: "/espace-client/evaluations", label: "Evaluations", icon: MessageSquare },
 ];
 
-const navByRole: Record<string, NavItem[]> = {
-  admin: adminNav,
-  formateur: formateurNav,
-  client: clientNav,
-};
+const navByRole: Record<string, NavItem[]> = { admin: adminNav, formateur: formateurNav, client: clientNav };
+const roleLabels: Record<string, string> = { admin: "Administrateur", formateur: "Formateur", client: "Client" };
 
-const roleLabels: Record<string, string> = {
-  admin: "Administrateur",
-  formateur: "Formateur",
-  client: "Client",
-};
-
-export function Sidebar({ role, userName }: { role: string; userName: string }) {
+export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string; userName: string; mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const items = navByRole[role] || adminNav;
 
-  return (
-    <aside className="fixed inset-y-0 left-0 z-40 w-64 border-r bg-white flex flex-col">
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
+  const sidebarContent = (
+    <aside className={cn(
+      "flex flex-col bg-white border-r h-full",
+      // Desktop: fixed sidebar
+      "lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64",
+      // Mobile: full width
+      "w-72"
+    )}>
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
-          FP
+      <div className="flex h-16 items-center justify-between border-b px-6">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
+            FP
+          </div>
+          <div>
+            <span className="font-semibold text-gray-900 text-sm">FormaPro</span>
+            <span className="block text-[10px] text-gray-400">{roleLabels[role] || role}</span>
+          </div>
         </div>
-        <div>
-          <span className="font-semibold text-gray-900 text-sm">FormaPro</span>
-          <span className="block text-[10px] text-gray-400">{roleLabels[role] || role}</span>
-        </div>
+        {/* Mobile close button */}
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-gray-100">
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -102,11 +93,10 @@ export function Sidebar({ role, userName }: { role: string; userName: string }) 
             <Link
               key={href}
               href={href}
+              onClick={handleNavClick}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                isActive ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               )}
             >
               <Icon className={cn("h-4 w-4", isActive ? "text-blue-600" : "text-gray-400")} />
@@ -137,4 +127,28 @@ export function Sidebar({ role, userName }: { role: string; userName: string }) 
       </div>
     </aside>
   );
+
+  // Mobile: overlay + drawer
+  if (mobileOpen !== undefined) {
+    return (
+      <>
+        {/* Desktop sidebar - always visible */}
+        <div className="hidden lg:block">
+          {sidebarContent}
+        </div>
+
+        {/* Mobile overlay */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+            <div className="fixed inset-y-0 left-0 z-50 animate-in slide-in-from-left duration-200">
+              {sidebarContent}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return sidebarContent;
 }

@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { SESSION_STATUTS, INSCRIPTION_STATUTS } from "@/lib/constants";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, cn } from "@/lib/utils";
 
 type Contact = { id: string; nom: string; prenom: string; email: string };
 type Inscription = {
@@ -43,30 +44,27 @@ export default function SessionDetailPage() {
   const [selectedContactId, setSelectedContactId] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
+  const [contactSearch, setContactSearch] = useState("");
   const [uploading, setUploading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [emailMsg, setEmailMsg] = useState("");
   const [evalLoading, setEvalLoading] = useState(false);
   const [evalMsg, setEvalMsg] = useState("");
   const [inscriptionLink, setInscriptionLink] = useState("");
+  const [removeConfirm, setRemoveConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const fetchSession = useCallback(async () => {
     const res = await fetch(`/api/sessions/${id}`);
-    if (res.ok) {
-      setSession(await res.json());
-    }
+    if (res.ok) setSession(await res.json());
     setLoading(false);
   }, [id]);
 
-  useEffect(() => {
-    fetchSession();
-  }, [fetchSession]);
+  useEffect(() => { fetchSession(); }, [fetchSession]);
 
   const fetchContacts = async () => {
     const res = await fetch("/api/contacts");
-    if (res.ok) {
-      setContacts(await res.json());
-    }
+    if (res.ok) setContacts(await res.json());
   };
 
   const handleDelete = async () => {
@@ -87,6 +85,7 @@ export default function SessionDetailPage() {
     if (res.ok) {
       setAddOpen(false);
       setSelectedContactId("");
+      setContactSearch("");
       fetchSession();
     } else {
       const data = await res.json();
@@ -104,8 +103,12 @@ export default function SessionDetailPage() {
     fetchSession();
   };
 
-  const handleRemoveInscription = async (inscriptionId: string) => {
-    await fetch(`/api/sessions/${id}/inscriptions/${inscriptionId}`, { method: "DELETE" });
+  const handleRemoveInscription = async () => {
+    if (!removeConfirm) return;
+    setRemoving(true);
+    await fetch(`/api/sessions/${id}/inscriptions/${removeConfirm.id}`, { method: "DELETE" });
+    setRemoveConfirm(null);
+    setRemoving(false);
     fetchSession();
   };
 
@@ -121,7 +124,6 @@ export default function SessionDetailPage() {
   const handleGenererEvaluations = async (type: string) => {
     setEvalLoading(true);
     setEvalMsg("");
-    // Step 1: Generate tokens
     const genRes = await fetch("/api/evaluations/generer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,7 +134,6 @@ export default function SessionDetailPage() {
       setEvalLoading(false);
       return;
     }
-    // Step 2: Send emails
     const emailRes = await fetch("/api/email/evaluation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -157,13 +158,9 @@ export default function SessionDetailPage() {
       body: JSON.stringify({ sessionId: id, contactId }),
     });
     const data = await res.json();
-    if (data.skipped) {
-      setEmailMsg("SMTP non configure (voir .env)");
-    } else if (res.ok) {
-      setEmailMsg("Convocation envoyee !");
-    } else {
-      setEmailMsg(data.error || "Erreur d'envoi");
-    }
+    if (data.skipped) setEmailMsg("SMTP non configure (voir .env)");
+    else if (res.ok) setEmailMsg("Convocation envoyee !");
+    else setEmailMsg(data.error || "Erreur d'envoi");
     setSendingEmail(null);
     setTimeout(() => setEmailMsg(""), 3000);
   };
@@ -180,6 +177,21 @@ export default function SessionDetailPage() {
     setUploading(false);
     e.target.value = "";
   };
+
+  // Filter contacts for the add dialog
+  const inscribedContactIds = session?.inscriptions.map((i) => i.contact.id) || [];
+  const availableContacts = useMemo(() => {
+    const available = contacts.filter((c) => !inscribedContactIds.includes(c.id));
+    if (!contactSearch) return available;
+    const q = contactSearch.toLowerCase();
+    return available.filter(
+      (c) =>
+        c.nom.toLowerCase().includes(q) ||
+        c.prenom.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q)
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts, contactSearch, session?.inscriptions]);
 
   if (loading) {
     return (
@@ -202,8 +214,7 @@ export default function SessionDetailPage() {
 
   const st = SESSION_STATUTS[session.statut as keyof typeof SESSION_STATUTS];
   const placesRestantes = session.capaciteMax - session.inscriptions.length;
-  const inscribedContactIds = session.inscriptions.map((i) => i.contact.id);
-  const availableContacts = contacts.filter((c) => !inscribedContactIds.includes(c.id));
+  const capacityRatio = session.inscriptions.length / session.capaciteMax;
 
   return (
     <div>
@@ -241,6 +252,7 @@ export default function SessionDetailPage() {
       <div className="grid grid-cols-3 gap-6">
         {/* Info + Documents column */}
         <div className="col-span-1 space-y-4">
+          {/* Info card */}
           <div className="rounded-lg border bg-white p-4 space-y-4">
             <h2 className="font-semibold text-gray-900">Informations</h2>
             <div className="space-y-3 text-sm">
@@ -252,7 +264,9 @@ export default function SessionDetailPage() {
                       {session.formateur.prenom} {session.formateur.nom}
                     </Link>
                   ) : (
-                    <span className="text-gray-400">Non assigne</span>
+                    <span className="inline-flex items-center gap-1 text-orange-500">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Non assigne
+                    </span>
                   )}
                 </p>
               </div>
@@ -262,16 +276,32 @@ export default function SessionDetailPage() {
               </div>
               <div>
                 <p className="text-gray-500">Capacite</p>
-                <p className="font-medium">
-                  <span className={placesRestantes === 0 ? "text-red-600" : "text-green-600"}>
+                <div>
+                  <p className={cn("font-medium", capacityRatio >= 1 ? "text-red-600" : capacityRatio >= 0.8 ? "text-orange-600" : "text-green-600")}>
                     {session.inscriptions.length}/{session.capaciteMax} participants
-                  </span>
-                  <span className="text-gray-400 ml-1">({placesRestantes} place{placesRestantes !== 1 ? "s" : ""} restante{placesRestantes !== 1 ? "s" : ""})</span>
-                </p>
+                    <span className="text-gray-400 font-normal ml-1">
+                      ({placesRestantes} place{placesRestantes !== 1 ? "s" : ""} restante{placesRestantes !== 1 ? "s" : ""})
+                    </span>
+                  </p>
+                  {/* Progress bar */}
+                  <div className="w-full h-2 bg-gray-200 rounded-full mt-1.5">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        capacityRatio >= 1 ? "bg-red-500" : capacityRatio >= 0.8 ? "bg-orange-500" : "bg-green-500"
+                      )}
+                      style={{ width: `${Math.min(100, capacityRatio * 100)}%` }}
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <p className="text-gray-500">Tarif / participant</p>
                 <p className="font-medium">{formatCurrency(session.formation.tarif)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">CA previsionnel</p>
+                <p className="font-semibold text-gray-900">{formatCurrency(session.formation.tarif * session.inscriptions.length)}</p>
               </div>
               {session.notes && (
                 <div>
@@ -311,12 +341,7 @@ export default function SessionDetailPage() {
                   {session.inscriptions.map((insc) => (
                     <div key={insc.id} className="flex items-center gap-1 text-xs">
                       <span className="text-gray-600 flex-1 truncate">{insc.contact.prenom} {insc.contact.nom}</span>
-                      <a
-                        href={`/api/pdf/convocation/${id}/${insc.contact.id}`}
-                        target="_blank"
-                        className="text-blue-600 hover:underline px-1"
-                        title="Telecharger convocation"
-                      >
+                      <a href={`/api/pdf/convocation/${id}/${insc.contact.id}`} target="_blank" className="text-blue-600 hover:underline px-1" title="Telecharger convocation">
                         Convoc.
                       </a>
                       <button
@@ -327,12 +352,7 @@ export default function SessionDetailPage() {
                       >
                         <Mail className="h-3.5 w-3.5 inline" />
                       </button>
-                      <a
-                        href={`/api/pdf/attestation/${id}/${insc.contact.id}`}
-                        target="_blank"
-                        className="text-green-600 hover:underline px-1"
-                        title="Attestation"
-                      >
+                      <a href={`/api/pdf/attestation/${id}/${insc.contact.id}`} target="_blank" className="text-green-600 hover:underline px-1" title="Attestation">
                         Attest.
                       </a>
                     </div>
@@ -391,7 +411,8 @@ export default function SessionDetailPage() {
         <div className="col-span-2">
           <div className="rounded-lg border bg-white overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Users className="h-4 w-4" />
                 Participants ({session.inscriptions.length}/{session.capaciteMax})
               </h2>
               <div className="flex gap-2">
@@ -403,7 +424,7 @@ export default function SessionDetailPage() {
                   <Link2 className="h-4 w-4" /> Lien public
                 </button>
                 <button
-                  onClick={() => { fetchContacts(); setAddOpen(true); }}
+                  onClick={() => { fetchContacts(); setAddOpen(true); setContactSearch(""); }}
                   disabled={placesRestantes === 0}
                   className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -423,6 +444,7 @@ export default function SessionDetailPage() {
               <div className="p-8 text-center text-gray-500">
                 <CalendarDays className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p>Aucun participant inscrit</p>
+                <p className="text-xs text-gray-400 mt-1">{placesRestantes} place{placesRestantes !== 1 ? "s" : ""} disponible{placesRestantes !== 1 ? "s" : ""}</p>
               </div>
             ) : (
               <table className="w-full text-sm">
@@ -436,38 +458,46 @@ export default function SessionDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {session.inscriptions.map((insc) => (
-                    <tr key={insc.id} className="border-b last:border-0">
-                      <td className="px-4 py-3">
-                        <Link href={`/contacts/${insc.contact.id}`} className="font-medium text-blue-600 hover:underline">
-                          {insc.contact.prenom} {insc.contact.nom}
-                        </Link>
-                        <div className="text-gray-500">{insc.contact.email}</div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{insc.contact.entreprise?.nom || <span className="text-gray-400">--</span>}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={insc.statut}
-                          onChange={(e) => handleUpdateStatutInscription(insc.id, e.target.value)}
-                          className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs"
-                        >
-                          {Object.entries(INSCRIPTION_STATUTS).map(([v, s]) => (
-                            <option key={v} value={v}>{s.label}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{formatDate(insc.dateInscription)}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleRemoveInscription(insc.id)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {session.inscriptions.map((insc) => {
+                    const inscSt = INSCRIPTION_STATUTS[insc.statut as keyof typeof INSCRIPTION_STATUTS];
+                    return (
+                      <tr key={insc.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <Link href={`/contacts/${insc.contact.id}`} className="font-medium text-blue-600 hover:underline">
+                            {insc.contact.prenom} {insc.contact.nom}
+                          </Link>
+                          <div className="text-gray-500 text-xs">{insc.contact.email}</div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {insc.contact.entreprise?.nom || <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={insc.statut}
+                            onChange={(e) => handleUpdateStatutInscription(insc.id, e.target.value)}
+                            className={cn(
+                              "rounded-md border px-2 py-1 text-xs font-medium",
+                              inscSt?.color || "bg-gray-100 text-gray-700"
+                            )}
+                          >
+                            {Object.entries(INSCRIPTION_STATUTS).map(([v, s]) => (
+                              <option key={v} value={v}>{s.label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">{formatDate(insc.dateInscription)}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => setRemoveConfirm({ id: insc.id, name: `${insc.contact.prenom} ${insc.contact.nom}` })}
+                            className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50"
+                            title="Supprimer l'inscription"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -475,7 +505,7 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
-      {/* Delete dialog */}
+      {/* Delete session dialog */}
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
@@ -485,7 +515,17 @@ export default function SessionDetailPage() {
         loading={deleting}
       />
 
-      {/* Add inscription dialog */}
+      {/* Remove inscription confirmation */}
+      <ConfirmDialog
+        open={!!removeConfirm}
+        onOpenChange={(open) => { if (!open) setRemoveConfirm(null); }}
+        title="Retirer le participant ?"
+        description={`Voulez-vous vraiment retirer ${removeConfirm?.name || ""} de cette session ? Cette action est irreversible.`}
+        onConfirm={handleRemoveInscription}
+        loading={removing}
+      />
+
+      {/* Add inscription dialog with search */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent onClose={() => setAddOpen(false)}>
           <DialogHeader>
@@ -494,21 +534,36 @@ export default function SessionDetailPage() {
           {addError && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{addError}</p>
           )}
-          <div className="py-2">
-            <label className="text-sm font-medium text-gray-700 block mb-1">Selectionner un contact</label>
+          <div className="py-2 space-y-3">
+            {/* Search contacts */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher un contact..."
+                value={contactSearch}
+                onChange={(e) => setContactSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <label className="text-sm font-medium text-gray-700 block">Selectionner un contact</label>
             <select
               value={selectedContactId}
               onChange={(e) => setSelectedContactId(e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+              className="w-full h-auto rounded-md border border-gray-300 bg-white px-3 text-sm"
+              size={Math.min(8, Math.max(3, availableContacts.length + 1))}
             >
               <option value="">-- Choisir un contact --</option>
               {availableContacts.map((c) => (
-                <option key={c.id} value={c.id}>{c.prenom} {c.nom} -- {c.email}</option>
+                <option key={c.id} value={c.id}>{c.prenom} {c.nom} — {c.email}</option>
               ))}
             </select>
-            {availableContacts.length === 0 && contacts.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">Tous les contacts sont deja inscrits.</p>
+            {availableContacts.length === 0 && contacts.length > 0 && !contactSearch && (
+              <p className="text-xs text-gray-500">Tous les contacts sont deja inscrits.</p>
             )}
+            {availableContacts.length === 0 && contactSearch && (
+              <p className="text-xs text-gray-500">Aucun contact ne correspond a &quot;{contactSearch}&quot;</p>
+            )}
+            <p className="text-xs text-gray-400">{availableContacts.length} contact{availableContacts.length !== 1 ? "s" : ""} disponible{availableContacts.length !== 1 ? "s" : ""}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Annuler</Button>

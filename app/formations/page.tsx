@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -30,12 +30,22 @@ const niveauColors: Record<string, string> = {
   avance: "bg-purple-100 text-purple-700 border-purple-200",
 };
 
+type SortField = "titre" | "duree" | "tarif" | "createdAt";
+
 export default function FormationsPage() {
   const [formations, setFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actifFilter, setActifFilter] = useState("");
+  const [categorieFilter, setCategorieFilter] = useState("");
+  const [niveauFilter, setNiveauFilter] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortField>("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -43,27 +53,60 @@ export default function FormationsPage() {
   }, [search]);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter]);
+
+  useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (actifFilter !== "") params.set("actif", actifFilter);
+    if (categorieFilter) params.set("categorie", categorieFilter);
+    if (niveauFilter) params.set("niveau", niveauFilter);
+    params.set("sortBy", sortBy);
+    params.set("sortOrder", sortOrder);
+    params.set("page", String(page));
+    params.set("limit", "20");
 
     setLoading(true);
     fetch(`/api/formations?${params.toString()}`)
       .then((res) => res.json())
-      .then((data) => setFormations(Array.isArray(data) ? data : []))
+      .then((data) => {
+        setFormations(Array.isArray(data.formations) ? data.formations : []);
+        setTotalPages(data.totalPages || 1);
+        setTotal(data.total || 0);
+        if (data.categories) setCategories(data.categories);
+      })
       .catch(() => setFormations([]))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, actifFilter]);
+  }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter, sortBy, sortOrder, page]);
+
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder(field === "titre" ? "asc" : "desc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortBy !== field) return <ChevronDown className="h-3 w-3 text-gray-300" />;
+    return sortOrder === "asc"
+      ? <ChevronUp className="h-3 w-3 text-blue-600" />
+      : <ChevronDown className="h-3 w-3 text-blue-600" />;
+  };
 
   const getNiveauLabel = (value: string) => {
     return NIVEAUX_FORMATION.find((n) => n.value === value)?.label ?? value;
   };
 
+  const hasFilters = search || actifFilter || categorieFilter || niveauFilter;
+
   return (
     <div className="p-6">
       <PageHeader
         title="Formations"
-        description="Gérez votre catalogue de formations"
+        description="Gerez votre catalogue de formations"
         actionLabel="Nouvelle formation"
         actionHref="/formations/nouveau"
       />
@@ -80,14 +123,42 @@ export default function FormationsPage() {
           />
         </div>
         <select
+          value={categorieFilter}
+          onChange={(e) => setCategorieFilter(e.target.value)}
+          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">Toutes les categories</option>
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+        <select
+          value={niveauFilter}
+          onChange={(e) => setNiveauFilter(e.target.value)}
+          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">Tous les niveaux</option>
+          {NIVEAUX_FORMATION.map((n) => (
+            <option key={n.value} value={n.value}>{n.label}</option>
+          ))}
+        </select>
+        <select
           value={actifFilter}
           onChange={(e) => setActifFilter(e.target.value)}
           className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <option value="">Toutes les formations</option>
+          <option value="">Actives & inactives</option>
           <option value="true">Actives uniquement</option>
           <option value="false">Inactives uniquement</option>
         </select>
+        {hasFilters && (
+          <button
+            onClick={() => { setSearch(""); setActifFilter(""); setCategorieFilter(""); setNiveauFilter(""); }}
+            className="h-10 px-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            Effacer filtres
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -99,30 +170,45 @@ export default function FormationsPage() {
         ) : formations.length === 0 ? (
           <EmptyState
             icon={BookOpen}
-            title="Aucune formation trouvée"
+            title="Aucune formation trouvee"
             description={
-              search || actifFilter
-                ? "Aucune formation ne correspond à votre recherche."
-                : "Commencez par créer votre première formation."
+              hasFilters
+                ? "Aucune formation ne correspond a votre recherche."
+                : "Commencez par creer votre premiere formation."
             }
-            actionLabel={search || actifFilter ? undefined : "Nouvelle formation"}
-            actionHref={search || actifFilter ? undefined : "/formations/nouveau"}
+            actionLabel={hasFilters ? undefined : "Nouvelle formation"}
+            actionHref={hasFilters ? undefined : "/formations/nouveau"}
           />
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Titre
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort("titre")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Titre <SortIcon field="titre" />
+                  </span>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Catégorie
+                  Categorie
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Durée
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort("duree")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Duree <SortIcon field="duree" />
+                  </span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tarif
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={() => handleSort("tarif")}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Tarif <SortIcon field="tarif" />
+                  </span>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Niveau
@@ -185,10 +271,34 @@ export default function FormationsPage() {
         )}
       </div>
 
+      {/* Pagination */}
       {!loading && formations.length > 0 && (
-        <p className="text-sm text-gray-500 mt-3">
-          {formations.length} formation{formations.length > 1 ? "s" : ""}
-        </p>
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-gray-500">
+            {total} formation{total > 1 ? "s" : ""} au total
+          </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" /> Precedent
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              >
+                Suivant <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

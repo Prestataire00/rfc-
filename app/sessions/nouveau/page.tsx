@@ -37,8 +37,8 @@ export default function NouvelleSessionPage() {
       fetch("/api/formations").then((r) => r.json()),
       fetch("/api/formateurs").then((r) => r.json()),
     ]).then(([f, fo]) => {
-      setFormations(f);
-      setFormateurs(fo);
+      setFormations(Array.isArray(f) ? f : f.formations || []);
+      setFormateurs(Array.isArray(fo) ? fo : fo.formateurs || []);
     });
   }, []);
 

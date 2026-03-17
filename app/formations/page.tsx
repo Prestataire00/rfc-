@@ -106,7 +106,7 @@ export default function FormationsPage() {
     <div className="p-6">
       <PageHeader
         title="Formations"
-        description="Gerez votre catalogue de formations"
+        description="Gérez votre catalogue de formations"
         actionLabel="Nouvelle formation"
         actionHref="/formations/nouveau"
       />
@@ -138,7 +138,7 @@ export default function FormationsPage() {
           onChange={(e) => setCategorieFilter(e.target.value)}
           className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <option value="">Toutes les categories</option>
+          <option value="">Toutes les catégories</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
@@ -181,11 +181,11 @@ export default function FormationsPage() {
         ) : formations.length === 0 ? (
           <EmptyState
             icon={BookOpen}
-            title="Aucune formation trouvee"
+            title="Aucune formation trouvée"
             description={
               hasFilters
-                ? "Aucune formation ne correspond a votre recherche."
-                : "Commencez par creer votre premiere formation."
+                ? "Aucune formation ne correspond à votre recherche."
+                : "Commencez par créer votre première formation."
             }
             actionLabel={hasFilters ? undefined : "Nouvelle formation"}
             actionHref={hasFilters ? undefined : "/formations/nouveau"}
@@ -203,14 +203,14 @@ export default function FormationsPage() {
                   </span>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Categorie
+                  Catégorie
                 </th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
                   onClick={() => handleSort("duree")}
                 >
                   <span className="inline-flex items-center gap-1">
-                    Duree <SortIcon field="duree" />
+                    Durée <SortIcon field="duree" />
                   </span>
                 </th>
                 <th
@@ -295,7 +295,7 @@ export default function FormationsPage() {
                 disabled={page === 1}
                 className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
-                <ChevronLeft className="h-4 w-4" /> Precedent
+                <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
               <span className="text-sm text-gray-600">
                 Page {page} / {totalPages}

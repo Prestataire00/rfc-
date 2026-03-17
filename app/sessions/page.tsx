@@ -27,8 +27,8 @@ type Formateur = { id: string; nom: string; prenom: string };
 
 const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const MOIS = [
-  "Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Decembre",
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
 function getDaysInMonth(year: number, month: number) {
@@ -193,7 +193,7 @@ export default function SessionsPage() {
               onChange={(e) => setCapacite(e.target.value)}
               className="h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
             >
-              <option value="">Toutes capacites</option>
+              <option value="">Toutes capacités</option>
               <option value="disponible">Places disponibles</option>
               <option value="complet">Complet</option>
             </select>
@@ -215,7 +215,7 @@ export default function SessionsPage() {
             <EmptyState
               icon={CalendarDays}
               title="Aucune session"
-              description={hasFilters ? "Aucune session ne correspond aux filtres." : "Planifiez votre premiere session de formation"}
+              description={hasFilters ? "Aucune session ne correspond aux filtres." : "Planifiez votre première session de formation"}
               actionLabel={hasFilters ? undefined : "Nouvelle session"}
               actionHref={hasFilters ? undefined : "/sessions/nouveau"}
             />
@@ -257,7 +257,7 @@ export default function SessionsPage() {
                               `${s.formateur.prenom} ${s.formateur.nom}`
                             ) : (
                               <span className="inline-flex items-center gap-1 text-orange-500">
-                                <AlertTriangle className="h-3.5 w-3.5" /> Non assigne
+                                <AlertTriangle className="h-3.5 w-3.5" /> Non assigné
                               </span>
                             )}
                           </td>

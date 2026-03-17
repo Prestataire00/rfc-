@@ -17,7 +17,7 @@ export async function GET() {
       const formation = escapeCsv(s.formation.titre);
       const formateur = s.formateur
         ? escapeCsv(`${s.formateur.prenom} ${s.formateur.nom}`)
-        : "Non assigne";
+        : "Non assigné";
       const dateDebut = formatDate(s.dateDebut);
       const dateFin = formatDate(s.dateFin);
       const lieu = escapeCsv(s.lieu || "");

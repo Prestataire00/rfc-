@@ -58,8 +58,8 @@ export async function GET() {
     const monthLabels = months.map((m) => {
       const [year, month] = m.split("-");
       const monthNames = [
-        "Jan", "Fev", "Mar", "Avr", "Mai", "Juin",
-        "Juil", "Aout", "Sep", "Oct", "Nov", "Dec",
+        "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+        "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
       ];
       return `${monthNames[parseInt(month) - 1]} ${year}`;
     });

@@ -204,7 +204,7 @@ export default function SessionDetailPage() {
   if (!session) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Session non trouvee</p>
+        <p className="text-gray-500">Session non trouvée</p>
         <Link href="/sessions" className="mt-4 inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
           <ArrowLeft className="h-4 w-4" /> Retour aux sessions
         </Link>
@@ -265,7 +265,7 @@ export default function SessionDetailPage() {
                     </Link>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-orange-500">
-                      <AlertTriangle className="h-3.5 w-3.5" /> Non assigne
+                      <AlertTriangle className="h-3.5 w-3.5" /> Non assigné
                     </span>
                   )}
                 </p>
@@ -545,7 +545,7 @@ export default function SessionDetailPage() {
                 className="pl-9"
               />
             </div>
-            <label className="text-sm font-medium text-gray-700 block">Selectionner un contact</label>
+            <label className="text-sm font-medium text-gray-700 block">Sélectionner un contact</label>
             <select
               value={selectedContactId}
               onChange={(e) => setSelectedContactId(e.target.value)}

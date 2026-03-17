@@ -23,18 +23,18 @@ const adminNav: NavItem[] = [
   { href: "/entreprises", label: "Entreprises / Clients", icon: Building2 },
   { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
   { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
-  { href: "/evaluations", label: "Evaluations", icon: MessageSquare },
+  { href: "/evaluations", label: "Évaluations", icon: MessageSquare },
   { href: "/bpf", label: "BPF", icon: BarChart3 },
   { href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck },
   { href: "/documents", label: "Documents", icon: FolderOpen },
   { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
-  { href: "/parametres", label: "Parametres", icon: Settings },
+  { href: "/parametres", label: "Paramètres", icon: Settings },
 ];
 
 const formateurNav: NavItem[] = [
   { href: "/espace-formateur", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/espace-formateur/planning", label: "Mon Planning", icon: Calendar },
-  { href: "/espace-formateur/disponibilites", label: "Disponibilites", icon: CalendarDays },
+  { href: "/espace-formateur/disponibilites", label: "Disponibilités", icon: CalendarDays },
   { href: "/espace-formateur/sessions", label: "Mes Sessions", icon: BookOpen },
   { href: "/espace-formateur/documents", label: "Mes Documents", icon: FileText },
   { href: "/espace-formateur/feedbacks", label: "Feedbacks", icon: MessageSquare },
@@ -47,7 +47,7 @@ const clientNav: NavItem[] = [
   { href: "/espace-client/stagiaires", label: "Nos Stagiaires", icon: Users },
   { href: "/espace-client/documents", label: "Documents", icon: FolderOpen },
   { href: "/espace-client/devis", label: "Devis", icon: FileText },
-  { href: "/espace-client/evaluations", label: "Evaluations", icon: MessageSquare },
+  { href: "/espace-client/evaluations", label: "Évaluations", icon: MessageSquare },
 ];
 
 const navByRole: Record<string, NavItem[]> = { admin: adminNav, formateur: formateurNav, client: clientNav };
@@ -124,7 +124,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
           className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          Deconnexion
+          Déconnexion
         </button>
       </div>
     </aside>

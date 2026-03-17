@@ -40,7 +40,7 @@ export default function EvaluationsPage() {
 
   return (
     <div>
-      <PageHeader title="Evaluations & Satisfaction" description="Suivi des questionnaires de satisfaction et evaluations" />
+      <PageHeader title="Évaluations & Satisfaction" description="Suivi des questionnaires de satisfaction et évaluations" />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="rounded-lg border bg-white p-4">

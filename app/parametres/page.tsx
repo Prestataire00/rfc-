@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield } from "lucide-react";
 
-export default function ParametresPage() {
+export default function ParamètresPage() {
   const [testEmail, setTestEmail] = useState("");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -47,7 +47,7 @@ export default function ParametresPage() {
 
   return (
     <div>
-      <PageHeader title="Parametres" description="Configuration de la plateforme" />
+      <PageHeader title="Paramètres" description="Configuration de la plateforme" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* SMTP Configuration */}
@@ -60,7 +60,7 @@ export default function ParametresPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-500">
-              Pour envoyer des emails (convocations, evaluations, devis), configurez les variables SMTP dans le fichier <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">.env</code>
+              Pour envoyer des emails (convocations, évaluations, devis), configurez les variables SMTP dans le fichier <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">.env</code>
             </p>
             <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm font-mono">
               <div><span className="text-gray-500">SMTP_HOST=</span><span className="text-blue-600">smtp.gmail.com</span></div>
@@ -75,19 +75,19 @@ export default function ParametresPage() {
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={checkSmtp} disabled={checking}>
                   <Settings className="h-4 w-4 mr-1" />
-                  {checking ? "Verification..." : "Verifier"}
+                  {checking ? "Vérification..." : "Vérifier"}
                 </Button>
                 {smtpStatus && (
                   <div className="flex items-center gap-1.5 text-sm">
                     {smtpStatus.configured ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-green-600">Configure ({smtpStatus.host})</span>
+                        <span className="text-green-600">Configuré ({smtpStatus.host})</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="h-4 w-4 text-red-500" />
-                        <span className="text-red-500">Non configure</span>
+                        <span className="text-red-500">Non configuré</span>
                       </>
                     )}
                   </div>
@@ -121,9 +121,9 @@ export default function ParametresPage() {
             <div className="border-t pt-4">
               <h4 className="font-medium text-sm mb-3">Guide rapide - Gmail</h4>
               <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside">
-                <li>Activez la verification en 2 etapes sur votre compte Google</li>
-                <li>Allez dans Securite &gt; Mots de passe des applications</li>
-                <li>Creez un mot de passe pour &quot;Autre (FormaPro)&quot;</li>
+                <li>Activez la vérification en 2 étapes sur votre compte Google</li>
+                <li>Allez dans Sécurité &gt; Mots de passe des applications</li>
+                <li>Créez un mot de passe pour &quot;Autre (FormaPro)&quot;</li>
                 <li>Utilisez ce mot de passe comme <code className="bg-gray-100 px-1 rounded text-xs">SMTP_PASS</code></li>
               </ol>
             </div>
@@ -151,7 +151,7 @@ export default function ParametresPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Statut</span>
                 <span className="text-green-600 font-medium flex items-center gap-1">
-                  <CheckCircle className="h-3.5 w-3.5" /> Connecte
+                  <CheckCircle className="h-3.5 w-3.5" /> Connecté
                 </span>
               </div>
             </CardContent>
@@ -170,7 +170,7 @@ export default function ParametresPage() {
                 <span className="font-medium">NextAuth v4 (Credentials)</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Strategie</span>
+                <span className="text-gray-500">Stratégie</span>
                 <span className="font-medium">JWT</span>
               </div>
               <div className="flex justify-between text-sm">

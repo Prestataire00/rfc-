@@ -54,11 +54,11 @@ export function convocationEmail(data: {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
           <h1 style="margin: 0; font-size: 20px;">FormaPro</h1>
-          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Convocation a une formation</p>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Convocation à une formation</p>
         </div>
         <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
           <p>Bonjour <strong>${data.stagiaire.prenom} ${data.stagiaire.nom}</strong>,</p>
-          <p>Nous avons le plaisir de vous confirmer votre inscription a la formation suivante :</p>
+          <p>Nous avons le plaisir de vous confirmer votre inscription à la formation suivante :</p>
           <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
             <tr style="border-bottom: 1px solid #e2e8f0;">
               <td style="padding: 8px; font-weight: bold; color: #64748b;">Formation</td>
@@ -77,10 +77,10 @@ export function convocationEmail(data: {
               <td style="padding: 8px;">9h00 - 12h30 / 14h00 - 17h30</td>
             </tr>
           </table>
-          <p>Merci de vous presenter <strong>15 minutes avant</strong> le debut de la formation.</p>
-          <p>Vous trouverez en piece jointe votre convocation officielle.</p>
+          <p>Merci de vous présenter <strong>15 minutes avant</strong> le début de la formation.</p>
+          <p>Vous trouverez en pièce jointe votre convocation officielle.</p>
           <p style="color: #64748b; font-size: 12px; margin-top: 24px;">
-            Cordialement,<br>L'equipe FormaPro
+            Cordialement,<br>L'équipe FormaPro
           </p>
         </div>
       </div>
@@ -110,9 +110,9 @@ export function devisEmail(data: {
               ${data.devis.montantTTC.toFixed(2)} EUR TTC
             </p>
           </div>
-          <p>N'hesitez pas a nous contacter pour toute question.</p>
+          <p>N'hésitez pas à nous contacter pour toute question.</p>
           <p style="color: #64748b; font-size: 12px; margin-top: 24px;">
-            Cordialement,<br>L'equipe FormaPro
+            Cordialement,<br>L'équipe FormaPro
           </p>
         </div>
       </div>
@@ -128,28 +128,28 @@ export function evaluationEmail(data: {
 }) {
   const typeLabel =
     data.type === "satisfaction_froid"
-      ? "satisfaction a froid"
-      : "satisfaction a chaud";
+      ? "satisfaction à froid"
+      : "satisfaction à chaud";
   return {
     subject: `Votre avis compte - Evaluation ${typeLabel} "${data.formation.titre}"`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
           <h1 style="margin: 0; font-size: 20px;">FormaPro</h1>
-          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Evaluation de formation</p>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Évaluation de formation</p>
         </div>
         <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
           <p>Bonjour <strong>${data.stagiaire.prenom} ${data.stagiaire.nom}</strong>,</p>
-          <p>Suite a votre formation <strong>"${data.formation.titre}"</strong>, nous souhaitons recueillir votre avis.</p>
+          <p>Suite à votre formation <strong>"${data.formation.titre}"</strong>, nous souhaitons recueillir votre avis.</p>
           <p>Merci de prendre quelques minutes pour remplir ce questionnaire de ${typeLabel} :</p>
           <div style="text-align: center; margin: 24px 0;">
             <a href="${data.lien}" style="background: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
               Donner mon avis
             </a>
           </div>
-          <p style="color: #64748b; font-size: 12px;">Ce lien est personnel et a usage unique.</p>
+          <p style="color: #64748b; font-size: 12px;">Ce lien est personnel et à usage unique.</p>
           <p style="color: #64748b; font-size: 12px; margin-top: 24px;">
-            Cordialement,<br>L'equipe FormaPro
+            Cordialement,<br>L'équipe FormaPro
           </p>
         </div>
       </div>

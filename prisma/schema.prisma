@@ -27,6 +27,8 @@ model User {
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id])
+
+  notifications Notification[]
 }
 
 // ==================== CORE MODELS ====================
@@ -364,6 +366,51 @@ model FeuillePresence {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   contactId String
+}
+
+// ==================== QUALIOPI ====================
+
+model IndicateurQualiopi {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  numero      Int      // Indicateur number (1-32)
+  critere     Int      // Critère number (1-7)
+  libelle     String
+  description String?
+  preuvesAttendues String? // Expected proofs
+  statut      String   @default("non_conforme") // conforme, en_cours, non_conforme, non_applicable
+  commentaire String?
+  dateAudit   DateTime?
+  prioritaire Boolean  @default(false)
+  preuves     PreuveQualiopi[]
+}
+
+model PreuveQualiopi {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  indicateurId  String
+  indicateur    IndicateurQualiopi @relation(fields: [indicateurId], references: [id], onDelete: Cascade)
+  titre         String
+  description   String?
+  fichierUrl    String?
+  type          String   // document, process, enregistrement, temoignage
+  valide        Boolean  @default(false)
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  titre     String
+  message   String
+  type      String   @default("info") // info, warning, success, error
+  lu        Boolean  @default(false)
+  lien      String?  // optional link to navigate to
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ==================== BPF ====================

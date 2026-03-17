@@ -1,136 +1,58 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-type Notification = {
-  id: string;
-  type: "warning" | "info" | "success" | "danger";
-  titre: string;
-  message: string;
-  lien?: string;
-};
-
-export async function GET() {
-  const now = new Date();
-  const notifications: Notification[] = [];
-
-  // 1. Sessions starting in the next 7 days
-  const next7days = new Date(now);
-  next7days.setDate(next7days.getDate() + 7);
-  const sessionsProches = await prisma.session.findMany({
-    where: {
-      dateDebut: { gte: now, lte: next7days },
-      statut: { in: ["planifiee", "confirmee"] },
-    },
-    include: { formation: { select: { titre: true } } },
-    orderBy: { dateDebut: "asc" },
-  });
-
-  for (const s of sessionsProches) {
-    const jours = Math.ceil((new Date(s.dateDebut).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    notifications.push({
-      id: `session-${s.id}`,
-      type: jours <= 2 ? "warning" : "info",
-      titre: `Session dans ${jours} jour${jours > 1 ? "s" : ""}`,
-      message: `"${s.formation.titre}" commence le ${new Date(s.dateDebut).toLocaleDateString("fr-FR")}`,
-      lien: `/sessions/${s.id}`,
-    });
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Non autorise" }, { status: 401 });
   }
 
-  // 2. Sessions without formateur
-  const sansFormateur = await prisma.session.findMany({
-    where: {
-      formateurId: null,
-      statut: { in: ["planifiee", "confirmee"] },
-      dateDebut: { gte: now },
-    },
-    include: { formation: { select: { titre: true } } },
+  const userId = (session.user as any).id as string;
+
+  // Fetch DB notifications for the current user, ordered by newest first
+  const notifications = await prisma.notification.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
   });
 
-  for (const s of sansFormateur) {
-    notifications.push({
-      id: `no-formateur-${s.id}`,
-      type: "danger",
-      titre: "Formateur non assigne",
-      message: `"${s.formation.titre}" n'a pas de formateur`,
-      lien: `/sessions/${s.id}`,
-    });
-  }
-
-  // 3. Devis en attente de signature (envoyes depuis + de 7 jours)
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const devisEnAttente = await prisma.devis.findMany({
-    where: {
-      statut: "envoye",
-      dateEmission: { lte: sevenDaysAgo },
-    },
-    include: { entreprise: { select: { nom: true } } },
+  const unreadCount = await prisma.notification.count({
+    where: { userId, lu: false },
   });
 
-  for (const d of devisEnAttente) {
-    notifications.push({
-      id: `devis-${d.id}`,
-      type: "warning",
-      titre: "Devis en attente",
-      message: `${d.numero} (${d.entreprise?.nom || "Client"}) - en attente depuis + de 7 jours`,
-      lien: `/commercial`,
-    });
+  return NextResponse.json({ notifications, unreadCount });
+}
+
+export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Non autorise" }, { status: 401 });
   }
 
-  // 4. Devis expirés
-  const devisExpires = await prisma.devis.findMany({
-    where: {
-      statut: "envoye",
-      dateValidite: { lt: now },
-    },
-  });
+  const userId = (session.user as any).id as string;
+  const body = await req.json();
 
-  for (const d of devisExpires) {
-    notifications.push({
-      id: `devis-expire-${d.id}`,
-      type: "danger",
-      titre: "Devis expire",
-      message: `${d.numero} a depasse sa date de validite`,
-      lien: `/commercial`,
+  // Mark a single notification as read
+  if (body.id) {
+    await prisma.notification.update({
+      where: { id: body.id, userId },
+      data: { lu: true },
     });
+    return NextResponse.json({ success: true });
   }
 
-  // 5. Evaluations incomplètes
-  const evalIncompletes = await prisma.evaluation.count({
-    where: { estComplete: false },
-  });
-
-  if (evalIncompletes > 0) {
-    notifications.push({
-      id: "eval-incomplete",
-      type: "info",
-      titre: "Evaluations en attente",
-      message: `${evalIncompletes} evaluation(s) non completee(s)`,
-      lien: `/evaluations`,
+  // Mark all as read
+  if (body.all) {
+    await prisma.notification.updateMany({
+      where: { userId, lu: false },
+      data: { lu: true },
     });
+    return NextResponse.json({ success: true });
   }
 
-  // 6. Sessions without inscriptions
-  const sessionsSansInscriptions = await prisma.session.findMany({
-    where: {
-      statut: { in: ["planifiee", "confirmee"] },
-      dateDebut: { gte: now },
-      inscriptions: { none: {} },
-    },
-    include: { formation: { select: { titre: true } } },
-  });
-
-  for (const s of sessionsSansInscriptions) {
-    notifications.push({
-      id: `no-inscrits-${s.id}`,
-      type: "warning",
-      titre: "Session sans participant",
-      message: `"${s.formation.titre}" n'a aucun inscrit`,
-      lien: `/sessions/${s.id}`,
-    });
-  }
-
-  return NextResponse.json(notifications);
+  return NextResponse.json({ error: "Requete invalide" }, { status: 400 });
 }

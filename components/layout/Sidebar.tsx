@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
-  MessageSquare, Award, LogOut, Shield, X,
+  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ type NavItem = { href: string; label: string; icon: React.ElementType };
 
 const adminNav: NavItem[] = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/formations", label: "Formations", icon: BookOpen },
   { href: "/sessions", label: "Sessions", icon: CalendarDays },
   { href: "/besoins", label: "Besoins", icon: ClipboardList },
@@ -24,8 +25,10 @@ const adminNav: NavItem[] = [
   { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
   { href: "/evaluations", label: "Evaluations", icon: MessageSquare },
   { href: "/bpf", label: "BPF", icon: BarChart3 },
+  { href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck },
   { href: "/documents", label: "Documents", icon: FolderOpen },
   { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
+  { href: "/parametres", label: "Parametres", icon: Settings },
 ];
 
 const formateurNav: NavItem[] = [

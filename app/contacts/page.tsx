@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Users, Search } from "lucide-react";
+import { Users, Search, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -61,6 +61,17 @@ export default function ContactsPage() {
         actionLabel="Nouveau contact"
         actionHref="/contacts/nouveau"
       />
+
+      {/* Export button */}
+      <div className="flex justify-end mb-4 -mt-4">
+        <button
+          onClick={() => window.open("/api/export/contacts", "_blank")}
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <Download className="h-4 w-4" />
+          Exporter CSV
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

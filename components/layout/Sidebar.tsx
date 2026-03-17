@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -68,9 +69,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b px-6">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
-            FP
-          </div>
+          <Image src="/logo.svg" alt="FormaPro" width={36} height={36} className="rounded-lg" />
           <div>
             <span className="font-semibold text-gray-900 text-sm">FormaPro</span>
             <span className="block text-[10px] text-gray-400">{roleLabels[role] || role}</span>

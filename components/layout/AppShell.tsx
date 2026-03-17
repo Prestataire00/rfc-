@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -52,9 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5 text-gray-700" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs">
-              FP
-            </div>
+            <Image src="/logo.svg" alt="FormaPro" width={28} height={28} className="rounded-lg" />
             <span className="font-semibold text-gray-900 text-sm">FormaPro</span>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -36,9 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 text-white font-bold text-xl mb-4">
-              FP
-            </div>
+            <Image src="/logo.svg" alt="FormaPro" width={56} height={56} className="rounded-xl mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900">FormaPro</h1>
             <p className="text-gray-500 mt-1">Plateforme de gestion de formation</p>
           </div>

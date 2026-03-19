@@ -11,6 +11,7 @@ export default function NouveauBesoinPage() {
   const [entreprises, setEntreprises] = useState<Option[]>([]);
   const [formations, setFormations] = useState<Option[]>([]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     titre: "",
     description: "",
@@ -25,21 +26,34 @@ export default function NouveauBesoinPage() {
   });
 
   useEffect(() => {
-    fetch("/api/entreprises").then((r) => r.json()).then(setEntreprises);
-    fetch("/api/formations").then((r) => r.json()).then(setFormations);
+    fetch("/api/entreprises").then((r) => r.ok ? r.json() : []).then((d) => setEntreprises(Array.isArray(d) ? d : d.entreprises || []));
+    fetch("/api/formations").then((r) => r.ok ? r.json() : []).then((d) => setFormations(Array.isArray(d) ? d : d.formations || []));
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     setSaving(true);
-    const res = await fetch("/api/besoins", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      const besoin = await res.json();
-      router.push(`/besoins/${besoin.id}`);
+    try {
+      const res = await fetch("/api/besoins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const besoin = await res.json();
+        router.push(`/besoins/${besoin.id}`);
+      } else {
+        const data = await res.json();
+        const fieldErrors = data.error?.fieldErrors;
+        if (fieldErrors) {
+          setError(Object.values(fieldErrors).flat().join(", ") || "Erreur de validation");
+        } else {
+          setError(data.error?.message || data.error || "Erreur lors de la création");
+        }
+      }
+    } catch {
+      setError("Erreur de connexion au serveur");
     }
     setSaving(false);
   }
@@ -47,6 +61,12 @@ export default function NouveauBesoinPage() {
   return (
     <div>
       <PageHeader title="Nouveau besoin de formation" description="Qualifiez une demande de formation" />
+
+      {error && (
+        <div className="max-w-2xl mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
         <div className="rounded-lg border bg-white p-6 space-y-4">
@@ -58,7 +78,7 @@ export default function NouveauBesoinPage() {
               value={form.titre}
               onChange={(e) => setForm({ ...form, titre: e.target.value })}
               className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
-              placeholder="Ex: Formation Excel avancee pour equipe comptabilite"
+              placeholder="Ex: Formation Excel avancée pour équipe comptabilité"
             />
           </div>
 
@@ -86,7 +106,7 @@ export default function NouveauBesoinPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priorite</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
               <select
                 value={form.priorite}
                 onChange={(e) => setForm({ ...form, priorite: e.target.value })}
@@ -150,7 +170,7 @@ export default function NouveauBesoinPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dates souhaitees</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dates souhaitées</label>
               <input
                 type="text"
                 value={form.datesSouhaitees}
@@ -178,7 +198,7 @@ export default function NouveauBesoinPage() {
             disabled={saving}
             className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {saving ? "Enregistrement..." : "Creer le besoin"}
+            {saving ? "Enregistrement..." : "Créer le besoin"}
           </button>
           <button
             type="button"

@@ -24,14 +24,29 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = { ...parsed.data };
-  if (!data.siret) delete data.siret;
+  const data = {
+    nom: parsed.data.nom,
+    siret: parsed.data.siret || null,
+    email: parsed.data.email || null,
+    telephone: parsed.data.telephone || null,
+    site: parsed.data.site || null,
+    secteur: parsed.data.secteur || null,
+    adresse: parsed.data.adresse || null,
+    ville: parsed.data.ville || null,
+    codePostal: parsed.data.codePostal || null,
+    notes: parsed.data.notes || null,
+  };
 
-  const entreprise = await prisma.entreprise.update({
-    where: { id: params.id },
-    data,
-  });
-  return NextResponse.json(entreprise);
+  try {
+    const entreprise = await prisma.entreprise.update({
+      where: { id: params.id },
+      data,
+    });
+    return NextResponse.json(entreprise);
+  } catch (err: unknown) {
+    console.error("Entreprise update error:", err);
+    return NextResponse.json({ error: "Erreur lors de la mise à jour" }, { status: 500 });
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {

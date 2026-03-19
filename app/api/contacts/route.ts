@@ -37,6 +37,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const contact = await prisma.contact.create({ data: parsed.data });
-  return NextResponse.json(contact, { status: 201 });
+  const data = {
+    ...parsed.data,
+    telephone: parsed.data.telephone || null,
+    poste: parsed.data.poste || null,
+    notes: parsed.data.notes || null,
+    entrepriseId: parsed.data.entrepriseId || null,
+  };
+
+  try {
+    const contact = await prisma.contact.create({ data });
+    return NextResponse.json(contact, { status: 201 });
+  } catch (err: unknown) {
+    console.error("Contact creation error:", err);
+    return NextResponse.json({ error: "Erreur lors de la création du contact" }, { status: 500 });
+  }
 }

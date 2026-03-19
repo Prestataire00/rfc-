@@ -69,8 +69,9 @@ export default function FormationsPage() {
 
     setLoading(true);
     fetch(`/api/formations?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
+      .then((res) => res.ok ? res.json() : null)
+      .then((data: any) => {
+        if (!data) return;
         setFormations(Array.isArray(data.formations) ? data.formations : []);
         setTotalPages(data.totalPages || 1);
         setTotal(data.total || 0);

@@ -22,9 +22,10 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
 
   useEffect(() => {
     fetch(`/api/inscription-publique/${token}`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data.error) setError(data.error);
+        if (!data) setError("Impossible de charger les données");
+        else if (data.error) setError(data.error);
         else setInfo(data);
         setLoading(false);
       });
@@ -72,9 +73,9 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Inscription enregistree !</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Inscription enregistrée !</h1>
           <p className="text-gray-600">
-            Votre inscription a la formation <strong>&quot;{info?.formation}&quot;</strong> a bien ete prise en compte.
+            Votre inscription à la formation <strong>&quot;{info?.formation}&quot;</strong> a bien été prise en compte.
             Vous recevrez une confirmation prochainement.
           </p>
         </div>
@@ -90,8 +91,8 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="bg-blue-600 text-white rounded-t-xl p-6">
-          <h1 className="text-xl font-bold">FormaPro</h1>
-          <p className="text-blue-100 text-sm mt-1">Inscription a une formation</p>
+          <h1 className="text-xl font-bold">Rescue Formation Conseil</h1>
+          <p className="text-blue-100 text-sm mt-1">Inscription à une formation</p>
         </div>
 
         <div className="bg-white border border-t-0 rounded-b-xl p-6 space-y-6">
@@ -121,7 +122,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
 
           {info && info.placesRestantes <= 0 ? (
             <p className="text-center text-gray-500 py-4">
-              Desolee, cette session est complete.
+              Désolé, cette session est complète.
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,7 +136,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prenom *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
                   <input
                     type="text"
                     required
@@ -168,7 +169,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telephone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
                 <input
                   type="tel"
                   value={form.telephone}
@@ -193,7 +194,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                 disabled={submitting}
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                {submitting ? "Inscription en cours..." : "M'inscrire a cette formation"}
+                {submitting ? "Inscription en cours..." : "M'inscrire à cette formation"}
               </button>
             </form>
           )}

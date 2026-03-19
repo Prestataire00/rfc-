@@ -23,8 +23,8 @@ export default function NouvelUtilisateurPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/formateurs").then((r) => r.json()),
-      fetch("/api/entreprises").then((r) => r.json()),
+      fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
+      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
     ]).then(([f, e]) => {
       setFormateurs(f);
       setEntreprises(e);
@@ -46,7 +46,7 @@ export default function NouvelUtilisateurPage() {
       router.push("/utilisateurs");
     } else {
       const data = await res.json();
-      setError(data.error || "Erreur lors de la creation");
+      setError(data.error || "Erreur lors de la création");
       setSaving(false);
     }
   };
@@ -69,7 +69,7 @@ export default function NouvelUtilisateurPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prenom *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
             <input
               type="text"
               required
@@ -110,12 +110,12 @@ export default function NouvelUtilisateurPage() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="Minimum 6 caracteres"
+            placeholder="Minimum 6 caractères"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Rôle *</label>
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value, formateurId: "", entrepriseId: "" })}
@@ -147,7 +147,7 @@ export default function NouvelUtilisateurPage() {
 
         {form.role === "client" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher a l&apos;entreprise</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher à l&apos;entreprise</label>
             <select
               value={form.entrepriseId}
               onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}
@@ -170,7 +170,7 @@ export default function NouvelUtilisateurPage() {
             className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            {saving ? "Creation..." : "Creer le compte"}
+            {saving ? "Création..." : "Créer le compte"}
           </button>
         </div>
       </form>

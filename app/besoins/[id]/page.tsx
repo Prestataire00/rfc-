@@ -35,7 +35,7 @@ export default function BesoinDetailPage() {
   const [showDelete, setShowDelete] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/besoins/${id}`).then((r) => r.json()).then((d) => {
+    fetch(`/api/besoins/${id}`).then((r) => r.ok ? r.json() : null).then((d) => {
       setBesoin(d);
       setLoading(false);
     });
@@ -60,7 +60,7 @@ export default function BesoinDetailPage() {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>;
   }
 
-  if (!besoin) return <p>Besoin non trouve</p>;
+  if (!besoin) return <p>Besoin non trouvé</p>;
 
   const st = BESOIN_STATUTS[besoin.statut as keyof typeof BESOIN_STATUTS];
   const prio = BESOIN_PRIORITES[besoin.priorite as keyof typeof BESOIN_PRIORITES];
@@ -77,7 +77,7 @@ export default function BesoinDetailPage() {
           <div className="flex items-center gap-3 mt-2">
             {st && <StatutBadge label={st.label} color={st.color} />}
             <span className={`text-sm font-medium ${prio?.color}`}>{prio?.label}</span>
-            <span className="text-sm text-gray-500">Cree le {formatDate(besoin.createdAt)}</span>
+            <span className="text-sm text-gray-500">Créé le {formatDate(besoin.createdAt)}</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -162,7 +162,7 @@ export default function BesoinDetailPage() {
 
           {besoin.devis && (
             <div className="rounded-lg border bg-white p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Devis associe</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Devis associé</h3>
               <Link href={`/commercial/devis/${besoin.devis.id}`} className="text-blue-600 hover:underline text-sm flex items-center gap-1">
                 <FileText className="h-4 w-4" /> {besoin.devis.numero}
               </Link>
@@ -174,7 +174,7 @@ export default function BesoinDetailPage() {
       <ConfirmDialog
         open={showDelete}
         title="Supprimer ce besoin ?"
-        description="Cette action est irreversible."
+        description="Cette action est irréversible."
         onConfirm={handleDelete}
         onOpenChange={setShowDelete}
       />

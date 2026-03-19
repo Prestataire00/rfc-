@@ -62,7 +62,10 @@ export default function ModifierSessionPage() {
       });
     }
 
-    if (formationsRes.ok) setFormations(await formationsRes.json());
+    if (formationsRes.ok) {
+      const fData = await formationsRes.json();
+      setFormations(Array.isArray(fData) ? fData : fData.formations || []);
+    }
     if (formateursRes.ok) setFormateurs(await formateursRes.json());
     setPageLoading(false);
   }, [id]);

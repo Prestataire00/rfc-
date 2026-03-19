@@ -139,11 +139,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/dashboard/stats").then((r) => r.json()),
-      fetch("/api/notifications").then((r) => r.json()),
+      fetch("/api/dashboard/stats").then((r) => r.ok ? r.json() : null),
+      fetch("/api/notifications").then((r) => r.ok ? r.json() : []),
     ]).then(([d, n]) => {
       setData(d);
-      setNotifications(n);
+      setNotifications(Array.isArray(n) ? n : []);
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
   }, []);
@@ -156,7 +158,12 @@ export default function DashboardPage() {
     );
   }
 
-  if (!data) return null;
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+      <p className="text-lg font-medium">Impossible de charger le tableau de bord</p>
+      <p className="text-sm mt-1">Vérifiez la connexion à la base de données</p>
+    </div>
+  );
 
   const { stats, prochainsSessions, derniersContacts, sessionsSemaine, sessionsAujourdhui } = data;
   const now = new Date();

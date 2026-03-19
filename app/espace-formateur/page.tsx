@@ -24,8 +24,8 @@ export default function EspaceFormateurPage() {
 
   useEffect(() => {
     fetch("/api/formateur/mes-sessions")
-      .then((r) => r.json())
-      .then((d) => { setSessions(d); setLoading(false); });
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { setSessions(Array.isArray(d) ? d : []); setLoading(false); });
   }, []);
 
   const now = new Date();

@@ -27,7 +27,7 @@ export default function FormateurSessionsPage() {
 
   useEffect(() => {
     fetch("/api/formateur/mes-sessions")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setSessions(d); setLoading(false); });
   }, []);
 

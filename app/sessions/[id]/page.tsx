@@ -130,7 +130,7 @@ export default function SessionDetailPage() {
       body: JSON.stringify({ sessionId: id, type }),
     });
     if (!genRes.ok) {
-      setEvalMsg("Erreur lors de la generation");
+      setEvalMsg("Erreur lors de la génération");
       setEvalLoading(false);
       return;
     }
@@ -141,7 +141,7 @@ export default function SessionDetailPage() {
     });
     const emailData = await emailRes.json();
     if (emailData.skipped > 0 && emailData.sent === 0) {
-      setEvalMsg("Liens generes (SMTP non configure)");
+      setEvalMsg("Liens générés (SMTP non configuré)");
     } else {
       setEvalMsg(`${emailData.sent} email(s) envoye(s)`);
     }
@@ -158,8 +158,8 @@ export default function SessionDetailPage() {
       body: JSON.stringify({ sessionId: id, contactId }),
     });
     const data = await res.json();
-    if (data.skipped) setEmailMsg("SMTP non configure (voir .env)");
-    else if (res.ok) setEmailMsg("Convocation envoyee !");
+    if (data.skipped) setEmailMsg("SMTP non configuré (voir .env)");
+    else if (res.ok) setEmailMsg("Convocation envoyée !");
     else setEmailMsg(data.error || "Erreur d'envoi");
     setSendingEmail(null);
     setTimeout(() => setEmailMsg(""), 3000);
@@ -272,10 +272,10 @@ export default function SessionDetailPage() {
               </div>
               <div>
                 <p className="text-gray-500">Lieu</p>
-                <p className="font-medium">{session.lieu || <span className="text-gray-400">Non defini</span>}</p>
+                <p className="font-medium">{session.lieu || <span className="text-gray-400">Non défini</span>}</p>
               </div>
               <div>
-                <p className="text-gray-500">Capacite</p>
+                <p className="text-gray-500">Capacité</p>
                 <div>
                   <p className={cn("font-medium", capacityRatio >= 1 ? "text-red-600" : capacityRatio >= 0.8 ? "text-orange-600" : "text-green-600")}>
                     {session.inscriptions.length}/{session.capaciteMax} participants
@@ -300,7 +300,7 @@ export default function SessionDetailPage() {
                 <p className="font-medium">{formatCurrency(session.formation.tarif)}</p>
               </div>
               <div>
-                <p className="text-gray-500">CA previsionnel</p>
+                <p className="text-gray-500">CA prévisionnel</p>
                 <p className="font-semibold text-gray-900">{formatCurrency(session.formation.tarif * session.inscriptions.length)}</p>
               </div>
               {session.notes && (
@@ -331,7 +331,7 @@ export default function SessionDetailPage() {
                 className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
               >
                 <FileText className="h-4 w-4 text-green-600" />
-                <span className="flex-1 text-gray-700">Feuille de presence</span>
+                <span className="flex-1 text-gray-700">Feuille de présence</span>
                 <Download className="h-4 w-4 text-gray-400" />
               </a>
 
@@ -341,7 +341,7 @@ export default function SessionDetailPage() {
                   {session.inscriptions.map((insc) => (
                     <div key={insc.id} className="flex items-center gap-1 text-xs">
                       <span className="text-gray-600 flex-1 truncate">{insc.contact.prenom} {insc.contact.nom}</span>
-                      <a href={`/api/pdf/convocation/${id}/${insc.contact.id}`} target="_blank" className="text-blue-600 hover:underline px-1" title="Telecharger convocation">
+                      <a href={`/api/pdf/convocation/${id}/${insc.contact.id}`} target="_blank" className="text-blue-600 hover:underline px-1" title="Télécharger convocation">
                         Convoc.
                       </a>
                       <button
@@ -358,7 +358,7 @@ export default function SessionDetailPage() {
                     </div>
                   ))}
                   {emailMsg && (
-                    <p className={`text-xs mt-1 ${emailMsg.includes("envoyee") ? "text-green-600" : "text-orange-600"}`}>
+                    <p className={`text-xs mt-1 ${emailMsg.includes("envoyée") ? "text-green-600" : "text-orange-600"}`}>
                       {emailMsg}
                     </p>
                   )}
@@ -388,7 +388,7 @@ export default function SessionDetailPage() {
                 className="w-full flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-purple-50 transition-colors disabled:opacity-50"
               >
                 <Send className="h-4 w-4 text-orange-500" />
-                <span className="flex-1 text-left text-gray-700">Envoyer eval. a chaud</span>
+                <span className="flex-1 text-left text-gray-700">Envoyer éval. à chaud</span>
               </button>
               <button
                 onClick={() => handleGenererEvaluations("satisfaction_froid")}
@@ -396,7 +396,7 @@ export default function SessionDetailPage() {
                 className="w-full flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-purple-50 transition-colors disabled:opacity-50"
               >
                 <Send className="h-4 w-4 text-blue-500" />
-                <span className="flex-1 text-left text-gray-700">Envoyer eval. a froid</span>
+                <span className="flex-1 text-left text-gray-700">Envoyer éval. à froid</span>
               </button>
               {evalMsg && (
                 <p className={`text-xs ${evalMsg.includes("Erreur") ? "text-red-600" : "text-green-600"}`}>
@@ -419,7 +419,7 @@ export default function SessionDetailPage() {
                 <button
                   onClick={handleGenererLienInscription}
                   className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  title="Generer un lien d'inscription public"
+                  title="Générer un lien d'inscription public"
                 >
                   <Link2 className="h-4 w-4" /> Lien public
                 </button>
@@ -435,7 +435,7 @@ export default function SessionDetailPage() {
 
             {inscriptionLink && (
               <div className="px-4 py-2 bg-green-50 border-b text-sm flex items-center gap-2">
-                <span className="text-green-700">Lien copie !</span>
+                <span className="text-green-700">Lien copié !</span>
                 <code className="text-xs bg-white px-2 py-1 rounded border flex-1 truncate">{inscriptionLink}</code>
               </div>
             )}
@@ -510,7 +510,7 @@ export default function SessionDetailPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Supprimer la session ?"
-        description="Cette action supprimera la session et toutes les inscriptions associees."
+        description="Cette action supprimera la session et toutes les inscriptions associées."
         onConfirm={handleDelete}
         loading={deleting}
       />
@@ -520,7 +520,7 @@ export default function SessionDetailPage() {
         open={!!removeConfirm}
         onOpenChange={(open) => { if (!open) setRemoveConfirm(null); }}
         title="Retirer le participant ?"
-        description={`Voulez-vous vraiment retirer ${removeConfirm?.name || ""} de cette session ? Cette action est irreversible.`}
+        description={`Voulez-vous vraiment retirer ${removeConfirm?.name || ""} de cette session ? Cette action est irréversible.`}
         onConfirm={handleRemoveInscription}
         loading={removing}
       />
@@ -558,10 +558,10 @@ export default function SessionDetailPage() {
               ))}
             </select>
             {availableContacts.length === 0 && contacts.length > 0 && !contactSearch && (
-              <p className="text-xs text-gray-500">Tous les contacts sont deja inscrits.</p>
+              <p className="text-xs text-gray-500">Tous les contacts sont déjà inscrits.</p>
             )}
             {availableContacts.length === 0 && contactSearch && (
-              <p className="text-xs text-gray-500">Aucun contact ne correspond a &quot;{contactSearch}&quot;</p>
+              <p className="text-xs text-gray-500">Aucun contact ne correspond à &quot;{contactSearch}&quot;</p>
             )}
             <p className="text-xs text-gray-400">{availableContacts.length} contact{availableContacts.length !== 1 ? "s" : ""} disponible{availableContacts.length !== 1 ? "s" : ""}</p>
           </div>

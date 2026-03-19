@@ -22,7 +22,7 @@ export default function ClientEvaluationsPage() {
 
   useEffect(() => {
     fetch("/api/client/evaluations")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setEvaluations(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
@@ -36,7 +36,7 @@ export default function ClientEvaluationsPage() {
       ) : evaluations.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>Aucune evaluation disponible</p>
+          <p>Aucune évaluation disponible</p>
         </div>
       ) : (
         <div className="space-y-4">

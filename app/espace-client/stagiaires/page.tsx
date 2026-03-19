@@ -20,7 +20,7 @@ export default function ClientStagiairesPage() {
 
   useEffect(() => {
     fetch("/api/client/stagiaires")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setContacts(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
@@ -34,7 +34,7 @@ export default function ClientStagiairesPage() {
       ) : contacts.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>Aucun stagiaire enregistre</p>
+          <p>Aucun stagiaire enregistré</p>
         </div>
       ) : (
         <div className="rounded-lg border bg-white overflow-hidden">

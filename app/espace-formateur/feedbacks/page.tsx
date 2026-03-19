@@ -40,8 +40,8 @@ export default function FeedbacksPage() {
 
   const fetchData = useCallback(async () => {
     const [fb, sess] = await Promise.all([
-      fetch("/api/formateur/feedbacks").then((r) => r.json()),
-      fetch("/api/formateur/mes-sessions").then((r) => r.json()),
+      fetch("/api/formateur/feedbacks").then((r) => r.ok ? r.json() : []),
+      fetch("/api/formateur/mes-sessions").then((r) => r.ok ? r.json() : []),
     ]);
     setFeedbacks(fb);
     setSessions(sess.filter((s: Session) => s.statut === "terminee"));

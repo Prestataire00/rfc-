@@ -47,8 +47,8 @@ export default function NouveauDevisPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/entreprises").then((r) => r.json()),
-      fetch("/api/contacts").then((r) => r.json()),
+      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
+      fetch("/api/contacts").then((r) => r.ok ? r.json() : []),
     ]).then(([e, c]) => {
       setEntreprises(e);
       setContacts(c);
@@ -133,7 +133,16 @@ export default function NouveauDevisPage() {
       router.push(`/commercial/devis/${data.id}`);
     } else {
       const data = await res.json();
-      setError(data.error?.formErrors?.join(", ") || "Une erreur est survenue.");
+      const fieldErrors = data.error?.fieldErrors;
+      const formErrors = data.error?.formErrors;
+      if (fieldErrors) {
+        const msgs = Object.values(fieldErrors).flat().join(", ");
+        setError(msgs || "Erreur de validation");
+      } else if (formErrors && formErrors.length > 0) {
+        setError(formErrors.join(", "));
+      } else {
+        setError(typeof data.error === "string" ? data.error : "Une erreur est survenue.");
+      }
       setLoading(false);
     }
   };

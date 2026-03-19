@@ -30,7 +30,7 @@ export default function ClientDevisPage() {
 
   useEffect(() => {
     fetch("/api/client/devis")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setDevisList(d); setLoading(false); });
   }, []);
 

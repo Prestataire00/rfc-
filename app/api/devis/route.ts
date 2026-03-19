@@ -32,20 +32,25 @@ export async function POST(req: NextRequest) {
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
   const montantTTC = montantHT * (1 + tauxTVA / 100);
 
-  const devis = await prisma.devis.create({
-    data: {
-      ...rest,
-      numero,
-      tauxTVA,
-      montantHT,
-      montantTTC,
-      dateValidite: new Date(dateValidite),
-      entrepriseId: entrepriseId || null,
-      contactId: contactId || null,
-      lignes: { create: lignes },
-    },
-    include: { lignes: true },
-  });
+  try {
+    const devis = await prisma.devis.create({
+      data: {
+        ...rest,
+        numero,
+        tauxTVA,
+        montantHT,
+        montantTTC,
+        dateValidite: new Date(dateValidite),
+        entrepriseId: entrepriseId || null,
+        contactId: contactId || null,
+        lignes: { create: lignes.map(({ id: _, ...l }) => l) },
+      },
+      include: { lignes: true },
+    });
 
-  return NextResponse.json(devis, { status: 201 });
+    return NextResponse.json(devis, { status: 201 });
+  } catch (err: unknown) {
+    console.error("Devis creation error:", err);
+    return NextResponse.json({ error: "Erreur lors de la création du devis" }, { status: 500 });
+  }
 }

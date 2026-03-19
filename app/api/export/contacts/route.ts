@@ -10,7 +10,7 @@ export async function GET() {
       orderBy: { nom: "asc" },
     });
 
-    const header = "Nom;Prenom;Email;Telephone;Entreprise;Ville";
+    const header = "Nom;Prénom;Email;Téléphone;Entreprise;Ville";
     const rows = contacts.map((c) => {
       const nom = escapeCsv(c.nom);
       const prenom = escapeCsv(c.prenom);

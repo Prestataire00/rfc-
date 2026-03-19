@@ -67,6 +67,7 @@ export default function SessionsPage() {
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (capacite) params.set("capacite", capacite);
     const res = await fetch(`/api/sessions?${params}`);
+    if (!res.ok) { setLoading(false); return; }
     const data = await res.json();
     setSessions(data.sessions || data);
     if (data.formateurs) setFormateurs(data.formateurs);

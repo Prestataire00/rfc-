@@ -37,8 +37,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <Image src="/logo.svg" alt="FormaPro" width={56} height={56} className="rounded-xl mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900">FormaPro</h1>
+            <Image src="/logo-icon.svg" alt="RFC" width={56} height={56} className="rounded-xl mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900">Rescue Formation Conseil</h1>
             <p className="text-gray-500 mt-1">Plateforme de gestion de formation</p>
           </div>
 

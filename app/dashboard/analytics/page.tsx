@@ -17,11 +17,11 @@ interface AnalyticsData {
 }
 
 const statutLabels: Record<string, string> = {
-  planifiee: "Planifiee",
-  confirmee: "Confirmee",
+  planifiee: "Planifiée",
+  confirmee: "Confirmée",
   en_cours: "En cours",
-  terminee: "Terminee",
-  annulee: "Annulee",
+  terminee: "Terminée",
+  annulee: "Annulée",
 };
 
 const statutColors: Record<string, string> = {
@@ -46,7 +46,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetch("/api/dashboard/analytics")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : null)
       .then((d) => setData(d))
       .catch(() => setData(null))
       .finally(() => setLoading(false));
@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Erreur lors du chargement des donnees analytiques.</p>
+        <p className="text-gray-500">Erreur lors du chargement des données analytiques.</p>
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function AnalyticsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">Statistiques avancees sur les 12 derniers mois</p>
+          <p className="text-sm text-gray-500 mt-1">Statistiques avancées sur les 12 derniers mois</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -297,7 +297,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {data.topFormations.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">Aucune donnee</p>
+              <p className="text-sm text-gray-400 py-4 text-center">Aucune donnée</p>
             ) : (
               <div className="space-y-3">
                 {data.topFormations.map((f, i) => (
@@ -331,7 +331,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {data.topFormateurs.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">Aucune donnee</p>
+              <p className="text-sm text-gray-400 py-4 text-center">Aucune donnée</p>
             ) : (
               <div className="space-y-3">
                 {data.topFormateurs.map((f, i) => (
@@ -400,7 +400,7 @@ export default function AnalyticsPage() {
             <CardTitle className="text-base font-semibold">
               <span className="flex items-center gap-2">
                 <PieChart className="h-4 w-4 text-gray-600" />
-                Repartition des sessions par statut
+                Répartition des sessions par statut
               </span>
             </CardTitle>
           </CardHeader>

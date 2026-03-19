@@ -26,10 +26,10 @@ type Besoin = {
 
 const PIPELINE_COLS = [
   { key: "nouveau", label: "Nouveau", color: "bg-blue-50 border-blue-300" },
-  { key: "qualifie", label: "Qualifie", color: "bg-indigo-50 border-indigo-300" },
-  { key: "devis_envoye", label: "Devis envoye", color: "bg-yellow-50 border-yellow-300" },
-  { key: "accepte", label: "Accepte", color: "bg-green-50 border-green-300" },
-  { key: "refuse", label: "Refuse", color: "bg-red-50 border-red-300" },
+  { key: "qualifie", label: "Qualifié", color: "bg-indigo-50 border-indigo-300" },
+  { key: "devis_envoye", label: "Devis envoyé", color: "bg-yellow-50 border-yellow-300" },
+  { key: "accepte", label: "Accepté", color: "bg-green-50 border-green-300" },
+  { key: "refuse", label: "Refusé", color: "bg-red-50 border-red-300" },
 ];
 
 export default function BesoinsPage() {
@@ -96,7 +96,7 @@ export default function BesoinsPage() {
         <EmptyState
           icon={ClipboardList}
           title="Aucun besoin de formation"
-          description="Creez votre premier besoin de formation"
+          description="Créez votre premier besoin de formation"
           actionLabel="Nouveau besoin"
           actionHref="/besoins/nouveau"
         />
@@ -146,7 +146,7 @@ export default function BesoinsPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Entreprise</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Formation</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Origine</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Priorite</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Priorité</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
               </tr>

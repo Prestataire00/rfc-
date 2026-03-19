@@ -18,18 +18,18 @@ export async function POST(req: NextRequest) {
   try {
     await sendEmail({
       to,
-      subject: "FormaPro - Test email",
+      subject: "RFC - Test email",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-            <h1 style="margin: 0; font-size: 20px;">FormaPro</h1>
+            <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
             <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Email de test</p>
           </div>
           <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
             <p>Cet email confirme que votre configuration SMTP fonctionne correctement.</p>
             <p style="color: #22c55e; font-weight: bold;">La configuration est opérationnelle !</p>
             <p style="color: #64748b; font-size: 12px; margin-top: 24px;">
-              Envoyé depuis FormaPro CRM
+              Envoyé depuis RFC CRM
             </p>
           </div>
         </div>

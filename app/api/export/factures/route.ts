@@ -10,7 +10,7 @@ export async function GET() {
       orderBy: { dateEmission: "desc" },
     });
 
-    const header = "Numero;Client;Montant HT;Montant TTC;Statut;Date emission;Date echeance";
+    const header = "Numéro;Client;Montant HT;Montant TTC;Statut;Date émission;Date échéance";
     const rows = factures.map((f) => {
       const numero = escapeCsv(f.numero);
       const client = escapeCsv(f.entreprise?.nom || "");
@@ -54,10 +54,10 @@ function formatDate(date: Date): string {
 function formatStatut(statut: string): string {
   const labels: Record<string, string> = {
     en_attente: "En attente",
-    envoyee: "Envoyee",
-    payee: "Payee",
+    envoyee: "Envoyée",
+    payee: "Payée",
     en_retard: "En retard",
-    annulee: "Annulee",
+    annulee: "Annulée",
   };
   return labels[statut] || statut;
 }

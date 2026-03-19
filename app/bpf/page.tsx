@@ -30,7 +30,7 @@ export default function BPFPage() {
   useEffect(() => {
     setLoading(true);
     fetch(`/api/bpf?annee=${annee}`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : null)
       .then((d) => { setData(d); setLoading(false); });
   }, [annee]);
 
@@ -137,7 +137,7 @@ export default function BPFPage() {
         <div className="rounded-lg border bg-white p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Provenance des financements</h3>
           {Object.keys(data.financementsParType).length === 0 ? (
-            <p className="text-sm text-gray-400">Aucun financement enregistre</p>
+            <p className="text-sm text-gray-400">Aucun financement enregistré</p>
           ) : (
             <div className="space-y-2">
               {Object.entries(data.financementsParType).map(([type, montant]) => (

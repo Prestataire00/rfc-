@@ -25,7 +25,7 @@ export default function ClientFormationsPage() {
 
   useEffect(() => {
     fetch("/api/client/formations")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setSessions(d); setLoading(false); });
   }, []);
 

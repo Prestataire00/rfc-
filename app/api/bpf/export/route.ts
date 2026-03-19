@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
   lines.push("");
 
   // Section 2: Detail par session
-  lines.push("DETAIL DES SESSIONS");
-  lines.push("Formation;Date debut;Date fin;Lieu;Formateur;Nb stagiaires;Duree (h);CA HT");
+  lines.push("DÉTAIL DES SESSIONS");
+  lines.push("Formation;Date début;Date fin;Lieu;Formateur;Nb stagiaires;Durée (h);CA HT");
 
   for (const s of sessions) {
     const formateur = s.formateur ? `${s.formateur.prenom} ${s.formateur.nom}` : "";
@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
   lines.push("");
 
   // Section 3: Detail par stagiaire
-  lines.push("DETAIL DES STAGIAIRES");
-  lines.push("Formation;Date debut;Stagiaire;Email;Entreprise;Duree (h)");
+  lines.push("DÉTAIL DES STAGIAIRES");
+  lines.push("Formation;Date début;Stagiaire;Email;Entreprise;Durée (h)");
 
   for (const s of sessions) {
     for (const insc of s.inscriptions) {
@@ -88,11 +88,11 @@ export async function GET(req: NextRequest) {
 
   // Section 4: Par catégorie
   lines.push("");
-  lines.push("PAR CATEGORIE");
-  lines.push("Categorie;Nb sessions;Nb stagiaires");
+  lines.push("PAR CATÉGORIE");
+  lines.push("Catégorie;Nb sessions;Nb stagiaires");
   const parCategorie: Record<string, { sessions: number; stagiaires: number }> = {};
   for (const s of sessions) {
-    const cat = s.formation.categorie || "Non categorise";
+    const cat = s.formation.categorie || "Non catégorisé";
     if (!parCategorie[cat]) parCategorie[cat] = { sessions: 0, stagiaires: 0 };
     parCategorie[cat].sessions++;
     parCategorie[cat].stagiaires += s.inscriptions.length;

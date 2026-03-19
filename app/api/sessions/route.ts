@@ -80,13 +80,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "La date de fin doit etre apres la date de debut" }, { status: 400 });
   }
 
-  const session = await prisma.session.create({
-    data: {
-      ...rest,
-      dateDebut: debut,
-      dateFin: fin,
-      ...(formateurId ? { formateurId } : {}),
-    },
-  });
-  return NextResponse.json(session, { status: 201 });
+  try {
+    const session = await prisma.session.create({
+      data: {
+        ...rest,
+        dateDebut: debut,
+        dateFin: fin,
+        ...(formateurId ? { formateurId } : {}),
+      },
+    });
+    return NextResponse.json(session, { status: 201 });
+  } catch (err: unknown) {
+    console.error("Session creation error:", err);
+    return NextResponse.json({ error: "Erreur lors de la création de la session" }, { status: 500 });
+  }
 }

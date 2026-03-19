@@ -17,7 +17,7 @@ type Document = {
 const DOC_TYPE_LABELS: Record<string, string> = {
   convention: "Convention",
   contrat: "Contrat de sous-traitance",
-  feuille_presence: "Feuille de presence",
+  feuille_presence: "Feuille de présence",
   convocation: "Convocation",
   attestation: "Attestation",
   autre: "Autre",
@@ -30,7 +30,7 @@ export default function FormateurDocumentsPage() {
   useEffect(() => {
     // Fetched via the generic documents API filtered by the logged-in formateur
     fetch("/api/formateur/documents")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setDocuments(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);

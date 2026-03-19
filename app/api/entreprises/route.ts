@@ -31,9 +31,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = { ...parsed.data };
-  if (!data.siret) delete data.siret;
+  const data = {
+    nom: parsed.data.nom,
+    siret: parsed.data.siret || null,
+    email: parsed.data.email || null,
+    telephone: parsed.data.telephone || null,
+    site: parsed.data.site || null,
+    secteur: parsed.data.secteur || null,
+    adresse: parsed.data.adresse || null,
+    ville: parsed.data.ville || null,
+    codePostal: parsed.data.codePostal || null,
+    notes: parsed.data.notes || null,
+  };
 
-  const entreprise = await prisma.entreprise.create({ data });
-  return NextResponse.json(entreprise, { status: 201 });
+  try {
+    const entreprise = await prisma.entreprise.create({ data });
+    return NextResponse.json(entreprise, { status: 201 });
+  } catch (err: unknown) {
+    console.error("Entreprise creation error:", err);
+    const msg = err instanceof Error && err.message.includes("Unique constraint")
+      ? "Une entreprise avec ce SIRET existe déjà"
+      : "Erreur lors de la création de l'entreprise";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

@@ -10,7 +10,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    const header = "Titre;Categorie;Duree (h);Tarif (EUR);Niveau;Sessions;Statut";
+    const header = "Titre;Catégorie;Durée (h);Tarif (EUR);Niveau;Sessions;Statut";
     const rows = formations.map((f) => {
       const titre = escapeCsv(f.titre);
       const categorie = escapeCsv(f.categorie || "");

@@ -45,10 +45,11 @@ export default function ModifierContactPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/contacts/${id}`).then((r) => r.json()),
-      fetch("/api/entreprises").then((r) => r.json()),
+      fetch(`/api/contacts/${id}`).then((r) => r.ok ? r.json() : null),
+      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
     ])
       .then(([contact, ents]) => {
+        if (!contact) { setError("Contact non trouvé"); return; }
         setForm({
           nom: contact.nom ?? "",
           prenom: contact.prenom ?? "",

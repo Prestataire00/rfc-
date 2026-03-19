@@ -7,8 +7,8 @@ import { AppShell } from "@/components/layout/AppShell";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FormaPro - Gestion de Formation",
-  description: "Plateforme de gestion de formation sur mesure",
+  title: "RFC - Rescue Formation Conseil",
+  description: "Plateforme de gestion de formation professionnelle",
 };
 
 export default function RootLayout({

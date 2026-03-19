@@ -25,10 +25,11 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/utilisateurs/${id}`).then((r) => r.json()),
-      fetch("/api/formateurs").then((r) => r.json()),
-      fetch("/api/entreprises").then((r) => r.json()),
+      fetch(`/api/utilisateurs/${id}`).then((r) => r.ok ? r.json() : null),
+      fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
+      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
     ]).then(([user, f, e]) => {
+      if (!user) { setError("Utilisateur non trouvé"); setLoading(false); return; }
       setForm({
         email: user.email,
         nom: user.nom,
@@ -38,10 +39,10 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
         formateurId: user.formateurId || "",
         entrepriseId: user.entrepriseId || "",
       });
-      setFormateurs(f);
-      setEntreprises(e);
+      setFormateurs(Array.isArray(f) ? f : []);
+      setEntreprises(Array.isArray(e) ? e : []);
       setLoading(false);
-    });
+    }).catch(() => { setError("Erreur de chargement"); setLoading(false); });
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +66,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
   };
 
   const handleDelete = async () => {
-    if (!confirm("Supprimer ce compte utilisateur ? Cette action est irreversible.")) return;
+    if (!confirm("Supprimer ce compte utilisateur ? Cette action est irréversible.")) return;
     await fetch(`/api/utilisateurs/${id}`, { method: "DELETE" });
     router.push("/utilisateurs");
   };
@@ -105,7 +106,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prenom</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
             <input
               type="text"
               required
@@ -138,7 +139,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -170,7 +171,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
 
         {form.role === "client" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher a l&apos;entreprise</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher à l&apos;entreprise</label>
             <select
               value={form.entrepriseId}
               onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}

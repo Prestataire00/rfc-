@@ -24,7 +24,7 @@ export default function NouvelleEntreprisePage() {
     siret: "",
     email: "",
     telephone: "",
-    siteWeb: "",
+    site: "",
     notes: "",
   });
 
@@ -54,7 +54,12 @@ export default function NouvelleEntreprisePage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la création");
+        const fieldErrors = data.error?.fieldErrors;
+        if (fieldErrors) {
+          const msgs = Object.values(fieldErrors).flat().join(", ");
+          throw new Error(msgs || "Erreur de validation");
+        }
+        throw new Error(data?.error?.message || data?.error || "Erreur lors de la création");
       }
 
       const entreprise = await res.json();
@@ -195,12 +200,12 @@ export default function NouvelleEntreprisePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="siteWeb">Site web</Label>
+              <Label htmlFor="site">Site web</Label>
               <Input
-                id="siteWeb"
-                name="siteWeb"
+                id="site"
+                name="site"
                 type="url"
-                value={form.siteWeb}
+                value={form.site}
                 onChange={handleChange}
                 placeholder="https://www.acme.fr"
               />

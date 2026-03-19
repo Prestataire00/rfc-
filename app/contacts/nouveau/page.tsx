@@ -42,7 +42,7 @@ export default function NouveauContactPage() {
 
   useEffect(() => {
     fetch("/api/entreprises")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : [])
       .then((data) => setEntreprises(Array.isArray(data) ? data : []))
       .catch(() => setEntreprises([]));
   }, []);
@@ -66,7 +66,6 @@ export default function NouveauContactPage() {
     try {
       const payload: Record<string, unknown> = { ...form };
       if (!payload.entrepriseId) delete payload.entrepriseId;
-      if (!payload.email) delete payload.email;
       if (!payload.telephone) delete payload.telephone;
       if (!payload.poste) delete payload.poste;
       if (!payload.notes) delete payload.notes;
@@ -79,7 +78,7 @@ export default function NouveauContactPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la création");
+        const fe = data?.error?.fieldErrors; throw new Error(fe ? Object.values(fe).flat().join(", ") : (data?.error?.message || data?.error || "Erreur lors de la création"));
       }
 
       const contact = await res.json();
@@ -171,14 +170,14 @@ export default function NouveauContactPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="jean.dupont@exemple.fr"
+                placeholder="jean.dupont@exemple.fr" required
               />
             </div>
             <div className="space-y-1.5">

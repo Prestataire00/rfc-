@@ -28,7 +28,7 @@ export default function ModifierEntreprisePage() {
     siret: "",
     email: "",
     telephone: "",
-    siteWeb: "",
+    site: "",
     notes: "",
   });
 
@@ -48,7 +48,7 @@ export default function ModifierEntreprisePage() {
           siret: data.siret ?? "",
           email: data.email ?? "",
           telephone: data.telephone ?? "",
-          siteWeb: data.siteWeb ?? "",
+          site: data.site ?? "",
           notes: data.notes ?? "",
         });
       })
@@ -229,12 +229,12 @@ export default function ModifierEntreprisePage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="siteWeb">Site web</Label>
+              <Label htmlFor="site">Site web</Label>
               <Input
-                id="siteWeb"
-                name="siteWeb"
+                id="site"
+                name="site"
                 type="url"
-                value={form.siteWeb}
+                value={form.site}
                 onChange={handleChange}
                 placeholder="https://www.acme.fr"
               />

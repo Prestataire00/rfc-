@@ -10,7 +10,7 @@ export default function EspaceClientPage() {
 
   useEffect(() => {
     fetch("/api/client/stats")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : null)
       .then((d) => { setStats(d); setLoading(false); });
   }, []);
 

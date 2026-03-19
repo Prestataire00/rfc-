@@ -59,7 +59,7 @@ interface Entreprise {
   siret: string | null;
   email: string | null;
   telephone: string | null;
-  siteWeb: string | null;
+  site: string | null;
   notes: string | null;
   contacts: Contact[];
   devis: Devis[];
@@ -230,16 +230,16 @@ export default function EntrepriseDetailPage() {
                   </a>
                 </div>
               )}
-              {entreprise.siteWeb && (
+              {entreprise.site && (
                 <div className="flex items-center gap-3">
                   <Globe className="h-4 w-4 text-gray-400 shrink-0" />
                   <a
-                    href={entreprise.siteWeb}
+                    href={entreprise.site}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    {entreprise.siteWeb}
+                    {entreprise.site}
                   </a>
                 </div>
               )}

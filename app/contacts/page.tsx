@@ -45,7 +45,7 @@ export default function ContactsPage() {
 
     setLoading(true);
     fetch(`/api/contacts?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : [])
       .then((data) => {
         setContacts(Array.isArray(data) ? data : []);
       })

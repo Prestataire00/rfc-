@@ -58,6 +58,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const formation = await prisma.formation.create({ data: parsed.data });
-  return NextResponse.json(formation, { status: 201 });
+  try {
+    const formation = await prisma.formation.create({ data: parsed.data });
+    return NextResponse.json(formation, { status: 201 });
+  } catch (err: unknown) {
+    console.error("Formation creation error:", err);
+    return NextResponse.json({ error: "Erreur lors de la création de la formation" }, { status: 500 });
+  }
 }

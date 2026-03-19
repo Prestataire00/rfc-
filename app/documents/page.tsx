@@ -19,7 +19,7 @@ type Document = {
 
 const TYPE_LABELS: Record<string, string> = {
   convention: "Convention",
-  feuille_presence: "Feuille de presence",
+  feuille_presence: "Feuille de présence",
   convocation: "Convocation",
   attestation: "Attestation",
   contrat: "Contrat",
@@ -35,13 +35,13 @@ export default function DocumentsPage() {
     const params = new URLSearchParams();
     if (filterType) params.set("type", filterType);
     fetch(`/api/documents?${params}`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setDocuments(d); setLoading(false); });
   }, [filterType]);
 
   return (
     <div>
-      <PageHeader title="Documents" description="Gestion centralisee des documents" />
+      <PageHeader title="Documents" description="Gestion centralisée des documents" />
 
       <div className="flex items-center gap-4 mb-6">
         <select
@@ -59,7 +59,7 @@ export default function DocumentsPage() {
       {loading ? (
         <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>
       ) : documents.length === 0 ? (
-        <EmptyState icon={FolderOpen} title="Aucun document" description="Les documents generes apparaitront ici" />
+        <EmptyState icon={FolderOpen} title="Aucun document" description="Les documents générés apparaîtront ici" />
       ) : (
         <div className="rounded-lg border bg-white overflow-hidden">
           <table className="w-full text-sm">
@@ -68,7 +68,7 @@ export default function DocumentsPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Document</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Formation</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Lie a</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Lié à</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
                 <th className="px-4 py-3"></th>
               </tr>

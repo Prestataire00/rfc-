@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (evaluations.length === 0) {
-    return NextResponse.json({ error: "Aucune evaluation a envoyer" }, { status: 400 });
+    return NextResponse.json({ error: "Aucune évaluation à envoyer" }, { status: 400 });
   }
 
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";

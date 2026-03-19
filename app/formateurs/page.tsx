@@ -38,7 +38,7 @@ export default function FormateursPage() {
 
     setLoading(true);
     fetch(`/api/formateurs?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : [])
       .then((data) => setFormateurs(Array.isArray(data) ? data : []))
       .catch(() => setFormateurs([]))
       .finally(() => setLoading(false));

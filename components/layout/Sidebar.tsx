@@ -72,9 +72,9 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b px-6">
         <div className="flex items-center gap-2">
-          <Image src="/logo.svg" alt="FormaPro" width={36} height={36} className="rounded-lg" />
+          <Image src="/logo-icon.svg" alt="RFC" width={36} height={36} className="rounded-lg" />
           <div>
-            <span className="font-semibold text-gray-900 text-sm">FormaPro</span>
+            <span className="font-semibold text-gray-900 text-sm">RFC</span>
             <span className="block text-[10px] text-gray-400">{roleLabels[role] || role}</span>
           </div>
         </div>

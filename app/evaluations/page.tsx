@@ -29,7 +29,7 @@ export default function EvaluationsPage() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (filterType) params.set("type", filterType);
-    fetch(`/api/evaluations?${params}`).then((r) => r.json()).then((d) => {
+    fetch(`/api/evaluations?${params}`).then((r) => r.ok ? r.json() : []).then((d) => {
       setEvaluations(d);
       setLoading(false);
     });
@@ -44,11 +44,11 @@ export default function EvaluationsPage() {
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">Total evaluations</p>
+          <p className="text-sm text-gray-500">Total évaluations</p>
           <p className="text-2xl font-bold text-gray-900">{evaluations.length}</p>
         </div>
         <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">Completees</p>
+          <p className="text-sm text-gray-500">Complétées</p>
           <p className="text-2xl font-bold text-green-600">{completedCount}</p>
         </div>
         <div className="rounded-lg border bg-white p-4">
@@ -75,7 +75,7 @@ export default function EvaluationsPage() {
       {loading ? (
         <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>
       ) : evaluations.length === 0 ? (
-        <EmptyState icon={MessageSquare} title="Aucune evaluation" description="Les evaluations apparaitront ici" />
+        <EmptyState icon={MessageSquare} title="Aucune évaluation" description="Les évaluations apparaîtront ici" />
       ) : (
         <div className="rounded-lg border bg-white overflow-hidden">
           <table className="w-full text-sm">
@@ -84,7 +84,7 @@ export default function EvaluationsPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Formation</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Cible</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Repondant</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Répondant</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Note</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
@@ -112,7 +112,7 @@ export default function EvaluationsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${ev.estComplete ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                      {ev.estComplete ? "Complete" : "En attente"}
+                      {ev.estComplete ? "Complétée" : "En attente"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(ev.createdAt)}</td>

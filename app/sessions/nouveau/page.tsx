@@ -34,8 +34,8 @@ export default function NouvelleSessionPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/formations").then((r) => r.json()),
-      fetch("/api/formateurs").then((r) => r.json()),
+      fetch("/api/formations").then((r) => r.ok ? r.json() : []),
+      fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
     ]).then(([f, fo]) => {
       setFormations(Array.isArray(f) ? f : f.formations || []);
       setFormateurs(Array.isArray(fo) ? fo : fo.formateurs || []);
@@ -71,16 +71,16 @@ export default function NouvelleSessionPage() {
 
     setLoading(true);
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       formationId: formData.formationId,
-      ...(formData.formateurId ? { formateurId: formData.formateurId } : {}),
       dateDebut: formData.dateDebut,
       dateFin: formData.dateFin,
-      lieu: formData.lieu || null,
       capaciteMax: formData.capaciteMax,
       statut: formData.statut,
-      notes: formData.notes || null,
     };
+    if (formData.formateurId) payload.formateurId = formData.formateurId;
+    if (formData.lieu) payload.lieu = formData.lieu;
+    if (formData.notes) payload.notes = formData.notes;
 
     const res = await fetch("/api/sessions", {
       method: "POST",
@@ -93,7 +93,13 @@ export default function NouvelleSessionPage() {
       router.push(`/sessions/${data.id}`);
     } else {
       const data = await res.json();
-      setError(data.error?.message || "Une erreur est survenue.");
+      const fieldErrors = data.error?.fieldErrors;
+      if (fieldErrors) {
+        const msgs = Object.values(fieldErrors).flat().join(", ");
+        setError(msgs || "Une erreur est survenue.");
+      } else {
+        setError(data.error?.message || data.error || "Une erreur est survenue.");
+      }
       setLoading(false);
     }
   };

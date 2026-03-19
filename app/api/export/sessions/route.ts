@@ -12,7 +12,7 @@ export async function GET() {
       orderBy: { dateDebut: "desc" },
     });
 
-    const header = "Formation;Formateur;Date debut;Date fin;Lieu;Inscrits;Capacite;Statut";
+    const header = "Formation;Formateur;Date début;Date fin;Lieu;Inscrits;Capacité;Statut";
     const rows = sessions.map((s) => {
       const formation = escapeCsv(s.formation.titre);
       const formateur = s.formateur
@@ -58,11 +58,11 @@ function formatDate(date: Date): string {
 
 function formatStatut(statut: string): string {
   const labels: Record<string, string> = {
-    planifiee: "Planifiee",
-    confirmee: "Confirmee",
+    planifiee: "Planifiée",
+    confirmee: "Confirmée",
     en_cours: "En cours",
-    terminee: "Terminee",
-    annulee: "Annulee",
+    terminee: "Terminée",
+    annulee: "Annulée",
   };
   return labels[statut] || statut;
 }

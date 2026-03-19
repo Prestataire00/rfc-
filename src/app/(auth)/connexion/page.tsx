@@ -8,7 +8,7 @@ export default function ConnexionPage() {
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center gap-2">
             <GraduationCap className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">FormaPro</h1>
+            <h1 className="text-2xl font-bold">Rescue Formation Conseil</h1>
           </div>
           <p className="text-sm text-muted-foreground">
             Plateforme de gestion de la formation

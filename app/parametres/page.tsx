@@ -67,7 +67,7 @@ export default function ParamètresPage() {
               <div><span className="text-gray-500">SMTP_PORT=</span><span className="text-blue-600">587</span></div>
               <div><span className="text-gray-500">SMTP_USER=</span><span className="text-blue-600">votre-email@gmail.com</span></div>
               <div><span className="text-gray-500">SMTP_PASS=</span><span className="text-blue-600">votre-mot-de-passe-app</span></div>
-              <div><span className="text-gray-500">SMTP_FROM=</span><span className="text-blue-600">FormaPro &lt;noreply@formapro.fr&gt;</span></div>
+              <div><span className="text-gray-500">SMTP_FROM=</span><span className="text-blue-600">RFC &lt;noreply@rfc-formation.fr&gt;</span></div>
             </div>
 
             <div className="border-t pt-4">
@@ -123,7 +123,7 @@ export default function ParamètresPage() {
               <ol className="text-sm text-gray-600 space-y-1.5 list-decimal list-inside">
                 <li>Activez la vérification en 2 étapes sur votre compte Google</li>
                 <li>Allez dans Sécurité &gt; Mots de passe des applications</li>
-                <li>Créez un mot de passe pour &quot;Autre (FormaPro)&quot;</li>
+                <li>Créez un mot de passe pour &quot;Autre (RFC)&quot;</li>
                 <li>Utilisez ce mot de passe comme <code className="bg-gray-100 px-1 rounded text-xs">SMTP_PASS</code></li>
               </ol>
             </div>
@@ -136,7 +136,7 @@ export default function ParamètresPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5 text-green-600" />
-                Base de donnees
+                Base de données
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -174,7 +174,7 @@ export default function ParamètresPage() {
                 <span className="font-medium">JWT</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Roles</span>
+                <span className="text-gray-500">Rôles</span>
                 <span className="font-medium">Admin, Formateur, Client</span>
               </div>
             </CardContent>

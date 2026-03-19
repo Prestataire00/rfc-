@@ -29,8 +29,16 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { specialites, ...rest } = parsed.data;
-  const formateur = await prisma.formateur.create({
-    data: { ...rest, specialites: JSON.stringify(specialites) },
-  });
-  return NextResponse.json(formateur, { status: 201 });
+  try {
+    const formateur = await prisma.formateur.create({
+      data: { ...rest, specialites: JSON.stringify(specialites) },
+    });
+    return NextResponse.json(formateur, { status: 201 });
+  } catch (err: unknown) {
+    console.error("Formateur creation error:", err);
+    const msg = err instanceof Error && err.message.includes("Unique constraint")
+      ? "Un formateur avec cet email existe déjà"
+      : "Erreur lors de la création du formateur";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

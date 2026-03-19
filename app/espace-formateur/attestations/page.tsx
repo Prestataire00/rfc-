@@ -21,7 +21,7 @@ export default function AttestationsPage() {
 
   useEffect(() => {
     fetch("/api/formateur/mes-sessions")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => {
         setSessions(d.filter((s: any) => s.statut === "terminee"));
         setLoading(false);
@@ -36,7 +36,7 @@ export default function AttestationsPage() {
     });
     if (res.ok) {
       // Refresh
-      const updated = await fetch("/api/formateur/mes-sessions").then((r) => r.json());
+      const updated = await fetch("/api/formateur/mes-sessions").then((r) => r.ok ? r.json() : []);
       setSessions(updated.filter((s: any) => s.statut === "terminee"));
     }
   }
@@ -47,7 +47,7 @@ export default function AttestationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ statut: "validee" }),
     });
-    const updated = await fetch("/api/formateur/mes-sessions").then((r) => r.json());
+    const updated = await fetch("/api/formateur/mes-sessions").then((r) => r.ok ? r.json() : []);
     setSessions(updated.filter((s: any) => s.statut === "terminee"));
   }
 
@@ -57,7 +57,7 @@ export default function AttestationsPage() {
 
   return (
     <div>
-      <PageHeader title="Attestations" description="Generez et validez les attestations de fin de formation" />
+      <PageHeader title="Attestations" description="Générez et validez les attestations de fin de formation" />
 
       {sessions.length === 0 ? (
         <div className="text-center py-12 text-gray-400">Aucune session terminee</div>

@@ -15,7 +15,7 @@ type Document = {
 
 const TYPE_LABELS: Record<string, string> = {
   convention: "Convention",
-  feuille_presence: "Feuille de presence",
+  feuille_presence: "Feuille de présence",
   attestation: "Attestation",
   facture: "Facture",
   convocation: "Convocation",
@@ -29,7 +29,7 @@ export default function ClientDocumentsPage() {
 
   useEffect(() => {
     fetch("/api/client/documents")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => { setDocuments(d); setLoading(false); });
   }, []);
 

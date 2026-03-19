@@ -51,14 +51,14 @@ export default function DisponibilitesPage() {
 
   return (
     <div>
-      <PageHeader title="Mes Disponibilites" description="Gerez vos creneaux de disponibilite et d'indisponibilite" />
+      <PageHeader title="Mes Disponibilités" description="Gérez vos créneaux de disponibilité et d'indisponibilité" />
 
       <div className="flex justify-end mb-4">
         <button
           onClick={() => setShowForm(!showForm)}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          <Plus className="h-4 w-4" /> Ajouter un creneau
+          <Plus className="h-4 w-4" /> Ajouter un créneau
         </button>
       </div>
 
@@ -123,7 +123,7 @@ export default function DisponibilitesPage() {
       {loading ? (
         <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>
       ) : dispos.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">Aucun creneau enregistre</div>
+        <div className="text-center py-12 text-gray-400">Aucun créneau enregistré</div>
       ) : (
         <div className="rounded-lg border bg-white overflow-hidden">
           <table className="w-full text-sm">

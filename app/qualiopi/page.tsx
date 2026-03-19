@@ -87,7 +87,7 @@ export default function QualiopiPage() {
 
   const fetchData = () => {
     fetch("/api/qualiopi")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : { indicateurs: [], stats: {} })
       .then((data) => {
         setIndicateurs(data.indicateurs);
         setStats(data.stats);
@@ -514,7 +514,7 @@ export default function QualiopiPage() {
                             "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
                             p.valide ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                           )}>
-                            {p.valide ? "Valide" : "A valider"}
+                            {p.valide ? "Validé" : "À valider"}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-2">

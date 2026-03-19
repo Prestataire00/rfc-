@@ -125,7 +125,7 @@ async function main() {
       email: "admin@formapro.fr",
       password: hash("admin123"),
       nom: "Admin",
-      prenom: "FormaPro",
+      prenom: "RFC",
       role: "admin",
     },
   });

@@ -37,9 +37,11 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
 
   useEffect(() => {
     fetch(`/api/evaluations/public/${token}`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data.error) {
+        if (!data) {
+          setError("Impossible de charger l'évaluation");
+        } else if (data.error) {
           setError(data.error);
         } else {
           setInfo(data);
@@ -94,7 +96,7 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Merci !</h1>
           <p className="text-gray-600">
-            Votre evaluation a bien ete enregistree. Vos retours nous aident a ameliorer nos formations.
+            Votre évaluation a bien été enregistrée. Vos retours nous aident à améliorer nos formations.
           </p>
         </div>
       </div>
@@ -106,7 +108,7 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="bg-blue-600 text-white rounded-t-xl p-6">
-          <h1 className="text-xl font-bold">FormaPro</h1>
+          <h1 className="text-xl font-bold">Rescue Formation Conseil</h1>
           <p className="text-blue-100 text-sm mt-1">
             {info?.type === "satisfaction_froid"
               ? "Questionnaire de satisfaction a froid"

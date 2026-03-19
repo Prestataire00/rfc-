@@ -33,7 +33,7 @@ export default function UtilisateursPage() {
 
   useEffect(() => {
     fetch("/api/utilisateurs")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((data) => {
         setUsers(data);
         setLoading(false);

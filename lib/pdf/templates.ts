@@ -12,7 +12,7 @@ function header(title: string) {
     {
       columns: [
         {
-          text: "FormaPro",
+          text: "Rescue Formation Conseil",
           style: "brand",
           width: "auto",
         },
@@ -30,7 +30,7 @@ function header(title: string) {
 
 function footer() {
   return {
-    text: "FormaPro - Plateforme de Gestion de Formation",
+    text: "RFC - Rescue Formation Conseil",
     style: "footer",
     alignment: "center" as const,
     margin: [0, 20, 0, 0] as [number, number, number, number],
@@ -66,7 +66,7 @@ export function conventionPdf(data: {
             width: "50%",
             stack: [
               { text: "ORGANISME DE FORMATION", style: "label" },
-              { text: "FormaPro", style: "value", bold: true },
+              { text: "Rescue Formation Conseil", style: "value", bold: true },
               { text: "Organisme de formation declare", style: "value" },
             ],
           },
@@ -117,7 +117,7 @@ export function conventionPdf(data: {
             width: "50%",
             stack: [
               { text: "Pour l'organisme de formation", style: "label" },
-              { text: "FormaPro", style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] },
+              { text: "Rescue Formation Conseil", style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] },
               { text: "Date et signature :", style: "label", margin: [0, 30, 0, 0] as [number, number, number, number] },
             ],
           },
@@ -159,7 +159,7 @@ export function attestationPdf(data: {
         margin: [0, 20, 0, 30] as [number, number, number, number],
       },
       {
-        text: "Nous soussignes, FormaPro, organisme de formation, attestons que :",
+        text: "Nous soussignes, Rescue Formation Conseil, organisme de formation, attestons que :",
         style: "value",
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
@@ -203,7 +203,7 @@ export function attestationPdf(data: {
         style: "value",
         margin: [0, 30, 0, 5] as [number, number, number, number],
       },
-      { text: "Pour FormaPro", style: "label" },
+      { text: "Pour RFC", style: "label" },
       { text: "Le Directeur", style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] },
       footer(),
     ],
@@ -263,7 +263,7 @@ export function convocationPdf(data: {
         margin: [0, 0, 0, 20] as [number, number, number, number],
       },
       { text: "Cordialement,", style: "value" },
-      { text: "L'equipe FormaPro", style: "value", bold: true, margin: [0, 5, 0, 0] as [number, number, number, number] },
+      { text: "L'équipe RFC", style: "value", bold: true, margin: [0, 5, 0, 0] as [number, number, number, number] },
       footer(),
     ],
     styles: defaultStyles,

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FormaPro - Gestion de la Formation",
+  title: "RFC - Rescue Formation Conseil",
   description: "Plateforme de gestion de la formation sur mesure",
 };
 

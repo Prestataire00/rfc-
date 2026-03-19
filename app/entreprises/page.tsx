@@ -38,7 +38,7 @@ export default function EntreprisesPage() {
 
     setLoading(true);
     fetch(`/api/entreprises?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : [])
       .then((data) => setEntreprises(Array.isArray(data) ? data : []))
       .catch(() => setEntreprises([]))
       .finally(() => setLoading(false));

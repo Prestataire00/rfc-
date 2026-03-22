@@ -40,3 +40,7 @@ prisma/dev.db-journal
 
 # Local Netlify folder
 .netlify
+
+# Auth cookies
+cookie
+*.cookie

@@ -75,7 +75,7 @@ export default function NouvelUtilisateurPage() {
               required
               value={form.prenom}
               onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
             />
           </div>
           <div>
@@ -85,7 +85,7 @@ export default function NouvelUtilisateurPage() {
               required
               value={form.nom}
               onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
             />
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function NouvelUtilisateurPage() {
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
           />
         </div>
 
@@ -109,7 +109,7 @@ export default function NouvelUtilisateurPage() {
             minLength={6}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
             placeholder="Minimum 6 caractères"
           />
         </div>
@@ -119,7 +119,7 @@ export default function NouvelUtilisateurPage() {
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value, formateurId: "", entrepriseId: "" })}
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
           >
             <option value="admin">Administrateur</option>
             <option value="formateur">Formateur</option>
@@ -133,7 +133,7 @@ export default function NouvelUtilisateurPage() {
             <select
               value={form.formateurId}
               onChange={(e) => setForm({ ...form, formateurId: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
             >
               <option value="">— Aucun —</option>
               {formateurs.map((f) => (
@@ -151,7 +151,7 @@ export default function NouvelUtilisateurPage() {
             <select
               value={form.entrepriseId}
               onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
             >
               <option value="">— Aucune —</option>
               {entreprises.map((ent) => (

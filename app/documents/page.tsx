@@ -27,7 +27,7 @@ type Entreprise = { id: string; nom: string };
 
 const TYPE_LABELS: Record<string, string> = {
   convention: "Convention",
-  feuille_presence: "Feuille de pr\u00e9sence",
+  feuille_presence: "Feuille de présence",
   convocation: "Convocation",
   attestation: "Attestation",
   contrat: "Contrat",
@@ -145,7 +145,7 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <PageHeader title="Documents" description="Gestion centralis\u00e9e des documents" />
+      <PageHeader title="Documents" description="Gestion centralisée des documents" />
 
       <div className="flex items-center justify-between gap-4 mb-6">
         <select
@@ -279,7 +279,7 @@ export default function DocumentsPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Document</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Type</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-400">{"Li\u00e9 \u00e0"}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">{"Lié à"}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Date</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-400">Actions</th>
               </tr>
@@ -359,7 +359,7 @@ export default function DocumentsPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-1.5 rounded-md text-red-600 hover:bg-red-900/20"
-                              title={"T\u00e9l\u00e9charger"}
+                              title="Télécharger"
                             >
                               <Download className="h-4 w-4" />
                             </a>

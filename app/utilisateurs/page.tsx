@@ -231,7 +231,7 @@ export default function UtilisateursPage() {
               placeholder="Nouveau mot de passe (min. 6 car.)"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
             />
             {resetMsg && (
               <p className={`text-sm ${resetMsg.includes("succes") ? "text-green-600" : "text-red-600"}`}>

@@ -63,25 +63,25 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
 
   const sidebarContent = (
     <aside className={cn(
-      "flex flex-col bg-gray-900 h-full",
+      "flex flex-col bg-white dark:bg-gray-900 h-full",
       // Desktop: fixed sidebar
       "lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64",
       // Mobile: full width
       "w-72"
     )}>
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b border-gray-700 px-6">
+      <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="flex items-center gap-2">
           <Image src="/logo-icon.svg" alt="RFC" width={36} height={36} />
           <div>
-            <span className="font-semibold text-white text-sm">RFC</span>
-            <span className="block text-[10px] text-gray-400">{roleLabels[role] || role}</span>
+            <span className="font-semibold text-gray-900 dark:text-white text-sm">RFC</span>
+            <span className="block text-[10px] text-gray-500 dark:text-gray-400">{roleLabels[role] || role}</span>
           </div>
         </div>
         {/* Mobile close button */}
         {onClose && (
-          <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-gray-700">
-            <X className="h-5 w-5 text-gray-400" />
+          <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </button>
         )}
       </div>
@@ -98,10 +98,10 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
               onClick={handleNavClick}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive ? "bg-red-700/20 text-red-400" : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                isActive ? "bg-red-100 dark:bg-red-700/20 text-red-400" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
               )}
             >
-              <Icon className={cn("h-4 w-4", isActive ? "text-red-400" : "text-gray-400")} />
+              <Icon className={cn("h-4 w-4", isActive ? "text-red-400" : "text-gray-500 dark:text-gray-400")} />
               {label}
             </Link>
           );
@@ -109,22 +109,22 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       </nav>
 
       {/* User & Logout */}
-      <div className="border-t border-gray-700 p-4 space-y-2">
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-red-900/50 flex items-center justify-center text-red-400 font-semibold text-xs">
+          <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-400 font-semibold text-xs">
             {userName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{userName}</p>
-            <p className="text-xs text-gray-400">{roleLabels[role]}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabels[role]}</p>
           </div>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md transition-colors"
+          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          {"D\u00e9connexion"}
+          {"Déconnexion"}
         </button>
       </div>
     </aside>

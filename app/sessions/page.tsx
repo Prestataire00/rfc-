@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight, List, Calendar, Search, AlertTriangle, Download } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, List, Search, AlertTriangle, Download, Pencil, Trash2, LayoutGrid } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -45,7 +45,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [formateurs, setFormateurs] = useState<Formateur[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"liste" | "calendrier">("liste");
+  const [activeTab, setActiveTab] = useState<"liste" | "calendrier" | "grille">("liste");
   const [statut, setStatut] = useState("");
   const [formateurId, setFormateurId] = useState("");
   const [search, setSearch] = useState("");
@@ -108,6 +108,27 @@ export default function SessionsPage() {
 
   const hasFilters = search || statut || formateurId || capacite;
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Supprimer cette session ?")) return;
+    const res = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+    }
+  };
+
+  const handleChangeStatut = async (id: string, newStatut: string) => {
+    const res = await fetch(`/api/sessions/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statut: newStatut }),
+    });
+    if (res.ok) {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, statut: newStatut } : s))
+      );
+    }
+  };
+
   const getCapacityInfo = (s: Session) => {
     const ratio = s._count.inscriptions / s.capaciteMax;
     if (ratio >= 1) return { color: "text-red-600 bg-red-900/20", label: "Complet" };
@@ -145,6 +166,15 @@ export default function SessionsPage() {
           )}
         >
           <List className="h-4 w-4" /> Liste
+        </button>
+        <button
+          onClick={() => setActiveTab("grille")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+            activeTab === "grille" ? "bg-gray-800 text-gray-100 shadow-sm" : "text-gray-400 hover:text-gray-100"
+          )}
+        >
+          <LayoutGrid className="h-4 w-4" /> Grille
         </button>
         <button
           onClick={() => setActiveTab("calendrier")}
@@ -232,6 +262,7 @@ export default function SessionsPage() {
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Lieu</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Participants</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -300,11 +331,178 @@ export default function SessionsPage() {
                           <td className="px-4 py-3">
                             {st && <StatutBadge label={st.label} color={st.color} />}
                           </td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/sessions/${s.id}/modifier`}
+                                className="p-1.5 rounded-md hover:bg-gray-600 text-gray-400 hover:text-gray-100 transition-colors"
+                                title="Modifier"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Link>
+                              <button
+                                onClick={() => handleDelete(s.id)}
+                                className="p-1.5 rounded-md hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                              <select
+                                value={s.statut}
+                                onChange={(e) => handleChangeStatut(s.id, e.target.value)}
+                                className="h-8 rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-gray-300"
+                              >
+                                {Object.entries(SESSION_STATUTS).map(([v, opt]) => (
+                                  <option key={v} value={v}>{opt.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+              </div>
+              <p className="text-sm text-gray-400 mt-3">
+                {sessions.length} session{sessions.length > 1 ? "s" : ""}
+              </p>
+            </>
+          )}
+        </>
+      )}
+
+      {activeTab === "grille" && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Rechercher (formation, formateur, lieu)..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <select
+              value={statut}
+              onChange={(e) => setStatut(e.target.value)}
+              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+            >
+              {statutOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <select
+              value={formateurId}
+              onChange={(e) => setFormateurId(e.target.value)}
+              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+            >
+              <option value="">Tous les formateurs</option>
+              {formateurs.map((f) => (
+                <option key={f.id} value={f.id}>{f.prenom} {f.nom}</option>
+              ))}
+            </select>
+            {hasFilters && (
+              <button
+                onClick={() => { setSearch(""); setStatut(""); setFormateurId(""); setCapacite(""); }}
+                className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
+              >
+                Effacer
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+            </div>
+          ) : sessions.length === 0 ? (
+            <EmptyState
+              icon={CalendarDays}
+              title="Aucune session"
+              description={hasFilters ? "Aucune session ne correspond aux filtres." : "Planifiez votre première session de formation"}
+              actionLabel={hasFilters ? undefined : "Nouvelle session"}
+              actionHref={hasFilters ? undefined : "/sessions/nouveau"}
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sessions.map((s) => {
+                  const st = SESSION_STATUTS[s.statut as keyof typeof SESSION_STATUTS];
+                  const cap = getCapacityInfo(s);
+                  return (
+                    <div
+                      key={s.id}
+                      className="rounded-lg border border-gray-700 bg-gray-800 p-4 flex flex-col gap-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/sessions/${s.id}`}
+                          className="font-medium text-red-600 hover:underline text-sm leading-tight"
+                        >
+                          {s.formation.titre}
+                        </Link>
+                        {st && <StatutBadge label={st.label} color={st.color} />}
+                      </div>
+
+                      <div className="text-sm text-gray-400">
+                        {s.formateur ? (
+                          `${s.formateur.prenom} ${s.formateur.nom}`
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-orange-500">
+                            <AlertTriangle className="h-3.5 w-3.5" /> Non assigné
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-gray-400">
+                        {formatDate(s.dateDebut)} → {formatDate(s.dateFin)}
+                      </div>
+
+                      {s.lieu && (
+                        <div className="text-xs text-gray-500">{s.lieu}</div>
+                      )}
+
+                      <div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className={cn("font-medium", cap.color.split(" ")[0])}>
+                            {s._count.inscriptions}/{s.capaciteMax}
+                          </span>
+                          <span className="text-xs text-gray-500">participants</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-700 rounded-full mt-1">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all",
+                              s._count.inscriptions >= s.capaciteMax ? "bg-red-600" :
+                              s._count.inscriptions >= s.capaciteMax * 0.8 ? "bg-orange-600" : "bg-green-600"
+                            )}
+                            style={{ width: `${Math.min(100, (s._count.inscriptions / s.capaciteMax) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-700">
+                        <Link
+                          href={`/sessions/${s.id}/modifier`}
+                          className="p-1.5 rounded-md hover:bg-gray-600 text-gray-400 hover:text-gray-100 transition-colors"
+                          title="Modifier"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(s.id)}
+                          className="p-1.5 rounded-md hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <p className="text-sm text-gray-400 mt-3">
                 {sessions.length} session{sessions.length > 1 ? "s" : ""}

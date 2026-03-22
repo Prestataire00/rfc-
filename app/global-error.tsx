@@ -16,13 +16,13 @@ export default function GlobalError({
               Une erreur est survenue
             </h1>
             <p style={{ color: "#666", marginBottom: 24 }}>
-              {"Veuillez r\u00e9essayer ou retourner \u00e0 l'accueil."}
+              {"Veuillez réessayer ou retourner à l'accueil."}
             </p>
             <button
               onClick={() => reset()}
               style={{ padding: "10px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", marginRight: 8 }}
             >
-              {"R\u00e9essayer"}
+              {"Réessayer"}
             </button>
             <a
               href="/dashboard"

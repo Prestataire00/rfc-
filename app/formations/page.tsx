@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -46,6 +46,7 @@ export default function FormationsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -87,6 +88,36 @@ export default function FormationsPage() {
     } else {
       setSortBy(field);
       setSortOrder(field === "titre" ? "asc" : "desc");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Supprimer cette formation ?")) return;
+    try {
+      const res = await fetch(`/api/formations/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setFormations((prev) => prev.filter((f) => f.id !== id));
+        setTotal((prev) => prev - 1);
+      }
+    } catch {
+      // silent fail
+    }
+  };
+
+  const handleToggleActif = async (id: string, currentActif: boolean) => {
+    try {
+      const res = await fetch(`/api/formations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actif: !currentActif }),
+      });
+      if (res.ok) {
+        setFormations((prev) =>
+          prev.map((f) => (f.id === id ? { ...f, actif: !currentActif } : f))
+        );
+      }
+    } catch {
+      // silent fail
     }
   };
 
@@ -171,15 +202,41 @@ export default function FormationsPage() {
             Effacer filtres
           </button>
         )}
+
+        {/* Grid/List toggle */}
+        <div className="flex items-center gap-1 ml-auto">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
+              viewMode === "list"
+                ? "bg-gray-700 text-gray-100"
+                : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+            }`}
+            title="Vue liste"
+          >
+            <List className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
+              viewMode === "grid"
+                ? "bg-gray-700 text-gray-100"
+                : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+            }`}
+            title="Vue grille"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-          </div>
-        ) : formations.length === 0 ? (
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+        </div>
+      ) : formations.length === 0 ? (
+        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm">
           <EmptyState
             icon={BookOpen}
             title="Aucune formation trouvée"
@@ -191,7 +248,10 @@ export default function FormationsPage() {
             actionLabel={hasFilters ? undefined : "Nouvelle formation"}
             actionHref={hasFilters ? undefined : "/formations/nouveau"}
           />
-        ) : (
+        </div>
+      ) : viewMode === "list" ? (
+        /* Table view */
+        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
@@ -230,6 +290,9 @@ export default function FormationsPage() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Statut
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -275,13 +338,122 @@ export default function FormationsPage() {
                         </span>
                       )}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <Link
+                          href={`/formations/${formation.id}/modifier`}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
+                          title="Modifier"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleToggleActif(formation.id, formation.actif)}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
+                          title={formation.actif ? "Désactiver" : "Activer"}
+                        >
+                          {formation.actif ? (
+                            <ToggleRight className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(formation.id)}
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* Grid view */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {formations.map((formation) => {
+            const niveauLabel = getNiveauLabel(formation.niveau);
+            const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
+            return (
+              <div
+                key={formation.id}
+                className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm p-5 flex flex-col gap-3 hover:border-gray-600 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <Link
+                    href={`/formations/${formation.id}`}
+                    className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline line-clamp-2"
+                  >
+                    {formation.titre}
+                  </Link>
+                  {formation.actif ? (
+                    <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2 py-0.5 text-xs font-medium shrink-0">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2 py-0.5 text-xs font-medium shrink-0">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {formation.categorie && (
+                    <span className="inline-flex items-center rounded-full bg-gray-700 text-gray-300 border border-gray-600 px-2.5 py-0.5 text-xs font-medium">
+                      {formation.categorie}
+                    </span>
+                  )}
+                  <StatutBadge label={niveauLabel} color={niveauColor} />
+                </div>
+
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>{formatDuree(formation.duree)}</span>
+                  <span className="font-medium text-gray-100">{formatCurrency(formation.tarif)}</span>
+                </div>
+
+                <div>
+                  <span className="inline-flex items-center rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
+                    {formation._count.sessions} session{formation._count.sessions !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 mt-auto pt-2 border-t border-gray-700">
+                  <Link
+                    href={`/formations/${formation.id}/modifier`}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
+                    title="Modifier"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Link>
+                  <button
+                    onClick={() => handleToggleActif(formation.id, formation.actif)}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
+                    title={formation.actif ? "Désactiver" : "Activer"}
+                  >
+                    {formation.actif ? (
+                      <ToggleRight className="h-4 w-4 text-green-400" />
+                    ) : (
+                      <ToggleLeft className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(formation.id)}
+                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Pagination */}
       {!loading && formations.length > 0 && (

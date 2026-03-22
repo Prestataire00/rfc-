@@ -142,7 +142,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                     required
                     value={form.prenom}
                     onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
@@ -152,7 +152,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                     required
                     value={form.nom}
                     onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -164,7 +164,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                   required
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
 
@@ -174,7 +174,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                   type="tel"
                   value={form.telephone}
                   onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
 
@@ -184,7 +184,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                   type="text"
                   value={form.entreprise}
                   onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
                   placeholder="Nom de votre entreprise"
                 />
               </div>

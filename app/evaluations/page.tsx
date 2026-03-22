@@ -92,9 +92,9 @@ export default function EvaluationsPage() {
             </thead>
             <tbody>
               {evaluations.map((ev) => (
-                <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-700">
+                <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-700 cursor-pointer" onClick={() => window.location.href = `/evaluations/${ev.id}`}>
                   <td className="px-4 py-3">
-                    <Link href={`/sessions/${ev.session.id}`} className="text-red-600 hover:underline">
+                    <Link href={`/evaluations/${ev.id}`} className="text-red-600 hover:underline" onClick={(e) => e.stopPropagation()}>
                       {ev.session.formation.titre}
                     </Link>
                   </td>

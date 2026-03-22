@@ -181,7 +181,7 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
               rows={4}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
               placeholder="Vos remarques sont precieuses pour nous..."
             />
           </div>

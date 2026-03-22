@@ -25,6 +25,28 @@
     --ring: 358 82% 44%;
     --radius: 0.5rem;
   }
+
+  html.light {
+    --background: 0 0% 96%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 358 82% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 358 82% 44%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 358 82% 44%;
+  }
 }
 
 @layer base {
@@ -35,3 +57,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Light mode overrides for hardcoded Tailwind dark classes used across pages */
+html.light .bg-gray-800 { background-color: white !important; }
+html.light .bg-gray-900 { background-color: rgb(249 250 251) !important; }
+html.light .bg-gray-700 { background-color: rgb(243 244 246) !important; }
+html.light .text-gray-100 { color: rgb(17 24 39) !important; }
+html.light .text-gray-200 { color: rgb(31 41 55) !important; }
+html.light .text-gray-300 { color: rgb(55 65 81) !important; }
+html.light .text-gray-400 { color: rgb(107 114 128) !important; }
+html.light .border-gray-700 { border-color: rgb(229 231 235) !important; }
+html.light .border-gray-600 { border-color: rgb(209 213 219) !important; }
+html.light .hover\:bg-gray-700:hover { background-color: rgb(243 244 246) !important; }
+html.light .bg-\[#262626\] { background-color: rgb(249 250 251) !important; }
+html.light .bg-red-900\/20 { background-color: rgb(254 242 242) !important; }
+html.light .bg-red-900\/30 { background-color: rgb(254 226 226) !important; }
+html.light .bg-green-900\/20 { background-color: rgb(240 253 244) !important; }
+html.light .bg-green-900\/30 { background-color: rgb(220 252 231) !important; }
+html.light .bg-indigo-900\/20 { background-color: rgb(238 242 255) !important; }
+html.light .bg-indigo-900\/30 { background-color: rgb(224 231 255) !important; }
+html.light .bg-yellow-900\/20 { background-color: rgb(254 252 232) !important; }
+html.light .bg-yellow-900\/30 { background-color: rgb(254 249 195) !important; }
+html.light .bg-orange-900\/20 { background-color: rgb(255 247 237) !important; }
+html.light .bg-amber-900\/20 { background-color: rgb(255 251 235) !important; }
+html.light .bg-purple-900\/20 { background-color: rgb(250 245 255) !important; }
+html.light .text-red-400 { color: rgb(185 28 28) !important; }
+html.light .text-green-400 { color: rgb(21 128 61) !important; }
+html.light .text-yellow-400 { color: rgb(161 98 7) !important; }
+html.light .text-orange-400 { color: rgb(194 65 12) !important; }
+html.light .text-indigo-400 { color: rgb(67 56 202) !important; }
+html.light .text-amber-400 { color: rgb(180 83 9) !important; }
+html.light .text-purple-400 { color: rgb(126 34 206) !important; }

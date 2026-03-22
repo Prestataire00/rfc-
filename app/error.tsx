@@ -20,20 +20,20 @@ export default function Error({
           Une erreur est survenue
         </h1>
         <p className="mb-6 text-gray-400">
-          {"Quelque chose s'est mal pass\u00e9. Veuillez r\u00e9essayer ou retourner \u00e0 l'accueil."}
+          {"Quelque chose s'est mal passé. Veuillez réessayer ou retourner à l'accueil."}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
             onClick={() => reset()}
             className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
           >
-            {"R\u00e9essayer"}
+            {"Réessayer"}
           </button>
           <Link
             href="/dashboard"
             className="rounded-lg border border-gray-600 px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-gray-700"
           >
-            {"Retour \u00e0 l'accueil"}
+            {"Retour à l'accueil"}
           </Link>
         </div>
       </div>

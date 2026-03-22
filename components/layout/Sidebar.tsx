@@ -77,7 +77,8 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
             </div>
           <div>
             <span className="font-semibold text-gray-900 dark:text-white text-sm">RFC</span>
-            <span className="block text-[10px] text-gray-500 dark:text-gray-400">{roleLabels[role] || role}</span>
+            <span className="block text-[9px] text-gray-400 dark:text-gray-500 leading-tight">Sécurité - Incendie</span>
+            <span className="block text-[9px] text-gray-400 dark:text-gray-500 leading-tight">Prévention</span>
           </div>
         </div>
         {/* Mobile close button */}

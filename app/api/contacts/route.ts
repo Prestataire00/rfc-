@@ -3,30 +3,35 @@ import { prisma } from "@/lib/prisma";
 import { contactSchema } from "@/lib/validations/contact";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search") ?? "";
-  const type = searchParams.get("type") ?? "";
+  try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search") ?? "";
+    const type = searchParams.get("type") ?? "";
 
-  const contacts = await prisma.contact.findMany({
-    where: {
-      AND: [
-        search
-          ? {
-              OR: [
-                { nom: { contains: search } },
-                { prenom: { contains: search } },
-                { email: { contains: search } },
-              ],
-            }
-          : {},
-        type ? { type } : {},
-      ],
-    },
-    include: { entreprise: { select: { id: true, nom: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+    const contacts = await prisma.contact.findMany({
+      where: {
+        AND: [
+          search
+            ? {
+                OR: [
+                  { nom: { contains: search } },
+                  { prenom: { contains: search } },
+                  { email: { contains: search } },
+                ],
+              }
+            : {},
+          type ? { type } : {},
+        ],
+      },
+      include: { entreprise: { select: { id: true, nom: true } } },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(contacts);
+    return NextResponse.json(contacts);
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération des contacts:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des contacts" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

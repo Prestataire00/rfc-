@@ -4,25 +4,30 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user || session.user.role !== "formateur") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== "formateur") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const formateurId = (session.user as any).formateurId;
-  if (!formateurId) return NextResponse.json([]);
+    const formateurId = (session.user as any).formateurId;
+    if (!formateurId) return NextResponse.json([]);
 
-  const sessions = await prisma.session.findMany({
-    where: { formateurId },
-    include: {
-      formation: { select: { titre: true, duree: true } },
-      _count: { select: { inscriptions: true } },
-      inscriptions: {
-        include: { contact: { select: { id: true, nom: true, prenom: true, email: true } } },
+    const sessions = await prisma.session.findMany({
+      where: { formateurId },
+      include: {
+        formation: { select: { titre: true, duree: true } },
+        _count: { select: { inscriptions: true } },
+        inscriptions: {
+          include: { contact: { select: { id: true, nom: true, prenom: true, email: true } } },
+        },
       },
-    },
-    orderBy: { dateDebut: "desc" },
-  });
+      orderBy: { dateDebut: "desc" },
+    });
 
-  return NextResponse.json(sessions);
+    return NextResponse.json(sessions);
+  } catch (err: unknown) {
+    console.error("Erreur GET mes-sessions:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des sessions" }, { status: 500 });
+  }
 }

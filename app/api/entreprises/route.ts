@@ -3,24 +3,29 @@ import { prisma } from "@/lib/prisma";
 import { entrepriseSchema } from "@/lib/validations/entreprise";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search") ?? "";
+  try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search") ?? "";
 
-  const entreprises = await prisma.entreprise.findMany({
-    where: search
-      ? {
-          OR: [
-            { nom: { contains: search } },
-            { ville: { contains: search } },
-            { secteur: { contains: search } },
-          ],
-        }
-      : {},
-    include: { _count: { select: { contacts: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+    const entreprises = await prisma.entreprise.findMany({
+      where: search
+        ? {
+            OR: [
+              { nom: { contains: search } },
+              { ville: { contains: search } },
+              { secteur: { contains: search } },
+            ],
+          }
+        : {},
+      include: { _count: { select: { contacts: true } } },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(entreprises);
+    return NextResponse.json(entreprises);
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération des entreprises:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des entreprises" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

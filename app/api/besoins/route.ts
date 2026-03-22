@@ -17,23 +17,28 @@ const besoinSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const statut = searchParams.get("statut");
+  try {
+    const { searchParams } = new URL(req.url);
+    const statut = searchParams.get("statut");
 
-  const where: any = {};
-  if (statut) where.statut = statut;
+    const where: any = {};
+    if (statut) where.statut = statut;
 
-  const besoins = await prisma.besoinFormation.findMany({
-    where,
-    include: {
-      entreprise: { select: { id: true, nom: true } },
-      formation: { select: { id: true, titre: true } },
-      devis: { select: { id: true, numero: true, statut: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    const besoins = await prisma.besoinFormation.findMany({
+      where,
+      include: {
+        entreprise: { select: { id: true, nom: true } },
+        formation: { select: { id: true, titre: true } },
+        devis: { select: { id: true, numero: true, statut: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(besoins);
+    return NextResponse.json(besoins);
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération des besoins:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des besoins" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

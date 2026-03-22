@@ -4,24 +4,29 @@ import { randomBytes } from "crypto";
 
 // Generate or retrieve inscription link for a session
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await prisma.session.findUnique({ where: { id: params.id } });
+  try {
+    const session = await prisma.session.findUnique({ where: { id: params.id } });
 
-  if (!session) {
-    return NextResponse.json({ error: "Session introuvable" }, { status: 404 });
-  }
+    if (!session) {
+      return NextResponse.json({ error: "Session introuvable" }, { status: 404 });
+    }
 
-  let token = session.tokenInscription;
-  if (!token) {
-    token = randomBytes(16).toString("hex");
-    await prisma.session.update({
-      where: { id: params.id },
-      data: { tokenInscription: token },
+    let token = session.tokenInscription;
+    if (!token) {
+      token = randomBytes(16).toString("hex");
+      await prisma.session.update({
+        where: { id: params.id },
+        data: { tokenInscription: token },
+      });
+    }
+
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    return NextResponse.json({
+      token,
+      lien: `${baseUrl}/inscription-stagiaire/${token}`,
     });
+  } catch (err: unknown) {
+    console.error("Erreur generation lien inscription:", err);
+    return NextResponse.json({ error: "Erreur lors de la generation du lien d'inscription" }, { status: 500 });
   }
-
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  return NextResponse.json({
-    token,
-    lien: `${baseUrl}/inscription-stagiaire/${token}`,
-  });
 }

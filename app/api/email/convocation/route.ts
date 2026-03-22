@@ -7,56 +7,61 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export async function POST(req: NextRequest) {
-  const { sessionId, contactId } = await req.json();
+  try {
+    const { sessionId, contactId } = await req.json();
 
-  const [session, contact] = await Promise.all([
-    prisma.session.findUnique({
-      where: { id: sessionId },
-      include: { formation: true, formateur: true },
-    }),
-    prisma.contact.findUnique({ where: { id: contactId } }),
-  ]);
+    const [session, contact] = await Promise.all([
+      prisma.session.findUnique({
+        where: { id: sessionId },
+        include: { formation: true, formateur: true },
+      }),
+      prisma.contact.findUnique({ where: { id: contactId } }),
+    ]);
 
-  if (!session || !contact) {
-    return NextResponse.json({ error: "Session ou contact introuvable" }, { status: 404 });
-  }
+    if (!session || !contact) {
+      return NextResponse.json({ error: "Session ou contact introuvable" }, { status: 404 });
+    }
 
-  if (!contact.email) {
-    return NextResponse.json({ error: "Le contact n'a pas d'email" }, { status: 400 });
-  }
+    if (!contact.email) {
+      return NextResponse.json({ error: "Le contact n'a pas d'email" }, { status: 400 });
+    }
 
-  const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
-  const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
+    const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
+    const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
 
-  // Generate PDF
-  const pdfBuffer = await generatePdfBuffer(
-    convocationPdf({
-      stagiaire: { nom: contact.nom, prenom: contact.prenom, email: contact.email },
-      formation: { titre: session.formation.titre, duree: session.formation.duree },
+    // Generate PDF
+    const pdfBuffer = await generatePdfBuffer(
+      convocationPdf({
+        stagiaire: { nom: contact.nom, prenom: contact.prenom, email: contact.email },
+        formation: { titre: session.formation.titre, duree: session.formation.duree },
+        session: { dateDebut, dateFin, lieu: session.lieu || undefined },
+        formateur: session.formateur
+          ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
+          : undefined,
+      })
+    );
+
+    // Send email
+    const emailContent = convocationEmail({
+      stagiaire: { prenom: contact.prenom, nom: contact.nom },
+      formation: { titre: session.formation.titre },
       session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-      formateur: session.formateur
-        ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
-        : undefined,
-    })
-  );
+    });
 
-  // Send email
-  const emailContent = convocationEmail({
-    stagiaire: { prenom: contact.prenom, nom: contact.nom },
-    formation: { titre: session.formation.titre },
-    session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-  });
+    const result = await sendEmail({
+      to: contact.email,
+      ...emailContent,
+      attachments: [
+        {
+          filename: `convocation-${contact.prenom}-${contact.nom}.pdf`,
+          content: pdfBuffer,
+        },
+      ],
+    });
 
-  const result = await sendEmail({
-    to: contact.email,
-    ...emailContent,
-    attachments: [
-      {
-        filename: `convocation-${contact.prenom}-${contact.nom}.pdf`,
-        content: pdfBuffer,
-      },
-    ],
-  });
-
-  return NextResponse.json({ success: true, skipped: (result as any)?.skipped || false });
+    return NextResponse.json({ success: true, skipped: (result as any)?.skipped || false });
+  } catch (err: unknown) {
+    console.error("Erreur lors de l'envoi de la convocation:", err);
+    return NextResponse.json({ error: "Erreur lors de l'envoi de la convocation" }, { status: 500 });
+  }
 }

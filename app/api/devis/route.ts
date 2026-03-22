@@ -4,20 +4,25 @@ import { devisSchema } from "@/lib/validations/devis";
 import { generateNumero } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const statut = searchParams.get("statut") ?? "";
+  try {
+    const { searchParams } = new URL(req.url);
+    const statut = searchParams.get("statut") ?? "";
 
-  const devis = await prisma.devis.findMany({
-    where: statut ? { statut } : {},
-    include: {
-      entreprise: { select: { id: true, nom: true } },
-      contact: { select: { id: true, nom: true, prenom: true } },
-      lignes: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    const devis = await prisma.devis.findMany({
+      where: statut ? { statut } : {},
+      include: {
+        entreprise: { select: { id: true, nom: true } },
+        contact: { select: { id: true, nom: true, prenom: true } },
+        lignes: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(devis);
+    return NextResponse.json(devis);
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération des devis:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des devis" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

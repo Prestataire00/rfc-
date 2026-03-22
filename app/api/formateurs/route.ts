@@ -3,24 +3,29 @@ import { prisma } from "@/lib/prisma";
 import { formateurSchema } from "@/lib/validations/formateur";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search") ?? "";
+  try {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search") ?? "";
 
-  const formateurs = await prisma.formateur.findMany({
-    where: search
-      ? {
-          OR: [
-            { nom: { contains: search } },
-            { prenom: { contains: search } },
-            { email: { contains: search } },
-          ],
-        }
-      : {},
-    include: { _count: { select: { sessions: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+    const formateurs = await prisma.formateur.findMany({
+      where: search
+        ? {
+            OR: [
+              { nom: { contains: search } },
+              { prenom: { contains: search } },
+              { email: { contains: search } },
+            ],
+          }
+        : {},
+      include: { _count: { select: { sessions: true } } },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(formateurs);
+    return NextResponse.json(formateurs);
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération des formateurs:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des formateurs" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

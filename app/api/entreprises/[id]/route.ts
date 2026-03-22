@@ -3,17 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { entrepriseSchema } from "@/lib/validations/entreprise";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const entreprise = await prisma.entreprise.findUnique({
-    where: { id: params.id },
-    include: {
-      contacts: true,
-      devis: { orderBy: { createdAt: "desc" } },
-      factures: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  try {
+    const entreprise = await prisma.entreprise.findUnique({
+      where: { id: params.id },
+      include: {
+        contacts: true,
+        devis: { orderBy: { createdAt: "desc" } },
+        factures: { orderBy: { createdAt: "desc" } },
+      },
+    });
 
-  if (!entreprise) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
-  return NextResponse.json(entreprise);
+    if (!entreprise) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
+    return NextResponse.json(entreprise);
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération de l'entreprise:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération de l'entreprise" }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
@@ -50,6 +55,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  await prisma.entreprise.delete({ where: { id: params.id } });
-  return NextResponse.json({ success: true });
+  try {
+    await prisma.entreprise.delete({ where: { id: params.id } });
+    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    console.error("Erreur lors de la suppression de l'entreprise:", err);
+    return NextResponse.json({ error: "Erreur lors de la suppression de l'entreprise" }, { status: 500 });
+  }
 }

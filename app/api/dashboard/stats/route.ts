@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const now = new Date();
+  try {
+    const now = new Date();
   const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
   const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const debutAnnee = new Date(now.getFullYear(), 0, 1);
@@ -135,4 +136,8 @@ export async function GET() {
     sessionsSemaine,
     sessionsAujourdhui,
   });
+  } catch (err: unknown) {
+    console.error("Erreur lors de la récupération des statistiques du tableau de bord:", err);
+    return NextResponse.json({ error: "Erreur lors de la récupération des statistiques" }, { status: 500 });
+  }
 }

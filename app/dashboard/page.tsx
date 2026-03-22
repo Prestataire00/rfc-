@@ -33,6 +33,8 @@ type Stats = {
   montantDevisEnvoyes: number;
   caFactureMois: number;
   caFactureAnnee: number;
+  caFiltre: number;
+  periodLabel: string;
   caPrevisionnel: number;
   nbStagiairesFormes: number;
   nbFormationsRealisees: number;
@@ -136,10 +138,11 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<"mois" | "trimestre" | "annee">("mois");
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/dashboard/stats").then((r) => r.ok ? r.json() : null),
+      fetch(`/api/dashboard/stats?period=${period}`).then((r) => r.ok ? r.json() : null),
       fetch("/api/notifications").then((r) => r.ok ? r.json() : []),
     ]).then(([d, n]) => {
       setData(d);
@@ -148,7 +151,7 @@ export default function DashboardPage() {
     }).catch(() => {
       setLoading(false);
     });
-  }, []);
+  }, [period]);
 
   if (loading) {
     return (
@@ -222,12 +225,29 @@ export default function DashboardPage() {
       {/* CA Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="rounded-lg border bg-gradient-to-br from-green-50 to-emerald-50 p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Euro className="h-5 w-5 text-green-600" />
-            <span className="text-sm font-medium text-green-300">CA Realise (Mois)</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Euro className="h-5 w-5 text-green-600" />
+              <span className="text-sm font-medium text-green-300">CA Réalisé ({stats.periodLabel})</span>
+            </div>
+            <div className="flex rounded-md border border-green-700 overflow-hidden">
+              {([["mois", "Mois"], ["trimestre", "Trim."], ["annee", "Année"]] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setPeriod(val)}
+                  className={`px-2 py-0.5 text-xs font-medium transition-colors ${
+                    period === val
+                      ? "bg-green-700 text-white"
+                      : "text-green-400 hover:bg-green-900/30"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-3xl font-bold text-green-900">{formatCurrency(stats.caFactureMois)}</p>
-          <p className="text-xs text-green-600 mt-1">Annee: {formatCurrency(stats.caFactureAnnee)}</p>
+          <p className="text-3xl font-bold text-green-900">{formatCurrency(stats.caFiltre)}</p>
+          <p className="text-xs text-green-600 mt-1">Année: {formatCurrency(stats.caFactureAnnee)}</p>
         </div>
         <div className="rounded-lg border bg-gradient-to-br from-red-50 to-gray-100 p-5">
           <div className="flex items-center gap-2 mb-2">

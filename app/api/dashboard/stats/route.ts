@@ -1,15 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const period = searchParams.get("period") || "mois";
+
     const now = new Date();
   const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
   const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const debutAnnee = new Date(now.getFullYear(), 0, 1);
   const finAnnee = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+
+  // Trimestre
+  const currentQuarter = Math.floor(now.getMonth() / 3);
+  const debutTrimestre = new Date(now.getFullYear(), currentQuarter * 3, 1);
+  const finTrimestre = new Date(now.getFullYear(), currentQuarter * 3 + 3, 0, 23, 59, 59);
 
   // Start of current week (Monday)
   const debutSemaine = new Date(now);
@@ -30,6 +38,7 @@ export async function GET() {
     devisEnvoyesAgg,
     caFactureMoisAgg,
     caFactureAnneeAgg,
+    caFactureTrimestreAgg,
     caPrevisionnel,
     prochainsSessions,
     derniersContacts,
@@ -57,6 +66,10 @@ export async function GET() {
     }),
     prisma.facture.aggregate({
       where: { statut: "payee", dateEmission: { gte: debutAnnee, lte: finAnnee } },
+      _sum: { montantTTC: true },
+    }),
+    prisma.facture.aggregate({
+      where: { statut: "payee", dateEmission: { gte: debutTrimestre, lte: finTrimestre } },
       _sum: { montantTTC: true },
     }),
     prisma.devis.aggregate({
@@ -115,6 +128,17 @@ export async function GET() {
     }),
   ]);
 
+  const caFactureMois = caFactureMoisAgg._sum.montantTTC ?? 0;
+  const caFactureTrimestre = caFactureTrimestreAgg._sum.montantTTC ?? 0;
+  const caFactureAnnee = caFactureAnneeAgg._sum.montantTTC ?? 0;
+
+  const periodMap: Record<string, { value: number; label: string }> = {
+    mois: { value: caFactureMois, label: "Ce mois" },
+    trimestre: { value: caFactureTrimestre, label: "Ce trimestre" },
+    annee: { value: caFactureAnnee, label: "Cette année" },
+  };
+  const { value: caFiltre, label: periodLabel } = periodMap[period] || periodMap.mois;
+
   return NextResponse.json({
     stats: {
       nbContacts,
@@ -124,8 +148,10 @@ export async function GET() {
       sessionsAVenir,
       devisEnvoyes: devisEnvoyesAgg._count,
       montantDevisEnvoyes: devisEnvoyesAgg._sum.montantTTC ?? 0,
-      caFactureMois: caFactureMoisAgg._sum.montantTTC ?? 0,
-      caFactureAnnee: caFactureAnneeAgg._sum.montantTTC ?? 0,
+      caFactureMois,
+      caFactureAnnee,
+      caFiltre,
+      periodLabel,
       caPrevisionnel: caPrevisionnel._sum.montantTTC ?? 0,
       nbStagiairesFormes,
       nbFormationsRealisees,

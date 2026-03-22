@@ -27,6 +27,7 @@ type Session = {
   capaciteMax: number;
   statut: string;
   notes: string | null;
+  coutFormateur: number | null;
   formation: { id: string; titre: string; tarif: number };
   formateur: { id: string; nom: string; prenom: string } | null;
   inscriptions: Inscription[];
@@ -53,6 +54,7 @@ export default function SessionDetailPage() {
   const [inscriptionLink, setInscriptionLink] = useState("");
   const [removeConfirm, setRemoveConfirm] = useState<{ id: string; name: string } | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const fetchSession = useCallback(async () => {
     const res = await fetch(`/api/sessions/${id}`);
@@ -121,16 +123,17 @@ export default function SessionDetailPage() {
     }
   };
 
-  const handleGenererEvaluations = async (type: string) => {
+  const handleGenererEvaluations = async (type: string, cible: string = "stagiaire") => {
     setEvalLoading(true);
     setEvalMsg("");
     const genRes = await fetch("/api/evaluations/generer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId: id, type }),
+      body: JSON.stringify({ sessionId: id, type, cible }),
     });
     if (!genRes.ok) {
-      setEvalMsg("Erreur lors de la génération");
+      const errData = await genRes.json().catch(() => ({}));
+      setEvalMsg(errData.error || "Erreur lors de la génération");
       setEvalLoading(false);
       return;
     }
@@ -303,6 +306,15 @@ export default function SessionDetailPage() {
                 <p className="text-gray-400">CA prévisionnel</p>
                 <p className="font-semibold text-gray-100">{formatCurrency(session.formation.tarif * session.inscriptions.length)}</p>
               </div>
+              <div>
+                <p className="text-gray-400">Coût formateur</p>
+                <p className="font-medium">
+                  {session.coutFormateur != null
+                    ? formatCurrency(session.coutFormateur)
+                    : <span className="text-gray-500 italic">Non renseigné</span>
+                  }
+                </p>
+              </div>
               {session.notes && (
                 <div>
                   <p className="text-gray-400">Notes</p>
@@ -383,20 +395,36 @@ export default function SessionDetailPage() {
             </h2>
             <div className="space-y-2">
               <button
-                onClick={() => handleGenererEvaluations("satisfaction_chaud")}
+                onClick={() => handleGenererEvaluations("satisfaction_chaud", "stagiaire")}
                 disabled={evalLoading || session.inscriptions.length === 0}
                 className="w-full flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-purple-900/20 transition-colors disabled:opacity-50"
               >
                 <Send className="h-4 w-4 text-orange-500" />
-                <span className="flex-1 text-left text-gray-300">Envoyer éval. à chaud</span>
+                <span className="flex-1 text-left text-gray-300">Éval. stagiaires à chaud</span>
               </button>
               <button
-                onClick={() => handleGenererEvaluations("satisfaction_froid")}
+                onClick={() => handleGenererEvaluations("satisfaction_froid", "stagiaire")}
                 disabled={evalLoading || session.inscriptions.length === 0}
                 className="w-full flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-purple-900/20 transition-colors disabled:opacity-50"
               >
-                <Send className="h-4 w-4 text-red-500" />
-                <span className="flex-1 text-left text-gray-300">Envoyer éval. à froid</span>
+                <Send className="h-4 w-4 text-blue-500" />
+                <span className="flex-1 text-left text-gray-300">Éval. stagiaires à froid</span>
+              </button>
+              <button
+                onClick={() => handleGenererEvaluations("satisfaction_client", "client")}
+                disabled={evalLoading || session.inscriptions.length === 0}
+                className="w-full flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-purple-900/20 transition-colors disabled:opacity-50"
+              >
+                <Send className="h-4 w-4 text-green-500" />
+                <span className="flex-1 text-left text-gray-300">Éval. client/financeur</span>
+              </button>
+              <button
+                onClick={() => handleGenererEvaluations("satisfaction_formateur", "formateur")}
+                disabled={evalLoading || !session.formateur}
+                className="w-full flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-purple-900/20 transition-colors disabled:opacity-50"
+              >
+                <Send className="h-4 w-4 text-yellow-500" />
+                <span className="flex-1 text-left text-gray-300">Éval. formateur</span>
               </button>
               {evalMsg && (
                 <p className={`text-xs ${evalMsg.includes("Erreur") ? "text-red-600" : "text-green-600"}`}>
@@ -437,6 +465,12 @@ export default function SessionDetailPage() {
               <div className="px-4 py-2 bg-green-900/20 border-b text-sm flex items-center gap-2">
                 <span className="text-green-400">Lien copié !</span>
                 <code className="text-xs bg-gray-800 px-2 py-1 rounded border flex-1 truncate">{inscriptionLink}</code>
+                <button
+                  onClick={() => setQrOpen(true)}
+                  className="shrink-0 inline-flex items-center gap-1 rounded-md border border-green-700 bg-green-900/30 px-2 py-1 text-xs font-medium text-green-400 hover:bg-green-900/50 transition-colors"
+                >
+                  QR Code
+                </button>
               </div>
             )}
 
@@ -570,6 +604,31 @@ export default function SessionDetailPage() {
             <Button onClick={handleAddInscription} disabled={!selectedContactId || adding}>
               {adding ? "Inscription..." : "Inscrire"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code modal */}
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+        <DialogContent onClose={() => setQrOpen(false)}>
+          <DialogHeader>
+            <DialogTitle>QR Code d&apos;inscription</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(inscriptionLink)}`}
+              alt="QR Code inscription"
+              width={250}
+              height={250}
+              className="rounded-lg border border-gray-700"
+            />
+            <code className="text-xs bg-gray-900 px-3 py-2 rounded border border-gray-700 text-gray-300 max-w-full break-all text-center">
+              {inscriptionLink}
+            </code>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQrOpen(false)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

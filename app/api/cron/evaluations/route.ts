@@ -5,7 +5,7 @@ import { sendEmail, evaluationEmail } from "@/lib/email";
 
 // Called by cron job to auto-send evaluations
 // - satisfaction_chaud: J+1 after session ends
-// - satisfaction_froid: J+90 after session ends
+// - satisfaction_froid: J+21 (3 weeks) after session ends
 export async function GET(req: NextRequest) {
   try {
     // Optional: protect with a secret
@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
     const startOfYesterday = new Date(yesterday.setHours(0, 0, 0, 0));
     const endOfYesterday = new Date(yesterday.setHours(23, 59, 59, 999));
 
-    // J+90: sessions ended 90 days ago
-    const day90ago = new Date(now);
-    day90ago.setDate(day90ago.getDate() - 90);
-    const startOf90 = new Date(day90ago.setHours(0, 0, 0, 0));
-    const endOf90 = new Date(day90ago.setHours(23, 59, 59, 999));
+    // J+21: sessions ended 3 weeks ago
+    const day21ago = new Date(now);
+    day21ago.setDate(day21ago.getDate() - 21);
+    const startOf21 = new Date(day21ago.setHours(0, 0, 0, 0));
+    const endOf21 = new Date(day21ago.setHours(23, 59, 59, 999));
 
     let chaudSent = 0;
     let froidSent = 0;
@@ -83,10 +83,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Find sessions for froid (ended 90 days ago)
+    // Find sessions for froid (ended 3 weeks ago)
     const sessionsFroid = await prisma.session.findMany({
       where: {
-        dateFin: { gte: startOf90, lte: endOf90 },
+        dateFin: { gte: startOf21, lte: endOf21 },
         statut: "terminee",
       },
       include: {

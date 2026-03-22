@@ -31,7 +31,7 @@
         "npm:next-auth@^4.24.13",
         "npm:next@^14.2.29",
         "npm:nodemailer@^7.0.13",
-        "npm:pdfmake@~0.3.5",
+        "npm:pdfmake@~0.2.18",
         "npm:postcss@8",
         "npm:prisma@^5.10.0",
         "npm:react-dom@18",

@@ -99,7 +99,7 @@ export default function EvaluationDetailPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-4xl">
       <Link
         href="/evaluations"
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 mb-6"

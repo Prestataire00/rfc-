@@ -72,7 +72,7 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="flex items-center justify-center py-24 bg-gray-50">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
       </div>
     );
@@ -80,10 +80,10 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
 
   if (error && !info) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="flex items-center justify-center py-24 bg-gray-50">
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-400">{error}</p>
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
+          <p className="text-gray-600">{error}</p>
         </div>
       </div>
     );
@@ -91,11 +91,11 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center max-w-md">
+      <div className="flex items-center justify-center py-24 bg-gray-50">
+        <div className="text-center max-w-md px-4">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-100 mb-2">Merci !</h1>
-          <p className="text-gray-400">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Merci !</h1>
+          <p className="text-gray-600">
             Votre évaluation a bien été enregistrée. Vos retours nous aident à améliorer nos formations.
           </p>
         </div>
@@ -104,7 +104,7 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4">
+    <div className="bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="bg-red-600 text-white rounded-t-xl p-6">
@@ -116,16 +116,16 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
           </p>
         </div>
 
-        <div className="bg-gray-800 border border-t-0 rounded-b-xl p-6 space-y-6">
-          <div className="bg-red-900/20 rounded-lg p-4">
-            <p className="text-sm text-gray-400">Formation</p>
-            <p className="font-semibold text-gray-100">{info?.formation}</p>
-            <p className="text-sm text-gray-400 mt-1">Participant : {info?.stagiaire}</p>
+        <div className="bg-white border border-gray-200 border-t-0 rounded-b-xl p-6 space-y-6 shadow-sm">
+          <div className="bg-red-50 rounded-lg p-4">
+            <p className="text-sm text-gray-500">Formation</p>
+            <p className="font-semibold text-gray-900">{info?.formation}</p>
+            <p className="text-sm text-gray-500 mt-1">Participant : {info?.stagiaire}</p>
           </div>
 
           {/* Note globale */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Note globale de la formation *
             </label>
             <div className="flex gap-2">
@@ -147,10 +147,10 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
 
           {/* Questions detaillees */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-100">Evaluation detaillee</h3>
+            <h3 className="font-medium text-gray-900">Evaluation detaillee</h3>
             {questions.map((q) => (
-              <div key={q.key} className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-300 flex-1 pr-4">{q.label}</span>
+              <div key={q.key} className="flex items-center justify-between py-2 border-b border-gray-200">
+                <span className="text-sm text-gray-600 flex-1 pr-4">{q.label}</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
@@ -174,14 +174,14 @@ export default function EvaluationPubliquePage({ params }: { params: Promise<{ t
 
           {/* Commentaire */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Commentaires ou suggestions
             </label>
             <textarea
               value={commentaire}
               onChange={(e) => setCommentaire(e.target.value)}
               rows={4}
-              className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
               placeholder="Vos remarques sont precieuses pour nous..."
             />
           </div>

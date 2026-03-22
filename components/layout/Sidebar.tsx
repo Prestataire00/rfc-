@@ -72,7 +72,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="flex items-center gap-2">
-          <div className="bg-gray-900 dark:bg-transparent rounded-lg p-0.5">
+          <div className="bg-gray-900 rounded-lg p-1">
               <Image src="/logo-rfc.png" alt="RFC" width={38} height={38} className="rounded-lg" />
             </div>
           <div>

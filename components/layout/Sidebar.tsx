@@ -72,7 +72,9 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="flex items-center gap-2">
-          <Image src="/logo-rfc.png" alt="RFC" width={40} height={40} className="rounded-lg" />
+          <div className="bg-gray-900 dark:bg-transparent rounded-lg p-0.5">
+              <Image src="/logo-rfc.png" alt="RFC" width={38} height={38} className="rounded-lg" />
+            </div>
           <div>
             <span className="font-semibold text-gray-900 dark:text-white text-sm">RFC</span>
             <span className="block text-[10px] text-gray-500 dark:text-gray-400">{roleLabels[role] || role}</span>

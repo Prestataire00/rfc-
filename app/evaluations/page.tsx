@@ -39,7 +39,7 @@ export default function EvaluationsPage() {
   const avgNote = evaluations.filter((e) => e.noteGlobale).reduce((sum, e) => sum + (e.noteGlobale || 0), 0) / (evaluations.filter((e) => e.noteGlobale).length || 1);
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-4xl">
       <PageHeader title="Évaluations & Satisfaction" description="Suivi des questionnaires de satisfaction et évaluations" />
 
       <div className="grid grid-cols-3 gap-4 mb-6">

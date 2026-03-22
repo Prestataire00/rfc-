@@ -53,8 +53,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="bg-gray-100 dark:bg-gray-900 rounded-2xl p-4 inline-block mb-4">
-              <Image src="/logo-icon.svg" alt="RFC" width={72} height={72} className="mx-auto" />
+            <div className="inline-block mb-4">
+              <Image src="/logo-rfc.png" alt="RFC" width={120} height={120} className="mx-auto" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Rescue Formation Conseil</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{"Sécurité - Incendie - Prévention"}</p>

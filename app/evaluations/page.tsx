@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MessageSquare, Send, Star } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -22,6 +23,7 @@ type Evaluation = {
 };
 
 export default function EvaluationsPage() {
+  const router = useRouter();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
@@ -29,10 +31,16 @@ export default function EvaluationsPage() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (filterType) params.set("type", filterType);
-    fetch(`/api/evaluations?${params}`).then((r) => r.ok ? r.json() : []).then((d) => {
-      setEvaluations(d);
-      setLoading(false);
-    });
+    fetch(`/api/evaluations?${params}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => {
+        setEvaluations(Array.isArray(d) ? d : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setEvaluations([]);
+        setLoading(false);
+      });
   }, [filterType]);
 
   const completedCount = evaluations.filter((e) => e.estComplete).length;
@@ -92,7 +100,7 @@ export default function EvaluationsPage() {
             </thead>
             <tbody>
               {evaluations.map((ev) => (
-                <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-700 cursor-pointer" onClick={() => window.location.href = `/evaluations/${ev.id}`}>
+                <tr key={ev.id} className="border-b last:border-0 hover:bg-gray-700 cursor-pointer" onClick={() => router.push(`/evaluations/${ev.id}`)}>
                   <td className="px-4 py-3">
                     <Link href={`/evaluations/${ev.id}`} className="text-red-600 hover:underline" onClick={(e) => e.stopPropagation()}>
                       {ev.session.formation.titre}

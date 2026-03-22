@@ -88,3 +88,30 @@ html.light .text-orange-400 { color: rgb(194 65 12) !important; }
 html.light .text-indigo-400 { color: rgb(67 56 202) !important; }
 html.light .text-amber-400 { color: rgb(180 83 9) !important; }
 html.light .text-purple-400 { color: rgb(126 34 206) !important; }
+
+/* Text colors that need to flip to dark in light mode */
+html.light .text-white { color: rgb(17 24 39) !important; }
+html.light .text-gray-500 { color: rgb(107 114 128) !important; }
+html.light .bg-gray-200 { background-color: rgb(229 231 235) !important; }
+html.light .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(229 231 235) !important; }
+html.light .border-gray-100 { border-color: rgb(229 231 235) !important; }
+html.light select { background-color: white !important; color: rgb(17 24 39) !important; border-color: rgb(209 213 219) !important; }
+html.light input:not([type="checkbox"]):not([type="radio"]) { background-color: white !important; color: rgb(17 24 39) !important; }
+html.light textarea { background-color: white !important; color: rgb(17 24 39) !important; }
+html.light .font-mono { color: rgb(17 24 39) !important; }
+html.light .bg-gray-900\/20 { background-color: rgb(243 244 246) !important; }
+html.light .bg-gray-900\/30 { background-color: rgb(229 231 235) !important; }
+
+/* Keep specific text-white elements white (buttons, badges with colored backgrounds) */
+html.light .bg-red-600 .text-white,
+html.light .bg-red-600,
+html.light .bg-red-700,
+html.light .bg-emerald-500,
+html.light .bg-sky-500,
+html.light .bg-amber-500,
+html.light .bg-orange-500,
+html.light .bg-purple-500,
+html.light .bg-indigo-500 { color: white !important; }
+html.light button.bg-red-600 { color: white !important; }
+html.light [class*="bg-red-600"] { color: white !important; }
+html.light .text-primary-foreground { color: white !important; }

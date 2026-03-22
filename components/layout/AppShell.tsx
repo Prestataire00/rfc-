@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="bg-gray-900 rounded-lg p-1">
                 <Image src="/logo-rfc.png" alt="RFC" width={30} height={30} className="rounded" />
               </div>
-              <span className="font-semibold text-gray-900 dark:text-white text-sm">RFC</span>
+              <span className="font-bold text-black dark:text-white text-sm">RFC</span>
             </div>
           </div>
           <div className="flex items-center gap-2">

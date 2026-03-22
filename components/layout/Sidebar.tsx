@@ -76,9 +76,9 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
               <Image src="/logo-rfc.png" alt="RFC" width={38} height={38} className="rounded-lg" />
             </div>
           <div>
-            <span className="font-semibold text-gray-900 dark:text-white text-sm">RFC</span>
-            <span className="block text-[9px] text-gray-400 dark:text-gray-500 leading-tight">Sécurité - Incendie</span>
-            <span className="block text-[9px] text-gray-400 dark:text-gray-500 leading-tight">Prévention</span>
+            <span className="font-bold text-black dark:text-white text-sm">RFC</span>
+            <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Sécurité - Incendie</span>
+            <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Prévention</span>
           </div>
         </div>
         {/* Mobile close button */}

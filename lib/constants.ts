@@ -1,48 +1,48 @@
 export const CONTACT_TYPES = {
-  client: { label: "Client", color: "bg-green-100 text-green-800 border-green-200" },
-  prospect: { label: "Prospect", color: "bg-blue-100 text-blue-800 border-blue-200" },
-  stagiaire: { label: "Stagiaire", color: "bg-purple-100 text-purple-800 border-purple-200" },
+  client: { label: "Client", color: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30" },
+  prospect: { label: "Prospect", color: "bg-sky-500/20 text-sky-600 border-sky-500/30" },
+  stagiaire: { label: "Stagiaire", color: "bg-violet-500/20 text-violet-600 border-violet-500/30" },
 } as const;
 
 export const SESSION_STATUTS = {
-  planifiee: { label: "Planifiee", color: "bg-gray-100 text-gray-700 border-gray-200" },
-  confirmee: { label: "Confirmee", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  en_cours: { label: "En cours", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  terminee: { label: "Terminee", color: "bg-green-100 text-green-700 border-green-200" },
-  annulee: { label: "Annulee", color: "bg-red-100 text-red-700 border-red-200" },
+  planifiee: { label: "Planifiée", color: "bg-slate-500/20 text-slate-500 border-slate-500/30" },
+  confirmee: { label: "Confirmée", color: "bg-sky-500/20 text-sky-500 border-sky-500/30" },
+  en_cours: { label: "En cours", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
+  terminee: { label: "Terminée", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
+  annulee: { label: "Annulée", color: "bg-red-500/20 text-red-500 border-red-500/30" },
 } as const;
 
 export const INSCRIPTION_STATUTS = {
-  en_attente: { label: "En attente", color: "bg-gray-100 text-gray-700" },
-  confirmee: { label: "Confirmee", color: "bg-blue-100 text-blue-700" },
-  annulee: { label: "Annulee", color: "bg-red-100 text-red-700" },
-  presente: { label: "Presente", color: "bg-green-100 text-green-700" },
-  absente: { label: "Absente", color: "bg-orange-100 text-orange-700" },
+  en_attente: { label: "En attente", color: "bg-slate-500/20 text-slate-500" },
+  confirmee: { label: "Confirmée", color: "bg-sky-500/20 text-sky-500" },
+  annulee: { label: "Annulée", color: "bg-red-500/20 text-red-500" },
+  presente: { label: "Présente", color: "bg-emerald-500/20 text-emerald-500" },
+  absente: { label: "Absente", color: "bg-orange-500/20 text-orange-500" },
 } as const;
 
 export const DEVIS_STATUTS = {
-  brouillon: { label: "Brouillon", color: "bg-gray-100 text-gray-700 border-gray-200" },
-  envoye: { label: "Envoye", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  signe: { label: "Signe", color: "bg-green-100 text-green-700 border-green-200" },
-  refuse: { label: "Refuse", color: "bg-red-100 text-red-700 border-red-200" },
-  expire: { label: "Expire", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  brouillon: { label: "Brouillon", color: "bg-slate-500/20 text-slate-500 border-slate-500/30" },
+  envoye: { label: "Envoyé", color: "bg-sky-500/20 text-sky-500 border-sky-500/30" },
+  signe: { label: "Signé", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
+  refuse: { label: "Refusé", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+  expire: { label: "Expiré", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" },
 } as const;
 
 export const FACTURE_STATUTS = {
-  en_attente: { label: "En attente", color: "bg-gray-100 text-gray-700 border-gray-200" },
-  envoyee: { label: "Envoyee", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  payee: { label: "Payee", color: "bg-green-100 text-green-700 border-green-200" },
-  en_retard: { label: "En retard", color: "bg-red-100 text-red-700 border-red-200" },
-  annulee: { label: "Annulee", color: "bg-gray-100 text-gray-400 border-gray-200" },
+  en_attente: { label: "En attente", color: "bg-slate-500/20 text-slate-500 border-slate-500/30" },
+  envoyee: { label: "Envoyée", color: "bg-sky-500/20 text-sky-500 border-sky-500/30" },
+  payee: { label: "Payée", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
+  en_retard: { label: "En retard", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+  annulee: { label: "Annulée", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
 
 export const BESOIN_STATUTS = {
-  nouveau: { label: "Nouveau", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  qualifie: { label: "Qualifie", color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
-  devis_envoye: { label: "Devis envoye", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  accepte: { label: "Accepte", color: "bg-green-100 text-green-700 border-green-200" },
-  refuse: { label: "Refuse", color: "bg-red-100 text-red-700 border-red-200" },
-  archive: { label: "Archive", color: "bg-gray-100 text-gray-500 border-gray-200" },
+  nouveau: { label: "Nouveau", color: "bg-sky-500/20 text-sky-500 border-sky-500/30" },
+  qualifie: { label: "Qualifié", color: "bg-indigo-500/20 text-indigo-500 border-indigo-500/30" },
+  devis_envoye: { label: "Devis envoyé", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
+  accepte: { label: "Accepté", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
+  refuse: { label: "Refusé", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+  archive: { label: "Archivé", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
 
 export const BESOIN_ORIGINES = {

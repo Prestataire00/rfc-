@@ -101,12 +101,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">Comptes de demo :</p>
-            <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400 text-center">
-              <p><strong>Admin :</strong> admin@formapro.fr / admin123</p>
-              <p><strong>Formateur :</strong> formateur@formapro.fr / formateur123</p>
-              <p><strong>Client :</strong> client@formapro.fr / client123</p>
-            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              Rescue Formation Conseil - Plateforme de gestion
+            </p>
           </div>
         </div>
       </div>

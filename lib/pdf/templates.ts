@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { LOGO_BASE64 } from "./logo-base64";
 
 const COLORS = {
   primary: "#C41E24",    // RFC Red
@@ -33,18 +34,26 @@ function header(title: string) {
     {
       columns: [
         {
+          width: 60,
+          image: LOGO_BASE64,
+          fit: [55, 55] as [number, number],
+        },
+        {
           width: "auto",
           stack: [
-            { text: "RFC", fontSize: 24, bold: true, color: COLORS.primary },
-            { text: "RESCUE FORMATION CONSEIL", fontSize: 9, color: COLORS.gray, margin: [0, 2, 0, 0] as [number, number, number, number] },
+            { text: "RFC", fontSize: 22, bold: true, color: COLORS.primary, margin: [0, 2, 0, 0] as [number, number, number, number] },
+            { text: "RESCUE FORMATION CONSEIL", fontSize: 8, color: COLORS.gray, margin: [0, 1, 0, 0] as [number, number, number, number] },
+            { text: "Sécurité - Incendie - Prévention", fontSize: 7, color: COLORS.gray },
           ],
         },
         {
           text: title,
           style: "docTitle",
           alignment: "right" as const,
+          width: "*",
         },
       ],
+      columnGap: 10,
       margin: [0, 0, 0, 10] as [number, number, number, number],
     },
     { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 2, lineColor: COLORS.primary }], margin: [0, 0, 0, 20] as [number, number, number, number] },

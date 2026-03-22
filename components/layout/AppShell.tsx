@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
-      <main className="flex-1 lg:ml-64 min-h-screen">
+      <main className="flex-1 lg:ml-64 min-h-screen overflow-x-hidden">
         {/* Mobile header */}
         <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 lg:hidden">
           <div className="flex items-center gap-3">
@@ -85,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
           <NotificationBell />
         </div>
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</div>
       </main>
     </div>
   );

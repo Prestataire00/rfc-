@@ -119,7 +119,7 @@ export default function DevisDetailPage() {
   const st = DEVIS_STATUTS[devis.statut as keyof typeof DEVIS_STATUTS];
   const montantTVA = devis.montantHT * (devis.tauxTVA / 100);
   const hasFacture = devis.factures.length > 0;
-  const canGenererFacture = devis.statut === "accepte" && !hasFacture;
+  const canGenererFacture = (devis.statut === "accepte" || devis.statut === "signe") && !hasFacture;
 
   const nextStatuts = Object.keys(DEVIS_STATUTS).filter((k) => k !== devis.statut);
 

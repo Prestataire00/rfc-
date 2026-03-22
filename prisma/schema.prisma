@@ -430,3 +430,25 @@ model Financement {
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 }
+
+// ==================== PARAMETRES ====================
+
+model Parametres {
+  id        String   @id @default("default")
+  updatedAt DateTime @updatedAt
+
+  nomEntreprise      String @default("RFC - Rescue Formation Conseil")
+  slogan             String @default("Sécurité - Incendie - Prévention")
+  adresse            String @default("")
+  codePostal         String @default("")
+  ville              String @default("")
+  telephone          String @default("")
+  email              String @default("")
+  siteWeb            String @default("www.rescueformation83.fr")
+  siret              String @default("")
+  nda                String @default("")
+  tvaIntracom        String @default("")
+  conditionsPaiement String @default("Paiement à 30 jours à compter de la date de facturation.")
+  mentionsDevis      String @default("Devis valable 30 jours.")
+  mentionsFacture    String @default("En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.")
+}

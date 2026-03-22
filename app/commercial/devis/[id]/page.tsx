@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, FileText, Receipt } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -155,6 +155,21 @@ export default function DevisDetailPage() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
+            <a
+              href={`/api/pdf/devis/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              <Eye className="h-4 w-4" /> Prévisualiser PDF
+            </a>
+            <a
+              href={`/api/pdf/devis/${id}`}
+              download={`devis-${devis?.numero || id}.pdf`}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              <Download className="h-4 w-4" /> Télécharger PDF
+            </a>
             <Link
               href={`/commercial/devis/${id}/modifier`}
               className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"

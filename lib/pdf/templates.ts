@@ -41,9 +41,9 @@ function header(title: string) {
         {
           width: "auto",
           stack: [
-            { text: "RFC", fontSize: 22, bold: true, color: COLORS.primary, margin: [0, 2, 0, 0] as [number, number, number, number] },
-            { text: "RESCUE FORMATION CONSEIL", fontSize: 8, color: COLORS.gray, margin: [0, 1, 0, 0] as [number, number, number, number] },
-            { text: "Sécurité - Incendie - Prévention", fontSize: 7, color: COLORS.gray },
+            { text: "RFC", fontSize: 22, bold: true, color: "#000000", margin: [0, 2, 0, 0] as [number, number, number, number] },
+            { text: "RESCUE FORMATION CONSEIL", fontSize: 8, bold: true, color: "#000000", margin: [0, 1, 0, 0] as [number, number, number, number] },
+            { text: "Sécurité - Incendie - Prévention", fontSize: 7, color: "#333333" },
           ],
         },
         {
@@ -63,8 +63,8 @@ function header(title: string) {
 function footer() {
   return {
     stack: [
-      { text: "RFC - Rescue Formation Conseil | Sécurité - Incendie - Prévention", style: "footer", alignment: "center" as const },
-      { text: "www.rescueformation83.fr", style: "footer", alignment: "center" as const, margin: [0, 2, 0, 0] as [number, number, number, number] },
+      { text: "RFC - Rescue Formation Conseil | Sécurité - Incendie - Prévention", fontSize: 8, color: "#333333", alignment: "center" as const },
+      { text: "www.rescueformation83.fr", fontSize: 8, color: "#333333", alignment: "center" as const, margin: [0, 2, 0, 0] as [number, number, number, number] },
     ],
     margin: [0, 20, 0, 0] as [number, number, number, number],
   };

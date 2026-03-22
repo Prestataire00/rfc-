@@ -71,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="bg-gray-900 rounded-lg p-1">
-                <Image src="/logo-rfc.png" alt="RFC" width={30} height={30} className="rounded" />
+              <div className="bg-gray-900 rounded-xl p-1.5">
+                <Image src="/logo-rfc.png" alt="RFC" width={28} height={28} className="rounded" />
               </div>
               <span className="font-bold text-black dark:text-white text-sm">RFC</span>
             </div>

@@ -66,7 +66,7 @@ export default function ContactsPage() {
       <div className="flex justify-end mb-4 -mt-4">
         <button
           onClick={() => window.open("/api/export/contacts", "_blank")}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
         >
           <Download className="h-4 w-4" />
           Exporter CSV
@@ -99,10 +99,10 @@ export default function ContactsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
           </div>
         ) : contacts.length === 0 ? (
           <EmptyState
@@ -118,46 +118,46 @@ export default function ContactsPage() {
           />
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Nom
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Téléphone
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Entreprise
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-gray-800 divide-y divide-gray-200">
               {contacts.map((contact) => {
                 const typeInfo = CONTACT_TYPES[contact.type];
                 return (
-                  <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={contact.id} className="hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/contacts/${contact.id}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
                       >
                         {contact.prenom} {contact.nom}
                       </Link>
                       {contact.poste && (
-                        <p className="text-xs text-gray-500 mt-0.5">{contact.poste}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{contact.poste}</p>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {contact.email ? (
                         <a
                           href={`mailto:${contact.email}`}
-                          className="hover:text-blue-600 hover:underline"
+                          className="hover:text-red-600 hover:underline"
                         >
                           {contact.email}
                         </a>
@@ -165,7 +165,7 @@ export default function ContactsPage() {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {contact.telephone || <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -173,11 +173,11 @@ export default function ContactsPage() {
                         <StatutBadge label={typeInfo.label} color={typeInfo.color} />
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {contact.entreprise ? (
                         <Link
                           href={`/entreprises/${contact.entreprise.id}`}
-                          className="hover:text-blue-600 hover:underline"
+                          className="hover:text-red-600 hover:underline"
                         >
                           {contact.entreprise.nom}
                         </Link>
@@ -194,7 +194,7 @@ export default function ContactsPage() {
       </div>
 
       {!loading && contacts.length > 0 && (
-        <p className="text-sm text-gray-500 mt-3">
+        <p className="text-sm text-gray-400 mt-3">
           {contacts.length} contact{contacts.length > 1 ? "s" : ""}
         </p>
       )}

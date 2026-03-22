@@ -24,10 +24,10 @@ interface Formation {
 }
 
 const niveauColors: Record<string, string> = {
-  tous: "bg-gray-100 text-gray-700 border-gray-200",
-  debutant: "bg-green-100 text-green-700 border-green-200",
-  intermediaire: "bg-blue-100 text-blue-700 border-blue-200",
-  avance: "bg-purple-100 text-purple-700 border-purple-200",
+  tous: "bg-gray-700 text-gray-300 border-gray-700",
+  debutant: "bg-green-900/30 text-green-400 border-green-700",
+  intermediaire: "bg-red-900/30 text-red-400 border-red-700",
+  avance: "bg-purple-900/30 text-purple-400 border-purple-200",
 };
 
 type SortField = "titre" | "duree" | "tarif" | "createdAt";
@@ -93,8 +93,8 @@ export default function FormationsPage() {
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortBy !== field) return <ChevronDown className="h-3 w-3 text-gray-300" />;
     return sortOrder === "asc"
-      ? <ChevronUp className="h-3 w-3 text-blue-600" />
-      : <ChevronDown className="h-3 w-3 text-blue-600" />;
+      ? <ChevronUp className="h-3 w-3 text-red-600" />
+      : <ChevronDown className="h-3 w-3 text-red-600" />;
   };
 
   const getNiveauLabel = (value: string) => {
@@ -116,7 +116,7 @@ export default function FormationsPage() {
       <div className="flex justify-end mb-4 -mt-4">
         <button
           onClick={() => window.open("/api/export/formations", "_blank")}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
         >
           <Download className="h-4 w-4" />
           Exporter CSV
@@ -166,7 +166,7 @@ export default function FormationsPage() {
         {hasFilters && (
           <button
             onClick={() => { setSearch(""); setActifFilter(""); setCategorieFilter(""); setNiveauFilter(""); }}
-            className="h-10 px-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
           >
             Effacer filtres
           </button>
@@ -174,10 +174,10 @@ export default function FormationsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-x-auto">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
           </div>
         ) : formations.length === 0 ? (
           <EmptyState
@@ -193,21 +193,21 @@ export default function FormationsPage() {
           />
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-900">
               <tr>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
                   onClick={() => handleSort("titre")}
                 >
                   <span className="inline-flex items-center gap-1">
                     Titre <SortIcon field="titre" />
                   </span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Catégorie
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
                   onClick={() => handleSort("duree")}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -215,62 +215,62 @@ export default function FormationsPage() {
                   </span>
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
                   onClick={() => handleSort("tarif")}
                 >
                   <span className="inline-flex items-center gap-1">
                     Tarif <SortIcon field="tarif" />
                   </span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Niveau
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Sessions
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Statut
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-gray-800 divide-y divide-gray-200">
               {formations.map((formation) => {
                 const niveauLabel = getNiveauLabel(formation.niveau);
-                const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-100 text-gray-700 border-gray-200";
+                const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
                 return (
-                  <tr key={formation.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={formation.id} className="hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4">
                       <Link
                         href={`/formations/${formation.id}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
                       >
                         {formation.titre}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {formation.categorie || <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {formatDuree(formation.duree)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                       {formatCurrency(formation.tarif)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatutBadge label={niveauLabel} color={niveauColor} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                      <span className="inline-flex items-center rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
                         {formation._count.sessions} session{formation._count.sessions !== 1 ? "s" : ""}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {formation.actif ? (
-                        <span className="inline-flex items-center rounded-full border bg-green-100 text-green-700 border-green-200 px-2.5 py-0.5 text-xs font-medium">
+                        <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2.5 py-0.5 text-xs font-medium">
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full border bg-gray-100 text-gray-500 border-gray-200 px-2.5 py-0.5 text-xs font-medium">
+                        <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2.5 py-0.5 text-xs font-medium">
                           Inactive
                         </span>
                       )}
@@ -286,7 +286,7 @@ export default function FormationsPage() {
       {/* Pagination */}
       {!loading && formations.length > 0 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             {total} formation{total > 1 ? "s" : ""} au total
           </p>
           {totalPages > 1 && (
@@ -294,17 +294,17 @@ export default function FormationsPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-400">
                 Page {page} / {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
               >
                 Suivant <ChevronRight className="h-4 w-4" />
               </button>

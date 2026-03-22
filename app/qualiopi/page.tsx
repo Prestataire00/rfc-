@@ -53,10 +53,10 @@ const CRITERE_LABELS: Record<number, string> = {
 };
 
 const STATUT_CONFIG: Record<string, { label: string; bg: string; text: string; icon: React.ElementType }> = {
-  conforme: { label: "Conforme", bg: "bg-green-100", text: "text-green-700", icon: CheckCircle2 },
-  en_cours: { label: "En cours", bg: "bg-amber-100", text: "text-amber-700", icon: Clock },
-  non_conforme: { label: "Non conforme", bg: "bg-red-100", text: "text-red-700", icon: AlertTriangle },
-  non_applicable: { label: "N/A", bg: "bg-gray-100", text: "text-gray-500", icon: Ban },
+  conforme: { label: "Conforme", bg: "bg-green-900/30", text: "text-green-400", icon: CheckCircle2 },
+  en_cours: { label: "En cours", bg: "bg-amber-900/30", text: "text-amber-400", icon: Clock },
+  non_conforme: { label: "Non conforme", bg: "bg-red-900/30", text: "text-red-400", icon: AlertTriangle },
+  non_applicable: { label: "N/A", bg: "bg-gray-700", text: "text-gray-400", icon: Ban },
 };
 
 const PREUVE_TYPES = [
@@ -187,7 +187,7 @@ export default function QualiopiPage() {
       <div>
         <PageHeader title="Qualiopi" description="Suivi de la conformite aux indicateurs Qualiopi" />
         <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
         </div>
       </div>
     );
@@ -199,37 +199,37 @@ export default function QualiopiPage() {
 
       {/* Stats overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">Conformite globale</p>
-          <p className="text-2xl font-bold text-blue-600">{stats.conformitePercent}%</p>
+        <div className="rounded-lg border bg-gray-800 p-4">
+          <p className="text-sm text-gray-400">Conformite globale</p>
+          <p className="text-2xl font-bold text-red-600">{stats.conformitePercent}%</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">Conformes</p>
+        <div className="rounded-lg border bg-gray-800 p-4">
+          <p className="text-sm text-gray-400">Conformes</p>
           <p className="text-2xl font-bold text-green-600">{stats.conformes}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">En cours</p>
+        <div className="rounded-lg border bg-gray-800 p-4">
+          <p className="text-sm text-gray-400">En cours</p>
           <p className="text-2xl font-bold text-amber-600">{stats.enCours}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">Non conformes</p>
+        <div className="rounded-lg border bg-gray-800 p-4">
+          <p className="text-sm text-gray-400">Non conformes</p>
           <p className="text-2xl font-bold text-red-600">{stats.nonConformes}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <p className="text-sm text-gray-500">Non applicables</p>
+        <div className="rounded-lg border bg-gray-800 p-4">
+          <p className="text-sm text-gray-400">Non applicables</p>
           <p className="text-2xl font-bold text-gray-400">{stats.nonApplicables}</p>
         </div>
       </div>
 
       {/* Overall progress bar */}
-      <div className="rounded-lg border bg-white p-4 mb-6">
+      <div className="rounded-lg border bg-gray-800 p-4 mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Progression globale</span>
-          <span className="text-sm font-semibold text-blue-600">{stats.conformitePercent}%</span>
+          <span className="text-sm font-medium text-gray-300">Progression globale</span>
+          <span className="text-sm font-semibold text-red-600">{stats.conformitePercent}%</span>
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 rounded-full transition-all duration-500"
+            className="h-full bg-red-600 rounded-full transition-all duration-500"
             style={{ width: `${stats.conformitePercent}%` }}
           />
         </div>
@@ -241,7 +241,7 @@ export default function QualiopiPage() {
         <select
           value={filterStatut}
           onChange={(e) => setFilterStatut(e.target.value)}
-          className="h-10 rounded-md border border-gray-200 bg-white px-3 text-sm"
+          className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
         >
           <option value="">Tous les statuts</option>
           <option value="conforme">Conforme</option>
@@ -261,11 +261,11 @@ export default function QualiopiPage() {
           const isExpanded = expandedCriteres[critNum];
 
           return (
-            <div key={critNum} className="rounded-lg border bg-white overflow-hidden">
+            <div key={critNum} className="rounded-lg border bg-gray-800 overflow-hidden">
               {/* Critere header */}
               <button
                 onClick={() => toggleCritere(critNum)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-700 transition-colors"
               >
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -273,10 +273,10 @@ export default function QualiopiPage() {
                   <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 )}
                 <div className="flex-1 text-left">
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-gray-100">
                     Critere {critNum}
                   </span>
-                  <span className="text-sm text-gray-500 ml-2">
+                  <span className="text-sm text-gray-400 ml-2">
                     {CRITERE_LABELS[critNum]}
                   </span>
                 </div>
@@ -285,7 +285,7 @@ export default function QualiopiPage() {
                     <div
                       className={cn(
                         "h-full rounded-full transition-all",
-                        conformity >= 80 ? "bg-green-500" : conformity >= 50 ? "bg-amber-500" : "bg-red-500"
+                        conformity >= 80 ? "bg-green-900/200" : conformity >= 50 ? "bg-amber-900/200" : "bg-red-900/200"
                       )}
                       style={{ width: `${conformity}%` }}
                     />
@@ -308,17 +308,17 @@ export default function QualiopiPage() {
                     return (
                       <div
                         key={ind.id}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 cursor-pointer transition-colors"
                         onClick={() => openDetail(ind)}
                       >
                         <span className="text-xs font-mono text-gray-400 w-6 text-right flex-shrink-0">
                           {ind.numero}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 truncate">{ind.libelle}</p>
+                          <p className="text-sm text-gray-100 truncate">{ind.libelle}</p>
                         </div>
                         {ind.prioritaire && (
-                          <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                          <span className="inline-flex rounded-full bg-purple-900/30 px-2 py-0.5 text-xs font-medium text-purple-400">
                             Prioritaire
                           </span>
                         )}
@@ -344,15 +344,15 @@ export default function QualiopiPage() {
       {selectedIndicateur && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="fixed inset-0 bg-black/50" onClick={closeDetail} />
-          <div className="relative z-50 w-full max-w-lg bg-white h-full overflow-y-auto shadow-xl animate-in slide-in-from-right duration-200">
+          <div className="relative z-50 w-full max-w-lg bg-gray-800 h-full overflow-y-auto shadow-xl animate-in slide-in-from-right duration-200">
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-gray-800 border-b px-6 py-4 flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400">Indicateur {selectedIndicateur.numero} - Critere {selectedIndicateur.critere}</p>
-                <h2 className="text-lg font-semibold text-gray-900">{selectedIndicateur.libelle}</h2>
+                <h2 className="text-lg font-semibold text-gray-100">{selectedIndicateur.libelle}</h2>
               </div>
-              <button onClick={closeDetail} className="p-1 rounded-md hover:bg-gray-100">
-                <X className="h-5 w-5 text-gray-500" />
+              <button onClick={closeDetail} className="p-1 rounded-md hover:bg-gray-700">
+                <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
 
@@ -360,26 +360,26 @@ export default function QualiopiPage() {
               {/* Description */}
               {selectedIndicateur.description && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-                  <p className="text-sm text-gray-700">{selectedIndicateur.description}</p>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                  <p className="text-sm text-gray-300">{selectedIndicateur.description}</p>
                 </div>
               )}
 
               {/* Preuves attendues */}
               {selectedIndicateur.preuvesAttendues && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Preuves attendues</label>
-                  <p className="text-sm text-gray-700">{selectedIndicateur.preuvesAttendues}</p>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Preuves attendues</label>
+                  <p className="text-sm text-gray-300">{selectedIndicateur.preuvesAttendues}</p>
                 </div>
               )}
 
               {/* Statut */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Statut</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Statut</label>
                 <select
                   value={editStatut}
                   onChange={(e) => setEditStatut(e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm"
+                  className="w-full h-10 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
                 >
                   <option value="conforme">Conforme</option>
                   <option value="en_cours">En cours</option>
@@ -390,12 +390,12 @@ export default function QualiopiPage() {
 
               {/* Date audit */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Date d&apos;audit</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Date d&apos;audit</label>
                 <input
                   type="date"
                   value={editDateAudit}
                   onChange={(e) => setEditDateAudit(e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm"
+                  className="w-full h-10 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
                 />
               </div>
 
@@ -406,19 +406,19 @@ export default function QualiopiPage() {
                   id="prioritaire"
                   checked={editPrioritaire}
                   onChange={(e) => setEditPrioritaire(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  className="h-4 w-4 rounded border-gray-600 text-red-600"
                 />
-                <label htmlFor="prioritaire" className="text-sm text-gray-700">Marquer comme prioritaire</label>
+                <label htmlFor="prioritaire" className="text-sm text-gray-300">Marquer comme prioritaire</label>
               </div>
 
               {/* Commentaire */}
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Commentaire</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Commentaire</label>
                 <textarea
                   value={editCommentaire}
                   onChange={(e) => setEditCommentaire(e.target.value)}
                   rows={3}
-                  className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm resize-none"
+                  className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm resize-none"
                   placeholder="Ajouter un commentaire..."
                 />
               </div>
@@ -427,7 +427,7 @@ export default function QualiopiPage() {
               <button
                 onClick={saveIndicateur}
                 disabled={saving}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {saving ? "Enregistrement..." : "Enregistrer les modifications"}
               </button>
@@ -435,12 +435,12 @@ export default function QualiopiPage() {
               {/* Preuves section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-900">
+                  <h3 className="text-sm font-semibold text-gray-100">
                     Preuves ({selectedIndicateur.preuves.length})
                   </h3>
                   <button
                     onClick={() => setShowPreuveForm(!showPreuveForm)}
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-400 font-medium"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Ajouter
@@ -449,25 +449,25 @@ export default function QualiopiPage() {
 
                 {/* Add preuve form */}
                 {showPreuveForm && (
-                  <div className="rounded-lg border bg-gray-50 p-4 mb-3 space-y-3">
+                  <div className="rounded-lg border bg-gray-900 p-4 mb-3 space-y-3">
                     <input
                       type="text"
                       value={newPreuve.titre}
                       onChange={(e) => setNewPreuve({ ...newPreuve, titre: e.target.value })}
                       placeholder="Titre de la preuve"
-                      className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 text-sm"
+                      className="w-full h-9 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
                     />
                     <textarea
                       value={newPreuve.description}
                       onChange={(e) => setNewPreuve({ ...newPreuve, description: e.target.value })}
                       placeholder="Description (optionnel)"
                       rows={2}
-                      className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm resize-none"
+                      className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm resize-none"
                     />
                     <select
                       value={newPreuve.type}
                       onChange={(e) => setNewPreuve({ ...newPreuve, type: e.target.value })}
-                      className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 text-sm"
+                      className="w-full h-9 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
                     >
                       {PREUVE_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
@@ -478,19 +478,19 @@ export default function QualiopiPage() {
                       value={newPreuve.fichierUrl}
                       onChange={(e) => setNewPreuve({ ...newPreuve, fichierUrl: e.target.value })}
                       placeholder="URL du fichier (optionnel)"
-                      className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 text-sm"
+                      className="w-full h-9 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={addPreuve}
                         disabled={saving || !newPreuve.titre}
-                        className="flex-1 inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                        className="flex-1 inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
                       >
                         Ajouter la preuve
                       </button>
                       <button
                         onClick={() => setShowPreuveForm(false)}
-                        className="px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-200 rounded-md"
+                        className="px-3 py-2 text-xs font-medium text-gray-400 hover:bg-gray-200 rounded-md"
                       >
                         Annuler
                       </button>
@@ -504,15 +504,15 @@ export default function QualiopiPage() {
                 ) : (
                   <div className="space-y-2">
                     {selectedIndicateur.preuves.map((p) => (
-                      <div key={p.id} className="rounded-lg border bg-white p-3">
+                      <div key={p.id} className="rounded-lg border bg-gray-800 p-3">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{p.titre}</p>
-                            {p.description && <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>}
+                            <p className="text-sm font-medium text-gray-100">{p.titre}</p>
+                            {p.description && <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>}
                           </div>
                           <span className={cn(
                             "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                            p.valide ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                            p.valide ? "bg-green-900/30 text-green-400" : "bg-gray-700 text-gray-400"
                           )}>
                             {p.valide ? "Validé" : "À valider"}
                           </span>
@@ -522,7 +522,7 @@ export default function QualiopiPage() {
                             {PREUVE_TYPES.find((t) => t.value === p.type)?.label || p.type}
                           </span>
                           {p.fichierUrl && (
-                            <a href={p.fichierUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                            <a href={p.fichierUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-red-600 hover:underline">
                               Voir le fichier
                             </a>
                           )}

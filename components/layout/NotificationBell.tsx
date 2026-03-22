@@ -24,10 +24,10 @@ interface Notification {
 }
 
 const typeConfig: Record<string, { icon: typeof Info; color: string; bg: string }> = {
-  info: { icon: Info, color: "text-blue-500", bg: "bg-blue-50" },
-  warning: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-50" },
-  success: { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-50" },
-  error: { icon: XCircle, color: "text-red-500", bg: "bg-red-50" },
+  info: { icon: Info, color: "text-red-500", bg: "bg-red-900/20" },
+  warning: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-900/20" },
+  success: { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-900/20" },
+  error: { icon: XCircle, color: "text-red-500", bg: "bg-red-900/20" },
 };
 
 export function NotificationBell() {
@@ -95,26 +95,26 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-gray-700 transition-colors"
         aria-label="Notifications"
       >
-        <Bell className="h-5 w-5 text-gray-600" />
+        <Bell className="h-5 w-5 text-gray-400" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-900/200 px-1 text-[10px] font-bold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-gray-200 bg-white shadow-xl z-50">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-gray-700 bg-gray-800 shadow-xl z-50">
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+            <h3 className="text-sm font-semibold text-gray-100">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="flex items-center gap-1 text-xs text-red-600 hover:text-red-400 font-medium"
               >
                 <Check className="h-3 w-3" />
                 Marquer tout comme lu
@@ -127,7 +127,7 @@ export function NotificationBell() {
             {recentNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                 <Bell className="h-8 w-8 text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">Aucune notification</p>
+                <p className="text-sm text-gray-400">Aucune notification</p>
               </div>
             ) : (
               recentNotifications.map((notif) => {
@@ -138,8 +138,8 @@ export function NotificationBell() {
                   <div
                     key={notif.id}
                     className={cn(
-                      "flex gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer",
-                      !notif.lu && "border-l-2 border-l-blue-500 bg-blue-50/30"
+                      "flex gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-700 transition-colors cursor-pointer",
+                      !notif.lu && "border-l-2 border-l-red-500 bg-red-900/20/30"
                     )}
                     onClick={() => {
                       if (!notif.lu) markAsRead(notif.id);
@@ -161,12 +161,12 @@ export function NotificationBell() {
                       <p
                         className={cn(
                           "text-sm leading-snug",
-                          !notif.lu ? "font-semibold text-gray-900" : "font-medium text-gray-700"
+                          !notif.lu ? "font-semibold text-gray-100" : "font-medium text-gray-300"
                         )}
                       >
                         {notif.titre}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
                         {notif.message}
                       </p>
                       <p className="text-[11px] text-gray-400 mt-1">
@@ -187,7 +187,7 @@ export function NotificationBell() {
             <Link
               href="/notifications"
               onClick={() => setOpen(false)}
-              className="block text-center text-xs font-medium text-blue-600 hover:text-blue-700"
+              className="block text-center text-xs font-medium text-red-600 hover:text-red-400"
             >
               Voir toutes les notifications
             </Link>

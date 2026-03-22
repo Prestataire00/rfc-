@@ -67,10 +67,10 @@ export default function FormateursPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
           </div>
         ) : formateurs.length === 0 ? (
           <EmptyState
@@ -86,51 +86,51 @@ export default function FormateursPage() {
           />
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Nom
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Téléphone
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Spécialités
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Tarif journalier
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Sessions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-gray-800 divide-y divide-gray-200">
               {formateurs.map((formateur) => {
                 const specialites = parseSpecialites(formateur.specialites);
                 return (
-                  <tr key={formateur.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={formateur.id} className="hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/formateurs/${formateur.id}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
                       >
                         {formateur.prenom} {formateur.nom}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {formateur.email ? (
-                        <a href={`mailto:${formateur.email}`} className="hover:text-blue-600 hover:underline">
+                        <a href={`mailto:${formateur.email}`} className="hover:text-red-600 hover:underline">
                           {formateur.email}
                         </a>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {formateur.telephone || <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-6 py-4">
@@ -139,7 +139,7 @@ export default function FormateursPage() {
                           specialites.slice(0, 3).map((s, i) => (
                             <span
                               key={i}
-                              className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+                              className="inline-flex items-center rounded-full bg-red-900/20 px-2 py-0.5 text-xs font-medium text-red-400"
                             >
                               {s}
                             </span>
@@ -148,19 +148,19 @@ export default function FormateursPage() {
                           <span className="text-gray-400 text-sm">—</span>
                         )}
                         {specialites.length > 3 && (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                          <span className="inline-flex items-center rounded-full bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-400">
                             +{specialites.length - 3}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                       {formateur.tarifJournalier != null
                         ? formatCurrency(formateur.tarifJournalier)
                         : <span className="text-gray-400 font-normal">—</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                      <span className="inline-flex items-center rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
                         {formateur._count.sessions} session{formateur._count.sessions !== 1 ? "s" : ""}
                       </span>
                     </td>
@@ -173,7 +173,7 @@ export default function FormateursPage() {
       </div>
 
       {!loading && formateurs.length > 0 && (
-        <p className="text-sm text-gray-500 mt-3">
+        <p className="text-sm text-gray-400 mt-3">
           {formateurs.length} formateur{formateurs.length > 1 ? "s" : ""}
         </p>
       )}

@@ -107,7 +107,7 @@ export default function EntrepriseDetailPage() {
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
       </div>
     );
   }
@@ -116,7 +116,7 @@ export default function EntrepriseDetailPage() {
     return (
       <div className="p-6">
         <p className="text-red-600">{error || "Entreprise introuvable"}</p>
-        <Link href="/entreprises" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+        <Link href="/entreprises" className="text-red-600 hover:underline text-sm mt-2 inline-block">
           Retour aux entreprises
         </Link>
       </div>
@@ -136,27 +136,27 @@ export default function EntrepriseDetailPage() {
       <div className="mb-6">
         <Link
           href="/entreprises"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour aux entreprises
         </Link>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-blue-600" />
+            <div className="h-12 w-12 rounded-full bg-red-900/30 flex items-center justify-center">
+              <Building2 className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{entreprise.nom}</h1>
+              <h1 className="text-2xl font-bold text-gray-100">{entreprise.nom}</h1>
               {entreprise.secteur && (
-                <p className="text-sm text-gray-500 mt-0.5">{entreprise.secteur}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{entreprise.secteur}</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href={`/entreprises/${id}/modifier`}
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
             >
               <Pencil className="h-4 w-4" />
               Modifier
@@ -175,7 +175,7 @@ export default function EntrepriseDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-gray-700 mb-6">
         <nav className="flex gap-6 overflow-x-auto">
           {tabs.map((tab) => (
             <button
@@ -183,8 +183,8 @@ export default function EntrepriseDetailPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === tab.key
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-red-600 text-red-600"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
               }`}
             >
               {tab.label}
@@ -204,7 +204,7 @@ export default function EntrepriseDetailPage() {
               {(entreprise.adresse || entreprise.ville) && (
                 <div className="flex items-start gap-3">
                   <MapPin className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-gray-300">
                     {entreprise.adresse && <p>{entreprise.adresse}</p>}
                     {(entreprise.codePostal || entreprise.ville) && (
                       <p>
@@ -217,7 +217,7 @@ export default function EntrepriseDetailPage() {
               {entreprise.email && (
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-gray-400 shrink-0" />
-                  <a href={`mailto:${entreprise.email}`} className="text-sm text-blue-600 hover:underline">
+                  <a href={`mailto:${entreprise.email}`} className="text-sm text-red-600 hover:underline">
                     {entreprise.email}
                   </a>
                 </div>
@@ -225,7 +225,7 @@ export default function EntrepriseDetailPage() {
               {entreprise.telephone && (
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-gray-400 shrink-0" />
-                  <a href={`tel:${entreprise.telephone}`} className="text-sm text-gray-700 hover:underline">
+                  <a href={`tel:${entreprise.telephone}`} className="text-sm text-gray-300 hover:underline">
                     {entreprise.telephone}
                   </a>
                 </div>
@@ -237,7 +237,7 @@ export default function EntrepriseDetailPage() {
                     href={entreprise.site}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-red-600 hover:underline"
                   >
                     {entreprise.site}
                   </a>
@@ -246,12 +246,12 @@ export default function EntrepriseDetailPage() {
               {entreprise.siret && (
                 <div className="flex items-center gap-3">
                   <Hash className="h-4 w-4 text-gray-400 shrink-0" />
-                  <span className="text-sm text-gray-700 font-mono">SIRET: {entreprise.siret}</span>
+                  <span className="text-sm text-gray-300 font-mono">SIRET: {entreprise.siret}</span>
                 </div>
               )}
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-400">
                   Créée le {formatDate(entreprise.createdAt)}
                 </span>
               </div>
@@ -262,20 +262,20 @@ export default function EntrepriseDetailPage() {
             <div className="grid grid-cols-3 gap-4">
               <Card>
                 <CardContent className="pt-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{entreprise.contacts.length}</div>
-                  <div className="text-xs text-gray-500 mt-1">Contact{entreprise.contacts.length !== 1 ? "s" : ""}</div>
+                  <div className="text-2xl font-bold text-red-600">{entreprise.contacts.length}</div>
+                  <div className="text-xs text-gray-400 mt-1">Contact{entreprise.contacts.length !== 1 ? "s" : ""}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4 text-center">
                   <div className="text-2xl font-bold text-green-600">{entreprise.devis.length}</div>
-                  <div className="text-xs text-gray-500 mt-1">Devis</div>
+                  <div className="text-xs text-gray-400 mt-1">Devis</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4 text-center">
                   <div className="text-2xl font-bold text-purple-600">{entreprise.factures.length}</div>
-                  <div className="text-xs text-gray-500 mt-1">Facture{entreprise.factures.length !== 1 ? "s" : ""}</div>
+                  <div className="text-xs text-gray-400 mt-1">Facture{entreprise.factures.length !== 1 ? "s" : ""}</div>
                 </CardContent>
               </Card>
             </div>
@@ -286,7 +286,7 @@ export default function EntrepriseDetailPage() {
                   <CardTitle className="text-base">Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{entreprise.notes}</p>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{entreprise.notes}</p>
                 </CardContent>
               </Card>
             )}
@@ -296,45 +296,45 @@ export default function EntrepriseDetailPage() {
 
       {/* Contacts */}
       {activeTab === "contacts" && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {entreprise.contacts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Users className="h-8 w-8 text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500">Aucun contact associé</p>
+              <p className="text-sm text-gray-400">Aucun contact associé</p>
               <Link
                 href={`/contacts/nouveau`}
-                className="mt-3 text-sm text-blue-600 hover:underline"
+                className="mt-3 text-sm text-red-600 hover:underline"
               >
                 Ajouter un contact
               </Link>
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Poste</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nom</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Poste</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-200">
                 {entreprise.contacts.map((contact) => {
                   const typeInfo = CONTACT_TYPES[contact.type];
                   return (
-                    <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={contact.id} className="hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link
                           href={`/contacts/${contact.id}`}
-                          className="text-sm font-medium text-blue-600 hover:underline"
+                          className="text-sm font-medium text-red-600 hover:underline"
                         >
                           {contact.prenom} {contact.nom}
                         </Link>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {contact.email || <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {contact.poste || <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -351,33 +351,33 @@ export default function EntrepriseDetailPage() {
 
       {/* Devis */}
       {activeTab === "devis" && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {entreprise.devis.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-gray-500">Aucun devis enregistré</p>
+              <p className="text-sm text-gray-400">Aucun devis enregistré</p>
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant HT</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Numéro</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Montant HT</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-200">
                 {entreprise.devis.map((devis) => {
                   const statutInfo = DEVIS_STATUTS[devis.statut];
                   return (
-                    <tr key={devis.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900">
+                    <tr key={devis.id} className="hover:bg-gray-700 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-100">
                         {devis.numero}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {formatDate(devis.createdAt)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                         {formatCurrency(devis.montantHT)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -394,37 +394,37 @@ export default function EntrepriseDetailPage() {
 
       {/* Factures */}
       {activeTab === "factures" && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {entreprise.factures.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-gray-500">Aucune facture enregistrée</p>
+              <p className="text-sm text-gray-400">Aucune facture enregistrée</p>
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant TTC</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Numéro</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Échéance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Montant TTC</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-200">
                 {entreprise.factures.map((facture) => {
                   const statutInfo = FACTURE_STATUTS[facture.statut];
                   return (
-                    <tr key={facture.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-900">
+                    <tr key={facture.id} className="hover:bg-gray-700 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-100">
                         {facture.numero}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {formatDate(facture.createdAt)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {facture.dateEcheance ? formatDate(facture.dateEcheance) : <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                         {formatCurrency(facture.montantTTC)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

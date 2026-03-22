@@ -111,7 +111,7 @@ export default function ModifierContactPage() {
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
       </div>
     );
   }
@@ -121,17 +121,17 @@ export default function ModifierContactPage() {
       <div className="mb-6">
         <Link
           href={`/contacts/${id}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour au contact
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Modifier le contact</h1>
-        <p className="text-sm text-gray-500 mt-1">Mettez à jour les informations du contact</p>
+        <h1 className="text-2xl font-bold text-gray-100">Modifier le contact</h1>
+        <p className="text-sm text-gray-400 mt-1">Mettez à jour les informations du contact</p>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
           {error}
         </div>
       )}
@@ -253,7 +253,7 @@ export default function ModifierContactPage() {
         <div className="flex justify-end gap-3">
           <Link
             href={`/contacts/${id}`}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
           >
             Annuler
           </Link>

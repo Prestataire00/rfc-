@@ -25,11 +25,11 @@ type Besoin = {
 };
 
 const PIPELINE_COLS = [
-  { key: "nouveau", label: "Nouveau", color: "bg-blue-50 border-blue-300" },
-  { key: "qualifie", label: "Qualifié", color: "bg-indigo-50 border-indigo-300" },
-  { key: "devis_envoye", label: "Devis envoyé", color: "bg-yellow-50 border-yellow-300" },
-  { key: "accepte", label: "Accepté", color: "bg-green-50 border-green-300" },
-  { key: "refuse", label: "Refusé", color: "bg-red-50 border-red-300" },
+  { key: "nouveau", label: "Nouveau", color: "bg-red-900/20 border-red-700" },
+  { key: "qualifie", label: "Qualifié", color: "bg-indigo-900/20 border-indigo-700" },
+  { key: "devis_envoye", label: "Devis envoyé", color: "bg-yellow-900/20 border-yellow-700" },
+  { key: "accepte", label: "Accepté", color: "bg-green-900/20 border-green-700" },
+  { key: "refuse", label: "Refusé", color: "bg-red-900/20 border-red-700" },
 ];
 
 export default function BesoinsPage() {
@@ -57,7 +57,7 @@ export default function BesoinsPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-24">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
       </div>
     );
   }
@@ -70,23 +70,23 @@ export default function BesoinsPage() {
       />
 
       <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        <div className="flex gap-1 bg-gray-800 p-1 rounded-lg">
           <button
             onClick={() => setView("kanban")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === "kanban" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600"}`}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === "kanban" ? "bg-gray-800 text-gray-100 shadow-sm" : "text-gray-400"}`}
           >
             Pipeline
           </button>
           <button
             onClick={() => setView("list")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === "list" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600"}`}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === "list" ? "bg-gray-800 text-gray-100 shadow-sm" : "text-gray-400"}`}
           >
             Liste
           </button>
         </div>
         <Link
           href="/besoins/nouveau"
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
         >
           <Plus className="h-4 w-4" /> Nouveau besoin
         </Link>
@@ -107,8 +107,8 @@ export default function BesoinsPage() {
             return (
               <div key={col.key} className={`flex-shrink-0 w-64 rounded-lg border-2 p-3 ${col.color}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">{col.label}</h3>
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-xs font-medium text-gray-600 border">
+                  <h3 className="text-sm font-semibold text-gray-300">{col.label}</h3>
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-800 text-xs font-medium text-gray-400 border">
                     {colBesoins.length}
                   </span>
                 </div>
@@ -119,16 +119,16 @@ export default function BesoinsPage() {
                       <div
                         key={b.id}
                         onClick={() => router.push(`/besoins/${b.id}`)}
-                        className="bg-white rounded-md border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-all"
+                        className="bg-gray-800 rounded-md border border-gray-700 p-3 cursor-pointer hover:shadow-md transition-all"
                       >
-                        <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">{b.titre}</p>
-                        {b.entreprise && <p className="text-xs text-gray-500 mb-1">{b.entreprise.nom}</p>}
+                        <p className="text-sm font-medium text-gray-100 line-clamp-2 mb-1">{b.titre}</p>
+                        {b.entreprise && <p className="text-xs text-gray-400 mb-1">{b.entreprise.nom}</p>}
                         {b.formation && <p className="text-xs text-indigo-600 mb-1">{b.formation.titre}</p>}
                         <div className="flex items-center justify-between mt-2">
                           <span className={`text-xs font-medium ${prio?.color || ""}`}>{prio?.label}</span>
                           {b.nbStagiaires && <span className="text-xs text-gray-400">{b.nbStagiaires} stag.</span>}
                         </div>
-                        {b.budget && <p className="text-xs text-gray-500 mt-1">Budget: {formatCurrency(b.budget)}</p>}
+                        {b.budget && <p className="text-xs text-gray-400 mt-1">Budget: {formatCurrency(b.budget)}</p>}
                       </div>
                     );
                   })}
@@ -138,17 +138,17 @@ export default function BesoinsPage() {
           })}
         </div>
       ) : (
-        <div className="rounded-lg border bg-white overflow-hidden">
+        <div className="rounded-lg border bg-gray-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-900 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Titre</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Entreprise</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Formation</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Origine</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Priorité</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Titre</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Entreprise</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Origine</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Priorité</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -158,16 +158,16 @@ export default function BesoinsPage() {
                 return (
                   <tr
                     key={b.id}
-                    className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
+                    className="border-b last:border-0 hover:bg-gray-700 cursor-pointer"
                     onClick={() => router.push(`/besoins/${b.id}`)}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-900">{b.titre}</td>
-                    <td className="px-4 py-3 text-gray-600">{b.entreprise?.nom || "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{b.formation?.titre || "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{BESOIN_ORIGINES[b.origine as keyof typeof BESOIN_ORIGINES]?.label || b.origine}</td>
+                    <td className="px-4 py-3 font-medium text-gray-100">{b.titre}</td>
+                    <td className="px-4 py-3 text-gray-400">{b.entreprise?.nom || "—"}</td>
+                    <td className="px-4 py-3 text-gray-400">{b.formation?.titre || "—"}</td>
+                    <td className="px-4 py-3 text-gray-400">{BESOIN_ORIGINES[b.origine as keyof typeof BESOIN_ORIGINES]?.label || b.origine}</td>
                     <td className="px-4 py-3"><span className={`font-medium ${prio?.color}`}>{prio?.label}</span></td>
                     <td className="px-4 py-3">{st && <StatutBadge label={st.label} color={st.color} />}</td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(b.createdAt)}</td>
+                    <td className="px-4 py-3 text-gray-400">{formatDate(b.createdAt)}</td>
                   </tr>
                 );
               })}

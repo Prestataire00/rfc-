@@ -17,9 +17,9 @@ type User = {
 };
 
 const roleBadge: Record<string, { label: string; class: string }> = {
-  admin: { label: "Admin", class: "bg-purple-100 text-purple-700" },
-  formateur: { label: "Formateur", class: "bg-blue-100 text-blue-700" },
-  client: { label: "Client", class: "bg-green-100 text-green-700" },
+  admin: { label: "Admin", class: "bg-purple-900/30 text-purple-400" },
+  formateur: { label: "Formateur", class: "bg-red-900/30 text-red-400" },
+  client: { label: "Client", class: "bg-green-900/30 text-green-400" },
 };
 
 export default function UtilisateursPage() {
@@ -80,7 +80,7 @@ export default function UtilisateursPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
       </div>
     );
   }
@@ -89,12 +89,12 @@ export default function UtilisateursPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
-          <p className="text-sm text-gray-500 mt-1">{users.length} compte(s)</p>
+          <h1 className="text-2xl font-bold text-gray-100">Gestion des utilisateurs</h1>
+          <p className="text-sm text-gray-400 mt-1">{users.length} compte(s)</p>
         </div>
         <Link
           href="/utilisateurs/nouveau"
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
         >
           <Plus className="h-4 w-4" />
           Nouveau compte
@@ -126,39 +126,39 @@ export default function UtilisateursPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="bg-gray-800 border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-900 border-b">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Utilisateur</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Rattachement</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">Statut</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">Actions</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-400">Utilisateur</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-400">Email</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-400">Role</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-400">Rattachement</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+              <th className="text-right px-4 py-3 font-medium text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {filtered.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user.id} className="hover:bg-gray-700">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs">
+                    <div className="h-8 w-8 rounded-full bg-red-900/30 flex items-center justify-center text-red-400 font-semibold text-xs">
                       {user.prenom[0]}
                       {user.nom[0]}
                     </div>
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-100">
                       {user.prenom} {user.nom}
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-500">{user.email}</td>
+                <td className="px-4 py-3 text-gray-400">{user.email}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleBadge[user.role]?.class || "bg-gray-100"}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleBadge[user.role]?.class || "bg-gray-700"}`}>
                     {roleBadge[user.role]?.label || user.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td className="px-4 py-3 text-gray-400 text-xs">
                   {user.formateur && `Formateur: ${user.formateur.prenom} ${user.formateur.nom}`}
                   {user.entreprise && `Entreprise: ${user.entreprise.nom}`}
                   {!user.formateur && !user.entreprise && "—"}
@@ -182,7 +182,7 @@ export default function UtilisateursPage() {
                         setNewPassword("");
                         setResetMsg("");
                       }}
-                      className="text-gray-400 hover:text-blue-600 p-1"
+                      className="text-gray-400 hover:text-red-600 p-1"
                       title="Reinitialiser le mot de passe"
                     >
                       <KeyRound className="h-4 w-4" />
@@ -191,15 +191,15 @@ export default function UtilisateursPage() {
                       onClick={() => toggleActif(user)}
                       className={`text-xs px-2 py-1 rounded ${
                         user.actif
-                          ? "text-red-600 hover:bg-red-50"
-                          : "text-green-600 hover:bg-green-50"
+                          ? "text-red-600 hover:bg-red-900/20"
+                          : "text-green-600 hover:bg-green-900/20"
                       }`}
                     >
                       {user.actif ? "Desactiver" : "Activer"}
                     </button>
                     <Link
                       href={`/utilisateurs/${user.id}/modifier`}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs text-red-600 hover:underline"
                     >
                       Modifier
                     </Link>
@@ -221,9 +221,9 @@ export default function UtilisateursPage() {
       {/* Reset Password Modal */}
       {resetUserId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-blue-600" />
+          <div className="bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
+            <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-red-600" />
               Reinitialiser le mot de passe
             </h3>
             <input
@@ -241,14 +241,14 @@ export default function UtilisateursPage() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setResetUserId(null)}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 rounded-lg"
               >
                 Annuler
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={newPassword.length < 6}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 Confirmer
               </button>

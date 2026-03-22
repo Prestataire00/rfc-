@@ -54,22 +54,22 @@ export default function NouvelUtilisateurPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/utilisateurs" className="p-2 hover:bg-gray-100 rounded-lg">
+        <Link href="/utilisateurs" className="p-2 hover:bg-gray-700 rounded-lg">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Nouveau compte utilisateur</h1>
+        <h1 className="text-2xl font-bold text-gray-100">Nouveau compte utilisateur</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-gray-800 border rounded-xl p-6 space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Prénom *</label>
             <input
               type="text"
               required
@@ -79,7 +79,7 @@ export default function NouvelUtilisateurPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Nom *</label>
             <input
               type="text"
               required
@@ -91,7 +91,7 @@ export default function NouvelUtilisateurPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
           <input
             type="email"
             required
@@ -102,7 +102,7 @@ export default function NouvelUtilisateurPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Mot de passe *</label>
           <input
             type="password"
             required
@@ -115,7 +115,7 @@ export default function NouvelUtilisateurPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Rôle *</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Rôle *</label>
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value, formateurId: "", entrepriseId: "" })}
@@ -129,7 +129,7 @@ export default function NouvelUtilisateurPage() {
 
         {form.role === "formateur" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher au formateur</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Rattacher au formateur</label>
             <select
               value={form.formateurId}
               onChange={(e) => setForm({ ...form, formateurId: e.target.value })}
@@ -147,7 +147,7 @@ export default function NouvelUtilisateurPage() {
 
         {form.role === "client" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher à l&apos;entreprise</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Rattacher à l&apos;entreprise</label>
             <select
               value={form.entrepriseId}
               onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}
@@ -167,7 +167,7 @@ export default function NouvelUtilisateurPage() {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-2 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 text-sm font-medium disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? "Création..." : "Créer le compte"}

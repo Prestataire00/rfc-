@@ -1,14 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" fill="none">
-  <!-- Shield icon -->
-  <path d="M25 4L6 12v12c0 11.1 8.1 21.5 19 24 10.9-2.5 19-12.9 19-24V12L25 4z" fill="#2563EB"/>
-  <path d="M25 8L10 14.5v9.5c0 8.7 6.4 16.9 15 18.8 8.6-1.9 15-10.1 15-18.8v-9.5L25 8z" fill="#1E40AF"/>
-  <!-- Cross / rescue symbol -->
-  <rect x="21" y="14" width="8" height="22" rx="1.5" fill="white"/>
-  <rect x="15" y="20" width="20" height="8" rx="1.5" fill="white"/>
-  <!-- Text: RFC -->
-  <text x="52" y="22" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="800" fill="#1E3A5F" letter-spacing="1">
-    <tspan fill="#2563EB">R</tspan><tspan fill="#1E40AF">F</tspan><tspan fill="#0F172A">C</tspan>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 70" fill="none">
+  <!-- Left arc (red) -->
+  <path d="M8 35 A27 27 0 0 1 35 8" stroke="#C41E24" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Right arc (red) -->
+  <path d="M62 35 A27 27 0 0 0 35 8" stroke="#C41E24" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Bottom arc (grey) -->
+  <path d="M14 45 A25 25 0 0 0 56 45" stroke="#666" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Flame icon -->
+  <g transform="translate(35,38)">
+    <!-- Shield shape -->
+    <path d="M-8 -4 L0 -10 L8 -4 L8 4 Q8 8 0 10 Q-8 8 -8 4 Z" fill="#1a1a1a" stroke="#555" stroke-width="0.5"/>
+    <!-- Flame -->
+    <path d="M0 -5 Q3 -2 2 1 Q4 -1 3 -4 Q5 0 3 3 Q2 5 0 6 Q-2 5 -3 3 Q-5 0 -3 -4 Q-4 -1 -2 1 Q-3 -2 0 -5Z" fill="#C41E24"/>
+    <path d="M0 -2 Q1.5 0 1 2 Q0.5 4 0 4.5 Q-0.5 4 -1 2 Q-1.5 0 0 -2Z" fill="#E8842C"/>
+  </g>
+
+  <!-- RFC text -->
+  <text x="75" y="30" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="900" letter-spacing="3">
+    <tspan fill="#C41E24">R</tspan><tspan fill="#CCCCCC">F</tspan><tspan fill="#FFFFFF" stroke="#999" stroke-width="0.3">C</tspan>
   </text>
-  <!-- Subtitle -->
-  <text x="52" y="38" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="500" fill="#64748B" letter-spacing="2.5">RESCUE FORMATION CONSEIL</text>
+
+  <!-- RESCUE FORMATION CONSEIL -->
+  <text x="75" y="46" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#AAAAAA" letter-spacing="1.5">RESCUE FORMATION CONSEIL</text>
+
+  <!-- SECURITE - INCENDIE - PREVENTION -->
+  <text x="75" y="58" font-family="Arial, Helvetica, sans-serif" font-size="6.5" font-weight="500" fill="#888888" letter-spacing="1.8">SECURITE - INCENDIE - PREVENTION</text>
 </svg>

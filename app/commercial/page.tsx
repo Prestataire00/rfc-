@@ -37,11 +37,11 @@ type Facture = {
 };
 
 const PIPELINE_COLUMNS = [
-  { key: "brouillon", label: "Brouillon", color: "bg-gray-100 border-gray-300" },
-  { key: "envoye", label: "Envoyé", color: "bg-blue-50 border-blue-300" },
-  { key: "accepte", label: "Accepté", color: "bg-green-50 border-green-300" },
-  { key: "refuse", label: "Refusé", color: "bg-red-50 border-red-300" },
-  { key: "expire", label: "Expiré", color: "bg-orange-50 border-orange-300" },
+  { key: "brouillon", label: "Brouillon", color: "bg-gray-700 border-gray-600" },
+  { key: "envoye", label: "Envoyé", color: "bg-red-900/20 border-red-300" },
+  { key: "accepte", label: "Accepté", color: "bg-green-900/20 border-green-700" },
+  { key: "refuse", label: "Refusé", color: "bg-red-900/20 border-red-300" },
+  { key: "expire", label: "Expiré", color: "bg-orange-900/20 border-orange-700" },
 ] as const;
 
 export default function CommercialPage() {
@@ -101,14 +101,14 @@ export default function CommercialPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-700 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab("devis")}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
             activeTab === "devis"
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
+              ? "bg-gray-800 text-gray-100 shadow-sm"
+              : "text-gray-400 hover:text-gray-100"
           )}
         >
           <FileText className="h-4 w-4" /> Pipeline Devis
@@ -118,8 +118,8 @@ export default function CommercialPage() {
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
             activeTab === "factures"
-              ? "bg-white text-gray-900 shadow-sm"
-              : "text-gray-600 hover:text-gray-900"
+              ? "bg-gray-800 text-gray-100 shadow-sm"
+              : "text-gray-400 hover:text-gray-100"
           )}
         >
           <Receipt className="h-4 w-4" /> Factures
@@ -132,7 +132,7 @@ export default function CommercialPage() {
           <div className="flex justify-end mb-4">
             <Link
               href="/commercial/devis/nouveau"
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
             >
               <Plus className="h-4 w-4" /> Nouveau devis
             </Link>
@@ -140,7 +140,7 @@ export default function CommercialPage() {
 
           {loadingDevis ? (
             <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
             </div>
           ) : devis.length === 0 ? (
             <EmptyState
@@ -164,8 +164,8 @@ export default function CommercialPage() {
                     )}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-700">{col.label}</h3>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-xs font-medium text-gray-600 border">
+                      <h3 className="text-sm font-semibold text-gray-300">{col.label}</h3>
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-800 text-xs font-medium text-gray-400 border">
                         {colDevis.length}
                       </span>
                     </div>
@@ -174,17 +174,17 @@ export default function CommercialPage() {
                         <div
                           key={d.id}
                           onClick={() => router.push(`/commercial/devis/${d.id}`)}
-                          className="bg-white rounded-md border border-gray-200 p-3 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all"
+                          className="bg-gray-800 rounded-md border border-gray-700 p-3 cursor-pointer hover:shadow-md hover:border-red-300 transition-all"
                         >
                           <div className="flex items-start justify-between gap-1 mb-1">
-                            <span className="text-xs font-mono text-gray-500">{d.numero}</span>
+                            <span className="text-xs font-mono text-gray-400">{d.numero}</span>
                             {st && <StatutBadge label={st.label} color={st.color} />}
                           </div>
-                          <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
+                          <p className="text-sm font-medium text-gray-100 line-clamp-2 mb-2">
                             {d.objet}
                           </p>
-                          <p className="text-xs text-gray-500 mb-1">{getClientName(d)}</p>
-                          <p className="text-sm font-semibold text-gray-800">
+                          <p className="text-xs text-gray-400 mb-1">{getClientName(d)}</p>
+                          <p className="text-sm font-semibold text-gray-200">
                             {formatCurrency(d.montantTTC)}
                           </p>
                         </div>
@@ -208,7 +208,7 @@ export default function CommercialPage() {
             <select
               value={filtreStatutFacture}
               onChange={(e) => setFiltreStatutFacture(e.target.value)}
-              className="h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
             >
               {factureStatutOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -218,7 +218,7 @@ export default function CommercialPage() {
             </select>
             <Link
               href="/commercial/factures/nouveau"
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
             >
               <Plus className="h-4 w-4" /> Nouvelle facture
             </Link>
@@ -226,7 +226,7 @@ export default function CommercialPage() {
 
           {loadingFactures ? (
             <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
             </div>
           ) : factures.length === 0 ? (
             <EmptyState
@@ -235,16 +235,16 @@ export default function CommercialPage() {
               description="Vos factures apparaîtront ici"
             />
           ) : (
-            <div className="rounded-lg border bg-white overflow-hidden">
+            <div className="rounded-lg border bg-gray-800 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-900 border-b">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Numéro</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Client</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Montant TTC</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Échéance</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Date paiement</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Numéro</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Client</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Montant TTC</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Échéance</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Date paiement</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -253,23 +253,23 @@ export default function CommercialPage() {
                     return (
                       <tr
                         key={f.id}
-                        className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
+                        className="border-b last:border-0 hover:bg-gray-700 cursor-pointer"
                         onClick={() => router.push(`/commercial/factures/${f.id}`)}
                       >
-                        <td className="px-4 py-3 font-mono text-gray-700">{f.numero}</td>
-                        <td className="px-4 py-3 text-gray-700">
+                        <td className="px-4 py-3 font-mono text-gray-300">{f.numero}</td>
+                        <td className="px-4 py-3 text-gray-300">
                           {f.entreprise?.nom || <span className="text-gray-400">—</span>}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-gray-800">
+                        <td className="px-4 py-3 font-semibold text-gray-200">
                           {formatCurrency(f.montantTTC)}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-gray-400">
                           {formatDate(f.dateEcheance)}
                         </td>
                         <td className="px-4 py-3">
                           {st && <StatutBadge label={st.label} color={st.color} />}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-gray-400">
                           {f.datePaiement ? (
                             formatDate(f.datePaiement)
                           ) : (

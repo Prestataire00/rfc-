@@ -74,7 +74,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
       </div>
     );
   }
@@ -83,30 +83,30 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/utilisateurs" className="p-2 hover:bg-gray-100 rounded-lg">
+          <Link href="/utilisateurs" className="p-2 hover:bg-gray-700 rounded-lg">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Modifier le compte</h1>
+          <h1 className="text-2xl font-bold text-gray-100">Modifier le compte</h1>
         </div>
         <button
           onClick={handleDelete}
-          className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg text-sm"
+          className="flex items-center gap-2 text-red-600 hover:bg-red-900/20 px-3 py-2 rounded-lg text-sm"
         >
           <Trash2 className="h-4 w-4" />
           Supprimer
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-gray-800 border rounded-xl p-6 space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-lg text-sm">
             {error}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Prénom</label>
             <input
               type="text"
               required
@@ -116,7 +116,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
             <input
               type="text"
               required
@@ -128,7 +128,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
           <input
             type="email"
             required
@@ -139,7 +139,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Rôle</label>
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -153,7 +153,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
 
         {form.role === "formateur" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher au formateur</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Rattacher au formateur</label>
             <select
               value={form.formateurId}
               onChange={(e) => setForm({ ...form, formateurId: e.target.value })}
@@ -171,7 +171,7 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
 
         {form.role === "client" && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rattacher à l&apos;entreprise</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Rattacher à l&apos;entreprise</label>
             <select
               value={form.entrepriseId}
               onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}
@@ -195,16 +195,16 @@ export default function ModifierUtilisateurPage({ params }: { params: Promise<{ 
               onChange={(e) => setForm({ ...form, actif: e.target.checked })}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-red-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-800 after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
           </label>
-          <span className="text-sm text-gray-700">Compte actif</span>
+          <span className="text-sm text-gray-300">Compte actif</span>
         </div>
 
         <div className="flex justify-end pt-4">
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-2 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 text-sm font-medium disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? "Enregistrement..." : "Enregistrer"}

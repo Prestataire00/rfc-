@@ -110,9 +110,9 @@ export default function SessionsPage() {
 
   const getCapacityInfo = (s: Session) => {
     const ratio = s._count.inscriptions / s.capaciteMax;
-    if (ratio >= 1) return { color: "text-red-600 bg-red-50", label: "Complet" };
-    if (ratio >= 0.8) return { color: "text-orange-600 bg-orange-50", label: "Presque complet" };
-    return { color: "text-green-600 bg-green-50", label: "Disponible" };
+    if (ratio >= 1) return { color: "text-red-600 bg-red-900/20", label: "Complet" };
+    if (ratio >= 0.8) return { color: "text-orange-600 bg-orange-900/20", label: "Presque complet" };
+    return { color: "text-green-600 bg-green-900/20", label: "Disponible" };
   };
 
   return (
@@ -128,7 +128,7 @@ export default function SessionsPage() {
       <div className="flex justify-end mb-4 -mt-4">
         <button
           onClick={() => window.open("/api/export/sessions", "_blank")}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
         >
           <Download className="h-4 w-4" />
           Exporter CSV
@@ -136,12 +136,12 @@ export default function SessionsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-700 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab("liste")}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
-            activeTab === "liste" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+            activeTab === "liste" ? "bg-gray-800 text-gray-100 shadow-sm" : "text-gray-400 hover:text-gray-100"
           )}
         >
           <List className="h-4 w-4" /> Liste
@@ -150,7 +150,7 @@ export default function SessionsPage() {
           onClick={() => setActiveTab("calendrier")}
           className={cn(
             "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
-            activeTab === "calendrier" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+            activeTab === "calendrier" ? "bg-gray-800 text-gray-100 shadow-sm" : "text-gray-400 hover:text-gray-100"
           )}
         >
           <CalendarDays className="h-4 w-4" /> Calendrier
@@ -173,7 +173,7 @@ export default function SessionsPage() {
             <select
               value={statut}
               onChange={(e) => setStatut(e.target.value)}
-              className="h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
             >
               {statutOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -182,7 +182,7 @@ export default function SessionsPage() {
             <select
               value={formateurId}
               onChange={(e) => setFormateurId(e.target.value)}
-              className="h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
             >
               <option value="">Tous les formateurs</option>
               {formateurs.map((f) => (
@@ -192,7 +192,7 @@ export default function SessionsPage() {
             <select
               value={capacite}
               onChange={(e) => setCapacite(e.target.value)}
-              className="h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
             >
               <option value="">Toutes capacités</option>
               <option value="disponible">Places disponibles</option>
@@ -201,7 +201,7 @@ export default function SessionsPage() {
             {hasFilters && (
               <button
                 onClick={() => { setSearch(""); setStatut(""); setFormateurId(""); setCapacite(""); }}
-                className="h-10 px-3 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
               >
                 Effacer
               </button>
@@ -210,7 +210,7 @@ export default function SessionsPage() {
 
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
             </div>
           ) : sessions.length === 0 ? (
             <EmptyState
@@ -222,16 +222,16 @@ export default function SessionsPage() {
             />
           ) : (
             <>
-              <div className="rounded-lg border bg-white overflow-x-auto">
+              <div className="rounded-lg border bg-gray-800 overflow-x-auto">
                 <table className="w-full text-sm min-w-[700px]">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-gray-900 border-b">
                     <tr>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Formation</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Formateur</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Dates</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Lieu</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Participants</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Formateur</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Dates</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Lieu</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Participants</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -241,19 +241,19 @@ export default function SessionsPage() {
                       return (
                         <tr
                           key={s.id}
-                          className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
+                          className="border-b last:border-0 hover:bg-gray-700 cursor-pointer"
                           onClick={() => router.push(`/sessions/${s.id}`)}
                         >
                           <td className="px-4 py-3">
                             <Link
                               href={`/formations/${s.formation.id}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="font-medium text-blue-600 hover:underline"
+                              className="font-medium text-red-600 hover:underline"
                             >
                               {s.formation.titre}
                             </Link>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
+                          <td className="px-4 py-3 text-gray-400">
                             {s.formateur ? (
                               `${s.formateur.prenom} ${s.formateur.nom}`
                             ) : (
@@ -262,11 +262,11 @@ export default function SessionsPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
+                          <td className="px-4 py-3 text-gray-400">
                             <div>{formatDate(s.dateDebut)}</div>
                             <div className="text-gray-400 text-xs">→ {formatDate(s.dateFin)}</div>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
+                          <td className="px-4 py-3 text-gray-400">
                             {s.lieu || <span className="text-gray-400">—</span>}
                           </td>
                           <td className="px-4 py-3">
@@ -275,12 +275,12 @@ export default function SessionsPage() {
                                 {s._count.inscriptions}/{s.capaciteMax}
                               </span>
                               {s._count.inscriptions >= s.capaciteMax && (
-                                <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">
+                                <span className="text-xs bg-red-900/30 text-red-600 px-1.5 py-0.5 rounded font-medium">
                                   Complet
                                 </span>
                               )}
                               {s._count.inscriptions >= s.capaciteMax * 0.8 && s._count.inscriptions < s.capaciteMax && (
-                                <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-medium">
+                                <span className="text-xs bg-orange-900/30 text-orange-600 px-1.5 py-0.5 rounded font-medium">
                                   Presque complet
                                 </span>
                               )}
@@ -290,8 +290,8 @@ export default function SessionsPage() {
                               <div
                                 className={cn(
                                   "h-full rounded-full transition-all",
-                                  s._count.inscriptions >= s.capaciteMax ? "bg-red-500" :
-                                  s._count.inscriptions >= s.capaciteMax * 0.8 ? "bg-orange-500" : "bg-green-500"
+                                  s._count.inscriptions >= s.capaciteMax ? "bg-red-900/200" :
+                                  s._count.inscriptions >= s.capaciteMax * 0.8 ? "bg-orange-900/200" : "bg-green-900/200"
                                 )}
                                 style={{ width: `${Math.min(100, (s._count.inscriptions / s.capaciteMax) * 100)}%` }}
                               />
@@ -306,7 +306,7 @@ export default function SessionsPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-sm text-gray-500 mt-3">
+              <p className="text-sm text-gray-400 mt-3">
                 {sessions.length} session{sessions.length > 1 ? "s" : ""}
               </p>
             </>
@@ -315,14 +315,14 @@ export default function SessionsPage() {
       )}
 
       {activeTab === "calendrier" && (
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-gray-800 rounded-lg border p-6">
           {/* Month navigation */}
           <div className="flex items-center justify-between mb-6">
-            <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+            <button onClick={prevMonth} className="p-2 hover:bg-gray-700 rounded-md transition-colors">
               <ChevronLeft className="h-5 w-5" />
             </button>
             <h2 className="text-lg font-semibold">{MOIS[calMonth]} {calYear}</h2>
-            <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-md transition-colors">
+            <button onClick={nextMonth} className="p-2 hover:bg-gray-700 rounded-md transition-colors">
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
@@ -330,7 +330,7 @@ export default function SessionsPage() {
           {/* Day headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {JOURS.map((j) => (
-              <div key={j} className="text-center text-xs font-medium text-gray-500 py-2">{j}</div>
+              <div key={j} className="text-center text-xs font-medium text-gray-400 py-2">{j}</div>
             ))}
           </div>
 
@@ -349,12 +349,12 @@ export default function SessionsPage() {
                   key={day}
                   className={cn(
                     "min-h-[80px] rounded-md border p-1",
-                    isToday ? "border-blue-300 bg-blue-50" : "border-gray-100"
+                    isToday ? "border-red-300 bg-red-900/20" : "border-gray-100"
                   )}
                 >
                   <div className={cn(
                     "text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full",
-                    isToday ? "bg-blue-600 text-white" : "text-gray-600"
+                    isToday ? "bg-red-600 text-white" : "text-gray-400"
                   )}>
                     {day}
                   </div>
@@ -367,7 +367,7 @@ export default function SessionsPage() {
                         href={`/sessions/${s.id}`}
                         className={cn(
                           "block text-xs px-1 py-0.5 rounded mb-0.5 truncate hover:opacity-80",
-                          st?.color || "bg-gray-100 text-gray-600"
+                          st?.color || "bg-gray-700 text-gray-400"
                         )}
                         title={`${s.formation.titre} - ${s._count.inscriptions}/${s.capaciteMax} participants${isFull ? " (COMPLET)" : ""}`}
                       >
@@ -385,12 +385,12 @@ export default function SessionsPage() {
             {Object.entries(SESSION_STATUTS).map(([k, v]) => (
               <div key={k} className="flex items-center gap-1.5">
                 <span className={cn("w-3 h-3 rounded-full border", v.color)} />
-                <span className="text-xs text-gray-600">{v.label}</span>
+                <span className="text-xs text-gray-400">{v.label}</span>
               </div>
             ))}
             <div className="flex items-center gap-1.5">
               <span className="text-xs">●</span>
-              <span className="text-xs text-gray-600">Complet</span>
+              <span className="text-xs text-gray-400">Complet</span>
             </div>
           </div>
         </div>

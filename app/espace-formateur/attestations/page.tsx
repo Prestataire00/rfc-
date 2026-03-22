@@ -52,7 +52,7 @@ export default function AttestationsPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>;
+    return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 
   return (
@@ -64,10 +64,10 @@ export default function AttestationsPage() {
       ) : (
         <div className="space-y-6">
           {sessions.map((s) => (
-            <div key={s.id} className="rounded-lg border bg-white overflow-hidden">
-              <div className="px-6 py-4 border-b bg-gray-50">
-                <h3 className="font-semibold text-gray-900">{s.formation.titre}</h3>
-                <p className="text-xs text-gray-500">{formatDate(s.dateDebut)} - {formatDate(s.dateFin)}</p>
+            <div key={s.id} className="rounded-lg border bg-gray-800 overflow-hidden">
+              <div className="px-6 py-4 border-b bg-gray-900">
+                <h3 className="font-semibold text-gray-100">{s.formation.titre}</h3>
+                <p className="text-xs text-gray-400">{formatDate(s.dateDebut)} - {formatDate(s.dateFin)}</p>
               </div>
               <div className="divide-y">
                 {s.inscriptions.map((insc) => {
@@ -77,10 +77,10 @@ export default function AttestationsPage() {
                   return (
                     <div key={insc.contact.id} className="flex items-center justify-between px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-xs">
+                        <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 font-medium text-xs">
                           {insc.contact.prenom[0]}{insc.contact.nom[0]}
                         </div>
-                        <span className="text-sm text-gray-900">{insc.contact.prenom} {insc.contact.nom}</span>
+                        <span className="text-sm text-gray-100">{insc.contact.prenom} {insc.contact.nom}</span>
                       </div>
                       <div>
                         {att ? (
@@ -99,7 +99,7 @@ export default function AttestationsPage() {
                         ) : (
                           <button
                             onClick={() => generateAttestation(s.id, insc.contact.id)}
-                            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700"
+                            className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
                           >
                             <Award className="h-3.5 w-3.5" /> Generer
                           </button>

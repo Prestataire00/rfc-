@@ -57,7 +57,7 @@ export default function BesoinDetailPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>;
+    return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 
   if (!besoin) return <p>Besoin non trouvé</p>;
@@ -67,21 +67,21 @@ export default function BesoinDetailPage() {
 
   return (
     <div>
-      <Link href="/besoins" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+      <Link href="/besoins" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
         <ArrowLeft className="h-4 w-4" /> Retour aux besoins
       </Link>
 
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{besoin.titre}</h1>
+          <h1 className="text-2xl font-bold text-gray-100">{besoin.titre}</h1>
           <div className="flex items-center gap-3 mt-2">
             {st && <StatutBadge label={st.label} color={st.color} />}
             <span className={`text-sm font-medium ${prio?.color}`}>{prio?.label}</span>
-            <span className="text-sm text-gray-500">Créé le {formatDate(besoin.createdAt)}</span>
+            <span className="text-sm text-gray-400">Créé le {formatDate(besoin.createdAt)}</span>
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowDelete(true)} className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+          <button onClick={() => setShowDelete(true)} className="rounded-md border border-red-700 px-3 py-2 text-sm text-red-600 hover:bg-red-900/20">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
@@ -90,21 +90,21 @@ export default function BesoinDetailPage() {
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
           {besoin.description && (
-            <div className="rounded-lg border bg-white p-6">
-              <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{besoin.description}</p>
+            <div className="rounded-lg border bg-gray-800 p-6">
+              <h3 className="font-semibold text-gray-100 mb-2">Description</h3>
+              <p className="text-sm text-gray-400 whitespace-pre-wrap">{besoin.description}</p>
             </div>
           )}
 
-          <div className="rounded-lg border bg-white p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Avancement</h3>
+          <div className="rounded-lg border bg-gray-800 p-6">
+            <h3 className="font-semibold text-gray-100 mb-4">Avancement</h3>
             <div className="flex gap-2 flex-wrap">
               {Object.entries(BESOIN_STATUTS).map(([key, val]) => (
                 <button
                   key={key}
                   onClick={() => updateStatut(key)}
                   className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-                    besoin.statut === key ? val.color + " ring-2 ring-offset-1 ring-blue-400" : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                    besoin.statut === key ? val.color + " ring-2 ring-offset-1 ring-red-400" : "bg-gray-900 text-gray-400 border-gray-700 hover:bg-gray-700"
                   }`}
                 >
                   {val.label}
@@ -114,56 +114,56 @@ export default function BesoinDetailPage() {
           </div>
 
           {besoin.notes && (
-            <div className="rounded-lg border bg-white p-6">
-              <h3 className="font-semibold text-gray-900 mb-2">Notes</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{besoin.notes}</p>
+            <div className="rounded-lg border bg-gray-800 p-6">
+              <h3 className="font-semibold text-gray-100 mb-2">Notes</h3>
+              <p className="text-sm text-gray-400 whitespace-pre-wrap">{besoin.notes}</p>
             </div>
           )}
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border bg-white p-4 space-y-3 text-sm">
-            <h3 className="font-semibold text-gray-900">Informations</h3>
+          <div className="rounded-lg border bg-gray-800 p-4 space-y-3 text-sm">
+            <h3 className="font-semibold text-gray-100">Informations</h3>
             <div>
-              <span className="text-gray-500">Origine:</span>
-              <span className="ml-2 text-gray-900">{BESOIN_ORIGINES[besoin.origine as keyof typeof BESOIN_ORIGINES]?.label || besoin.origine}</span>
+              <span className="text-gray-400">Origine:</span>
+              <span className="ml-2 text-gray-100">{BESOIN_ORIGINES[besoin.origine as keyof typeof BESOIN_ORIGINES]?.label || besoin.origine}</span>
             </div>
             {besoin.entreprise && (
               <div>
-                <span className="text-gray-500">Entreprise:</span>
-                <Link href={`/entreprises/${besoin.entreprise.id}`} className="ml-2 text-blue-600 hover:underline">{besoin.entreprise.nom}</Link>
+                <span className="text-gray-400">Entreprise:</span>
+                <Link href={`/entreprises/${besoin.entreprise.id}`} className="ml-2 text-red-600 hover:underline">{besoin.entreprise.nom}</Link>
               </div>
             )}
             {besoin.formation && (
               <div>
-                <span className="text-gray-500">Formation:</span>
-                <Link href={`/formations/${besoin.formation.id}`} className="ml-2 text-blue-600 hover:underline">{besoin.formation.titre}</Link>
+                <span className="text-gray-400">Formation:</span>
+                <Link href={`/formations/${besoin.formation.id}`} className="ml-2 text-red-600 hover:underline">{besoin.formation.titre}</Link>
               </div>
             )}
             {besoin.nbStagiaires && (
               <div>
-                <span className="text-gray-500">Stagiaires:</span>
-                <span className="ml-2 text-gray-900">{besoin.nbStagiaires}</span>
+                <span className="text-gray-400">Stagiaires:</span>
+                <span className="ml-2 text-gray-100">{besoin.nbStagiaires}</span>
               </div>
             )}
             {besoin.budget && (
               <div>
-                <span className="text-gray-500">Budget:</span>
-                <span className="ml-2 text-gray-900">{formatCurrency(besoin.budget)}</span>
+                <span className="text-gray-400">Budget:</span>
+                <span className="ml-2 text-gray-100">{formatCurrency(besoin.budget)}</span>
               </div>
             )}
             {besoin.datesSouhaitees && (
               <div>
-                <span className="text-gray-500">Dates:</span>
-                <span className="ml-2 text-gray-900">{besoin.datesSouhaitees}</span>
+                <span className="text-gray-400">Dates:</span>
+                <span className="ml-2 text-gray-100">{besoin.datesSouhaitees}</span>
               </div>
             )}
           </div>
 
           {besoin.devis && (
-            <div className="rounded-lg border bg-white p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Devis associé</h3>
-              <Link href={`/commercial/devis/${besoin.devis.id}`} className="text-blue-600 hover:underline text-sm flex items-center gap-1">
+            <div className="rounded-lg border bg-gray-800 p-4">
+              <h3 className="font-semibold text-gray-100 mb-2">Devis associé</h3>
+              <Link href={`/commercial/devis/${besoin.devis.id}`} className="text-red-600 hover:underline text-sm flex items-center gap-1">
                 <FileText className="h-4 w-4" /> {besoin.devis.numero}
               </Link>
             </div>

@@ -25,19 +25,19 @@ const statutLabels: Record<string, string> = {
 };
 
 const statutColors: Record<string, string> = {
-  planifiee: "bg-blue-100 text-blue-800 border-blue-200",
-  confirmee: "bg-green-100 text-green-800 border-green-200",
-  en_cours: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  terminee: "bg-gray-100 text-gray-800 border-gray-200",
-  annulee: "bg-red-100 text-red-800 border-red-200",
+  planifiee: "bg-red-900/30 text-red-800 border-red-700",
+  confirmee: "bg-green-900/30 text-green-300 border-green-700",
+  en_cours: "bg-yellow-900/30 text-yellow-300 border-yellow-700",
+  terminee: "bg-gray-700 text-gray-200 border-gray-700",
+  annulee: "bg-red-900/30 text-red-800 border-red-700",
 };
 
 const statutBarColors: Record<string, string> = {
-  planifiee: "bg-blue-500",
-  confirmee: "bg-green-500",
-  en_cours: "bg-yellow-500",
-  terminee: "bg-gray-500",
-  annulee: "bg-red-500",
+  planifiee: "bg-red-900/200",
+  confirmee: "bg-green-900/200",
+  en_cours: "bg-yellow-900/200",
+  terminee: "bg-gray-9000",
+  annulee: "bg-red-900/200",
 };
 
 export default function AnalyticsPage() {
@@ -60,7 +60,7 @@ export default function AnalyticsPage() {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center py-24">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Erreur lors du chargement des données analytiques.</p>
+        <p className="text-gray-400">Erreur lors du chargement des données analytiques.</p>
       </div>
     );
   }
@@ -92,27 +92,27 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">Statistiques avancées sur les 12 derniers mois</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-100">Analytics</h1>
+          <p className="text-sm text-gray-400 mt-1">Statistiques avancées sur les 12 derniers mois</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => handleExport("formations")}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
           >
             <Download className="h-4 w-4" />
             Formations
           </button>
           <button
             onClick={() => handleExport("sessions")}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
           >
             <Download className="h-4 w-4" />
             Sessions
           </button>
           <button
             onClick={() => handleExport("factures")}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
           >
             <Download className="h-4 w-4" />
             Factures
@@ -125,12 +125,12 @@ export default function AnalyticsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100">
+              <div className="p-2 rounded-lg bg-green-900/30">
                 <TrendingUp className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">CA Total (12 mois)</p>
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400">CA Total (12 mois)</p>
+                <p className="text-xl font-bold text-gray-100">
                   {totalRevenue.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
                 </p>
               </div>
@@ -140,12 +140,12 @@ export default function AnalyticsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <CalendarDays className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-red-900/30">
+                <CalendarDays className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Sessions (12 mois)</p>
-                <p className="text-xl font-bold text-gray-900">{totalSessions}</p>
+                <p className="text-sm text-gray-400">Sessions (12 mois)</p>
+                <p className="text-xl font-bold text-gray-100">{totalSessions}</p>
               </div>
             </div>
           </CardContent>
@@ -153,12 +153,12 @@ export default function AnalyticsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100">
+              <div className="p-2 rounded-lg bg-purple-900/30">
                 <Users className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Inscriptions (12 mois)</p>
-                <p className="text-xl font-bold text-gray-900">{totalInscriptions}</p>
+                <p className="text-sm text-gray-400">Inscriptions (12 mois)</p>
+                <p className="text-xl font-bold text-gray-100">{totalInscriptions}</p>
               </div>
             </div>
           </CardContent>
@@ -166,12 +166,12 @@ export default function AnalyticsPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-100">
+              <div className="p-2 rounded-lg bg-orange-900/30">
                 <Percent className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Taux remplissage moyen</p>
-                <p className="text-xl font-bold text-gray-900">{avgFillRate}%</p>
+                <p className="text-sm text-gray-400">Taux remplissage moyen</p>
+                <p className="text-xl font-bold text-gray-100">{avgFillRate}%</p>
               </div>
             </div>
           </CardContent>
@@ -189,7 +189,7 @@ export default function AnalyticsPage() {
           </CardTitle>
           <button
             onClick={() => handleExport("factures")}
-            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors"
           >
             <Download className="h-3.5 w-3.5" /> Exporter
           </button>
@@ -198,14 +198,14 @@ export default function AnalyticsPage() {
           <div className="space-y-2">
             {data.months.map((month, i) => (
               <div key={month} className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 w-20 shrink-0">{month}</span>
-                <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                <span className="text-xs text-gray-400 w-20 shrink-0">{month}</span>
+                <div className="flex-1 h-6 bg-gray-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-500"
+                    className="h-full bg-green-900/200 rounded-full transition-all duration-500"
                     style={{ width: `${(data.revenueByMonth[i] / maxRevenue) * 100}%` }}
                   />
                 </div>
-                <span className="text-xs font-medium text-gray-700 w-24 text-right">
+                <span className="text-xs font-medium text-gray-300 w-24 text-right">
                   {data.revenueByMonth[i].toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
                 </span>
               </div>
@@ -220,13 +220,13 @@ export default function AnalyticsPage() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-semibold">
               <span className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-blue-600" />
+                <CalendarDays className="h-4 w-4 text-red-600" />
                 Sessions mensuelles
               </span>
             </CardTitle>
             <button
               onClick={() => handleExport("sessions")}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors"
             >
               <Download className="h-3.5 w-3.5" /> Exporter
             </button>
@@ -235,10 +235,10 @@ export default function AnalyticsPage() {
             <div className="flex items-end gap-1 h-40">
               {data.months.map((month, i) => (
                 <div key={month} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs font-medium text-gray-700">{data.sessionsByMonth[i]}</span>
-                  <div className="w-full bg-gray-100 rounded-t relative" style={{ height: "120px" }}>
+                  <span className="text-xs font-medium text-gray-300">{data.sessionsByMonth[i]}</span>
+                  <div className="w-full bg-gray-700 rounded-t relative" style={{ height: "120px" }}>
                     <div
-                      className="absolute bottom-0 w-full bg-blue-500 rounded-t transition-all duration-500"
+                      className="absolute bottom-0 w-full bg-red-900/200 rounded-t transition-all duration-500"
                       style={{ height: `${(data.sessionsByMonth[i] / maxSessions) * 100}%` }}
                     />
                   </div>
@@ -263,10 +263,10 @@ export default function AnalyticsPage() {
             <div className="flex items-end gap-1 h-40">
               {data.months.map((month, i) => (
                 <div key={month} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs font-medium text-gray-700">{data.inscriptionsByMonth[i]}</span>
-                  <div className="w-full bg-gray-100 rounded-t relative" style={{ height: "120px" }}>
+                  <span className="text-xs font-medium text-gray-300">{data.inscriptionsByMonth[i]}</span>
+                  <div className="w-full bg-gray-700 rounded-t relative" style={{ height: "120px" }}>
                     <div
-                      className="absolute bottom-0 w-full bg-purple-500 rounded-t transition-all duration-500"
+                      className="absolute bottom-0 w-full bg-purple-900/200 rounded-t transition-all duration-500"
                       style={{ height: `${(data.inscriptionsByMonth[i] / maxInscriptions) * 100}%` }}
                     />
                   </div>
@@ -290,7 +290,7 @@ export default function AnalyticsPage() {
             </CardTitle>
             <button
               onClick={() => handleExport("formations")}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors"
             >
               <Download className="h-3.5 w-3.5" /> Exporter
             </button>
@@ -303,12 +303,12 @@ export default function AnalyticsPage() {
                 {data.topFormations.map((f, i) => (
                   <div key={i}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-700 truncate flex-1 mr-2">{f.titre}</span>
-                      <span className="text-sm font-semibold text-gray-900">{f.count}</span>
+                      <span className="text-sm text-gray-300 truncate flex-1 mr-2">{f.titre}</span>
+                      <span className="text-sm font-semibold text-gray-100">{f.count}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                        className="h-full bg-indigo-900/200 rounded-full transition-all duration-500"
                         style={{ width: `${(f.count / maxFormationCount) * 100}%` }}
                       />
                     </div>
@@ -337,12 +337,12 @@ export default function AnalyticsPage() {
                 {data.topFormateurs.map((f, i) => (
                   <div key={i}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-700 truncate flex-1 mr-2">{f.nom}</span>
-                      <span className="text-sm font-semibold text-gray-900">{f.count} sessions</span>
+                      <span className="text-sm text-gray-300 truncate flex-1 mr-2">{f.nom}</span>
+                      <span className="text-sm font-semibold text-gray-100">{f.count} sessions</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-teal-500 rounded-full transition-all duration-500"
+                        className="h-full bg-teal-900/200 rounded-full transition-all duration-500"
                         style={{ width: `${(f.count / maxFormateurCount) * 100}%` }}
                       />
                     </div>
@@ -369,15 +369,15 @@ export default function AnalyticsPage() {
             <div className="space-y-2">
               {data.months.map((month, i) => (
                 <div key={month} className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500 w-20 shrink-0">{month}</span>
-                  <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                  <span className="text-xs text-gray-400 w-20 shrink-0">{month}</span>
+                  <div className="flex-1 h-4 bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
                         data.fillRateByMonth[i] >= 80
-                          ? "bg-green-500"
+                          ? "bg-green-900/200"
                           : data.fillRateByMonth[i] >= 50
-                          ? "bg-orange-500"
+                          ? "bg-orange-900/200"
                           : data.fillRateByMonth[i] > 0
                           ? "bg-red-400"
                           : "bg-gray-200"
@@ -385,7 +385,7 @@ export default function AnalyticsPage() {
                       style={{ width: `${data.fillRateByMonth[i]}%` }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-gray-700 w-10 text-right">
+                  <span className="text-xs font-medium text-gray-300 w-10 text-right">
                     {data.fillRateByMonth[i]}%
                   </span>
                 </div>
@@ -399,7 +399,7 @@ export default function AnalyticsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold">
               <span className="flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-gray-600" />
+                <PieChart className="h-4 w-4 text-gray-400" />
                 Répartition des sessions par statut
               </span>
             </CardTitle>
@@ -411,7 +411,7 @@ export default function AnalyticsPage() {
                   key={statut}
                   className={cn(
                     "rounded-lg border p-3 text-center",
-                    statutColors[statut] || "bg-gray-100 text-gray-800 border-gray-200"
+                    statutColors[statut] || "bg-gray-700 text-gray-200 border-gray-700"
                   )}
                 >
                   <p className="text-2xl font-bold">{count}</p>

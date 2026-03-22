@@ -23,8 +23,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-gray-900">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#262626]">
       <Sidebar
         role={session.user.role}
         userName={session.user.name}
@@ -46,23 +46,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
       <main className="flex-1 lg:ml-64 min-h-screen">
         {/* Mobile header */}
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b bg-white px-4 py-3 lg:hidden">
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-700 bg-gray-900 px-4 py-3 lg:hidden">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-md hover:bg-gray-700 transition-colors"
             >
-              <Menu className="h-5 w-5 text-gray-700" />
+              <Menu className="h-5 w-5 text-gray-300" />
             </button>
             <div className="flex items-center gap-2">
-              <Image src="/logo-icon.svg" alt="RFC" width={28} height={28} className="rounded-lg" />
-              <span className="font-semibold text-gray-900 text-sm">RFC</span>
+              <Image src="/logo-icon.svg" alt="RFC" width={28} height={28} />
+              <span className="font-semibold text-white text-sm">RFC</span>
             </div>
           </div>
           <NotificationBell />
         </div>
         {/* Desktop header */}
-        <div className="hidden lg:flex sticky top-0 z-30 items-center justify-end border-b bg-white px-6 py-2.5">
+        <div className="hidden lg:flex sticky top-0 z-30 h-16 items-center justify-end border-b border-gray-700 bg-[#262626] px-6">
           <NotificationBell />
         </div>
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>

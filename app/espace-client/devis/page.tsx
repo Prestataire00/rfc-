@@ -109,7 +109,7 @@ export default function ClientDevisPage() {
       <PageHeader title="Nos Devis" description="Consultez et signez vos devis" />
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>
+        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>
       ) : devisList.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -120,22 +120,22 @@ export default function ClientDevisPage() {
           {devisList.map((d) => {
             const st = DEVIS_STATUTS[d.statut as keyof typeof DEVIS_STATUTS];
             return (
-              <div key={d.id} className="rounded-lg border bg-white p-5">
+              <div key={d.id} className="rounded-lg border bg-gray-800 p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className="font-mono text-sm text-gray-500">{d.numero}</span>
+                      <span className="font-mono text-sm text-gray-400">{d.numero}</span>
                       {st && <StatutBadge label={st.label} color={st.color} />}
                     </div>
-                    <h3 className="font-semibold text-gray-900">{d.objet}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h3 className="font-semibold text-gray-100">{d.objet}</h3>
+                    <p className="text-sm text-gray-400 mt-1">
                       Emis le {formatDate(d.dateEmission)} - Valide jusqu&apos;au {formatDate(d.dateValidite)}
                     </p>
                     {d.dateSigne && <p className="text-xs text-green-600 mt-1">Signe le {formatDate(d.dateSigne)}</p>}
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">{formatCurrency(d.montantTTC)}</p>
-                    <p className="text-xs text-gray-500">HT: {formatCurrency(d.montantHT)}</p>
+                    <p className="text-lg font-bold text-gray-100">{formatCurrency(d.montantTTC)}</p>
+                    <p className="text-xs text-gray-400">HT: {formatCurrency(d.montantHT)}</p>
                     {d.statut === "envoye" && (
                       <button
                         onClick={() => setSigningId(d.id)}
@@ -162,23 +162,23 @@ export default function ClientDevisPage() {
       {/* Signature Modal */}
       {signingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 space-y-4">
+          <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+              <h3 className="font-semibold text-gray-100 text-lg flex items-center gap-2">
                 <PenTool className="h-5 w-5 text-green-600" />
                 Signature electronique
               </h3>
-              <button onClick={() => setSigningId(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSigningId(null)} className="text-gray-400 hover:text-gray-400">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-400">
               En signant ce devis, vous acceptez les termes et conditions decrits dans le document.
               Dessinez votre signature ci-dessous :
             </p>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+            <div className="border-2 border-dashed border-gray-600 rounded-lg overflow-hidden bg-gray-900">
               <canvas
                 ref={canvasRef}
                 width={460}
@@ -197,14 +197,14 @@ export default function ClientDevisPage() {
             <div className="flex items-center justify-between">
               <button
                 onClick={clearCanvas}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
+                className="text-sm text-gray-400 hover:text-gray-300 underline"
               >
                 Effacer
               </button>
               <div className="flex gap-2">
                 <button
                   onClick={() => setSigningId(null)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 rounded-lg"
                 >
                   Annuler
                 </button>

@@ -57,10 +57,10 @@ interface Formation {
 }
 
 const niveauColors: Record<string, string> = {
-  tous: "bg-gray-100 text-gray-700 border-gray-200",
-  debutant: "bg-green-100 text-green-700 border-green-200",
-  intermediaire: "bg-blue-100 text-blue-700 border-blue-200",
-  avance: "bg-purple-100 text-purple-700 border-purple-200",
+  tous: "bg-gray-700 text-gray-300 border-gray-700",
+  debutant: "bg-green-900/30 text-green-400 border-green-700",
+  intermediaire: "bg-red-900/30 text-red-400 border-red-700",
+  avance: "bg-purple-900/30 text-purple-400 border-purple-200",
 };
 
 type TabKey = "informations" | "sessions";
@@ -103,7 +103,7 @@ export default function FormationDetailPage() {
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
       </div>
     );
   }
@@ -112,7 +112,7 @@ export default function FormationDetailPage() {
     return (
       <div className="p-6">
         <p className="text-red-600">{error || "Formation introuvable"}</p>
-        <Link href="/formations" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
+        <Link href="/formations" className="text-red-600 hover:underline text-sm mt-2 inline-block">
           Retour aux formations
         </Link>
       </div>
@@ -120,7 +120,7 @@ export default function FormationDetailPage() {
   }
 
   const niveauLabel = NIVEAUX_FORMATION.find((n) => n.value === formation.niveau)?.label ?? formation.niveau;
-  const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-100 text-gray-700 border-gray-200";
+  const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
 
   return (
     <div className="p-6">
@@ -128,29 +128,29 @@ export default function FormationDetailPage() {
       <div className="mb-6">
         <Link
           href="/formations"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour aux formations
         </Link>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-blue-600" />
+            <div className="h-12 w-12 rounded-full bg-red-900/30 flex items-center justify-center">
+              <BookOpen className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{formation.titre}</h1>
+              <h1 className="text-2xl font-bold text-gray-100">{formation.titre}</h1>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <StatutBadge label={niveauLabel} color={niveauColor} />
                 {formation.categorie && (
-                  <span className="text-sm text-gray-500">{formation.categorie}</span>
+                  <span className="text-sm text-gray-400">{formation.categorie}</span>
                 )}
                 {formation.actif ? (
-                  <span className="inline-flex items-center rounded-full border bg-green-100 text-green-700 border-green-200 px-2.5 py-0.5 text-xs font-medium">
+                  <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2.5 py-0.5 text-xs font-medium">
                     Active
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-full border bg-gray-100 text-gray-500 border-gray-200 px-2.5 py-0.5 text-xs font-medium">
+                  <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2.5 py-0.5 text-xs font-medium">
                     Inactive
                   </span>
                 )}
@@ -160,7 +160,7 @@ export default function FormationDetailPage() {
           <div className="flex items-center gap-2">
             <Link
               href={`/formations/${id}/modifier`}
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
             >
               <Pencil className="h-4 w-4" />
               Modifier
@@ -179,7 +179,7 @@ export default function FormationDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-gray-700 mb-6">
         <nav className="flex gap-6">
           {(["informations", "sessions"] as TabKey[]).map((tab) => (
             <button
@@ -187,8 +187,8 @@ export default function FormationDetailPage() {
               onClick={() => setActiveTab(tab)}
               className={`pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
                 activeTab === tab
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-red-600 text-red-600"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
               }`}
             >
               {tab === "informations" ? "Informations" : `Sessions (${formation.sessions.length})`}
@@ -208,27 +208,27 @@ export default function FormationDetailPage() {
               <div className="flex items-center gap-3">
                 <Clock className="h-4 w-4 text-gray-400 shrink-0" />
                 <div>
-                  <span className="text-sm text-gray-500">Durée : </span>
-                  <span className="text-sm font-medium text-gray-900">{formatDuree(formation.duree)}</span>
-                  <span className="text-sm text-gray-500"> ({formation.duree}h)</span>
+                  <span className="text-sm text-gray-400">Durée : </span>
+                  <span className="text-sm font-medium text-gray-100">{formatDuree(formation.duree)}</span>
+                  <span className="text-sm text-gray-400"> ({formation.duree}h)</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Euro className="h-4 w-4 text-gray-400 shrink-0" />
                 <div>
-                  <span className="text-sm text-gray-500">Tarif : </span>
-                  <span className="text-sm font-medium text-gray-900">{formatCurrency(formation.tarif)}</span>
+                  <span className="text-sm text-gray-400">Tarif : </span>
+                  <span className="text-sm font-medium text-gray-100">{formatCurrency(formation.tarif)}</span>
                 </div>
               </div>
               {formation.categorie && (
                 <div className="flex items-center gap-3">
                   <Tag className="h-4 w-4 text-gray-400 shrink-0" />
-                  <span className="text-sm text-gray-700">{formation.categorie}</span>
+                  <span className="text-sm text-gray-300">{formation.categorie}</span>
                 </div>
               )}
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-400">
                   Créée le {formatDate(formation.createdAt)}
                 </span>
               </div>
@@ -245,7 +245,7 @@ export default function FormationDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{formation.description}</p>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.description}</p>
               </CardContent>
             </Card>
           )}
@@ -260,7 +260,7 @@ export default function FormationDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{formation.objectifs}</p>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.objectifs}</p>
               </CardContent>
             </Card>
           )}
@@ -272,7 +272,7 @@ export default function FormationDetailPage() {
                 <CardTitle className="text-base">Prérequis</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{formation.prerequis}</p>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.prerequis}</p>
               </CardContent>
             </Card>
           )}
@@ -280,47 +280,47 @@ export default function FormationDetailPage() {
       )}
 
       {activeTab === "sessions" && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {formation.sessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Calendar className="h-8 w-8 text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500">Aucune session planifiée</p>
+              <p className="text-sm text-gray-400">Aucune session planifiée</p>
               <Link
                 href="/sessions/nouveau"
-                className="mt-3 text-sm text-blue-600 hover:underline"
+                className="mt-3 text-sm text-red-600 hover:underline"
               >
                 Planifier une session
               </Link>
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lieu</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Formateur</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inscrits</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Dates</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Lieu</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Formateur</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Inscrits</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-200">
                 {formation.sessions.map((session) => {
                   const statutInfo = SESSION_STATUTS[session.statut];
                   return (
-                    <tr key={session.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        <Link href={`/sessions/${session.id}`} className="text-blue-600 hover:underline">
+                    <tr key={session.id} className="hover:bg-gray-700 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        <Link href={`/sessions/${session.id}`} className="text-red-600 hover:underline">
                           {formatDate(session.dateDebut)} → {formatDate(session.dateFin)}
                         </Link>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {session.lieu || <span className="text-gray-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {session.formateur ? (
                           <Link
                             href={`/formateurs/${session.formateur.id}`}
-                            className="text-blue-600 hover:underline"
+                            className="text-red-600 hover:underline"
                           >
                             {session.formateur.prenom} {session.formateur.nom}
                           </Link>
@@ -329,7 +329,7 @@ export default function FormationDetailPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 text-sm text-gray-600">
+                        <span className="inline-flex items-center gap-1 text-sm text-gray-400">
                           <Users className="h-3.5 w-3.5 text-gray-400" />
                           {session._count.inscriptions}
                         </span>

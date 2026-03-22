@@ -109,12 +109,12 @@ export default function NouvelleSessionPage() {
       <div className="mb-6">
         <Link
           href="/sessions"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
         >
           <ArrowLeft className="h-4 w-4" /> Retour aux sessions
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Nouvelle session</h1>
-        <p className="text-gray-500">Planifiez une nouvelle session de formation</p>
+        <h1 className="text-2xl font-bold text-gray-100">Nouvelle session</h1>
+        <p className="text-gray-400">Planifiez une nouvelle session de formation</p>
       </div>
 
       <Card>
@@ -124,7 +124,7 @@ export default function NouvelleSessionPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
                 {error}
               </div>
             )}
@@ -138,7 +138,7 @@ export default function NouvelleSessionPage() {
                 value={formData.formationId}
                 onChange={handleChange}
                 required
-                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="">-- Sélectionner une formation --</option>
                 {formations.map((f) => (
@@ -157,7 +157,7 @@ export default function NouvelleSessionPage() {
                 name="formateurId"
                 value={formData.formateurId}
                 onChange={handleChange}
-                className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="">-- Aucun formateur --</option>
                 {formateurs.map((f) => (
@@ -228,7 +228,7 @@ export default function NouvelleSessionPage() {
                   name="statut"
                   value={formData.statut}
                   onChange={handleChange}
-                  className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   {Object.entries(SESSION_STATUTS).map(([v, s]) => (
                     <option key={v} value={v}>
@@ -255,7 +255,7 @@ export default function NouvelleSessionPage() {
             <div className="flex justify-end gap-3 pt-2">
               <Link
                 href="/sessions"
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
               >
                 Annuler
               </Link>

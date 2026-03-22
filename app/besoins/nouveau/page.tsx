@@ -63,42 +63,42 @@ export default function NouveauBesoinPage() {
       <PageHeader title="Nouveau besoin de formation" description="Qualifiez une demande de formation" />
 
       {error && (
-        <div className="max-w-2xl mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="max-w-2xl mb-4 rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-        <div className="rounded-lg border bg-white p-6 space-y-4">
+        <div className="rounded-lg border bg-gray-800 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Titre *</label>
             <input
               type="text"
               required
               value={form.titre}
               onChange={(e) => setForm({ ...form, titre: e.target.value })}
-              className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+              className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               placeholder="Ex: Formation Excel avancée pour équipe comptabilité"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-gray-600 px-3 py-2 text-sm"
               rows={3}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Origine</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Origine</label>
               <select
                 value={form.origine}
                 onChange={(e) => setForm({ ...form, origine: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               >
                 <option value="client">Client</option>
                 <option value="stagiaire">Stagiaire</option>
@@ -106,11 +106,11 @@ export default function NouveauBesoinPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Priorité</label>
               <select
                 value={form.priorite}
                 onChange={(e) => setForm({ ...form, priorite: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               >
                 <option value="basse">Basse</option>
                 <option value="normale">Normale</option>
@@ -122,11 +122,11 @@ export default function NouveauBesoinPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Entreprise</label>
               <select
                 value={form.entrepriseId}
                 onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               >
                 <option value="">-- Aucune --</option>
                 {entreprises.map((e) => (
@@ -135,11 +135,11 @@ export default function NouveauBesoinPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Formation</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Formation</label>
               <select
                 value={form.formationId}
                 onChange={(e) => setForm({ ...form, formationId: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               >
                 <option value="">-- Aucune --</option>
                 {formations.map((f: any) => (
@@ -151,42 +151,42 @@ export default function NouveauBesoinPage() {
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nb stagiaires</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Nb stagiaires</label>
               <input
                 type="number"
                 value={form.nbStagiaires}
                 onChange={(e) => setForm({ ...form, nbStagiaires: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Budget</label>
               <input
                 type="number"
                 step="0.01"
                 value={form.budget}
                 onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dates souhaitées</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Dates souhaitées</label>
               <input
                 type="text"
                 value={form.datesSouhaitees}
                 onChange={(e) => setForm({ ...form, datesSouhaitees: e.target.value })}
-                className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-600 px-3 text-sm"
                 placeholder="Ex: Mars 2026"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-gray-600 px-3 py-2 text-sm"
               rows={2}
             />
           </div>
@@ -196,14 +196,14 @@ export default function NouveauBesoinPage() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
             {saving ? "Enregistrement..." : "Créer le besoin"}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="rounded-md border border-gray-300 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-gray-600 px-6 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
           >
             Annuler
           </button>

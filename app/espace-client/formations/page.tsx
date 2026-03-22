@@ -34,7 +34,7 @@ export default function ClientFormationsPage() {
       <PageHeader title="Nos Formations" description="Suivi des formations commandees pour vos collaborateurs" />
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>
+        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -45,11 +45,11 @@ export default function ClientFormationsPage() {
           {sessions.map((s) => {
             const st = SESSION_STATUTS[s.statut as keyof typeof SESSION_STATUTS];
             return (
-              <div key={s.id} className="rounded-lg border bg-white p-5">
+              <div key={s.id} className="rounded-lg border bg-gray-800 p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{s.formation.titre}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h3 className="font-semibold text-gray-100">{s.formation.titre}</h3>
+                    <p className="text-sm text-gray-400 mt-1">
                       {formatDate(s.dateDebut)} - {formatDate(s.dateFin)}
                       {s.lieu ? ` | ${s.lieu}` : ""}
                       {` | ${s.formation.duree}h`}
@@ -62,10 +62,10 @@ export default function ClientFormationsPage() {
                 </div>
                 {s.inscriptions.length > 0 && (
                   <div className="mt-3 pt-3 border-t">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Vos collaborateurs inscrits :</p>
+                    <p className="text-xs font-medium text-gray-400 mb-2">Vos collaborateurs inscrits :</p>
                     <div className="flex flex-wrap gap-2">
                       {s.inscriptions.map((insc, idx) => (
-                        <span key={idx} className="inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-xs text-blue-700">
+                        <span key={idx} className="inline-flex rounded-full bg-red-900/20 px-2.5 py-0.5 text-xs text-red-400">
                           {insc.contact.prenom} {insc.contact.nom}
                         </span>
                       ))}

@@ -32,7 +32,7 @@ export default function ClientEvaluationsPage() {
       <PageHeader title="Évaluations" description="Résultats des évaluations de satisfaction" />
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>
+        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>
       ) : evaluations.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -41,13 +41,13 @@ export default function ClientEvaluationsPage() {
       ) : (
         <div className="space-y-4">
           {evaluations.map((ev) => (
-            <div key={ev.id} className="rounded-lg border bg-white p-5">
+            <div key={ev.id} className="rounded-lg border bg-gray-800 p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{ev.session.formation.titre}</h3>
-                  {ev.contact && <p className="text-sm text-gray-500">{ev.contact.prenom} {ev.contact.nom}</p>}
+                  <h3 className="font-semibold text-gray-100">{ev.session.formation.titre}</h3>
+                  {ev.contact && <p className="text-sm text-gray-400">{ev.contact.prenom} {ev.contact.nom}</p>}
                   <p className="text-xs text-gray-400 mt-1">{formatDate(ev.createdAt)}</p>
-                  {ev.commentaire && <p className="text-sm text-gray-600 mt-2">{ev.commentaire}</p>}
+                  {ev.commentaire && <p className="text-sm text-gray-400 mt-2">{ev.commentaire}</p>}
                 </div>
                 {ev.noteGlobale && (
                   <div className="flex items-center gap-0.5">

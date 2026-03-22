@@ -196,7 +196,7 @@ export default function SessionDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
       </div>
     );
   }
@@ -204,8 +204,8 @@ export default function SessionDetailPage() {
   if (!session) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Session non trouvée</p>
-        <Link href="/sessions" className="mt-4 inline-flex items-center gap-1 text-blue-600 hover:underline text-sm">
+        <p className="text-gray-400">Session non trouvée</p>
+        <Link href="/sessions" className="mt-4 inline-flex items-center gap-1 text-red-600 hover:underline text-sm">
           <ArrowLeft className="h-4 w-4" /> Retour aux sessions
         </Link>
       </div>
@@ -220,25 +220,25 @@ export default function SessionDetailPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <Link href="/sessions" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+        <Link href="/sessions" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
           <ArrowLeft className="h-4 w-4" /> Retour aux sessions
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-3 mb-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                <Link href={`/formations/${session.formation.id}`} className="hover:text-blue-600">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-100">
+                <Link href={`/formations/${session.formation.id}`} className="hover:text-red-600">
                   {session.formation.titre}
                 </Link>
               </h1>
               {st && <StatutBadge label={st.label} color={st.color} />}
             </div>
-            <p className="text-gray-500">{formatDate(session.dateDebut)} - {formatDate(session.dateFin)}</p>
+            <p className="text-gray-400">{formatDate(session.dateDebut)} - {formatDate(session.dateFin)}</p>
           </div>
           <div className="flex gap-2">
             <Link
               href={`/sessions/${id}/modifier`}
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
             >
               <Edit className="h-4 w-4" /> Modifier
             </Link>
@@ -253,14 +253,14 @@ export default function SessionDetailPage() {
         {/* Info + Documents column */}
         <div className="lg:col-span-1 space-y-4">
           {/* Info card */}
-          <div className="rounded-lg border bg-white p-4 space-y-4">
-            <h2 className="font-semibold text-gray-900">Informations</h2>
+          <div className="rounded-lg border bg-gray-800 p-4 space-y-4">
+            <h2 className="font-semibold text-gray-100">Informations</h2>
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-gray-500">Formateur</p>
+                <p className="text-gray-400">Formateur</p>
                 <p className="font-medium">
                   {session.formateur ? (
-                    <Link href={`/formateurs/${session.formateur.id}`} className="text-blue-600 hover:underline">
+                    <Link href={`/formateurs/${session.formateur.id}`} className="text-red-600 hover:underline">
                       {session.formateur.prenom} {session.formateur.nom}
                     </Link>
                   ) : (
@@ -271,11 +271,11 @@ export default function SessionDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-gray-500">Lieu</p>
+                <p className="text-gray-400">Lieu</p>
                 <p className="font-medium">{session.lieu || <span className="text-gray-400">Non défini</span>}</p>
               </div>
               <div>
-                <p className="text-gray-500">Capacité</p>
+                <p className="text-gray-400">Capacité</p>
                 <div>
                   <p className={cn("font-medium", capacityRatio >= 1 ? "text-red-600" : capacityRatio >= 0.8 ? "text-orange-600" : "text-green-600")}>
                     {session.inscriptions.length}/{session.capaciteMax} participants
@@ -288,7 +288,7 @@ export default function SessionDetailPage() {
                     <div
                       className={cn(
                         "h-full rounded-full transition-all",
-                        capacityRatio >= 1 ? "bg-red-500" : capacityRatio >= 0.8 ? "bg-orange-500" : "bg-green-500"
+                        capacityRatio >= 1 ? "bg-red-900/200" : capacityRatio >= 0.8 ? "bg-orange-900/200" : "bg-green-900/200"
                       )}
                       style={{ width: `${Math.min(100, capacityRatio * 100)}%` }}
                     />
@@ -296,16 +296,16 @@ export default function SessionDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="text-gray-500">Tarif / participant</p>
+                <p className="text-gray-400">Tarif / participant</p>
                 <p className="font-medium">{formatCurrency(session.formation.tarif)}</p>
               </div>
               <div>
-                <p className="text-gray-500">CA prévisionnel</p>
-                <p className="font-semibold text-gray-900">{formatCurrency(session.formation.tarif * session.inscriptions.length)}</p>
+                <p className="text-gray-400">CA prévisionnel</p>
+                <p className="font-semibold text-gray-100">{formatCurrency(session.formation.tarif * session.inscriptions.length)}</p>
               </div>
               {session.notes && (
                 <div>
-                  <p className="text-gray-500">Notes</p>
+                  <p className="text-gray-400">Notes</p>
                   <p className="font-medium whitespace-pre-wrap">{session.notes}</p>
                 </div>
               )}
@@ -313,41 +313,41 @@ export default function SessionDetailPage() {
           </div>
 
           {/* Documents PDF */}
-          <div className="rounded-lg border bg-white p-4">
-            <h2 className="font-semibold text-gray-900 mb-3">Documents</h2>
+          <div className="rounded-lg border bg-gray-800 p-4">
+            <h2 className="font-semibold text-gray-100 mb-3">Documents</h2>
             <div className="space-y-2">
               <a
                 href={`/api/pdf/convention/${id}`}
                 target="_blank"
-                className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-700 transition-colors"
               >
-                <FileText className="h-4 w-4 text-blue-600" />
-                <span className="flex-1 text-gray-700">Convention de formation</span>
+                <FileText className="h-4 w-4 text-red-600" />
+                <span className="flex-1 text-gray-300">Convention de formation</span>
                 <Download className="h-4 w-4 text-gray-400" />
               </a>
               <a
                 href={`/api/pdf/feuille-presence/${id}`}
                 target="_blank"
-                className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-700 transition-colors"
               >
                 <FileText className="h-4 w-4 text-green-600" />
-                <span className="flex-1 text-gray-700">Feuille de présence</span>
+                <span className="flex-1 text-gray-300">Feuille de présence</span>
                 <Download className="h-4 w-4 text-gray-400" />
               </a>
 
               {session.inscriptions.length > 0 && (
                 <>
-                  <p className="text-xs text-gray-500 mt-3 mb-1 font-medium">Par stagiaire :</p>
+                  <p className="text-xs text-gray-400 mt-3 mb-1 font-medium">Par stagiaire :</p>
                   {session.inscriptions.map((insc) => (
                     <div key={insc.id} className="flex items-center gap-1 text-xs">
-                      <span className="text-gray-600 flex-1 truncate">{insc.contact.prenom} {insc.contact.nom}</span>
-                      <a href={`/api/pdf/convocation/${id}/${insc.contact.id}`} target="_blank" className="text-blue-600 hover:underline px-1" title="Télécharger convocation">
+                      <span className="text-gray-400 flex-1 truncate">{insc.contact.prenom} {insc.contact.nom}</span>
+                      <a href={`/api/pdf/convocation/${id}/${insc.contact.id}`} target="_blank" className="text-red-600 hover:underline px-1" title="Télécharger convocation">
                         Convoc.
                       </a>
                       <button
                         onClick={() => handleSendConvocation(insc.contact.id)}
                         disabled={sendingEmail === insc.contact.id}
-                        className="text-orange-500 hover:text-orange-700 px-1 disabled:opacity-50"
+                        className="text-orange-500 hover:text-orange-400 px-1 disabled:opacity-50"
                         title="Envoyer convocation par email"
                       >
                         <Mail className="h-3.5 w-3.5 inline" />
@@ -366,7 +366,7 @@ export default function SessionDetailPage() {
               )}
 
               <div className="border-t pt-3 mt-3">
-                <label className="flex items-center gap-2 rounded-md border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer transition-colors">
+                <label className="flex items-center gap-2 rounded-md border border-dashed border-gray-600 px-3 py-2 text-sm text-gray-400 hover:bg-gray-700 cursor-pointer transition-colors">
                   <Upload className="h-4 w-4" />
                   {uploading ? "Upload en cours..." : "Uploader un document"}
                   <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
@@ -376,8 +376,8 @@ export default function SessionDetailPage() {
           </div>
 
           {/* Evaluations */}
-          <div className="rounded-lg border bg-white p-4">
-            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <div className="rounded-lg border bg-gray-800 p-4">
+            <h2 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
               <ClipboardList className="h-4 w-4 text-purple-600" />
               Evaluations
             </h2>
@@ -385,18 +385,18 @@ export default function SessionDetailPage() {
               <button
                 onClick={() => handleGenererEvaluations("satisfaction_chaud")}
                 disabled={evalLoading || session.inscriptions.length === 0}
-                className="w-full flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-purple-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-purple-900/20 transition-colors disabled:opacity-50"
               >
                 <Send className="h-4 w-4 text-orange-500" />
-                <span className="flex-1 text-left text-gray-700">Envoyer éval. à chaud</span>
+                <span className="flex-1 text-left text-gray-300">Envoyer éval. à chaud</span>
               </button>
               <button
                 onClick={() => handleGenererEvaluations("satisfaction_froid")}
                 disabled={evalLoading || session.inscriptions.length === 0}
-                className="w-full flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-purple-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-purple-900/20 transition-colors disabled:opacity-50"
               >
-                <Send className="h-4 w-4 text-blue-500" />
-                <span className="flex-1 text-left text-gray-700">Envoyer éval. à froid</span>
+                <Send className="h-4 w-4 text-red-500" />
+                <span className="flex-1 text-left text-gray-300">Envoyer éval. à froid</span>
               </button>
               {evalMsg && (
                 <p className={`text-xs ${evalMsg.includes("Erreur") ? "text-red-600" : "text-green-600"}`}>
@@ -409,16 +409,16 @@ export default function SessionDetailPage() {
 
         {/* Inscriptions */}
         <div className="lg:col-span-2">
-          <div className="rounded-lg border bg-white overflow-hidden">
+          <div className="rounded-lg border bg-gray-800 overflow-hidden">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Participants ({session.inscriptions.length}/{session.capaciteMax})
               </h2>
               <div className="flex gap-2">
                 <button
                   onClick={handleGenererLienInscription}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-600 bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
                   title="Générer un lien d'inscription public"
                 >
                   <Link2 className="h-4 w-4" /> Lien public
@@ -426,7 +426,7 @@ export default function SessionDetailPage() {
                 <button
                   onClick={() => { fetchContacts(); setAddOpen(true); setContactSearch(""); }}
                   disabled={placesRestantes === 0}
-                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <UserPlus className="h-4 w-4" /> Ajouter
                 </button>
@@ -434,26 +434,26 @@ export default function SessionDetailPage() {
             </div>
 
             {inscriptionLink && (
-              <div className="px-4 py-2 bg-green-50 border-b text-sm flex items-center gap-2">
-                <span className="text-green-700">Lien copié !</span>
-                <code className="text-xs bg-white px-2 py-1 rounded border flex-1 truncate">{inscriptionLink}</code>
+              <div className="px-4 py-2 bg-green-900/20 border-b text-sm flex items-center gap-2">
+                <span className="text-green-400">Lien copié !</span>
+                <code className="text-xs bg-gray-800 px-2 py-1 rounded border flex-1 truncate">{inscriptionLink}</code>
               </div>
             )}
 
             {session.inscriptions.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-400">
                 <CalendarDays className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p>Aucun participant inscrit</p>
                 <p className="text-xs text-gray-400 mt-1">{placesRestantes} place{placesRestantes !== 1 ? "s" : ""} disponible{placesRestantes !== 1 ? "s" : ""}</p>
               </div>
             ) : (
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-900 border-b">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Participant</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Entreprise</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Date inscription</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Participant</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Entreprise</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Date inscription</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -461,14 +461,14 @@ export default function SessionDetailPage() {
                   {session.inscriptions.map((insc) => {
                     const inscSt = INSCRIPTION_STATUTS[insc.statut as keyof typeof INSCRIPTION_STATUTS];
                     return (
-                      <tr key={insc.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <tr key={insc.id} className="border-b last:border-0 hover:bg-gray-700">
                         <td className="px-4 py-3">
-                          <Link href={`/contacts/${insc.contact.id}`} className="font-medium text-blue-600 hover:underline">
+                          <Link href={`/contacts/${insc.contact.id}`} className="font-medium text-red-600 hover:underline">
                             {insc.contact.prenom} {insc.contact.nom}
                           </Link>
-                          <div className="text-gray-500 text-xs">{insc.contact.email}</div>
+                          <div className="text-gray-400 text-xs">{insc.contact.email}</div>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-3 text-gray-400">
                           {insc.contact.entreprise?.nom || <span className="text-gray-400">—</span>}
                         </td>
                         <td className="px-4 py-3">
@@ -477,7 +477,7 @@ export default function SessionDetailPage() {
                             onChange={(e) => handleUpdateStatutInscription(insc.id, e.target.value)}
                             className={cn(
                               "rounded-md border px-2 py-1 text-xs font-medium",
-                              inscSt?.color || "bg-gray-100 text-gray-700"
+                              inscSt?.color || "bg-gray-700 text-gray-300"
                             )}
                           >
                             {Object.entries(INSCRIPTION_STATUTS).map(([v, s]) => (
@@ -485,11 +485,11 @@ export default function SessionDetailPage() {
                             ))}
                           </select>
                         </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">{formatDate(insc.dateInscription)}</td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(insc.dateInscription)}</td>
                         <td className="px-4 py-3">
                           <button
                             onClick={() => setRemoveConfirm({ id: insc.id, name: `${insc.contact.prenom} ${insc.contact.nom}` })}
-                            className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50"
+                            className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-900/20"
                             title="Supprimer l'inscription"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -532,7 +532,7 @@ export default function SessionDetailPage() {
             <DialogTitle>Ajouter un participant</DialogTitle>
           </DialogHeader>
           {addError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{addError}</p>
+            <p className="text-sm text-red-600 bg-red-900/20 border border-red-700 rounded-md px-3 py-2">{addError}</p>
           )}
           <div className="py-2 space-y-3">
             {/* Search contacts */}
@@ -545,11 +545,11 @@ export default function SessionDetailPage() {
                 className="pl-9"
               />
             </div>
-            <label className="text-sm font-medium text-gray-700 block">Sélectionner un contact</label>
+            <label className="text-sm font-medium text-gray-300 block">Sélectionner un contact</label>
             <select
               value={selectedContactId}
               onChange={(e) => setSelectedContactId(e.target.value)}
-              className="w-full h-auto rounded-md border border-gray-300 bg-white px-3 text-sm"
+              className="w-full h-auto rounded-md border border-gray-600 bg-gray-800 px-3 text-sm"
               size={Math.min(8, Math.max(3, availableContacts.length + 1))}
             >
               <option value="">-- Choisir un contact --</option>
@@ -558,10 +558,10 @@ export default function SessionDetailPage() {
               ))}
             </select>
             {availableContacts.length === 0 && contacts.length > 0 && !contactSearch && (
-              <p className="text-xs text-gray-500">Tous les contacts sont déjà inscrits.</p>
+              <p className="text-xs text-gray-400">Tous les contacts sont déjà inscrits.</p>
             )}
             {availableContacts.length === 0 && contactSearch && (
-              <p className="text-xs text-gray-500">Aucun contact ne correspond à &quot;{contactSearch}&quot;</p>
+              <p className="text-xs text-gray-400">Aucun contact ne correspond à &quot;{contactSearch}&quot;</p>
             )}
             <p className="text-xs text-gray-400">{availableContacts.length} contact{availableContacts.length !== 1 ? "s" : ""} disponible{availableContacts.length !== 1 ? "s" : ""}</p>
           </div>

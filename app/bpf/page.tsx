@@ -35,7 +35,7 @@ export default function BPFPage() {
   }, [annee]);
 
   if (loading) {
-    return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" /></div>;
+    return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 
   if (!data) return null;
@@ -49,17 +49,17 @@ export default function BPFPage() {
       {/* Year selector + Export */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => setAnnee(annee - 1)} className="rounded-md border p-2 hover:bg-gray-50">
+          <button onClick={() => setAnnee(annee - 1)} className="rounded-md border p-2 hover:bg-gray-700">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-xl font-bold text-gray-900">{annee}</span>
-          <button onClick={() => setAnnee(annee + 1)} className="rounded-md border p-2 hover:bg-gray-50">
+          <span className="text-xl font-bold text-gray-100">{annee}</span>
+          <button onClick={() => setAnnee(annee + 1)} className="rounded-md border p-2 hover:bg-gray-700">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
         <a
           href={`/api/bpf/export?annee=${annee}`}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
         >
           <Download className="h-4 w-4" />
           Exporter CSV
@@ -68,47 +68,47 @@ export default function BPFPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-lg border bg-white p-5">
-          <p className="text-sm text-gray-500">Sessions realisees</p>
-          <p className="text-3xl font-bold text-gray-900">{data.sessionsTerminees}</p>
+        <div className="rounded-lg border bg-gray-800 p-5">
+          <p className="text-sm text-gray-400">Sessions realisees</p>
+          <p className="text-3xl font-bold text-gray-100">{data.sessionsTerminees}</p>
         </div>
-        <div className="rounded-lg border bg-white p-5">
-          <p className="text-sm text-gray-500">Stagiaires formes</p>
-          <p className="text-3xl font-bold text-gray-900">{data.totalStagiaires}</p>
+        <div className="rounded-lg border bg-gray-800 p-5">
+          <p className="text-sm text-gray-400">Stagiaires formes</p>
+          <p className="text-3xl font-bold text-gray-100">{data.totalStagiaires}</p>
         </div>
-        <div className="rounded-lg border bg-white p-5">
-          <p className="text-sm text-gray-500">Heures de formation</p>
-          <p className="text-3xl font-bold text-gray-900">{data.totalHeures}h</p>
+        <div className="rounded-lg border bg-gray-800 p-5">
+          <p className="text-sm text-gray-400">Heures de formation</p>
+          <p className="text-3xl font-bold text-gray-100">{data.totalHeures}h</p>
         </div>
-        <div className="rounded-lg border bg-white p-5">
-          <p className="text-sm text-gray-500">CA Realise HT</p>
+        <div className="rounded-lg border bg-gray-800 p-5">
+          <p className="text-sm text-gray-400">CA Realise HT</p>
           <p className="text-3xl font-bold text-green-600">{formatCurrency(data.caRealiseHT)}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Sessions par mois */}
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Sessions par mois</h3>
+        <div className="rounded-lg border bg-gray-800 p-6">
+          <h3 className="font-semibold text-gray-100 mb-4">Sessions par mois</h3>
           <div className="flex items-end gap-2 h-40">
             {data.parMois.map((m, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-1">
                 <div className="w-full flex flex-col items-center">
                   <div
-                    className="w-full bg-blue-500 rounded-t"
+                    className="w-full bg-red-900/200 rounded-t"
                     style={{ height: `${(m.total / maxMoisTotal) * 120}px`, minHeight: m.total > 0 ? 4 : 0 }}
                   />
                 </div>
-                <span className="text-[10px] text-gray-500">{MOIS_LABELS[idx]}</span>
-                <span className="text-[10px] font-medium text-gray-700">{m.total || ""}</span>
+                <span className="text-[10px] text-gray-400">{MOIS_LABELS[idx]}</span>
+                <span className="text-[10px] font-medium text-gray-300">{m.total || ""}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Par categorie */}
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Par categorie</h3>
+        <div className="rounded-lg border bg-gray-800 p-6">
+          <h3 className="font-semibold text-gray-100 mb-4">Par categorie</h3>
           {Object.keys(data.parCategorie).length === 0 ? (
             <p className="text-sm text-gray-400">Aucune donnee</p>
           ) : (
@@ -116,12 +116,12 @@ export default function BPFPage() {
               {Object.entries(data.parCategorie).map(([cat, val]) => (
                 <div key={cat}>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-700 font-medium">{cat}</span>
-                    <span className="text-gray-500">{val.sessions} sessions - {val.stagiaires} stag.</span>
+                    <span className="text-gray-300 font-medium">{cat}</span>
+                    <span className="text-gray-400">{val.sessions} sessions - {val.stagiaires} stag.</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-indigo-500 rounded-full"
+                      className="h-full bg-indigo-900/200 rounded-full"
                       style={{ width: `${(val.sessions / data.sessionsTerminees) * 100}%` }}
                     />
                   </div>
@@ -134,21 +134,21 @@ export default function BPFPage() {
 
       <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Financements */}
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Provenance des financements</h3>
+        <div className="rounded-lg border bg-gray-800 p-6">
+          <h3 className="font-semibold text-gray-100 mb-4">Provenance des financements</h3>
           {Object.keys(data.financementsParType).length === 0 ? (
             <p className="text-sm text-gray-400">Aucun financement enregistré</p>
           ) : (
             <div className="space-y-2">
               {Object.entries(data.financementsParType).map(([type, montant]) => (
                 <div key={type} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <span className="text-sm text-gray-700">{FINANCEMENT_TYPES[type as keyof typeof FINANCEMENT_TYPES]?.label || type}</span>
-                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(montant)}</span>
+                  <span className="text-sm text-gray-300">{FINANCEMENT_TYPES[type as keyof typeof FINANCEMENT_TYPES]?.label || type}</span>
+                  <span className="text-sm font-semibold text-gray-100">{formatCurrency(montant)}</span>
                 </div>
               ))}
               <div className="flex items-center justify-between pt-2 font-bold">
-                <span className="text-sm text-gray-900">Total</span>
-                <span className="text-sm text-gray-900">
+                <span className="text-sm text-gray-100">Total</span>
+                <span className="text-sm text-gray-100">
                   {formatCurrency(Object.values(data.financementsParType).reduce((a, b) => a + b, 0))}
                 </span>
               </div>
@@ -157,8 +157,8 @@ export default function BPFPage() {
         </div>
 
         {/* Certifications */}
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Formations certifiantes</h3>
+        <div className="rounded-lg border bg-gray-800 p-6">
+          <h3 className="font-semibold text-gray-100 mb-4">Formations certifiantes</h3>
           {data.certifications.length === 0 ? (
             <p className="text-sm text-gray-400">Aucune certification cette annee</p>
           ) : (
@@ -166,10 +166,10 @@ export default function BPFPage() {
               {data.certifications.map((c: any) => (
                 <div key={c.id} className="flex items-center justify-between py-2 border-b last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{c.formation.titre}</p>
-                    {c.formation.codeRNCP && <p className="text-xs text-gray-500">RNCP: {c.formation.codeRNCP}</p>}
+                    <p className="text-sm font-medium text-gray-100">{c.formation.titre}</p>
+                    {c.formation.codeRNCP && <p className="text-xs text-gray-400">RNCP: {c.formation.codeRNCP}</p>}
                   </div>
-                  <span className="text-sm text-gray-600">{c._count.inscriptions} stag.</span>
+                  <span className="text-sm text-gray-400">{c._count.inscriptions} stag.</span>
                 </div>
               ))}
             </div>

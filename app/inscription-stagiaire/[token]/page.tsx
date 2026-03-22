@@ -51,18 +51,18 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
       </div>
     );
   }
 
   if (error && !info) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-600">{error}</p>
+          <p className="text-gray-400">{error}</p>
         </div>
       </div>
     );
@@ -70,11 +70,11 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center max-w-md">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Inscription enregistrée !</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-100 mb-2">Inscription enregistrée !</h1>
+          <p className="text-gray-400">
             Votre inscription à la formation <strong>&quot;{info?.formation}&quot;</strong> a bien été prise en compte.
             Vous recevrez une confirmation prochainement.
           </p>
@@ -87,20 +87,20 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
   const dateFin = info ? new Date(info.dateFin).toLocaleDateString("fr-FR") : "";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-900 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-blue-600 text-white rounded-t-xl p-6">
+        <div className="bg-red-600 text-white rounded-t-xl p-6">
           <h1 className="text-xl font-bold">Rescue Formation Conseil</h1>
-          <p className="text-blue-100 text-sm mt-1">Inscription à une formation</p>
+          <p className="text-red-100 text-sm mt-1">Inscription à une formation</p>
         </div>
 
-        <div className="bg-white border border-t-0 rounded-b-xl p-6 space-y-6">
+        <div className="bg-gray-800 border border-t-0 rounded-b-xl p-6 space-y-6">
           {/* Formation info */}
-          <div className="bg-blue-50 rounded-lg p-4 space-y-2">
-            <h2 className="font-semibold text-lg text-gray-900">{info?.formation}</h2>
-            {info?.description && <p className="text-sm text-gray-600">{info.description}</p>}
-            <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
+          <div className="bg-red-900/20 rounded-lg p-4 space-y-2">
+            <h2 className="font-semibold text-lg text-gray-100">{info?.formation}</h2>
+            {info?.description && <p className="text-sm text-gray-400">{info.description}</p>}
+            <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-2">
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-4 w-4" /> Du {dateDebut} au {dateFin}
               </span>
@@ -121,22 +121,22 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
           </div>
 
           {info && info.placesRestantes <= 0 ? (
-            <p className="text-center text-gray-500 py-4">
+            <p className="text-center text-gray-400 py-4">
               Désolé, cette session est complète.
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <h3 className="font-medium text-gray-900">Vos informations</h3>
+              <h3 className="font-medium text-gray-100">Vos informations</h3>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Prénom *</label>
                   <input
                     type="text"
                     required
@@ -146,7 +146,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Nom *</label>
                   <input
                     type="text"
                     required
@@ -158,7 +158,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
                 <input
                   type="email"
                   required
@@ -169,7 +169,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Téléphone</label>
                 <input
                   type="tel"
                   value={form.telephone}
@@ -179,7 +179,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Entreprise</label>
                 <input
                   type="text"
                   value={form.entreprise}
@@ -192,7 +192,7 @@ export default function InscriptionStagiairePage({ params }: { params: Promise<{
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {submitting ? "Inscription en cours..." : "M'inscrire à cette formation"}
               </button>

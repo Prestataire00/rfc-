@@ -9,7 +9,7 @@ import { Sidebar } from "./Sidebar";
 import { NotificationBell } from "./NotificationBell";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
-const PUBLIC_PATHS = ["/login", "/evaluation", "/inscription-stagiaire"];
+const PUBLIC_PATHS = ["/login", "/evaluation/", "/inscription-stagiaire"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();

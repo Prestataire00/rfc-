@@ -8,6 +8,18 @@ const COLORS = {
   white: "#ffffff",
 };
 
+function fmtDate(d: string): string {
+  const date = new Date(d);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function fmtCurrency(n: number): string {
+  return `${n.toFixed(2)} EUR`;
+}
+
 function companyInfo(): string[] {
   return [
     "RFC - Rescue Formation Conseil",
@@ -299,10 +311,6 @@ export function devisPdf(data: {
   montantTTC: number;
   notes?: string;
 }): any {
-  const { format } = require("date-fns");
-  const { fr } = require("date-fns/locale");
-  const fmtDate = (d: string) => format(new Date(d), "dd/MM/yyyy", { locale: fr });
-  const fmtCurrency = (n: number) => `${n.toFixed(2)} EUR`;
   const montantTVA = data.montantHT * (data.tauxTVA / 100);
 
   return {
@@ -443,10 +451,6 @@ export function facturePdf(data: {
   notes?: string;
   devisNumero?: string;
 }): any {
-  const { format } = require("date-fns");
-  const { fr } = require("date-fns/locale");
-  const fmtDate = (d: string) => format(new Date(d), "dd/MM/yyyy", { locale: fr });
-  const fmtCurrency = (n: number) => `${n.toFixed(2)} EUR`;
   const montantTVA = data.montantHT * (data.tauxTVA / 100);
 
   return {

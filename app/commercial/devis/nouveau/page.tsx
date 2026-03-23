@@ -50,8 +50,8 @@ export default function NouveauDevisPage() {
       fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
       fetch("/api/contacts").then((r) => r.ok ? r.json() : []),
     ]).then(([e, c]) => {
-      setEntreprises(e);
-      setContacts(c);
+      setEntreprises(Array.isArray(e) ? e : []);
+      setContacts(Array.isArray(c) ? c : []);
     });
   }, []);
 

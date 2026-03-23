@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
   const parsed = devisSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const count = await prisma.devis.count();
-  const numero = generateNumero("DEV", count);
+  const lastDevis = await prisma.devis.findFirst({ orderBy: { createdAt: "desc" }, select: { numero: true } });
+  const lastNum = lastDevis ? parseInt(lastDevis.numero.split("-").pop() || "0") : 0;
+  const numero = generateNumero("DEV", lastNum);
 
   const { lignes, dateValidite, entrepriseId, contactId, tauxTVA, ...rest } = parsed.data;
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);

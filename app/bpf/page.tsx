@@ -57,13 +57,23 @@ export default function BPFPage() {
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <a
-          href={`/api/bpf/export?annee=${annee}`}
-          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
-        >
-          <Download className="h-4 w-4" />
-          Exporter CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/bpf/export-pdf?annee=${annee}`}
+            target="_blank"
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
+          >
+            <Download className="h-4 w-4" />
+            Exporter PDF
+          </a>
+          <a
+            href={`/api/bpf/export?annee=${annee}`}
+            className="flex items-center gap-2 border border-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-700 text-sm font-medium"
+          >
+            <Download className="h-4 w-4" />
+            CSV
+          </a>
+        </div>
       </div>
 
       {/* KPIs */}

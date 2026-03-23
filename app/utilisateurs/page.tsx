@@ -35,7 +35,11 @@ export default function UtilisateursPage() {
     fetch("/api/utilisateurs")
       .then((r) => r.ok ? r.json() : [])
       .then((data) => {
-        setUsers(data);
+        setUsers(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setUsers([]);
         setLoading(false);
       });
   }, []);
@@ -110,13 +114,13 @@ export default function UtilisateursPage() {
             placeholder="Rechercher par nom ou email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm"
+            className="w-full pl-10 pr-4 py-2 border border-gray-600 bg-gray-900 text-gray-100 rounded-lg text-sm"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm"
+          className="border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
         >
           <option value="">Tous les roles</option>
           <option value="admin">Admin</option>
@@ -144,8 +148,8 @@ export default function UtilisateursPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-red-900/30 flex items-center justify-center text-red-400 font-semibold text-xs">
-                      {user.prenom[0]}
-                      {user.nom[0]}
+                      {(user.prenom || "")[0] || ""}
+                      {(user.nom || "")[0] || ""}
                     </div>
                     <span className="font-medium text-gray-100">
                       {user.prenom} {user.nom}

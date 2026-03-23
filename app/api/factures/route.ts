@@ -27,9 +27,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const lastFacture = await prisma.facture.findFirst({ orderBy: { createdAt: "desc" }, select: { numero: true } });
-    const lastNum = lastFacture ? parseInt(lastFacture.numero.split("-").pop() || "0") : 0;
-    const numero = generateNumero("FAC", lastNum);
+    const allFactures = await prisma.facture.findMany({ select: { numero: true } });
+    const maxNum = allFactures.reduce((max, f) => {
+      const n = parseInt(f.numero.split("-").pop() || "0");
+      return n > max ? n : max;
+    }, 0);
+    const numero = generateNumero("FAC", maxNum);
 
     const facture = await prisma.facture.create({
       data: {

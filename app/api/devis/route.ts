@@ -31,9 +31,12 @@ export async function POST(req: NextRequest) {
   const parsed = devisSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const lastDevis = await prisma.devis.findFirst({ orderBy: { createdAt: "desc" }, select: { numero: true } });
-  const lastNum = lastDevis ? parseInt(lastDevis.numero.split("-").pop() || "0") : 0;
-  const numero = generateNumero("DEV", lastNum);
+  const allDevis = await prisma.devis.findMany({ select: { numero: true } });
+  const maxNum = allDevis.reduce((max, d) => {
+    const n = parseInt(d.numero.split("-").pop() || "0");
+    return n > max ? n : max;
+  }, 0);
+  const numero = generateNumero("DEV", maxNum);
 
   const { lignes, dateValidite, entrepriseId, contactId, tauxTVA, ...rest } = parsed.data;
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
@@ -57,7 +60,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(devis, { status: 201 });
   } catch (err: unknown) {
-    console.error("Devis creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la création du devis" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Devis creation error:", message);
+    return NextResponse.json({ error: `Erreur lors de la création du devis: ${message.split("\n").pop()}` }, { status: 500 });
   }
 }

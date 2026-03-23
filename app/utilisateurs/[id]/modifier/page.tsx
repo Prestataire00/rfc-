@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 
-export default function ModifierUtilisateurPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ModifierUtilisateurPage() {
+  const { id } = useParams() as { id: string };
   const router = useRouter();
   const [form, setForm] = useState({
     email: "",

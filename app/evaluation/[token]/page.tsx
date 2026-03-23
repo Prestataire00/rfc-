@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { Star, CheckCircle, AlertCircle } from "lucide-react";
 
 const QUESTIONS_CHAUD = [
@@ -19,8 +20,8 @@ const QUESTIONS_FROID = [
   { key: "besoin_complement", label: "Vous estimez avoir besoin d'une formation complementaire" },
 ];
 
-export default function EvaluationPubliquePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = use(params);
+export default function EvaluationPubliquePage() {
+  const { token } = useParams() as { token: string };
   const [info, setInfo] = useState<{
     type: string;
     estComplete: boolean;

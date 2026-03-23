@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { ArrowLeft, Pencil, KeyRound, UserCheck, UserX, Building2, GraduationCap, Mail, Shield, Calendar } from "lucide-react";
 
 type User = {
@@ -24,8 +25,8 @@ const roleBadge: Record<string, { label: string; class: string }> = {
   client: { label: "Client", class: "bg-green-900/30 text-green-400" },
 };
 
-export default function UtilisateurDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function UtilisateurDetailPage() {
+  const { id } = useParams() as { id: string };
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

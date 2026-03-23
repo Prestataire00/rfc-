@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { CheckCircle, AlertCircle, CalendarDays, Clock, MapPin } from "lucide-react";
 
-export default function InscriptionStagiairePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = use(params);
+export default function InscriptionStagiairePage() {
+  const { token } = useParams() as { token: string };
   const [info, setInfo] = useState<{
     formation: string;
     duree: number;

@@ -70,6 +70,45 @@ function footer() {
   };
 }
 
+/**
+ * Bloc signature réutilisable.
+ * @param left  { titre, nom } — signataire gauche (ex. RFC / Le Directeur)
+ * @param right { titre, nom } — signataire droit (ex. Client / Bon pour accord) — optionnel
+ */
+function signatureBlock(
+  left: { titre: string; nom?: string },
+  right?: { titre: string; nom?: string }
+) {
+  const bloc = (s: { titre: string; nom?: string }) => ({
+    stack: [
+      { text: s.titre, fontSize: 9, bold: true, color: COLORS.dark },
+      ...(s.nom ? [{ text: s.nom, fontSize: 9, color: COLORS.gray, margin: [0, 1, 0, 0] as [number, number, number, number] }] : []),
+      { text: "Date : ___________________________", fontSize: 9, color: COLORS.gray, margin: [0, 16, 0, 0] as [number, number, number, number] },
+      {
+        canvas: [{ type: "rect" as const, x: 0, y: 0, w: 180, h: 55, r: 4, lineColor: "#cccccc", lineWidth: 0.5 }],
+        margin: [0, 6, 0, 0] as [number, number, number, number],
+      },
+      { text: "Signature", fontSize: 8, color: "#aaaaaa", margin: [6, -50, 0, 0] as [number, number, number, number] },
+    ],
+  });
+
+  if (!right) {
+    return {
+      columns: [bloc(left), { width: "*", text: "" }],
+      margin: [0, 25, 0, 0] as [number, number, number, number],
+    };
+  }
+
+  return {
+    columns: [
+      { width: "48%", ...bloc(left) },
+      { width: "4%", text: "" },
+      { width: "48%", ...bloc(right) },
+    ],
+    margin: [0, 25, 0, 0] as [number, number, number, number],
+  };
+}
+
 const defaultStyles = {
   brand: { fontSize: 18, bold: true, color: COLORS.primary },
   docTitle: { fontSize: 14, bold: true, color: COLORS.dark },
@@ -146,26 +185,10 @@ export function conventionPdf(data: {
         layout: "lightHorizontalLines",
         margin: [0, 0, 0, 30] as [number, number, number, number],
       },
-      {
-        columns: [
-          {
-            width: "50%",
-            stack: [
-              { text: "Pour l'organisme de formation", style: "label" },
-              { text: info[0], style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] },
-              { text: "Date et signature :", style: "label", margin: [0, 30, 0, 0] as [number, number, number, number] },
-            ],
-          },
-          {
-            width: "50%",
-            stack: [
-              { text: "Pour le client", style: "label" },
-              { text: data.entreprise.nom, style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] },
-              { text: "Date et signature :", style: "label", margin: [0, 30, 0, 0] as [number, number, number, number] },
-            ],
-          },
-        ],
-      },
+      signatureBlock(
+        { titre: "Pour l'organisme de formation", nom: info[0] },
+        { titre: "Pour le client", nom: data.entreprise.nom }
+      ),
       footer(),
     ],
     styles: defaultStyles,
@@ -233,13 +256,11 @@ export function attestationPdf(data: {
             ],
           }
         : {},
-      {
-        text: `Fait à Toulon, le ${data.dateGeneration}`,
-        style: "value",
-        margin: [0, 30, 0, 5] as [number, number, number, number],
-      },
-      { text: "Pour RFC - Rescue Formation Conseil", style: "label" },
-      { text: "Le Directeur", style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] },
+      { text: `Fait à Toulon, le ${data.dateGeneration}`, style: "value", margin: [0, 20, 0, 0] as [number, number, number, number] },
+      signatureBlock(
+        { titre: "Pour RFC - Rescue Formation Conseil", nom: "Le Directeur" },
+        { titre: "Signature du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` }
+      ),
       footer(),
     ],
     styles: defaultStyles,
@@ -299,6 +320,10 @@ export function convocationPdf(data: {
       },
       { text: "Cordialement,", style: "value" },
       { text: "L'équipe RFC - Rescue Formation Conseil", style: "value", bold: true, margin: [0, 5, 0, 0] as [number, number, number, number] },
+      signatureBlock(
+        { titre: "Pour RFC - Rescue Formation Conseil" },
+        { titre: "Accusé de réception du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` }
+      ),
       footer(),
     ],
     styles: defaultStyles,
@@ -517,27 +542,10 @@ export function devisPdf(data: {
       },
 
       // ── SIGNATURE ──
-      {
-        table: {
-          widths: ["*"],
-          body: [[{
-            text: "Signature du client (précédée de la mention « Bon pour accord »)",
-            fontSize: 9,
-            color: COLORS.gray,
-            italics: true,
-            margin: [8, 30, 8, 30] as [number, number, number, number],
-            alignment: "center" as const,
-            fillColor: "#f9f9f9",
-          }]],
-        },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => "#cccccc",
-          vLineColor: () => "#cccccc",
-        },
-        margin: [0, 0, 0, 0] as [number, number, number, number],
-      },
+      signatureBlock(
+        { titre: "Pour RFC - Rescue Formation Conseil", nom: nomSociete },
+        { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || data.contact ? `${data.contact?.prenom} ${data.contact?.nom}` : undefined }
+      ),
     ],
     footer: (_currentPage: number, _pageCount: number) => ({
       text: footerText,
@@ -757,6 +765,11 @@ export function facturePdf(data: {
         ],
         margin: [0, 0, 0, 0] as [number, number, number, number],
       },
+      // ── SIGNATURE ──
+      signatureBlock(
+        { titre: "Pour RFC - Rescue Formation Conseil", nom: nomSociete },
+        { titre: "Acquitté — Client", nom: data.entreprise?.nom || (data.contact ? `${data.contact.prenom} ${data.contact.nom}` : undefined) }
+      ),
     ],
     footer: (_currentPage: number, _pageCount: number) => ({
       text: footerText,

@@ -224,6 +224,44 @@ export default function CommercialPage() {
             </Link>
           </div>
 
+          {!loadingFactures && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Tunnel CA global</p>
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const factureDevisIds = new Set(factures.map((f) => f.devis?.id).filter(Boolean));
+                  const caPrevisionnel = devis
+                    .filter((d) => ["envoye", "accepte"].includes(d.statut) && !factureDevisIds.has(d.id))
+                    .reduce((s, d) => s + d.montantTTC, 0);
+                  const caFacture = factures.filter((f) => f.statut !== "annulee").reduce((s, f) => s + f.montantTTC, 0);
+                  const caEnAttente = factures.filter((f) => ["en_attente", "envoyee", "en_retard"].includes(f.statut)).reduce((s, f) => s + f.montantTTC, 0);
+                  const caEncaisse = factures.filter((f) => f.statut === "payee").reduce((s, f) => s + f.montantTTC, 0);
+                  return (
+                    <>
+                      <div className="flex-1 rounded-md bg-blue-900/30 border border-blue-700 p-3 text-center">
+                        <div className="text-xs text-blue-400 mb-1">Devis en cours</div>
+                        <div className="text-base font-bold text-blue-300">{formatCurrency(caPrevisionnel)}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{devis.filter((d) => ["envoye", "accepte"].includes(d.statut) && !factureDevisIds.has(d.id)).length} devis</div>
+                      </div>
+                      <div className="text-gray-600 text-lg font-bold">→</div>
+                      <div className="flex-1 rounded-md bg-orange-900/30 border border-orange-700 p-3 text-center">
+                        <div className="text-xs text-orange-400 mb-1">Facturé (à encaisser)</div>
+                        <div className="text-base font-bold text-orange-300">{formatCurrency(caEnAttente)}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">sur {formatCurrency(caFacture)} total</div>
+                      </div>
+                      <div className="text-gray-600 text-lg font-bold">→</div>
+                      <div className="flex-1 rounded-md bg-emerald-900/30 border border-emerald-700 p-3 text-center">
+                        <div className="text-xs text-emerald-400 mb-1">Encaissé</div>
+                        <div className="text-base font-bold text-emerald-300">{formatCurrency(caEncaisse)}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{factures.filter((f) => f.statut === "payee").length} factures</div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
           {loadingFactures ? (
             <div className="flex justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
@@ -241,6 +279,7 @@ export default function CommercialPage() {
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Numéro</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Client</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Devis</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Montant TTC</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Échéance</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
@@ -259,6 +298,13 @@ export default function CommercialPage() {
                         <td className="px-4 py-3 font-mono text-gray-300">{f.numero}</td>
                         <td className="px-4 py-3 text-gray-300">
                           {f.entreprise?.nom || <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-sm">
+                          {f.devis ? (
+                            <span className="text-blue-400">{f.devis.numero}</span>
+                          ) : (
+                            <span className="text-gray-500">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-semibold text-gray-200">
                           {formatCurrency(f.montantTTC)}

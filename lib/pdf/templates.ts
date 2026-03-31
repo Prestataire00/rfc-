@@ -312,7 +312,12 @@ export function devisPdf(data: {
   objet: string;
   dateEmission: string;
   dateValidite: string;
-  entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string };
+  societe?: {
+    nom: string; slogan?: string; adresse?: string; codePostal?: string; ville?: string;
+    telephone?: string; email?: string; siret?: string; nda?: string; tvaIntracom?: string;
+    conditionsPaiement?: string; mentionsDevis?: string;
+  };
+  entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string; email?: string; telephone?: string };
   contact?: { nom: string; prenom: string; email: string };
   lignes: { designation: string; quantite: number; prixUnitaire: number; montant: number }[];
   montantHT: number;
@@ -321,128 +326,228 @@ export function devisPdf(data: {
   notes?: string;
 }): any {
   const montantTVA = data.montantHT * (data.tauxTVA / 100);
+  const societe = data.societe;
+  const nomSociete = societe?.nom || "RFC - Rescue Formation Conseil";
+
+  // Build emetteur lines
+  const emetteurLines: any[] = [
+    { text: nomSociete, fontSize: 10, bold: true, color: COLORS.dark },
+  ];
+  if (societe?.slogan) emetteurLines.push({ text: societe.slogan, fontSize: 9, color: COLORS.gray });
+  if (societe?.adresse) emetteurLines.push({ text: societe.adresse, fontSize: 9, color: COLORS.dark });
+  if (societe?.codePostal || societe?.ville) emetteurLines.push({ text: [societe?.codePostal, societe?.ville].filter(Boolean).join(" "), fontSize: 9, color: COLORS.dark });
+  if (societe?.telephone) emetteurLines.push({ text: `Tél : ${societe.telephone}`, fontSize: 9, color: COLORS.dark });
+  if (societe?.email) emetteurLines.push({ text: `Mail : ${societe.email}`, fontSize: 9, color: COLORS.dark });
+  if (societe?.siret) emetteurLines.push({ text: `SIRET : ${societe.siret}`, fontSize: 9, color: COLORS.dark });
+  if (societe?.nda) emetteurLines.push({ text: `NDA : ${societe.nda}`, fontSize: 9, color: COLORS.dark });
+
+  // Build client lines
+  const clientLines: any[] = [];
+  if (data.entreprise) {
+    clientLines.push({ text: data.entreprise.nom, fontSize: 10, bold: true, color: COLORS.dark });
+    if (data.contact) clientLines.push({ text: `${data.contact.prenom} ${data.contact.nom}`, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.adresse) clientLines.push({ text: data.entreprise.adresse, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.codePostal || data.entreprise.ville) clientLines.push({ text: [data.entreprise.codePostal, data.entreprise.ville].filter(Boolean).join(" "), fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.telephone) clientLines.push({ text: `Tél : ${data.entreprise.telephone}`, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.email) clientLines.push({ text: `Mail : ${data.entreprise.email}`, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.siret) clientLines.push({ text: `SIRET : ${data.entreprise.siret}`, fontSize: 9, color: COLORS.dark });
+  } else if (data.contact) {
+    clientLines.push({ text: `${data.contact.prenom} ${data.contact.nom}`, fontSize: 10, bold: true, color: COLORS.dark });
+    clientLines.push({ text: data.contact.email, fontSize: 9, color: COLORS.dark });
+  } else {
+    clientLines.push({ text: "Client non renseigné", fontSize: 9, color: COLORS.gray, italics: true });
+  }
+
+  const condPaiement = societe?.conditionsPaiement || "Paiement à 30 jours à compter de la date de facturation.";
+  const mentions = societe?.mentionsDevis || "Devis valable 30 jours.";
+
+  // Footer text
+  const footerParts: string[] = [nomSociete];
+  if (societe?.tvaIntracom) footerParts.push(`N°TVA Intracommunautaire : ${societe.tvaIntracom}`);
+  if (societe?.nda) footerParts.push(`NDA : ${societe.nda}`);
+  const footerText = footerParts.join("  |  ");
 
   return {
+    pageMargins: [40, 40, 40, 60] as [number, number, number, number],
     content: [
-      ...header("DEVIS"),
-      { text: `Devis N° ${data.numero}`, style: "sectionTitle" },
+      // ── HEADER : logo gauche / titre droite ──
       {
         columns: [
           {
-            width: "50%",
-            stack: [
-              { text: "EMETTEUR", style: "label" },
-              { text: "Rescue Formation Conseil", style: "value", bold: true },
-              { text: "Organisme de formation declare", style: "value" },
-            ],
+            width: 70,
+            image: LOGO_BASE64,
+            fit: [65, 65] as [number, number],
           },
+          { width: "*", text: "" },
           {
-            width: "50%",
+            width: "auto",
             stack: [
-              { text: "DESTINATAIRE", style: "label" },
-              data.entreprise ? { text: data.entreprise.nom, style: "value", bold: true } : {},
-              data.entreprise
-                ? { text: [data.entreprise.adresse, data.entreprise.codePostal, data.entreprise.ville].filter(Boolean).join(", "), style: "value" }
-                : {},
-              data.entreprise?.siret ? { text: `SIRET: ${data.entreprise.siret}`, style: "value" } : {},
-              data.contact ? { text: `${data.contact.prenom} ${data.contact.nom}`, style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] } : {},
-              data.contact ? { text: data.contact.email, style: "value" } : {},
+              { text: "DEVIS", fontSize: 26, bold: true, color: COLORS.dark, alignment: "right" as const },
+              { text: `Numéro : ${data.numero}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const, margin: [0, 4, 0, 2] as [number, number, number, number] },
+              { text: `Date d'émission : ${fmtDate(data.dateEmission)}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const },
+              { text: `Valable jusqu'au : ${fmtDate(data.dateValidite)}`, fontSize: 10, color: COLORS.gray, alignment: "right" as const },
             ],
           },
         ],
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
+      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: COLORS.primary }], margin: [0, 0, 0, 15] as [number, number, number, number] },
+
+      // ── EMETTEUR / CLIENT ──
       {
         columns: [
-          { text: `Objet : ${data.objet}`, style: "value", bold: true, width: "*" },
-        ],
-        margin: [0, 0, 0, 5] as [number, number, number, number],
-      },
-      {
-        columns: [
-          { text: `Date d'emission : ${fmtDate(data.dateEmission)}`, style: "value", width: "50%" },
-          { text: `Date de validite : ${fmtDate(data.dateValidite)}`, style: "value", width: "50%" },
+          {
+            width: "48%",
+            table: {
+              widths: ["*"],
+              body: [[{
+                stack: emetteurLines,
+                fillColor: "#f0f0f0",
+                border: [false, false, false, false],
+                margin: [8, 8, 8, 8] as [number, number, number, number],
+              }]],
+            },
+            layout: "noBorders",
+          },
+          { width: "4%", text: "" },
+          {
+            width: "48%",
+            table: {
+              widths: ["*"],
+              body: [[{
+                stack: [
+                  { text: "Client :", fontSize: 10, bold: true, color: COLORS.dark },
+                  ...clientLines,
+                ],
+                fillColor: "#f0f0f0",
+                border: [false, false, false, false],
+                margin: [8, 8, 8, 8] as [number, number, number, number],
+              }]],
+            },
+            layout: "noBorders",
+          },
         ],
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
-      { text: "DETAIL DES PRESTATIONS", style: "sectionTitle" },
+
+      // ── INFOS ADDITIONNELLES ──
+      ...(data.notes ? [
+        { text: "Informations additionnelles", fontSize: 11, bold: true, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
+        { text: data.notes, fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 10] as [number, number, number, number] },
+      ] : []),
+
+      // ── OBJET ──
+      { text: `Objet : ${data.objet}`, fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 12] as [number, number, number, number] },
+
+      // ── TABLEAU LIGNES ──
       {
         table: {
           headerRows: 1,
-          widths: ["*", 50, 80, 80],
+          widths: ["*", 45, 75, 55, 60],
           body: [
             [
-              { text: "Designation", style: "tableHeader" },
-              { text: "Qte", style: "tableHeader", alignment: "center" as const },
-              { text: "Prix unit. HT", style: "tableHeader", alignment: "right" as const },
-              { text: "Montant HT", style: "tableHeader", alignment: "right" as const },
+              { text: "Désignation", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "left" as const, margin: [4, 4, 4, 4] as [number, number, number, number] },
+              { text: "Quantité", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+              { text: "Prix unit. HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+              { text: `Total TVA ${data.tauxTVA}%`, fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+              { text: "Total HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
             ],
-            ...data.lignes.map((l) => [
-              { text: l.designation, style: "value" },
-              { text: l.quantite.toString(), style: "value", alignment: "center" as const },
-              { text: fmtCurrency(l.prixUnitaire), style: "value", alignment: "right" as const },
-              { text: fmtCurrency(l.montant), style: "value", alignment: "right" as const },
-            ]),
+            ...data.lignes.map((l, i) => {
+              const tva = l.montant * (data.tauxTVA / 100);
+              const bg = i % 2 === 0 ? "#ffffff" : "#fafafa";
+              return [
+                { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                { text: l.quantite.toString(), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+                { text: fmtCurrency(l.prixUnitaire), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                { text: fmtCurrency(tva), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                { text: fmtCurrency(l.montant), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+              ];
+            }),
           ],
         },
         layout: {
-          hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
-          vLineWidth: () => 0,
-          hLineColor: (i: number) => (i <= 1 ? COLORS.primary : "#cbd5e1"),
-          paddingLeft: () => 6,
-          paddingRight: () => 6,
-          paddingTop: () => 5,
-          paddingBottom: () => 5,
+          hLineWidth: () => 0.3,
+          vLineWidth: () => 0.3,
+          hLineColor: () => "#cccccc",
+          vLineColor: () => "#cccccc",
         },
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
+
+      // ── CONDITIONS + TOTAUX ──
       {
         columns: [
-          { text: "", width: "*" },
           {
-            width: 220,
+            width: "55%",
+            stack: [
+              { text: "Conditions de règlement :", fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
+              { text: condPaiement, fontSize: 9, color: COLORS.dark },
+              ...(mentions ? [{ text: mentions, fontSize: 9, color: COLORS.gray, margin: [0, 4, 0, 0] as [number, number, number, number] }] : []),
+            ],
+          },
+          { width: "5%", text: "" },
+          {
+            width: "40%",
             table: {
-              widths: ["*", 90],
+              widths: ["*", 80],
               body: [
-                [{ text: "Total HT", style: "value" }, { text: fmtCurrency(data.montantHT), style: "value", alignment: "right" as const }],
-                [{ text: `TVA (${data.tauxTVA}%)`, style: "value" }, { text: fmtCurrency(montantTVA), style: "value", alignment: "right" as const }],
-                [{ text: "Total TTC", style: "value", bold: true }, { text: fmtCurrency(data.montantTTC), style: "value", bold: true, alignment: "right" as const }],
+                [
+                  { text: "Total HT", fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                  { text: fmtCurrency(data.montantHT), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                ],
+                [
+                  { text: `Total TVA (${data.tauxTVA}%)`, fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                  { text: fmtCurrency(montantTVA), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                ],
+                [
+                  { text: "Net à payer", fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, margin: [6, 5, 4, 5] as [number, number, number, number] },
+                  { text: fmtCurrency(data.montantTTC), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
+                ],
               ],
             },
-            layout: "lightHorizontalLines",
+            layout: {
+              hLineWidth: () => 0.3,
+              vLineWidth: () => 0.3,
+              hLineColor: () => "#cccccc",
+              vLineColor: () => "#cccccc",
+            },
           },
         ],
         margin: [0, 0, 0, 20] as [number, number, number, number],
       },
-      data.notes ? { text: "NOTES", style: "sectionTitle" } : {},
-      data.notes ? { text: data.notes, style: "value", margin: [0, 0, 0, 15] as [number, number, number, number] } : {},
+
+      // ── SIGNATURE ──
       {
-        text: "Conditions de reglement : paiement a reception de facture sous 30 jours.",
-        style: "value",
-        margin: [0, 10, 0, 20] as [number, number, number, number],
+        table: {
+          widths: ["*"],
+          body: [[{
+            text: "Signature du client (précédée de la mention « Bon pour accord »)",
+            fontSize: 9,
+            color: COLORS.gray,
+            italics: true,
+            margin: [8, 30, 8, 30] as [number, number, number, number],
+            alignment: "center" as const,
+            fillColor: "#f9f9f9",
+          }]],
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => "#cccccc",
+          vLineColor: () => "#cccccc",
+        },
+        margin: [0, 0, 0, 0] as [number, number, number, number],
       },
-      {
-        columns: [
-          {
-            width: "50%",
-            stack: [
-              { text: "Bon pour accord", style: "label" },
-              { text: "Date et signature :", style: "label", margin: [0, 30, 0, 0] as [number, number, number, number] },
-            ],
-          },
-          {
-            width: "50%",
-            stack: [
-              { text: "Rescue Formation Conseil", style: "label" },
-              { text: "Date et signature :", style: "label", margin: [0, 30, 0, 0] as [number, number, number, number] },
-            ],
-          },
-        ],
-      },
-      footer(),
     ],
+    footer: (_currentPage: number, _pageCount: number) => ({
+      text: footerText,
+      fontSize: 8,
+      color: COLORS.gray,
+      alignment: "center" as const,
+      margin: [40, 10, 40, 0] as [number, number, number, number],
+    }),
     styles: defaultStyles,
-    defaultStyle: { font: "Helvetica" },
+    defaultStyle: { font: "Roboto" },
   };
 }
 
@@ -451,7 +556,12 @@ export function facturePdf(data: {
   numero: string;
   dateEmission: string;
   dateEcheance: string;
-  entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string };
+  societe?: {
+    nom: string; slogan?: string; adresse?: string; codePostal?: string; ville?: string;
+    telephone?: string; email?: string; siret?: string; nda?: string; tvaIntracom?: string;
+    conditionsPaiement?: string; mentionsFacture?: string;
+  };
+  entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string; email?: string; telephone?: string };
   contact?: { nom: string; prenom: string; email: string };
   lignes: { designation: string; quantite: number; prixUnitaire: number; montant: number }[];
   montantHT: number;
@@ -461,109 +571,202 @@ export function facturePdf(data: {
   devisNumero?: string;
 }): any {
   const montantTVA = data.montantHT * (data.tauxTVA / 100);
+  const societe = data.societe;
+  const nomSociete = societe?.nom || "RFC - Rescue Formation Conseil";
+
+  const emetteurLines: any[] = [
+    { text: nomSociete, fontSize: 10, bold: true, color: COLORS.dark },
+  ];
+  if (societe?.slogan) emetteurLines.push({ text: societe.slogan, fontSize: 9, color: COLORS.gray });
+  if (societe?.adresse) emetteurLines.push({ text: societe.adresse, fontSize: 9, color: COLORS.dark });
+  if (societe?.codePostal || societe?.ville) emetteurLines.push({ text: [societe?.codePostal, societe?.ville].filter(Boolean).join(" "), fontSize: 9, color: COLORS.dark });
+  if (societe?.telephone) emetteurLines.push({ text: `Tél : ${societe.telephone}`, fontSize: 9, color: COLORS.dark });
+  if (societe?.email) emetteurLines.push({ text: `Mail : ${societe.email}`, fontSize: 9, color: COLORS.dark });
+  if (societe?.siret) emetteurLines.push({ text: `SIRET : ${societe.siret}`, fontSize: 9, color: COLORS.dark });
+  if (societe?.nda) emetteurLines.push({ text: `NDA : ${societe.nda}`, fontSize: 9, color: COLORS.dark });
+
+  const clientLines: any[] = [];
+  if (data.entreprise) {
+    clientLines.push({ text: data.entreprise.nom, fontSize: 10, bold: true, color: COLORS.dark });
+    if (data.contact) clientLines.push({ text: `${data.contact.prenom} ${data.contact.nom}`, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.adresse) clientLines.push({ text: data.entreprise.adresse, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.codePostal || data.entreprise.ville) clientLines.push({ text: [data.entreprise.codePostal, data.entreprise.ville].filter(Boolean).join(" "), fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.telephone) clientLines.push({ text: `Tél : ${data.entreprise.telephone}`, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.email) clientLines.push({ text: `Mail : ${data.entreprise.email}`, fontSize: 9, color: COLORS.dark });
+    if (data.entreprise.siret) clientLines.push({ text: `SIRET : ${data.entreprise.siret}`, fontSize: 9, color: COLORS.dark });
+  } else if (data.contact) {
+    clientLines.push({ text: `${data.contact.prenom} ${data.contact.nom}`, fontSize: 10, bold: true, color: COLORS.dark });
+    clientLines.push({ text: data.contact.email, fontSize: 9, color: COLORS.dark });
+  } else {
+    clientLines.push({ text: "Client non renseigné", fontSize: 9, color: COLORS.gray, italics: true });
+  }
+
+  const condPaiement = societe?.conditionsPaiement || "Paiement à 30 jours à compter de la date de facturation.";
+  const mentions = societe?.mentionsFacture || "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.";
+
+  const footerParts: string[] = [nomSociete];
+  if (societe?.tvaIntracom) footerParts.push(`N°TVA Intracommunautaire : ${societe.tvaIntracom}`);
+  if (societe?.nda) footerParts.push(`NDA : ${societe.nda}`);
+  const footerText = footerParts.join("  |  ");
 
   return {
+    pageMargins: [40, 40, 40, 60] as [number, number, number, number],
     content: [
-      ...header("FACTURE"),
-      { text: `Facture N° ${data.numero}`, style: "sectionTitle" },
+      // ── HEADER ──
       {
         columns: [
           {
-            width: "50%",
-            stack: [
-              { text: "EMETTEUR", style: "label" },
-              { text: "Rescue Formation Conseil", style: "value", bold: true },
-              { text: "Organisme de formation declare", style: "value" },
-            ],
+            width: 70,
+            image: LOGO_BASE64,
+            fit: [65, 65] as [number, number],
           },
+          { width: "*", text: "" },
           {
-            width: "50%",
+            width: "auto",
             stack: [
-              { text: "DESTINATAIRE", style: "label" },
-              data.entreprise ? { text: data.entreprise.nom, style: "value", bold: true } : {},
-              data.entreprise
-                ? { text: [data.entreprise.adresse, data.entreprise.codePostal, data.entreprise.ville].filter(Boolean).join(", "), style: "value" }
-                : {},
-              data.entreprise?.siret ? { text: `SIRET: ${data.entreprise.siret}`, style: "value" } : {},
-              data.contact ? { text: `${data.contact.prenom} ${data.contact.nom}`, style: "value", margin: [0, 5, 0, 0] as [number, number, number, number] } : {},
-              data.contact ? { text: data.contact.email, style: "value" } : {},
+              { text: "FACTURE", fontSize: 26, bold: true, color: COLORS.dark, alignment: "right" as const },
+              { text: `Numéro : ${data.numero}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const, margin: [0, 4, 0, 2] as [number, number, number, number] },
+              { text: `Date d'émission : ${fmtDate(data.dateEmission)}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const },
+              { text: `Échéance : ${fmtDate(data.dateEcheance)}`, fontSize: 10, color: COLORS.gray, alignment: "right" as const },
+              ...(data.devisNumero ? [{ text: `Réf. devis : ${data.devisNumero}`, fontSize: 9, color: COLORS.gray, alignment: "right" as const }] : []),
             ],
           },
         ],
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
+      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: COLORS.primary }], margin: [0, 0, 0, 15] as [number, number, number, number] },
+
+      // ── EMETTEUR / CLIENT ──
       {
         columns: [
-          { text: `Date d'emission : ${fmtDate(data.dateEmission)}`, style: "value", width: "50%" },
-          { text: `Date d'echeance : ${fmtDate(data.dateEcheance)}`, style: "value", width: "50%" },
+          {
+            width: "48%",
+            table: {
+              widths: ["*"],
+              body: [[{
+                stack: emetteurLines,
+                fillColor: "#f0f0f0",
+                border: [false, false, false, false],
+                margin: [8, 8, 8, 8] as [number, number, number, number],
+              }]],
+            },
+            layout: "noBorders",
+          },
+          { width: "4%", text: "" },
+          {
+            width: "48%",
+            table: {
+              widths: ["*"],
+              body: [[{
+                stack: [
+                  { text: "Client :", fontSize: 10, bold: true, color: COLORS.dark },
+                  ...clientLines,
+                ],
+                fillColor: "#f0f0f0",
+                border: [false, false, false, false],
+                margin: [8, 8, 8, 8] as [number, number, number, number],
+              }]],
+            },
+            layout: "noBorders",
+          },
         ],
-        margin: [0, 0, 0, 5] as [number, number, number, number],
+        margin: [0, 0, 0, 15] as [number, number, number, number],
       },
-      data.devisNumero
-        ? { text: `Devis de reference : ${data.devisNumero}`, style: "value", margin: [0, 0, 0, 15] as [number, number, number, number] }
-        : { text: "", margin: [0, 0, 0, 10] as [number, number, number, number] },
-      { text: "DETAIL DES PRESTATIONS", style: "sectionTitle" },
+
+      // ── NOTES ──
+      ...(data.notes ? [
+        { text: "Informations :", fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
+        { text: data.notes, fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 10] as [number, number, number, number] },
+      ] : []),
+
+      // ── TABLEAU LIGNES ──
       data.lignes.length > 0
         ? {
             table: {
               headerRows: 1,
-              widths: ["*", 50, 80, 80],
+              widths: ["*", 45, 75, 55, 60],
               body: [
                 [
-                  { text: "Designation", style: "tableHeader" },
-                  { text: "Qte", style: "tableHeader", alignment: "center" as const },
-                  { text: "Prix unit. HT", style: "tableHeader", alignment: "right" as const },
-                  { text: "Montant HT", style: "tableHeader", alignment: "right" as const },
+                  { text: "Désignation", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "left" as const, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                  { text: "Quantité", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+                  { text: "Prix unit. HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: `Total TVA ${data.tauxTVA}%`, fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: "Total HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
                 ],
-                ...data.lignes.map((l) => [
-                  { text: l.designation, style: "value" },
-                  { text: l.quantite.toString(), style: "value", alignment: "center" as const },
-                  { text: fmtCurrency(l.prixUnitaire), style: "value", alignment: "right" as const },
-                  { text: fmtCurrency(l.montant), style: "value", alignment: "right" as const },
-                ]),
+                ...data.lignes.map((l, i) => {
+                  const tva = l.montant * (data.tauxTVA / 100);
+                  const bg = i % 2 === 0 ? "#ffffff" : "#fafafa";
+                  return [
+                    { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                    { text: l.quantite.toString(), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+                    { text: fmtCurrency(l.prixUnitaire), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                    { text: fmtCurrency(tva), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                    { text: fmtCurrency(l.montant), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  ];
+                }),
               ],
             },
             layout: {
-              hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5,
-              vLineWidth: () => 0,
-              hLineColor: (i: number) => (i <= 1 ? COLORS.primary : "#cbd5e1"),
-              paddingLeft: () => 6,
-              paddingRight: () => 6,
-              paddingTop: () => 5,
-              paddingBottom: () => 5,
+              hLineWidth: () => 0.3,
+              vLineWidth: () => 0.3,
+              hLineColor: () => "#cccccc",
+              vLineColor: () => "#cccccc",
             },
             margin: [0, 0, 0, 15] as [number, number, number, number],
           }
-        : { text: "Aucun detail de lignes disponible", style: "value", italics: true, margin: [0, 0, 0, 15] as [number, number, number, number] },
+        : { text: "Aucune prestation renseignée.", fontSize: 9, italics: true, color: COLORS.gray, margin: [0, 0, 0, 15] as [number, number, number, number] },
+
+      // ── CONDITIONS + TOTAUX ──
       {
         columns: [
-          { text: "", width: "*" },
           {
-            width: 220,
+            width: "55%",
+            stack: [
+              { text: "Conditions de règlement :", fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
+              { text: condPaiement, fontSize: 9, color: COLORS.dark },
+              { text: mentions, fontSize: 9, color: COLORS.gray, margin: [0, 4, 0, 0] as [number, number, number, number] },
+            ],
+          },
+          { width: "5%", text: "" },
+          {
+            width: "40%",
             table: {
-              widths: ["*", 90],
+              widths: ["*", 80],
               body: [
-                [{ text: "Total HT", style: "value" }, { text: fmtCurrency(data.montantHT), style: "value", alignment: "right" as const }],
-                [{ text: `TVA (${data.tauxTVA}%)`, style: "value" }, { text: fmtCurrency(montantTVA), style: "value", alignment: "right" as const }],
-                [{ text: "Total TTC", style: "value", bold: true }, { text: fmtCurrency(data.montantTTC), style: "value", bold: true, alignment: "right" as const }],
+                [
+                  { text: "Total HT", fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                  { text: fmtCurrency(data.montantHT), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                ],
+                [
+                  { text: `Total TVA (${data.tauxTVA}%)`, fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                  { text: fmtCurrency(montantTVA), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                ],
+                [
+                  { text: "Net à payer", fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, margin: [6, 5, 4, 5] as [number, number, number, number] },
+                  { text: fmtCurrency(data.montantTTC), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
+                ],
               ],
             },
-            layout: "lightHorizontalLines",
+            layout: {
+              hLineWidth: () => 0.3,
+              vLineWidth: () => 0.3,
+              hLineColor: () => "#cccccc",
+              vLineColor: () => "#cccccc",
+            },
           },
         ],
-        margin: [0, 0, 0, 20] as [number, number, number, number],
+        margin: [0, 0, 0, 0] as [number, number, number, number],
       },
-      data.notes ? { text: "NOTES", style: "sectionTitle" } : {},
-      data.notes ? { text: data.notes, style: "value", margin: [0, 0, 0, 15] as [number, number, number, number] } : {},
-      {
-        text: "Conditions de reglement : paiement a reception sous 30 jours.\nEn cas de retard de paiement, des penalites de retard seront appliquees.",
-        style: "value",
-        margin: [0, 10, 0, 20] as [number, number, number, number],
-      },
-      footer(),
     ],
+    footer: (_currentPage: number, _pageCount: number) => ({
+      text: footerText,
+      fontSize: 8,
+      color: COLORS.gray,
+      alignment: "center" as const,
+      margin: [40, 10, 40, 0] as [number, number, number, number],
+    }),
     styles: defaultStyles,
-    defaultStyle: { font: "Helvetica" },
+    defaultStyle: { font: "Roboto" },
   };
 }
 

@@ -37,6 +37,7 @@ interface Devis {
   numero: string;
   statut: keyof typeof DEVIS_STATUTS;
   montantHT: number;
+  montantTTC: number;
   createdAt: string;
 }
 
@@ -47,6 +48,7 @@ interface Facture {
   montantTTC: number;
   dateEcheance: string | null;
   createdAt: string;
+  devisId: string | null;
 }
 
 interface Entreprise {
@@ -259,7 +261,7 @@ export default function EntrepriseDetailPage() {
           </Card>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardContent className="pt-4 text-center">
                   <div className="text-2xl font-bold text-red-600">{entreprise.contacts.length}</div>
@@ -272,13 +274,46 @@ export default function EntrepriseDetailPage() {
                   <div className="text-xs text-gray-400 mt-1">Devis</div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="pt-4 text-center">
-                  <div className="text-2xl font-bold text-purple-600">{entreprise.factures.length}</div>
-                  <div className="text-xs text-gray-400 mt-1">Facture{entreprise.factures.length !== 1 ? "s" : ""}</div>
-                </CardContent>
-              </Card>
             </div>
+
+            {/* Tunnel CA : Devis → Facturé → Encaissé */}
+            {(() => {
+              const factureDevisIds = new Set(entreprise.factures.map((f) => f.devisId).filter(Boolean));
+              const caPrevisionnel = entreprise.devis
+                .filter((d) => ["envoye", "accepte", "signe"].includes(d.statut) && !factureDevisIds.has(d.id))
+                .reduce((s, d) => s + d.montantTTC, 0);
+              const caFacture = entreprise.factures
+                .filter((f) => f.statut !== "annulee")
+                .reduce((s, f) => s + f.montantTTC, 0);
+              const caEncaisse = entreprise.factures
+                .filter((f) => f.statut === "payee")
+                .reduce((s, f) => s + f.montantTTC, 0);
+              return (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-gray-400 font-medium">Tunnel CA</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 rounded-md bg-blue-900/30 border border-blue-700 p-3 text-center">
+                        <div className="text-xs text-blue-400 mb-1">Devis en cours</div>
+                        <div className="text-base font-bold text-blue-300">{formatCurrency(caPrevisionnel)}</div>
+                      </div>
+                      <div className="text-gray-600 text-lg font-bold">→</div>
+                      <div className="flex-1 rounded-md bg-orange-900/30 border border-orange-700 p-3 text-center">
+                        <div className="text-xs text-orange-400 mb-1">Facturé</div>
+                        <div className="text-base font-bold text-orange-300">{formatCurrency(caFacture)}</div>
+                      </div>
+                      <div className="text-gray-600 text-lg font-bold">→</div>
+                      <div className="flex-1 rounded-md bg-emerald-900/30 border border-emerald-700 p-3 text-center">
+                        <div className="text-xs text-emerald-400 mb-1">Encaissé</div>
+                        <div className="text-base font-bold text-emerald-300">{formatCurrency(caEncaisse)}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {entreprise.notes && (
               <Card>

@@ -6,18 +6,16 @@ import { generatePdfBuffer } from "@/lib/pdf/generate";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const facture = await prisma.facture.findUnique({
-      where: { id: params.id },
-      include: {
-        entreprise: true,
-        devis: {
-          include: {
-            lignes: true,
-            contact: true,
-          },
+    const [facture, parametres] = await Promise.all([
+      prisma.facture.findUnique({
+        where: { id: params.id },
+        include: {
+          entreprise: true,
+          devis: { include: { lignes: true, contact: true } },
         },
-      },
-    });
+      }),
+      prisma.parametres.findUnique({ where: { id: "default" } }),
+    ]);
 
     if (!facture) {
       return NextResponse.json({ error: "Facture non trouvee" }, { status: 404 });
@@ -30,6 +28,22 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       numero: facture.numero,
       dateEmission: facture.dateEmission.toISOString(),
       dateEcheance: facture.dateEcheance.toISOString(),
+      societe: parametres
+        ? {
+            nom: parametres.nomEntreprise,
+            slogan: parametres.slogan,
+            adresse: parametres.adresse,
+            codePostal: parametres.codePostal,
+            ville: parametres.ville,
+            telephone: parametres.telephone,
+            email: parametres.email,
+            siret: parametres.siret,
+            nda: parametres.nda,
+            tvaIntracom: parametres.tvaIntracom,
+            conditionsPaiement: parametres.conditionsPaiement,
+            mentionsFacture: parametres.mentionsFacture,
+          }
+        : undefined,
       entreprise: facture.entreprise
         ? {
             nom: facture.entreprise.nom,
@@ -37,6 +51,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
             ville: facture.entreprise.ville || undefined,
             codePostal: facture.entreprise.codePostal || undefined,
             siret: facture.entreprise.siret || undefined,
+            email: facture.entreprise.email || undefined,
+            telephone: facture.entreprise.telephone || undefined,
           }
         : undefined,
       contact: contact

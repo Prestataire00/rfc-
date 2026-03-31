@@ -6,14 +6,13 @@ import { generatePdfBuffer } from "@/lib/pdf/generate";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const devis = await prisma.devis.findUnique({
-      where: { id: params.id },
-      include: {
-        lignes: true,
-        entreprise: true,
-        contact: true,
-      },
-    });
+    const [devis, parametres] = await Promise.all([
+      prisma.devis.findUnique({
+        where: { id: params.id },
+        include: { lignes: true, entreprise: true, contact: true },
+      }),
+      prisma.parametres.findUnique({ where: { id: "default" } }),
+    ]);
 
     if (!devis) {
       return NextResponse.json({ error: "Devis non trouve" }, { status: 404 });
@@ -24,6 +23,22 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       objet: devis.objet,
       dateEmission: devis.dateEmission.toISOString(),
       dateValidite: devis.dateValidite.toISOString(),
+      societe: parametres
+        ? {
+            nom: parametres.nomEntreprise,
+            slogan: parametres.slogan,
+            adresse: parametres.adresse,
+            codePostal: parametres.codePostal,
+            ville: parametres.ville,
+            telephone: parametres.telephone,
+            email: parametres.email,
+            siret: parametres.siret,
+            nda: parametres.nda,
+            tvaIntracom: parametres.tvaIntracom,
+            conditionsPaiement: parametres.conditionsPaiement,
+            mentionsDevis: parametres.mentionsDevis,
+          }
+        : undefined,
       entreprise: devis.entreprise
         ? {
             nom: devis.entreprise.nom,
@@ -31,6 +46,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
             ville: devis.entreprise.ville || undefined,
             codePostal: devis.entreprise.codePostal || undefined,
             siret: devis.entreprise.siret || undefined,
+            email: devis.entreprise.email || undefined,
+            telephone: devis.entreprise.telephone || undefined,
           }
         : undefined,
       contact: devis.contact

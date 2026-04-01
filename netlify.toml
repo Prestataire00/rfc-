@@ -10,3 +10,8 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Cron : envoi automatique évaluations à chaud (J+1) et à froid (J+21)
+[[crons]]
+  schedule = "0 8 * * *"
+  path = "/api/cron/evaluations"

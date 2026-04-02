@@ -83,12 +83,26 @@ function signatureBlock(
     stack: [
       { text: s.titre, fontSize: 9, bold: true, color: COLORS.dark },
       ...(s.nom ? [{ text: s.nom, fontSize: 9, color: COLORS.gray, margin: [0, 1, 0, 0] as [number, number, number, number] }] : []),
-      { text: "Date : ___________________________", fontSize: 9, color: COLORS.gray, margin: [0, 16, 0, 0] as [number, number, number, number] },
+      { text: "Date : ___________________________", fontSize: 9, color: COLORS.gray, margin: [0, 12, 0, 0] as [number, number, number, number] },
       {
-        canvas: [{ type: "rect" as const, x: 0, y: 0, w: 180, h: 55, r: 4, lineColor: "#cccccc", lineWidth: 0.5 }],
+        table: {
+          widths: ["*"],
+          heights: [55],
+          body: [[{
+            text: "Signature",
+            fontSize: 8,
+            color: "#aaaaaa",
+            margin: [4, 4, 0, 0] as [number, number, number, number],
+          }]],
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => "#cccccc",
+          vLineColor: () => "#cccccc",
+        },
         margin: [0, 6, 0, 0] as [number, number, number, number],
       },
-      { text: "Signature", fontSize: 8, color: "#aaaaaa", margin: [6, -50, 0, 0] as [number, number, number, number] },
     ],
   });
 

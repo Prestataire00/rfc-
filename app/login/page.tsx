@@ -1,39 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const searchParams = useSearchParams();
+  const urlError = searchParams.get("error");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
     setLoading(true);
-
-    const result = await signIn("credentials", {
+    // Let NextAuth handle the redirect — the middleware will route by role
+    await signIn("credentials", {
       email,
       password,
-      redirect: false,
+      callbackUrl: "/dashboard",
     });
-
-    if (result?.error) {
-      setError("Email ou mot de passe incorrect");
-      setLoading(false);
-    } else {
-      // Full page reload so the middleware handles role-based redirect
-      window.location.href = "/dashboard";
-    }
+    // Only reached if signIn fails (browser stayed on this page)
+    setLoading(false);
   }
+
+  const errorMessage =
+    urlError === "CredentialsSignin" ? "Email ou mot de passe incorrect" : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 relative">
@@ -54,21 +50,33 @@ export default function LoginPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="inline-block mb-4">
-              <Image src="/logo-rfc.png" alt="RFC" width={120} height={120} className="mx-auto dark:invert-0 invert dark:hue-rotate-0 hue-rotate-180 dark:brightness-100 brightness-[0.85]" />
+              <Image
+                src="/logo-rfc.png"
+                alt="RFC"
+                width={120}
+                height={120}
+                className="mx-auto dark:invert-0 invert dark:hue-rotate-0 hue-rotate-180 dark:brightness-100 brightness-[0.85]"
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Rescue Formation Conseil</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{"Sécurité - Incendie - Prévention"}</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Rescue Formation Conseil
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {"Sécurité - Incendie - Prévention"}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
+            {errorMessage && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
-                {error}
+                {errorMessage}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                Email
+              </label>
               <input
                 type="email"
                 value={email}
@@ -80,7 +88,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Mot de passe</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
+                Mot de passe
+              </label>
               <input
                 type="password"
                 value={password}
@@ -108,5 +118,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

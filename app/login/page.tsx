@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -30,16 +30,8 @@ export default function LoginPage() {
       setError("Email ou mot de passe incorrect");
       setLoading(false);
     } else {
-      const session = await getSession();
-      const role = (session?.user as any)?.role;
-      if (role === "client") {
-        router.push("/espace-client");
-      } else if (role === "formateur") {
-        router.push("/espace-formateur");
-      } else {
-        router.push("/dashboard");
-      }
-      router.refresh();
+      // Full page reload so the middleware handles role-based redirect
+      window.location.href = "/dashboard";
     }
   }
 

@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const entrepriseId = (session.user as any).entrepriseId;
+    const entrepriseId = session.user.entrepriseId;
     if (!entrepriseId) return NextResponse.json([]);
 
     const contacts = await prisma.contact.findMany({

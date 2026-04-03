@@ -84,8 +84,11 @@ export default function BesoinDetailPage() {
     fetch(`/api/besoins/${id}`).then((r) => r.ok ? r.json() : null).then((d) => {
       setBesoin(d);
       setLoading(false);
-      if (d?.entrepriseId) {
-        fetch(`/api/entreprises/${d.entrepriseId}/historique`)
+      const params = new URLSearchParams();
+      if (d?.entreprise?.id) params.append("entrepriseId", d.entreprise.id);
+      if (d?.contact?.id) params.append("contactId", d.contact.id);
+      if (params.toString()) {
+        fetch(`/api/historique?${params}`)
           .then((r) => r.ok ? r.json() : [])
           .then(setHistorique);
       }

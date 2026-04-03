@@ -248,9 +248,10 @@ model Facture {
   montantTTC   Float
   dateEmission DateTime @default(now())
   dateEcheance DateTime
-  datePaiement DateTime?
-  notes        String?
-  statut       String   @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
+  datePaiement   DateTime?
+  modePaiement   String?   // virement, cpf, opco, carte, especes
+  notes          String?
+  statut         String   @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
 
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
@@ -454,5 +455,5 @@ model Parametres {
   iban               String @default("")
   bic                String @default("")
   banque             String @default("")
-  moyensPaiement     String @default("virement,cheque,cpf,opco")
+  moyensPaiement     String @default("virement,cpf,opco")
 }

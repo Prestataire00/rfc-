@@ -32,10 +32,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+      </div>
+    );
   }
 
   const ThemeToggle = () => (

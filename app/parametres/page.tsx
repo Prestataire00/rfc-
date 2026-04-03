@@ -48,7 +48,7 @@ const defaultParams: Parametres = {
   iban: "",
   bic: "",
   banque: "",
-  moyensPaiement: "virement,cheque,cpf,opco",
+  moyensPaiement: "virement,cpf,opco",
 };
 
 export default function ParametresPage() {

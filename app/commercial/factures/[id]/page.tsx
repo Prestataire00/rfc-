@@ -28,6 +28,7 @@ type Facture = {
   dateEmission: string;
   dateEcheance: string;
   datePaiement: string | null;
+  modePaiement: string | null;
   notes: string | null;
   entreprise: { id: string; nom: string } | null;
   devis: {
@@ -47,6 +48,7 @@ export default function FactureDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [updatingStatut, setUpdatingStatut] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [modePaiement, setModePaiement] = useState("");
 
   const fetchFacture = useCallback(async () => {
     const res = await fetch(`/api/factures/${id}`);
@@ -81,7 +83,7 @@ export default function FactureDetailPage() {
     const res = await fetch(`/api/factures/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ statut: "payee", datePaiement: today }),
+      body: JSON.stringify({ statut: "payee", datePaiement: today, modePaiement: modePaiement || null }),
     });
     if (res.ok) await fetchFacture();
     setMarkingPaid(false);
@@ -194,6 +196,14 @@ export default function FactureDetailPage() {
                   <p className="font-medium text-green-600">{formatDate(facture.datePaiement)}</p>
                 </div>
               )}
+              {facture.modePaiement && (
+                <div>
+                  <p className="text-gray-400">Mode de paiement</p>
+                  <p className="font-medium text-gray-100">
+                    {{ virement: "🏦 Virement bancaire", cpf: "🎓 CPF", opco: "🏢 OPCO", carte: "💳 Carte bancaire", especes: "💶 Espèces" }[facture.modePaiement] || facture.modePaiement}
+                  </p>
+                </div>
+              )}
               {facture.entreprise && (
                 <div>
                   <p className="text-gray-400">Entreprise</p>
@@ -224,7 +234,23 @@ export default function FactureDetailPage() {
 
           {/* Marquer comme payée */}
           {!isPaid && facture.statut !== "annulee" && (
-            <div className="rounded-lg border bg-gray-800 p-4">
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+              <h2 className="font-semibold text-gray-100">Enregistrer le paiement</h2>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Mode de paiement</label>
+                <select
+                  value={modePaiement}
+                  onChange={(e) => setModePaiement(e.target.value)}
+                  className="w-full rounded-md border border-gray-600 bg-gray-700 text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">— Sélectionner —</option>
+                  <option value="virement">🏦 Virement bancaire</option>
+                  <option value="cpf">🎓 CPF — Compte Personnel de Formation</option>
+                  <option value="opco">🏢 OPCO — Financement employeur</option>
+                  <option value="carte">💳 Carte bancaire</option>
+                  <option value="especes">💶 Espèces</option>
+                </select>
+              </div>
               <Button
                 onClick={handleMarkAsPaid}
                 disabled={markingPaid}

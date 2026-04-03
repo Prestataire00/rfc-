@@ -13,7 +13,7 @@ import { TVA_RATE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 
 type Entreprise = { id: string; nom: string };
-type Contact = { id: string; nom: string; prenom: string; email: string };
+type Contact = { id: string; nom: string; prenom: string; email: string; entrepriseId?: string | null };
 
 type Ligne = {
   designation: string;
@@ -30,6 +30,8 @@ function NouveauDevisForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const besoinId = searchParams.get("besoinId");
+  const paramEntrepriseId = searchParams.get("entrepriseId");
+  const paramContactId = searchParams.get("contactId");
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,8 +57,16 @@ function NouveauDevisForm() {
     ]).then(([e, c]) => {
       setEntreprises(Array.isArray(e) ? e : []);
       setContacts(Array.isArray(c) ? c : []);
+      // Pre-fill from URL params
+      if (paramEntrepriseId) {
+        setClientType("entreprise");
+        setEntrepriseId(paramEntrepriseId);
+      }
+      if (paramContactId) {
+        setContactId(paramContactId);
+      }
     });
-  }, []);
+  }, [paramEntrepriseId, paramContactId]);
 
   useEffect(() => {
     if (!besoinId) return;
@@ -141,7 +151,7 @@ function NouveauDevisForm() {
     const payload = {
       objet,
       entrepriseId: clientType === "entreprise" ? entrepriseId : null,
-      contactId: clientType === "contact" ? contactId : null,
+      contactId: contactId || null,
       dateValidite,
       tauxTVA: TVA_RATE,
       notes: notes || null,
@@ -254,29 +264,51 @@ function NouveauDevisForm() {
                     onChange={() => { setClientType("contact"); setEntrepriseId(""); }}
                     className="text-red-600"
                   />
-                  <span className="text-sm font-medium">Contact</span>
+                  <span className="text-sm font-medium">Contact individuel</span>
                 </label>
               </div>
             </div>
 
             {/* Sélection client */}
             {clientType === "entreprise" ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="entrepriseId">Entreprise *</Label>
-                <select
-                  id="entrepriseId"
-                  value={entrepriseId}
-                  onChange={(e) => setEntrepriseId(e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="">-- Sélectionner une entreprise --</option>
-                  {entreprises.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nom}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="entrepriseId">Entreprise *</Label>
+                  <select
+                    id="entrepriseId"
+                    value={entrepriseId}
+                    onChange={(e) => { setEntrepriseId(e.target.value); setContactId(""); }}
+                    className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="">-- Sélectionner une entreprise --</option>
+                    {entreprises.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {entrepriseId && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="contactId">Contact de l'entreprise (optionnel)</Label>
+                    <select
+                      id="contactId"
+                      value={contactId}
+                      onChange={(e) => setContactId(e.target.value)}
+                      className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">-- Aucun contact --</option>
+                      {contacts
+                        .filter((c) => c.entrepriseId === entrepriseId || !entrepriseId)
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.prenom} {c.nom} — {c.email}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="space-y-1.5">
                 <Label htmlFor="contactId">Contact *</Label>

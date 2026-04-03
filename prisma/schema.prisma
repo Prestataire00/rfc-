@@ -57,6 +57,7 @@ model Entreprise {
   documents   Document[]
   besoins     BesoinFormation[]
   financements Financement[]
+  historique  HistoriqueAction[]
 }
 
 model Contact {
@@ -81,6 +82,7 @@ model Contact {
   evaluations      Evaluation[]
   besoins          BesoinFormation[]
   feuillesPresence FeuillePresence[]
+  historique       HistoriqueAction[]
 }
 
 model Formateur {
@@ -451,6 +453,30 @@ model QuestionnaireConfig {
   updatedAt DateTime @updatedAt
   chaud     Json     @default("[]") // sections [{id, titre, questions:[{key,label}]}]
   froid     Json     @default("[]")
+}
+
+// ==================== HISTORIQUE ====================
+
+model HistoriqueAction {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  action    String
+  label     String
+  detail    String?
+  lien      String?
+
+  userId    String?
+
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+
+  contactId    String?
+  contact      Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  sessionId    String?
+  devisId      String?
+  factureId    String?
 }
 
 // ==================== PARAMETRES ====================

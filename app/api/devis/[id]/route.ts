@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { devisSchema } from "@/lib/validations/devis";
+import { logAction } from "@/lib/historique";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -33,6 +34,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         where: { id: params.id },
         data: { statut: body.statut },
       });
+      try {
+        await logAction({
+          action: "devis_statut",
+          label: "Devis " + devis.numero + " → " + body.statut,
+          lien: "/commercial/devis/" + params.id,
+          entrepriseId: devis.entrepriseId ?? undefined,
+          devisId: params.id,
+        });
+      } catch {}
       return NextResponse.json(devis);
     }
 

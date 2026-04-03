@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, devisEmail } from "@/lib/email";
+import { logAction } from "@/lib/historique";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,6 +42,18 @@ export async function POST(req: NextRequest) {
         data: { statut: "envoye" },
       });
     }
+
+    try {
+      await logAction({
+        action: "devis_envoye",
+        label: "Devis " + devis.numero + " envoyé par email",
+        detail: "Envoyé à " + devis.contact!.email,
+        lien: "/commercial/devis/" + devisId,
+        entrepriseId: devis.entrepriseId ?? undefined,
+        contactId: devis.contactId ?? undefined,
+        devisId: devisId,
+      });
+    } catch {}
 
     return NextResponse.json({ success: true, skipped: (result as any)?.skipped || false });
   } catch (err: unknown) {

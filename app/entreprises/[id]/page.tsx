@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,6 +15,14 @@ import {
   Pencil,
   Trash2,
   Calendar,
+  Plus,
+  Eye,
+  Download,
+  Send,
+  FileText,
+  Receipt,
+  UserPlus,
+  Clock,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -40,6 +48,7 @@ interface Devis {
   montantTTC: number;
   createdAt: string;
   sessions: { id: string }[];
+  contact: { email: string } | null;
 }
 
 interface Facture {
@@ -70,7 +79,46 @@ interface Entreprise {
   createdAt: string;
 }
 
-type TabKey = "informations" | "contacts" | "devis" | "factures";
+interface HistoriqueAction {
+  id: string;
+  createdAt: string;
+  action: string;
+  label: string;
+  detail: string | null;
+  lien: string | null;
+}
+
+type TabKey = "informations" | "contacts" | "devis" | "factures" | "historique";
+
+function formatRelative(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return `Il y a ${diffDays} jours`;
+  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaine${Math.floor(diffDays / 7) > 1 ? "s" : ""}`;
+  if (diffDays < 365) return `Il y a ${Math.floor(diffDays / 30)} mois`;
+  return `Il y a ${Math.floor(diffDays / 365)} an${Math.floor(diffDays / 365) > 1 ? "s" : ""}`;
+}
+
+function actionIcon(action: string) {
+  if (action.startsWith("devis")) return FileText;
+  if (action.startsWith("facture")) return Receipt;
+  if (action === "inscription_creee") return UserPlus;
+  if (action === "convocation_envoyee") return Send;
+  if (action.includes("email") || action.includes("envoye")) return Send;
+  return Clock;
+}
+
+function actionColor(action: string): string {
+  if (action.startsWith("devis")) return "bg-blue-900/30 text-blue-400 border-blue-700";
+  if (action.startsWith("facture")) return "bg-orange-900/30 text-orange-400 border-orange-700";
+  if (action === "inscription_creee") return "bg-violet-900/30 text-violet-400 border-violet-700";
+  if (action === "convocation_envoyee" || action.includes("envoye")) return "bg-green-900/30 text-green-400 border-green-700";
+  return "bg-gray-700 text-gray-400 border-gray-600";
+}
 
 export default function EntrepriseDetailPage() {
   const params = useParams();
@@ -85,16 +133,42 @@ export default function EntrepriseDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/entreprises/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Entreprise introuvable");
-        return res.json();
-      })
-      .then((data) => setEntreprise(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+  const [historique, setHistorique] = useState<HistoriqueAction[]>([]);
+  const [historiqueLoading, setHistoriqueLoading] = useState(false);
+  const [emailConfirmDevis, setEmailConfirmDevis] = useState<Devis | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailMsg, setEmailMsg] = useState("");
+
+  const fetchEntreprise = useCallback(async () => {
+    const res = await fetch(`/api/entreprises/${id}`);
+    if (!res.ok) { setError("Entreprise introuvable"); setLoading(false); return; }
+    setEntreprise(await res.json());
+    setLoading(false);
   }, [id]);
+
+  const fetchHistorique = useCallback(async () => {
+    setHistoriqueLoading(true);
+    const res = await fetch(`/api/entreprises/${id}/historique`);
+    if (res.ok) setHistorique(await res.json());
+    setHistoriqueLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    fetchEntreprise();
+  }, [fetchEntreprise]);
+
+  useEffect(() => {
+    if (activeTab === "historique" && historique.length === 0 && !historiqueLoading) {
+      fetchHistorique();
+    }
+  }, [activeTab, historique.length, historiqueLoading, fetchHistorique]);
+
+  // Also fetch historique for mini-view on informations tab
+  useEffect(() => {
+    if (activeTab === "informations" && historique.length === 0 && !historiqueLoading) {
+      fetchHistorique();
+    }
+  }, [activeTab, historique.length, historiqueLoading, fetchHistorique]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -106,6 +180,26 @@ export default function EntrepriseDetailPage() {
       setDeleting(false);
       setDeleteOpen(false);
     }
+  };
+
+  const handleSendDevisEmail = async () => {
+    if (!emailConfirmDevis) return;
+    setSendingEmail(true);
+    const res = await fetch("/api/email/devis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ devisId: emailConfirmDevis.id }),
+    });
+    const data = await res.json();
+    setEmailConfirmDevis(null);
+    setSendingEmail(false);
+    if (res.ok) {
+      setEmailMsg(data.skipped ? "SMTP non configuré" : "Email envoyé !");
+      fetchEntreprise();
+    } else {
+      setEmailMsg(data.error || "Erreur lors de l'envoi");
+    }
+    setTimeout(() => setEmailMsg(""), 4000);
   };
 
   if (loading) {
@@ -132,6 +226,7 @@ export default function EntrepriseDetailPage() {
     { key: "contacts", label: `Contacts (${entreprise.contacts.length})` },
     { key: "devis", label: `Devis (${entreprise.devis.length})` },
     { key: "factures", label: `Factures (${entreprise.factures.length})` },
+    { key: "historique", label: "Historique" },
   ];
 
   return (
@@ -177,6 +272,12 @@ export default function EntrepriseDetailPage() {
           </div>
         </div>
       </div>
+
+      {emailMsg && (
+        <div className="mb-4 rounded-md bg-green-900/20 border border-green-700 px-4 py-3 text-sm text-green-400">
+          {emailMsg}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-700 mb-6">
@@ -278,7 +379,7 @@ export default function EntrepriseDetailPage() {
               </Card>
             </div>
 
-            {/* Tunnel CA : Devis → Facturé → Encaissé */}
+            {/* Tunnel CA */}
             {(() => {
               const factureDevisIds = new Set(entreprise.factures.map((f) => f.devisId).filter(Boolean));
               const caPrevisionnel = entreprise.devis
@@ -327,6 +428,45 @@ export default function EntrepriseDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Mini historique */}
+            {historique.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm text-gray-400 font-medium">Activité récente</CardTitle>
+                    <button
+                      onClick={() => setActiveTab("historique")}
+                      className="text-xs text-red-500 hover:text-red-400"
+                    >
+                      Voir tout →
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  {historique.slice(0, 5).map((h) => {
+                    const Icon = actionIcon(h.action);
+                    return (
+                      <div key={h.id} className="flex items-start gap-2">
+                        <div className={`mt-0.5 h-5 w-5 rounded-full border flex items-center justify-center shrink-0 ${actionColor(h.action)}`}>
+                          <Icon className="h-2.5 w-2.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          {h.lien ? (
+                            <Link href={h.lien} className="text-xs font-medium text-gray-200 hover:text-red-400 block truncate">
+                              {h.label}
+                            </Link>
+                          ) : (
+                            <p className="text-xs font-medium text-gray-200 truncate">{h.label}</p>
+                          )}
+                          <p className="text-xs text-gray-500">{formatRelative(h.createdAt)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       )}
@@ -346,16 +486,17 @@ export default function EntrepriseDetailPage() {
               </Link>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-700">
               <thead className="bg-gray-900">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nom</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Poste</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-800 divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
                 {entreprise.contacts.map((contact) => {
                   const typeInfo = CONTACT_TYPES[contact.type];
                   return (
@@ -377,6 +518,14 @@ export default function EntrepriseDetailPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {typeInfo && <StatutBadge label={typeInfo.label} color={typeInfo.color} />}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/commercial/devis/nouveau?entrepriseId=${id}&contactId=${contact.id}`}
+                          className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 border border-blue-700 rounded px-2 py-1"
+                        >
+                          <Plus className="h-3 w-3" /> Créer un devis
+                        </Link>
+                      </td>
                     </tr>
                   );
                 })}
@@ -388,52 +537,96 @@ export default function EntrepriseDetailPage() {
 
       {/* Devis */}
       {activeTab === "devis" && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
-          {entreprise.devis.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-gray-400">Aucun devis enregistré</p>
-            </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Numéro</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Montant HT</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Session</th>
-                </tr>
-              </thead>
-              <tbody className="bg-gray-800 divide-y divide-gray-200">
-                {entreprise.devis.map((devis) => {
-                  const statutInfo = DEVIS_STATUTS[devis.statut];
-                  return (
-                    <tr key={devis.id} className="hover:bg-gray-700 transition-colors cursor-pointer" onClick={() => window.location.href = `/commercial/devis/${devis.id}`}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-100">
-                        {devis.numero}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        {formatDate(devis.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
-                        {formatCurrency(devis.montantHT)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {statutInfo && <StatutBadge label={statutInfo.label} color={statutInfo.color} />}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {devis.sessions && devis.sessions.length > 0 ? (
-                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-900/30 text-green-400 border border-green-700">
-                            Session planifiée
-                          </span>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+        <div>
+          <div className="flex justify-end mb-3">
+            <Link
+              href={`/commercial/devis/nouveau?entrepriseId=${id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Nouveau devis
+            </Link>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+            {entreprise.devis.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="text-sm text-gray-400">Aucun devis enregistré</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead className="bg-gray-900">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Numéro</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Montant HT</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Session</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                  {entreprise.devis.map((devis) => {
+                    const statutInfo = DEVIS_STATUTS[devis.statut];
+                    return (
+                      <tr
+                        key={devis.id}
+                        className="hover:bg-gray-700 transition-colors cursor-pointer"
+                        onClick={() => window.location.href = `/commercial/devis/${devis.id}`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-100">
+                          {devis.numero}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                          {formatDate(devis.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
+                          {formatCurrency(devis.montantHT)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {statutInfo && <StatutBadge label={statutInfo.label} color={statutInfo.color} />}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {devis.sessions && devis.sessions.length > 0 ? (
+                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-900/30 text-green-400 border border-green-700">
+                              Session planifiée
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <Link
+                              href={`/commercial/devis/${devis.id}`}
+                              title="Voir"
+                              className="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-gray-200 transition-colors"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                            <a
+                              href={`/api/pdf/devis/${devis.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Télécharger PDF"
+                              className="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-gray-200 transition-colors"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                            {devis.contact?.email && (
+                              <button
+                                title="Envoyer par email"
+                                onClick={() => setEmailConfirmDevis(devis)}
+                                className="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-green-400 transition-colors"
+                              >
+                                <Send className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
 
@@ -445,7 +638,7 @@ export default function EntrepriseDetailPage() {
               <p className="text-sm text-gray-400">Aucune facture enregistrée</p>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-700">
               <thead className="bg-gray-900">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Numéro</th>
@@ -455,11 +648,15 @@ export default function EntrepriseDetailPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-800 divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
                 {entreprise.factures.map((facture) => {
                   const statutInfo = FACTURE_STATUTS[facture.statut];
                   return (
-                    <tr key={facture.id} className="hover:bg-gray-700 transition-colors">
+                    <tr
+                      key={facture.id}
+                      className="hover:bg-gray-700 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = `/commercial/factures/${facture.id}`}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-100">
                         {facture.numero}
                       </td>
@@ -483,6 +680,77 @@ export default function EntrepriseDetailPage() {
           )}
         </div>
       )}
+
+      {/* Historique */}
+      {activeTab === "historique" && (
+        <div>
+          {historiqueLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+            </div>
+          ) : historique.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Clock className="h-8 w-8 text-gray-500 mb-3" />
+              <p className="text-sm text-gray-400">Aucune activité enregistrée</p>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="absolute left-5 top-0 bottom-0 w-px border-l-2 border-dashed border-gray-700" />
+              <div className="space-y-4 pl-14">
+                {historique.map((h) => {
+                  const Icon = actionIcon(h.action);
+                  const colorClass = actionColor(h.action);
+                  return (
+                    <div key={h.id} className="relative">
+                      <div className={`absolute -left-9 h-8 w-8 rounded-full border flex items-center justify-center ${colorClass}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            {h.lien ? (
+                              <Link href={h.lien} className="font-medium text-gray-100 hover:text-red-400 text-sm">
+                                {h.label}
+                              </Link>
+                            ) : (
+                              <p className="font-medium text-gray-100 text-sm">{h.label}</p>
+                            )}
+                            {h.detail && (
+                              <p className="text-xs text-gray-400 mt-0.5">{h.detail}</p>
+                            )}
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <span
+                              className="text-xs text-gray-400 cursor-default"
+                              title={new Date(h.createdAt).toLocaleString("fr-FR")}
+                            >
+                              {formatRelative(h.createdAt)}
+                            </span>
+                            <p className="text-xs text-gray-500">{formatDate(h.createdAt)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Email confirm dialog */}
+      <ConfirmDialog
+        open={!!emailConfirmDevis}
+        title="Envoyer le devis par email"
+        description={emailConfirmDevis
+          ? `Envoyer le devis ${emailConfirmDevis.numero} par email à ${emailConfirmDevis.contact?.email} ?`
+          : ""}
+        confirmLabel={sendingEmail ? "Envoi..." : "Envoyer"}
+        onConfirm={handleSendDevisEmail}
+        onOpenChange={(open) => { if (!open) setEmailConfirmDevis(null); }}
+        loading={sendingEmail}
+      />
 
       <ConfirmDialog
         open={deleteOpen}

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateNumero } from "@/lib/utils";
+import { logAction } from "@/lib/historique";
 
 export async function POST(_: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -38,6 +39,17 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
     if (devis.statut === "envoye") {
       await prisma.devis.update({ where: { id: params.id }, data: { statut: "accepte" } });
     }
+
+    try {
+      await logAction({
+        action: "facture_generee",
+        label: "Facture " + numero + " générée depuis devis " + devis.numero,
+        lien: "/commercial/factures/" + facture.id,
+        entrepriseId: devis.entrepriseId ?? undefined,
+        factureId: facture.id,
+        devisId: devis.id,
+      });
+    } catch {}
 
     return NextResponse.json(facture, { status: 201 });
   } catch (err: unknown) {

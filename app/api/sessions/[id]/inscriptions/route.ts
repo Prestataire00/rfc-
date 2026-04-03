@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logAction } from "@/lib/historique";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -48,10 +49,32 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: "Contact déjà inscrit" }, { status: 409 });
     }
 
+    const sessionWithFormation = await prisma.session.findUnique({
+      where: { id: params.id },
+      include: { formation: true },
+    });
+    const contact = await prisma.contact.findUnique({
+      where: { id: contactId },
+      select: { nom: true, prenom: true, entrepriseId: true },
+    });
+
     const inscription = await prisma.inscription.create({
       data: { contactId, sessionId: params.id, statut, notes },
       include: { contact: true },
     });
+
+    if (sessionWithFormation && contact) {
+      try {
+        await logAction({
+          action: "inscription_creee",
+          label: contact.prenom + " " + contact.nom + " inscrit à " + sessionWithFormation.formation.titre,
+          lien: "/sessions/" + params.id,
+          entrepriseId: contact.entrepriseId ?? undefined,
+          contactId: contactId,
+          sessionId: params.id,
+        });
+      } catch {}
+    }
 
     return NextResponse.json(inscription, { status: 201 });
   } catch (err: unknown) {

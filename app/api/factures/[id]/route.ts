@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logAction } from "@/lib/historique";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -27,6 +28,17 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         ...(body.datePaiement ? { datePaiement: new Date(body.datePaiement) } : {}),
       },
     });
+    if (body.statut) {
+      try {
+        await logAction({
+          action: "facture_" + body.statut,
+          label: "Facture " + facture.numero + " → " + body.statut,
+          lien: "/commercial/factures/" + params.id,
+          entrepriseId: facture.entrepriseId ?? undefined,
+          factureId: params.id,
+        });
+      } catch {}
+    }
     return NextResponse.json(facture);
   } catch (err: unknown) {
     console.error("Erreur PUT facture:", err);

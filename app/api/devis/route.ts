@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { devisSchema } from "@/lib/validations/devis";
-import { generateNumero } from "@/lib/utils";
+import { generateNumero, formatCurrency } from "@/lib/utils";
+import { logAction } from "@/lib/historique";
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,6 +58,17 @@ export async function POST(req: NextRequest) {
       },
       include: { lignes: true },
     });
+
+    try {
+      await logAction({
+        action: "devis_cree",
+        label: "Devis " + numero + " créé (" + formatCurrency(montantTTC) + ")",
+        lien: "/commercial/devis/" + devis.id,
+        entrepriseId: devis.entrepriseId ?? undefined,
+        contactId: devis.contactId ?? undefined,
+        devisId: devis.id,
+      });
+    } catch {}
 
     return NextResponse.json(devis, { status: 201 });
   } catch (err: unknown) {

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, convocationEmail } from "@/lib/email";
+import { logAction } from "@/lib/historique";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { convocationPdf } from "@/lib/pdf/templates";
 import { format } from "date-fns";
@@ -59,6 +60,15 @@ export async function POST(req: NextRequest) {
         },
       ],
     });
+
+    try {
+      await logAction({
+        action: "convocation_envoyee",
+        label: "Convocation envoyée à " + contact.prenom + " " + contact.nom,
+        lien: "/sessions/" + sessionId,
+        contactId: contactId,
+      });
+    } catch {}
 
     return NextResponse.json({ success: true, skipped: (result as any)?.skipped || false });
   } catch (err: unknown) {

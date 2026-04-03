@@ -8,7 +8,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       where: { id: params.id },
       include: {
         entreprise: true,
-        contact: { select: { id: true, nom: true, prenom: true, email: true, telephone: true } },
+        contact: { select: { id: true, nom: true, prenom: true, email: true, telephone: true, poste: true } },
         formation: true,
         devis: { include: { lignes: true } },
       },

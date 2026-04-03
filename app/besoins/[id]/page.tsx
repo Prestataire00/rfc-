@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, FileText, FilePlus } from "lucide-react";
+import { ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail, MapPin, Hash, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
@@ -23,10 +23,19 @@ type Besoin = {
   notes: string | null;
   createdAt: string;
   entreprise: any;
-  contact: { id: string; nom: string; prenom: string; email: string; telephone: string | null } | null;
+  contact: { id: string; nom: string; prenom: string; email: string; telephone: string | null; poste: string | null } | null;
   formation: any;
   devis: any;
 };
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-gray-400 shrink-0">{label}</span>
+      <span className="text-gray-100 text-right">{value}</span>
+    </div>
+  );
+}
 
 export default function BesoinDetailPage() {
   const router = useRouter();
@@ -131,61 +140,149 @@ export default function BesoinDetailPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border bg-gray-800 p-4 space-y-3 text-sm">
-            <h3 className="font-semibold text-gray-100">Informations</h3>
-            <div>
-              <span className="text-gray-400">Origine:</span>
-              <span className="ml-2 text-gray-100">{BESOIN_ORIGINES[besoin.origine as keyof typeof BESOIN_ORIGINES]?.label || besoin.origine}</span>
-            </div>
-            {besoin.entreprise && (
-              <div>
-                <span className="text-gray-400">Entreprise:</span>
-                <Link href={`/entreprises/${besoin.entreprise.id}`} className="ml-2 text-red-600 hover:underline">{besoin.entreprise.nom}</Link>
-              </div>
-            )}
-            {besoin.contact && (
-              <div>
-                <span className="text-gray-400">{besoin.origine === "stagiaire" ? "Stagiaire:" : "Contact:"}</span>
-                <Link href={`/contacts/${besoin.contact.id}`} className="ml-2 text-red-600 hover:underline">
-                  {besoin.contact.prenom} {besoin.contact.nom}
-                </Link>
-                {besoin.contact.telephone && (
-                  <span className="block ml-2 text-gray-500 text-xs">{besoin.contact.telephone}</span>
-                )}
-              </div>
-            )}
+
+          {/* Infos synthèse */}
+          <div className="rounded-lg border bg-gray-800 p-4 space-y-2 text-sm">
+            <h3 className="font-semibold text-gray-100 mb-3">Informations</h3>
+            <InfoRow label="Origine" value={BESOIN_ORIGINES[besoin.origine as keyof typeof BESOIN_ORIGINES]?.label || besoin.origine} />
+            {besoin.nbStagiaires && <InfoRow label="Stagiaires" value={String(besoin.nbStagiaires)} />}
+            {besoin.budget && <InfoRow label="Budget" value={formatCurrency(besoin.budget)} />}
+            {besoin.datesSouhaitees && <InfoRow label="Dates souhaitées" value={besoin.datesSouhaitees} />}
             {besoin.formation && (
-              <div>
-                <span className="text-gray-400">Formation:</span>
-                <Link href={`/formations/${besoin.formation.id}`} className="ml-2 text-red-600 hover:underline">{besoin.formation.titre}</Link>
-              </div>
-            )}
-            {besoin.nbStagiaires && (
-              <div>
-                <span className="text-gray-400">Stagiaires:</span>
-                <span className="ml-2 text-gray-100">{besoin.nbStagiaires}</span>
-              </div>
-            )}
-            {besoin.budget && (
-              <div>
-                <span className="text-gray-400">Budget:</span>
-                <span className="ml-2 text-gray-100">{formatCurrency(besoin.budget)}</span>
-              </div>
-            )}
-            {besoin.datesSouhaitees && (
-              <div>
-                <span className="text-gray-400">Dates:</span>
-                <span className="ml-2 text-gray-100">{besoin.datesSouhaitees}</span>
+              <div className="flex items-start gap-2 pt-1">
+                <span className="text-gray-400 shrink-0">Formation</span>
+                <Link href={`/formations/${besoin.formation.id}`} className="text-red-500 hover:underline font-medium text-right flex-1">
+                  {besoin.formation.titre}
+                </Link>
               </div>
             )}
           </div>
 
+          {/* Entreprise */}
+          {besoin.entreprise && (
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-gray-400" />
+                  <h3 className="font-semibold text-gray-100">Entreprise</h3>
+                </div>
+                <Link href={`/entreprises/${besoin.entreprise.id}`} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
+                  Voir <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+              <p className="font-semibold text-gray-100">{besoin.entreprise.nom}</p>
+              {besoin.entreprise.secteur && (
+                <p className="text-gray-400 text-xs">{besoin.entreprise.secteur}</p>
+              )}
+              <div className="space-y-1.5 pt-1">
+                {(besoin.entreprise.adresse || besoin.entreprise.ville) && (
+                  <div className="flex items-start gap-2 text-gray-400">
+                    <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span className="text-xs">
+                      {[besoin.entreprise.adresse, besoin.entreprise.codePostal, besoin.entreprise.ville].filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                {besoin.entreprise.telephone && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    <a href={`tel:${besoin.entreprise.telephone}`} className="text-xs hover:text-gray-200">{besoin.entreprise.telephone}</a>
+                  </div>
+                )}
+                {besoin.entreprise.email && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <a href={`mailto:${besoin.entreprise.email}`} className="text-xs hover:text-gray-200 truncate">{besoin.entreprise.email}</a>
+                  </div>
+                )}
+                {besoin.entreprise.siret && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Hash className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-xs font-mono">{besoin.entreprise.siret}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Contact */}
+          {besoin.contact && (
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-gray-400" />
+                  <h3 className="font-semibold text-gray-100">
+                    {besoin.origine === "stagiaire" ? "Stagiaire" : "Contact"}
+                  </h3>
+                </div>
+                <Link href={`/contacts/${besoin.contact.id}`} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
+                  Voir <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+              <p className="font-semibold text-gray-100">{besoin.contact.prenom} {besoin.contact.nom}</p>
+              {besoin.contact.poste && (
+                <p className="text-gray-400 text-xs">{besoin.contact.poste}</p>
+              )}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <a href={`mailto:${besoin.contact.email}`} className="text-xs hover:text-gray-200 truncate">{besoin.contact.email}</a>
+                </div>
+                {besoin.contact.telephone && (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    <a href={`tel:${besoin.contact.telephone}`} className="text-xs hover:text-gray-200">{besoin.contact.telephone}</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Devis associé */}
           {besoin.devis && (
-            <div className="rounded-lg border bg-gray-800 p-4">
-              <h3 className="font-semibold text-gray-100 mb-2">Devis associé</h3>
-              <Link href={`/commercial/devis/${besoin.devis.id}`} className="text-red-600 hover:underline text-sm flex items-center gap-1">
-                <FileText className="h-4 w-4" /> {besoin.devis.numero}
-              </Link>
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-gray-400" />
+                  <h3 className="font-semibold text-gray-100">Devis associé</h3>
+                </div>
+                <Link href={`/commercial/devis/${besoin.devis.id}`} className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1">
+                  Ouvrir <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+              <p className="font-mono font-medium text-gray-100">{besoin.devis.numero}</p>
+              {besoin.devis.objet && (
+                <p className="text-gray-400 text-xs truncate">{besoin.devis.objet}</p>
+              )}
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <p className="text-xs text-gray-400">Montant HT</p>
+                  <p className="font-semibold text-gray-100">{formatCurrency(besoin.devis.montantHT)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">TTC</p>
+                  <p className="font-semibold text-gray-100">{formatCurrency(besoin.devis.montantTTC)}</p>
+                </div>
+              </div>
+              {besoin.devis.statut && (() => {
+                const DEVIS_STATUTS_LABELS: Record<string, string> = {
+                  brouillon: "Brouillon", envoye: "Envoyé", accepte: "Accepté",
+                  signe: "Signé", refuse: "Refusé", expire: "Expiré",
+                };
+                const DEVIS_STATUTS_COLORS: Record<string, string> = {
+                  brouillon: "bg-gray-700 text-gray-300",
+                  envoye: "bg-blue-900/30 text-blue-400",
+                  accepte: "bg-green-900/30 text-green-400",
+                  signe: "bg-green-900/30 text-green-400",
+                  refuse: "bg-red-900/30 text-red-400",
+                  expire: "bg-orange-900/30 text-orange-400",
+                };
+                return (
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${DEVIS_STATUTS_COLORS[besoin.devis.statut] || "bg-gray-700 text-gray-400"}`}>
+                    {DEVIS_STATUTS_LABELS[besoin.devis.statut] || besoin.devis.statut}
+                  </span>
+                );
+              })()}
             </div>
           )}
         </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,12 +26,15 @@ function createLigne(): Ligne {
   return { designation: "", quantite: 1, prixUnitaire: 0, montant: 0 };
 }
 
-export default function NouveauDevisPage() {
+function NouveauDevisForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const besoinId = searchParams.get("besoinId");
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [besoinTitre, setBesoinTitre] = useState<string | null>(null);
 
   const [clientType, setClientType] = useState<"entreprise" | "contact">("entreprise");
   const [objet, setObjet] = useState("");
@@ -54,6 +57,34 @@ export default function NouveauDevisPage() {
       setContacts(Array.isArray(c) ? c : []);
     });
   }, []);
+
+  useEffect(() => {
+    if (!besoinId) return;
+    fetch(`/api/besoins/${besoinId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((besoin) => {
+        if (!besoin) return;
+        setBesoinTitre(besoin.titre);
+        // Pré-remplir l'objet
+        setObjet(besoin.formation?.titre ? `Formation ${besoin.formation.titre}` : besoin.titre);
+        // Pré-remplir l'entreprise
+        if (besoin.entrepriseId) {
+          setClientType("entreprise");
+          setEntrepriseId(besoin.entrepriseId);
+        }
+        // Pré-remplir une ligne si une formation est liée
+        if (besoin.formation) {
+          const qty = besoin.nbStagiaires || 1;
+          const prix = besoin.formation.tarif;
+          setLignes([{
+            designation: besoin.formation.titre,
+            quantite: qty,
+            prixUnitaire: prix,
+            montant: Math.round(qty * prix * 100) / 100,
+          }]);
+        }
+      });
+  }, [besoinId]);
 
   const updateLigne = (index: number, field: keyof Ligne, value: string | number) => {
     setLignes((prev) => {
@@ -130,6 +161,14 @@ export default function NouveauDevisPage() {
 
     if (res.ok) {
       const data = await res.json();
+      // Lier le devis au besoin et passer le statut à "devis_envoye"
+      if (besoinId) {
+        await fetch(`/api/besoins/${besoinId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ devisId: data.id, statut: "devis_envoye" }),
+        });
+      }
       router.push(`/commercial/devis/${data.id}`);
     } else {
       const data = await res.json();
@@ -161,6 +200,12 @@ export default function NouveauDevisPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {besoinTitre && (
+          <div className="rounded-md bg-blue-900/20 border border-blue-700 px-4 py-3 text-sm text-blue-300 flex items-center gap-2">
+            <FileText className="h-4 w-4 shrink-0" />
+            Formulaire pré-rempli depuis le besoin : <span className="font-semibold">{besoinTitre}</span>
+          </div>
+        )}
         {error && (
           <div className="rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
             {error}
@@ -393,5 +438,13 @@ export default function NouveauDevisPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NouveauDevisPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>}>
+      <NouveauDevisForm />
+    </Suspense>
   );
 }

@@ -12,6 +12,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
         entreprise: true,
         contact: true,
         factures: true,
+        sessions: { select: { id: true, dateDebut: true, dateFin: true, statut: true } },
       },
     });
     if (!devis) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });

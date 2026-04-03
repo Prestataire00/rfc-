@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Download, FolderOpen, BookOpen, Receipt, FileCheck } from "lucide-react";
+import { FileText, Download, FolderOpen, BookOpen, Receipt, FileCheck, Award } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
 
@@ -29,10 +29,25 @@ type FactureDoc = {
   dateEmission: string;
 };
 
+type AttestationDoc = {
+  id: string;
+  statut: string;
+  createdAt: string;
+  contact: { nom: string; prenom: string };
+  session: {
+    id: string;
+    dateDebut: string;
+    dateFin: string;
+    formation: { titre: string };
+  };
+  contactId: string;
+};
+
 type Data = {
   sessions: SessionDoc[];
   devis: DevisDoc[];
   factures: FactureDoc[];
+  attestations: AttestationDoc[];
 };
 
 function fmtMoney(n: number) {
@@ -67,7 +82,7 @@ export default function ClientDocumentsPage() {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 
-  const hasData = data && (data.sessions.length > 0 || data.devis.length > 0 || data.factures.length > 0);
+  const hasData = data && (data.sessions.length > 0 || data.devis.length > 0 || data.factures.length > 0 || data.attestations.length > 0);
 
   if (!hasData) {
     return (
@@ -136,6 +151,55 @@ export default function ClientDocumentsPage() {
                 )}
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Attestations */}
+      {data.attestations.length > 0 && (
+        <section>
+          <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100 mb-4">
+            <Award className="h-5 w-5 text-purple-400" />
+            Attestations de formation
+          </h2>
+          <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-900 border-b border-gray-700">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-400">Stagiaire</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-400">Date session</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {data.attestations.map((a) => (
+                  <tr key={a.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/50">
+                    <td className="px-4 py-3 font-medium text-gray-100">
+                      {a.contact.prenom} {a.contact.nom}
+                    </td>
+                    <td className="px-4 py-3 text-gray-300">{a.session.formation.titre}</td>
+                    <td className="px-4 py-3 text-gray-400">{formatDate(a.session.dateDebut)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        a.statut === "validee"  ? "bg-green-900/30 text-green-400" :
+                        a.statut === "envoyee"  ? "bg-blue-900/30 text-blue-400" :
+                                                  "bg-gray-700 text-gray-400"
+                      }`}>
+                        {a.statut === "generee" ? "Générée" : a.statut === "validee" ? "Validée" : "Envoyée"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <DownloadBtn
+                        href={`/api/pdf/attestation/${a.session.id}/${a.contactId}`}
+                        label="Télécharger PDF"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

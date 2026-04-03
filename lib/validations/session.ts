@@ -12,6 +12,7 @@ export const sessionSchema = z.object({
     .default("planifiee"),
   notes: z.string().optional().nullable(),
   coutFormateur: z.coerce.number().optional().nullable(),
+  devisId: z.string().cuid().optional().nullable(),
 });
 
 export type SessionFormData = z.infer<typeof sessionSchema>;

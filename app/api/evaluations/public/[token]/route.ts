@@ -19,6 +19,12 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
     }
 
+    // Fetch configured questionnaire
+    const config = await prisma.questionnaireConfig.findUnique({ where: { id: "default" } });
+    const sections = evaluation.type === "satisfaction_froid"
+      ? (config?.froid ?? [])
+      : (config?.chaud ?? []);
+
     return NextResponse.json({
       id: evaluation.id,
       type: evaluation.type,
@@ -27,6 +33,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       stagiaire: evaluation.contact
         ? `${evaluation.contact.prenom} ${evaluation.contact.nom}`
         : "Anonyme",
+      sections,
     });
   } catch (err: unknown) {
     console.error("Erreur recuperation evaluation:", err);

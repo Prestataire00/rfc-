@@ -15,3 +15,8 @@
 [[crons]]
   schedule = "0 8 * * *"
   path = "/api/cron/evaluations"
+
+# Cron : détection automatique des factures en retard (tous les jours à 9h)
+[[crons]]
+  schedule = "0 9 * * *"
+  path = "/api/cron/factures"

@@ -6,8 +6,11 @@ import { conventionPdf } from "@/lib/pdf/templates";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-export async function GET(_req: NextRequest, { params }: { params: { sessionId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { sessionId: string } }) {
   try {
+    const { searchParams } = new URL(req.url);
+    const entrepriseIdParam = searchParams.get("entrepriseId");
+
     const session = await prisma.session.findUnique({
       where: { id: params.sessionId },
       include: {
@@ -19,10 +22,56 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
       },
     });
 
-    if (!session) return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    if (!session) return NextResponse.json({ error: "Session non trouvée" }, { status: 404 });
 
-    // Find the enterprise from inscriptions or use a default
-    const entreprise = session.inscriptions[0]?.contact?.entreprise;
+    // Collect distinct entreprises from inscriptions
+    const entreprisesMap = new Map<string, NonNullable<(typeof session.inscriptions)[number]["contact"]["entreprise"]>>();
+    for (const insc of session.inscriptions) {
+      const e = insc.contact.entreprise;
+      if (e && !entreprisesMap.has(e.id)) {
+        entreprisesMap.set(e.id, e);
+      }
+    }
+
+    let entreprise: { nom: string; adresse?: string | null; ville?: string | null; codePostal?: string | null; siret?: string | null } | null = null;
+    let stagiairesFiltres = session.inscriptions;
+
+    if (entrepriseIdParam) {
+      // Mode entreprise spécifique
+      const found = entreprisesMap.get(entrepriseIdParam);
+      if (!found) {
+        return NextResponse.json({ error: "Entreprise non trouvée pour cette session" }, { status: 404 });
+      }
+      entreprise = found;
+      stagiairesFiltres = session.inscriptions.filter(
+        (i) => i.contact.entreprise?.id === entrepriseIdParam
+      );
+    } else {
+      const distinctEntreprises = Array.from(entreprisesMap.values());
+
+      if (distinctEntreprises.length > 1) {
+        return NextResponse.json(
+          {
+            error: "Plusieurs entreprises dans cette session. Précisez ?entrepriseId=",
+            entreprises: distinctEntreprises.map((e) => ({ id: e.id, nom: e.nom })),
+          },
+          { status: 400 }
+        );
+      }
+
+      // 0 ou 1 entreprise : on utilise la première ou un client générique
+      entreprise = distinctEntreprises.length > 0 ? distinctEntreprises[0] : null;
+    }
+
+    const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
+    const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
+    const annee = format(new Date(session.dateDebut), "yyyy");
+    const numero = `CONV-${annee}-${session.id.slice(-4).toUpperCase()}${entreprise ? `-${entreprise.nom.slice(0, 4).toUpperCase()}` : ""}`;
+
+    // Montant basé sur le tarif × nombre de stagiaires de cette entreprise
+    const nbStagiaires = stagiairesFiltres.length || 1;
+    const montantHT = session.formation.tarif * nbStagiaires;
+    const montantTTC = montantHT * 1.2;
 
     const docDef = conventionPdf({
       entreprise: {
@@ -37,26 +86,23 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
         duree: session.formation.duree,
         objectifs: session.formation.objectifs || undefined,
       },
-      session: {
-        dateDebut: format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr }),
-        dateFin: format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr }),
-        lieu: session.lieu || undefined,
-      },
-      montantHT: session.formation.tarif,
-      montantTTC: session.formation.tarif * 1.2,
-      numero: `CONV-${format(new Date(session.dateDebut), "yyyy")}-${session.id.slice(-4).toUpperCase()}`,
+      session: { dateDebut, dateFin, lieu: session.lieu || undefined },
+      montantHT,
+      montantTTC,
+      numero,
     });
 
     const buffer = await generatePdfBuffer(docDef);
+    const slug = entreprise?.nom.replace(/\s+/g, "-").toLowerCase().slice(0, 20) || "client";
 
     return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="convention-${session.id}.pdf"`,
+        "Content-Disposition": `attachment; filename="convention-${slug}.pdf"`,
       },
     });
   } catch (err: unknown) {
-    console.error("Erreur generation convention PDF:", err);
-    return NextResponse.json({ error: "Erreur lors de la generation de la convention" }, { status: 500 });
+    console.error("Erreur génération convention PDF:", err);
+    return NextResponse.json({ error: "Erreur lors de la génération de la convention" }, { status: 500 });
   }
 }

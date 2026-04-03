@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Building2, Search } from "lucide-react";
+import { Building2, Search, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,18 @@ export default function EntreprisesPage() {
         actionLabel="Nouvelle entreprise"
         actionHref="/entreprises/nouveau"
       />
+
+      {/* Export */}
+      <div className="flex justify-end mb-4 -mt-4">
+        <a
+          href="/api/export/entreprises"
+          download
+          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+        >
+          <Download className="h-4 w-4" />
+          Exporter CSV
+        </a>
+      </div>
 
       {/* Search */}
       <div className="mb-6">

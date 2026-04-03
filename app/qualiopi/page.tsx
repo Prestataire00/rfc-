@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import {
   Shield, ChevronDown, ChevronRight, FileText, Plus, X,
-  CheckCircle2, Clock, AlertTriangle, Ban, Filter,
+  CheckCircle2, Clock, AlertTriangle, Ban, Filter, Sparkles, ExternalLink,
 } from "lucide-react";
+import type { PreuveAuto } from "@/lib/qualiopi-auto-preuves";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -81,6 +82,9 @@ export default function QualiopiPage() {
   const [editDateAudit, setEditDateAudit] = useState("");
   const [editPrioritaire, setEditPrioritaire] = useState(false);
 
+  // Auto preuves from CRM data
+  const [autoPreuves, setAutoPreuves] = useState<Record<number, PreuveAuto>>({});
+
   // New preuve form
   const [showPreuveForm, setShowPreuveForm] = useState(false);
   const [newPreuve, setNewPreuve] = useState({ titre: "", description: "", type: "document", fichierUrl: "" });
@@ -97,6 +101,9 @@ export default function QualiopiPage() {
 
   useEffect(() => {
     fetchData();
+    fetch("/api/qualiopi/auto-preuves")
+      .then((r) => r.ok ? r.json() : {})
+      .then(setAutoPreuves);
   }, []);
 
   const toggleCritere = (num: number) => {
@@ -533,6 +540,51 @@ export default function QualiopiPage() {
                   </div>
                 )}
               </div>
+
+              {/* Preuves automatiques CRM */}
+              {autoPreuves[selectedIndicateur.numero] && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-4 w-4 text-green-400" />
+                    <h3 className="text-sm font-semibold text-gray-100">Preuves automatiques CRM</h3>
+                  </div>
+                  {autoPreuves[selectedIndicateur.numero].disponible ? (
+                    <div className="rounded-lg border border-dashed border-green-700 bg-green-900/10 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-400 border border-green-700">
+                              <Sparkles className="h-2.5 w-2.5" /> Auto
+                            </span>
+                            <p className="text-sm font-medium text-gray-100">
+                              {autoPreuves[selectedIndicateur.numero].titre}
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            {autoPreuves[selectedIndicateur.numero].description}
+                          </p>
+                        </div>
+                        <a
+                          href={autoPreuves[selectedIndicateur.numero].lien}
+                          className="inline-flex items-center gap-1 text-xs text-green-400 hover:text-green-300 font-medium whitespace-nowrap flex-shrink-0"
+                        >
+                          Voir dans le CRM <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-gray-700 bg-gray-900/30 p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-400">
+                          <Sparkles className="h-2.5 w-2.5" /> Auto
+                        </span>
+                        <p className="text-sm text-gray-100">{autoPreuves[selectedIndicateur.numero].titre}</p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 ml-1">Aucune donnée disponible dans le CRM</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

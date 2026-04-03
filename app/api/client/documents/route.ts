@@ -45,7 +45,16 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ sessions, devis, factures });
+    const attestations = await prisma.attestation.findMany({
+      where: { contactId: { in: contactIds }, statut: { in: ["generee", "validee", "envoyee"] } },
+      include: {
+        contact: { select: { nom: true, prenom: true } },
+        session: { include: { formation: { select: { titre: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ sessions, devis, factures, attestations });
   } catch (err: unknown) {
     console.error("Erreur GET client documents:", err);
     return NextResponse.json({ error: "Erreur" }, { status: 500 });

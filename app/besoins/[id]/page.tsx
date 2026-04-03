@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, FilePlus } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
@@ -23,6 +23,7 @@ type Besoin = {
   notes: string | null;
   createdAt: string;
   entreprise: any;
+  contact: { id: string; nom: string; prenom: string; email: string; telephone: string | null } | null;
   formation: any;
   devis: any;
 };
@@ -81,6 +82,14 @@ export default function BesoinDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          {!besoin.devis && (besoin.statut === "nouveau" || besoin.statut === "qualifie") && (
+            <Link
+              href={`/commercial/devis/nouveau?besoinId=${besoin.id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              <FilePlus className="h-4 w-4" /> Générer un devis
+            </Link>
+          )}
           <button onClick={() => setShowDelete(true)} className="rounded-md border border-red-700 px-3 py-2 text-sm text-red-600 hover:bg-red-900/20">
             <Trash2 className="h-4 w-4" />
           </button>
@@ -132,6 +141,17 @@ export default function BesoinDetailPage() {
               <div>
                 <span className="text-gray-400">Entreprise:</span>
                 <Link href={`/entreprises/${besoin.entreprise.id}`} className="ml-2 text-red-600 hover:underline">{besoin.entreprise.nom}</Link>
+              </div>
+            )}
+            {besoin.contact && (
+              <div>
+                <span className="text-gray-400">{besoin.origine === "stagiaire" ? "Stagiaire:" : "Contact:"}</span>
+                <Link href={`/contacts/${besoin.contact.id}`} className="ml-2 text-red-600 hover:underline">
+                  {besoin.contact.prenom} {besoin.contact.nom}
+                </Link>
+                {besoin.contact.telephone && (
+                  <span className="block ml-2 text-gray-500 text-xs">{besoin.contact.telephone}</span>
+                )}
               </div>
             )}
             {besoin.formation && (

@@ -75,10 +75,12 @@ model Contact {
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
-  inscriptions Inscription[]
-  devis        Devis[]
-  attestations Attestation[]
-  evaluations  Evaluation[]
+  inscriptions     Inscription[]
+  devis            Devis[]
+  attestations     Attestation[]
+  evaluations      Evaluation[]
+  besoins          BesoinFormation[]
+  feuillesPresence FeuillePresence[]
 }
 
 model Formateur {
@@ -144,6 +146,9 @@ model Session {
   formateurId String?
   formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
 
+  devisId String?
+  devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
+
   inscriptions  Inscription[]
   feuillesPresence FeuillePresence[]
   attestations  Attestation[]
@@ -190,6 +195,9 @@ model BesoinFormation {
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
+  contactId    String?
+  contact      Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
   formationId  String?
   formation    Formation?  @relation(fields: [formationId], references: [id], onDelete: SetNull)
 
@@ -223,6 +231,7 @@ model Devis {
   lignes   LigneDevis[]
   factures Facture[]
   besoins  BesoinFormation[]
+  sessions Session[]
 }
 
 model LigneDevis {
@@ -249,7 +258,7 @@ model Facture {
   dateEmission DateTime @default(now())
   dateEcheance DateTime
   datePaiement   DateTime?
-  modePaiement   String?   // virement, cpf, opco, carte, especes
+  paiements      Json?     // [{mode: string, montant: number}]
   notes          String?
   statut         String   @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
 
@@ -368,6 +377,9 @@ model FeuillePresence {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   contactId String
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, contactId, date])
 }
 
 // ==================== QUALIOPI ====================
@@ -430,6 +442,15 @@ model Financement {
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+}
+
+// ==================== QUESTIONNAIRE ====================
+
+model QuestionnaireConfig {
+  id        String   @id @default("default")
+  updatedAt DateTime @updatedAt
+  chaud     Json     @default("[]") // sections [{id, titre, questions:[{key,label}]}]
+  froid     Json     @default("[]")
 }
 
 // ==================== PARAMETRES ====================

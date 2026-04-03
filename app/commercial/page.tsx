@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileText, Plus, Receipt } from "lucide-react";
+import { FileText, Plus, Receipt, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -100,8 +100,9 @@ export default function CommercialPage() {
         description="Gérez vos devis et factures"
       />
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-700 p-1 rounded-lg w-fit">
+      {/* Tabs + Export */}
+      <div className="flex items-center justify-between mb-6">
+      <div className="flex gap-1 bg-gray-700 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab("devis")}
           className={cn(
@@ -124,6 +125,15 @@ export default function CommercialPage() {
         >
           <Receipt className="h-4 w-4" /> Factures
         </button>
+      </div>
+        <a
+          href={activeTab === "devis" ? "/api/export/devis" : "/api/export/factures"}
+          download
+          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+        >
+          <Download className="h-4 w-4" />
+          Exporter CSV
+        </a>
       </div>
 
       {/* Pipeline Devis */}

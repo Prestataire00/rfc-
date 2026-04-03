@@ -14,6 +14,7 @@ const besoinSchema = z.object({
   budget: z.coerce.number().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
   entrepriseId: z.string().cuid().optional().nullable(),
+  contactId: z.string().cuid().optional().nullable(),
   formationId: z.string().cuid().optional().nullable(),
 });
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   // Nullify empty strings before validation
   const cleaned = { ...body };
-  for (const key of ["nbStagiaires", "budget", "entrepriseId", "formationId", "description", "datesSouhaitees", "notes"]) {
+  for (const key of ["nbStagiaires", "budget", "entrepriseId", "contactId", "formationId", "description", "datesSouhaitees", "notes"]) {
     if (cleaned[key] === "") cleaned[key] = null;
   }
 
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
         budget: parsed.data.budget || null,
         notes: parsed.data.notes || null,
         entrepriseId: parsed.data.entrepriseId || null,
+        contactId: parsed.data.contactId || null,
         formationId: parsed.data.formationId || null,
       },
     });

@@ -39,6 +39,7 @@ interface Devis {
   montantHT: number;
   montantTTC: number;
   createdAt: string;
+  sessions: { id: string }[];
 }
 
 interface Facture {
@@ -399,13 +400,14 @@ export default function EntrepriseDetailPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Montant HT</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Session</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-800 divide-y divide-gray-200">
                 {entreprise.devis.map((devis) => {
                   const statutInfo = DEVIS_STATUTS[devis.statut];
                   return (
-                    <tr key={devis.id} className="hover:bg-gray-700 transition-colors">
+                    <tr key={devis.id} className="hover:bg-gray-700 transition-colors cursor-pointer" onClick={() => window.location.href = `/commercial/devis/${devis.id}`}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-gray-100">
                         {devis.numero}
                       </td>
@@ -417,6 +419,13 @@ export default function EntrepriseDetailPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {statutInfo && <StatutBadge label={statutInfo.label} color={statutInfo.color} />}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {devis.sessions && devis.sessions.length > 0 ? (
+                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-900/30 text-green-400 border border-green-700">
+                            Session planifiée
+                          </span>
+                        ) : null}
                       </td>
                     </tr>
                   );

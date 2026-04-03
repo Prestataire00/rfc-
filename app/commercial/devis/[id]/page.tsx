@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { DEVIS_STATUTS, FACTURE_STATUTS, TVA_RATE } from "@/lib/constants";
+import { DEVIS_STATUTS, FACTURE_STATUTS, SESSION_STATUTS, TVA_RATE } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 type LigneDevis = {
@@ -26,6 +26,13 @@ type Facture = {
   dateEcheance: string;
 };
 
+type Session = {
+  id: string;
+  dateDebut: string;
+  dateFin: string;
+  statut: string;
+};
+
 type Devis = {
   id: string;
   numero: string;
@@ -41,6 +48,7 @@ type Devis = {
   contact: { id: string; nom: string; prenom: string; email: string } | null;
   lignes: LigneDevis[];
   factures: Facture[];
+  sessions: Session[];
 };
 
 export default function DevisDetailPage() {
@@ -53,6 +61,10 @@ export default function DevisDetailPage() {
   const [generatingFacture, setGeneratingFacture] = useState(false);
   const [genError, setGenError] = useState("");
   const [updatingStatut, setUpdatingStatut] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [emailMsg, setEmailMsg] = useState("");
+  const [duplicating, setDuplicating] = useState(false);
 
   const fetchDevis = useCallback(async () => {
     const res = await fetch(`/api/devis/${id}`);
@@ -81,6 +93,36 @@ export default function DevisDetailPage() {
       await fetchDevis();
     }
     setUpdatingStatut(false);
+  };
+
+  const handleDupliquer = async () => {
+    setDuplicating(true);
+    const res = await fetch(`/api/devis/${id}/dupliquer`, { method: "POST" });
+    if (res.ok) {
+      const copie = await res.json();
+      router.push(`/commercial/devis/${copie.id}`);
+    } else {
+      setDuplicating(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    setSending(true);
+    const res = await fetch("/api/email/devis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ devisId: id }),
+    });
+    const data = await res.json();
+    setEmailOpen(false);
+    setSending(false);
+    if (res.ok) {
+      setEmailMsg(data.skipped ? "SMTP non configuré (voir .env)" : "Email envoyé avec succès !");
+      fetchDevis();
+    } else {
+      setEmailMsg(data.error || "Erreur lors de l'envoi");
+    }
+    setTimeout(() => setEmailMsg(""), 4000);
   };
 
   const handleGenererFacture = async () => {
@@ -120,6 +162,8 @@ export default function DevisDetailPage() {
   const montantTVA = devis.montantHT * (devis.tauxTVA / 100);
   const hasFacture = devis.factures.length > 0;
   const canGenererFacture = (devis.statut === "accepte" || devis.statut === "signe") && !hasFacture;
+  const hasSession = devis.sessions && devis.sessions.length > 0;
+  const canPlanifierSession = (devis.statut === "accepte" || devis.statut === "signe") && !hasSession;
 
   const nextStatuts = Object.keys(DEVIS_STATUTS).filter((k) => k !== devis.statut);
 
@@ -154,7 +198,16 @@ export default function DevisDetailPage() {
               )}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap justify-end">
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
+            {devis.contact?.email && (devis.statut === "brouillon" || devis.statut === "envoye") && (
+              <button
+                onClick={() => setEmailOpen(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              >
+                <Mail className="h-4 w-4" /> Envoyer par email
+              </button>
+            )}
             <a
               href={`/api/pdf/devis/${id}`}
               target="_blank"
@@ -176,9 +229,30 @@ export default function DevisDetailPage() {
             >
               <Edit className="h-4 w-4" /> Modifier
             </Link>
+            <button
+              onClick={handleDupliquer}
+              disabled={duplicating}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
+              <Copy className="h-4 w-4" /> {duplicating ? "Duplication..." : "Dupliquer"}
+            </button>
+            {canPlanifierSession && (
+              <Link
+                href={`/sessions/nouveau?devisId=${id}`}
+                className="inline-flex items-center gap-2 rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-600 transition-colors"
+              >
+                <CalendarPlus className="h-4 w-4" /> Planifier une session
+              </Link>
+            )}
             <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1" /> Supprimer
             </Button>
+          </div>
+          {emailMsg && (
+            <p className={`text-xs ${emailMsg.includes("envoyé") ? "text-green-500" : emailMsg.includes("SMTP") ? "text-amber-500" : "text-red-500"}`}>
+              {emailMsg}
+            </p>
+          )}
           </div>
         </div>
       </div>
@@ -243,6 +317,40 @@ export default function DevisDetailPage() {
               })}
             </div>
           </div>
+
+          {/* Session planifiée */}
+          {(hasSession || canPlanifierSession) && (
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+              <h2 className="font-semibold text-gray-100">Session de formation</h2>
+              {hasSession ? (
+                <div className="space-y-2">
+                  {devis.sessions.map((s) => {
+                    const sst = SESSION_STATUTS[s.statut as keyof typeof SESSION_STATUTS];
+                    return (
+                      <Link
+                        key={s.id}
+                        href={`/sessions/${s.id}`}
+                        className="flex items-center justify-between p-2 rounded-md border border-gray-700 hover:bg-gray-700 transition-colors"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{formatDate(s.dateDebut)}</p>
+                          <p className="text-xs text-gray-400">→ {formatDate(s.dateFin)}</p>
+                        </div>
+                        {sst && <StatutBadge label={sst.label} color={sst.color} />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Link
+                  href={`/sessions/nouveau?devisId=${id}`}
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-600 transition-colors"
+                >
+                  <CalendarPlus className="h-4 w-4" /> Planifier une session
+                </Link>
+              )}
+            </div>
+          )}
 
           {/* Générer facture */}
           {(canGenererFacture || hasFacture) && (
@@ -350,6 +458,15 @@ export default function DevisDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        title={`Envoyer le devis ${devis.numero} ?`}
+        description={`Un email sera envoyé à ${devis.contact?.email}. Le statut passera automatiquement à "Envoyé".`}
+        onConfirm={handleSendEmail}
+        loading={sending}
+      />
 
       <ConfirmDialog
         open={deleteOpen}

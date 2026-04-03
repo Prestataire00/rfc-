@@ -9,14 +9,14 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { SESSION_STATUTS, INSCRIPTION_STATUTS } from "@/lib/constants";
+import { SESSION_STATUTS, INSCRIPTION_STATUTS, DEVIS_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 
 type Contact = { id: string; nom: string; prenom: string; email: string };
 type Inscription = {
   id: string;
   statut: string;
-  contact: Contact & { entreprise?: { nom: string } | null };
+  contact: Contact & { entreprise?: { id: string; nom: string } | null };
   dateInscription: string;
 };
 type Session = {
@@ -30,6 +30,7 @@ type Session = {
   coutFormateur: number | null;
   formation: { id: string; titre: string; tarif: number };
   formateur: { id: string; nom: string; prenom: string } | null;
+  devis: { id: string; numero: string; objet: string; statut: string; montantTTC: number } | null;
   inscriptions: Inscription[];
 };
 
@@ -55,6 +56,9 @@ export default function SessionDetailPage() {
   const [removeConfirm, setRemoveConfirm] = useState<{ id: string; name: string } | null>(null);
   const [removing, setRemoving] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [confirmTerminee, setConfirmTerminee] = useState(false);
+  const [pendingStatut, setPendingStatut] = useState<string | null>(null);
+  const [presenceMap, setPresenceMap] = useState<Record<string, { matin: boolean; apresMidi: boolean }>>({});
 
   const fetchSession = useCallback(async () => {
     const res = await fetch(`/api/sessions/${id}`);
@@ -62,11 +66,41 @@ export default function SessionDetailPage() {
     setLoading(false);
   }, [id]);
 
-  useEffect(() => { fetchSession(); }, [fetchSession]);
+  const fetchPresence = useCallback(async () => {
+    const res = await fetch(`/api/sessions/${id}/presence`);
+    if (!res.ok) return;
+    const data: Array<{ contactId: string; date: string; matin: boolean; apresMidi: boolean }> = await res.json();
+    const map: Record<string, { matin: boolean; apresMidi: boolean }> = {};
+    for (const fp of data) {
+      const dateStr = fp.date.split("T")[0];
+      map[`${fp.contactId}_${dateStr}`] = { matin: fp.matin, apresMidi: fp.apresMidi };
+    }
+    setPresenceMap(map);
+  }, [id]);
+
+  useEffect(() => { fetchSession(); fetchPresence(); }, [fetchSession, fetchPresence]);
 
   const fetchContacts = async () => {
     const res = await fetch("/api/contacts");
     if (res.ok) setContacts(await res.json());
+  };
+
+  const handleUpdateStatut = (newStatut: string) => {
+    if (newStatut === "terminee") {
+      setPendingStatut(newStatut);
+      setConfirmTerminee(true);
+    } else {
+      applyStatut(newStatut);
+    }
+  };
+
+  const applyStatut = async (newStatut: string) => {
+    await fetch(`/api/sessions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statut: newStatut }),
+    });
+    fetchSession();
   };
 
   const handleDelete = async () => {
@@ -177,6 +211,20 @@ export default function SessionDetailPage() {
     setTimeout(() => setEmailMsg(""), 3000);
   };
 
+  const handleTogglePresence = async (contactId: string, jour: Date, field: "matin" | "apresMidi", value: boolean) => {
+    const dateStr = jour.toISOString().split("T")[0];
+    const key = `${contactId}_${dateStr}`;
+    const current = presenceMap[key] || { matin: false, apresMidi: false };
+    const updated = { ...current, [field]: value };
+    // Mise à jour optimiste
+    setPresenceMap((prev) => ({ ...prev, [key]: updated }));
+    await fetch(`/api/sessions/${id}/presence`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contactId, date: dateStr, ...updated }),
+    });
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -189,6 +237,27 @@ export default function SessionDetailPage() {
     setUploading(false);
     e.target.value = "";
   };
+
+  // Jours ouvrés entre dateDebut et dateFin (lundi–vendredi, UTC)
+  const joursOuvres = useMemo(() => {
+    if (!session) return [];
+    const jours: Date[] = [];
+    const debut = new Date(session.dateDebut);
+    const fin = new Date(session.dateFin);
+    const current = new Date(Date.UTC(debut.getUTCFullYear(), debut.getUTCMonth(), debut.getUTCDate()));
+    const end = new Date(Date.UTC(fin.getUTCFullYear(), fin.getUTCMonth(), fin.getUTCDate()));
+    while (current <= end) {
+      if (current.getUTCDay() !== 0 && current.getUTCDay() !== 6) {
+        jours.push(new Date(current));
+      }
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+    return jours;
+  }, [session]);
+
+  const JOURS_LABEL = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const formatJour = (date: Date) =>
+    `${JOURS_LABEL[date.getUTCDay()]} ${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 
   // Filter contacts for the add dialog
   const inscribedContactIds = session?.inscriptions.map((i) => i.contact.id) || [];
@@ -243,7 +312,18 @@ export default function SessionDetailPage() {
                   {session.formation.titre}
                 </Link>
               </h1>
-              {st && <StatutBadge label={st.label} color={st.color} />}
+              <select
+                value={session.statut}
+                onChange={(e) => handleUpdateStatut(e.target.value)}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-xs font-medium cursor-pointer",
+                  st?.color || "bg-gray-700 text-gray-300 border-gray-600"
+                )}
+              >
+                {Object.entries(SESSION_STATUTS).map(([v, s]) => (
+                  <option key={v} value={v}>{s.label}</option>
+                ))}
+              </select>
             </div>
             <p className="text-gray-400">{formatDate(session.dateDebut)} - {formatDate(session.dateFin)}</p>
           </div>
@@ -333,19 +413,77 @@ export default function SessionDetailPage() {
             </div>
           </div>
 
+          {/* Devis associé */}
+          {session.devis && (
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-2">
+              <h2 className="font-semibold text-gray-100">Devis associé</h2>
+              {(() => {
+                const dst = DEVIS_STATUTS[session.devis.statut as keyof typeof DEVIS_STATUTS];
+                return (
+                  <Link
+                    href={`/commercial/devis/${session.devis.id}`}
+                    className="flex items-center justify-between p-2 rounded-md border border-gray-700 hover:bg-gray-700 transition-colors"
+                  >
+                    <div>
+                      <p className="text-sm font-mono font-medium">{session.devis.numero}</p>
+                      <p className="text-xs text-gray-400 truncate max-w-[150px]">{session.devis.objet}</p>
+                      <p className="text-xs text-gray-400">{formatCurrency(session.devis.montantTTC)}</p>
+                    </div>
+                    {dst && <StatutBadge label={dst.label} color={dst.color} />}
+                  </Link>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Documents PDF */}
           <div className="rounded-lg border bg-gray-800 p-4">
             <h2 className="font-semibold text-gray-100 mb-3">Documents</h2>
             <div className="space-y-2">
-              <a
-                href={`/api/pdf/convention/${id}`}
-                target="_blank"
-                className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-700 transition-colors"
-              >
-                <FileText className="h-4 w-4 text-red-600" />
-                <span className="flex-1 text-gray-300">Convention de formation</span>
-                <Download className="h-4 w-4 text-gray-400" />
-              </a>
+              {(() => {
+                // Entreprises distinctes parmi les inscrits
+                const entreprisesMap = new Map<string, { id: string; nom: string }>();
+                for (const insc of session.inscriptions) {
+                  const e = insc.contact.entreprise;
+                  if (e && !entreprisesMap.has(e.id)) entreprisesMap.set(e.id, e);
+                }
+                const entreprises = Array.from(entreprisesMap.values());
+
+                if (entreprises.length <= 1) {
+                  // Cas simple : 0 ou 1 entreprise
+                  const qs = entreprises.length === 1 ? `?entrepriseId=${entreprises[0].id}` : "";
+                  return (
+                    <a
+                      href={`/api/pdf/convention/${id}${qs}`}
+                      target="_blank"
+                      className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-700 transition-colors"
+                    >
+                      <FileText className="h-4 w-4 text-red-600" />
+                      <span className="flex-1 text-gray-300">Convention de formation</span>
+                      <Download className="h-4 w-4 text-gray-400" />
+                    </a>
+                  );
+                }
+
+                // Cas multi-entreprises : un lien par entreprise
+                return (
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-400 font-medium">Convention par entreprise :</p>
+                    {entreprises.map((e) => (
+                      <a
+                        key={e.id}
+                        href={`/api/pdf/convention/${id}?entrepriseId=${e.id}`}
+                        target="_blank"
+                        className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-700 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-red-600" />
+                        <span className="flex-1 text-gray-300 truncate">Convention — {e.nom}</span>
+                        <Download className="h-4 w-4 text-gray-400" />
+                      </a>
+                    ))}
+                  </div>
+                );
+              })()}
               <a
                 href={`/api/pdf/feuille-presence/${id}`}
                 target="_blank"
@@ -355,6 +493,19 @@ export default function SessionDetailPage() {
                 <span className="flex-1 text-gray-300">Feuille de présence</span>
                 <Download className="h-4 w-4 text-gray-400" />
               </a>
+
+              {session.statut === "terminee" &&
+                session.inscriptions.some((i) => i.statut === "presente") && (
+                <a
+                  href={`/api/pdf/attestation/${id}`}
+                  target="_blank"
+                  className="flex items-center gap-2 rounded-md border border-gray-700 bg-green-900/20 px-3 py-2 text-sm hover:bg-green-900/40 transition-colors"
+                >
+                  <FileText className="h-4 w-4 text-green-500" />
+                  <span className="flex-1 text-green-400 font-medium">Toutes les attestations (PDF)</span>
+                  <Download className="h-4 w-4 text-green-500" />
+                </a>
+              )}
 
               {session.inscriptions.length > 0 && (
                 <>
@@ -554,6 +705,124 @@ export default function SessionDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Feuille de présence ─────────────────────────────────────────── */}
+      {["confirmee", "en_cours", "terminee"].includes(session.statut) &&
+        session.inscriptions.length > 0 && (() => {
+          const inscriptionsEmargement = session.inscriptions.filter(
+            (i) => i.statut === "confirmee" || i.statut === "presente"
+          );
+          if (inscriptionsEmargement.length === 0) return null;
+
+          const presentsCount = inscriptionsEmargement.filter((insc) =>
+            joursOuvres.some((jour) => {
+              const p = presenceMap[`${insc.contact.id}_${jour.toISOString().split("T")[0]}`];
+              return p?.matin || p?.apresMidi;
+            })
+          ).length;
+
+          return (
+            <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-green-500" />
+                  Feuille de présence
+                </h2>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/30 text-green-400 border border-green-700">
+                  {presentsCount}/{inscriptionsEmargement.length} présents
+                </span>
+              </div>
+
+              {joursOuvres.length === 0 ? (
+                <p className="p-4 text-sm text-gray-400">Aucun jour ouvré dans cette période.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="text-sm">
+                    <thead>
+                      {/* Ligne 1 : nom des jours (colspan 2) */}
+                      <tr className="bg-gray-900 border-b border-gray-700">
+                        <th className="text-left px-4 py-3 font-medium text-gray-400 whitespace-nowrap sticky left-0 bg-gray-900 z-10 min-w-[160px]">
+                          Stagiaire
+                        </th>
+                        {joursOuvres.map((jour) => (
+                          <th
+                            key={jour.toISOString()}
+                            colSpan={2}
+                            className="text-center px-2 py-3 font-medium text-gray-400 whitespace-nowrap border-l border-gray-700 min-w-[80px]"
+                          >
+                            {formatJour(jour)}
+                          </th>
+                        ))}
+                      </tr>
+                      {/* Ligne 2 : M / AM */}
+                      <tr className="bg-gray-900 border-b border-gray-700">
+                        <th className="sticky left-0 bg-gray-900 z-10" />
+                        {joursOuvres.map((jour) => [
+                          <th key={`${jour.toISOString()}-m`} className="text-center py-1.5 text-xs font-medium text-gray-500 border-l border-gray-700 w-10">
+                            M
+                          </th>,
+                          <th key={`${jour.toISOString()}-am`} className="text-center py-1.5 text-xs font-medium text-gray-500 w-10">
+                            AM
+                          </th>,
+                        ])}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inscriptionsEmargement.map((insc) => (
+                        <tr key={insc.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30">
+                          <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 bg-gray-800 z-10 font-medium text-gray-200">
+                            {insc.contact.prenom} {insc.contact.nom}
+                          </td>
+                          {joursOuvres.map((jour) => {
+                            const dateStr = jour.toISOString().split("T")[0];
+                            const p = presenceMap[`${insc.contact.id}_${dateStr}`] || { matin: false, apresMidi: false };
+                            return [
+                              <td
+                                key={`${dateStr}-m`}
+                                className={cn("text-center px-3 py-2.5 border-l border-gray-700", p.matin ? "bg-green-900/25" : "")}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={p.matin}
+                                  onChange={(e) => handleTogglePresence(insc.contact.id, jour, "matin", e.target.checked)}
+                                  className="h-4 w-4 rounded accent-red-600 cursor-pointer"
+                                />
+                              </td>,
+                              <td
+                                key={`${dateStr}-am`}
+                                className={cn("text-center px-3 py-2.5", p.apresMidi ? "bg-green-900/25" : "")}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={p.apresMidi}
+                                  onChange={(e) => handleTogglePresence(insc.contact.id, jour, "apresMidi", e.target.checked)}
+                                  className="h-4 w-4 rounded accent-red-600 cursor-pointer"
+                                />
+                              </td>,
+                            ];
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+      {/* Confirm passage à "Terminée" */}
+      <ConfirmDialog
+        open={confirmTerminee}
+        onOpenChange={(open) => { if (!open) { setConfirmTerminee(false); setPendingStatut(null); } }}
+        title="Marquer la session comme terminée ?"
+        description="Ce changement de statut enverra automatiquement le questionnaire d'évaluation à chaud à tous les participants confirmés. Cette action est irréversible."
+        onConfirm={async () => {
+          if (pendingStatut) await applyStatut(pendingStatut);
+          setConfirmTerminee(false);
+          setPendingStatut(null);
+        }}
+      />
 
       {/* Delete session dialog */}
       <ConfirmDialog

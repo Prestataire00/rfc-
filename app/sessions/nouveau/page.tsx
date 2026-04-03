@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,16 @@ import { SESSION_STATUTS } from "@/lib/constants";
 type Formation = { id: string; titre: string };
 type Formateur = { id: string; nom: string; prenom: string };
 
-export default function NouvelleSessionPage() {
+function NouvelleSessionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const devisId = searchParams.get("devisId");
+
   const [formations, setFormations] = useState<Formation[]>([]);
   const [formateurs, setFormateurs] = useState<Formateur[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [devisTitre, setDevisTitre] = useState("");
 
   const [formData, setFormData] = useState({
     formationId: "",
@@ -37,10 +41,39 @@ export default function NouvelleSessionPage() {
       fetch("/api/formations").then((r) => r.ok ? r.json() : []),
       fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
     ]).then(([f, fo]) => {
-      setFormations(Array.isArray(f) ? f : f.formations || []);
+      const formationList: Formation[] = Array.isArray(f) ? f : f.formations || [];
+      setFormations(formationList);
       setFormateurs(Array.isArray(fo) ? fo : fo.formateurs || []);
+
+      // Pre-fill from devis after formations are loaded
+      if (devisId) {
+        fetch(`/api/devis/${devisId}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((devis) => {
+            if (!devis) return;
+            setDevisTitre(devis.objet || "");
+
+            // Try to match a formation by titre contained in the devis objet
+            const matched = formationList.find((f) =>
+              devis.objet?.toLowerCase().includes(f.titre.toLowerCase())
+            );
+
+            // Capacité = sum of quantites in lignes
+            const totalQte = (devis.lignes || []).reduce(
+              (sum: number, l: { quantite: number }) => sum + (l.quantite || 0),
+              0
+            );
+
+            setFormData((prev) => ({
+              ...prev,
+              ...(matched ? { formationId: matched.id } : {}),
+              capaciteMax: totalQte > 0 ? totalQte : prev.capaciteMax,
+              notes: devis.notes || prev.notes,
+            }));
+          });
+      }
     });
-  }, []);
+  }, [devisId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -81,6 +114,7 @@ export default function NouvelleSessionPage() {
     if (formData.formateurId) payload.formateurId = formData.formateurId;
     if (formData.lieu) payload.lieu = formData.lieu;
     if (formData.notes) payload.notes = formData.notes;
+    if (devisId) payload.devisId = devisId;
 
     const res = await fetch("/api/sessions", {
       method: "POST",
@@ -116,6 +150,12 @@ export default function NouvelleSessionPage() {
         <h1 className="text-2xl font-bold text-gray-100">Nouvelle session</h1>
         <p className="text-gray-400">Planifiez une nouvelle session de formation</p>
       </div>
+
+      {devisId && devisTitre && (
+        <div className="mb-4 rounded-md bg-blue-900/20 border border-blue-700 px-4 py-3 text-sm text-blue-400">
+          Formulaire pré-rempli depuis le devis : <span className="font-medium">{devisTitre}</span>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -267,5 +307,13 @@ export default function NouvelleSessionPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NouvelleSessionPage() {
+  return (
+    <Suspense>
+      <NouvelleSessionForm />
+    </Suspense>
   );
 }

@@ -120,6 +120,41 @@ export function devisEmail(data: {
   };
 }
 
+export function factureEmail(data: {
+  destinataire: { nom: string };
+  entreprise: { nom: string };
+  facture: { numero: string; montantTTC: number; dateEcheance: string };
+}) {
+  return {
+    subject: `Facture ${data.facture.numero} - ${data.entreprise.nom}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Nouvelle facture</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${data.destinataire.nom}</strong>,</p>
+          <p>Veuillez trouver ci-joint la facture <strong>${data.facture.numero}</strong> :</p>
+          <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="margin: 0; font-weight: bold; font-size: 16px;">${data.entreprise.nom}</p>
+            <p style="margin: 8px 0 0; color: #2563eb; font-size: 20px; font-weight: bold;">
+              ${data.facture.montantTTC.toFixed(2)} EUR TTC
+            </p>
+            <p style="margin: 8px 0 0; color: #64748b; font-size: 14px;">
+              À régler avant le ${data.facture.dateEcheance}
+            </p>
+          </div>
+          <p>N'hésitez pas à nous contacter pour toute question.</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">
+            Cordialement,<br>L'équipe RFC
+          </p>
+        </div>
+      </div>
+    `,
+  };
+}
+
 export function evaluationEmail(data: {
   stagiaire: { prenom: string; nom: string };
   formation: { titre: string };

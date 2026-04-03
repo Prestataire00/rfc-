@@ -120,6 +120,12 @@ export default function ParametresPage() {
     <div>
       <PageHeader title="Paramètres" description="Configuration de la plateforme" />
 
+      <div className="mb-6 flex gap-3">
+        <a href="/parametres/questionnaire" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
+          📋 Configurer le questionnaire d&apos;évaluation
+        </a>
+      </div>
+
       <div className="space-y-6">
         {/* Informations entreprise */}
         <Card>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle, QrCode } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,15 @@ export default function SessionDetailPage() {
       setInscriptionLink(data.lien);
       navigator.clipboard.writeText(data.lien);
     }
+  };
+
+  const handleOuvrirQR = async () => {
+    if (!inscriptionLink) {
+      const res = await fetch(`/api/sessions/${id}/lien-inscription`, { method: "POST" });
+      const data = await res.json();
+      if (data.lien) setInscriptionLink(data.lien);
+    }
+    setQrOpen(true);
   };
 
   const handleGenererEvaluations = async (type: string, cible: string = "stagiaire") => {
@@ -452,6 +461,13 @@ export default function SessionDetailPage() {
                   <Link2 className="h-4 w-4" /> Lien public
                 </button>
                 <button
+                  onClick={handleOuvrirQR}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-purple-700 bg-purple-900/30 px-3 py-1.5 text-sm font-medium text-purple-300 hover:bg-purple-900/50 transition-colors"
+                  title="Afficher le QR Code d'inscription"
+                >
+                  <QrCode className="h-4 w-4" /> QR Code
+                </button>
+                <button
                   onClick={() => { fetchContacts(); setAddOpen(true); setContactSearch(""); }}
                   disabled={placesRestantes === 0}
                   className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -612,21 +628,55 @@ export default function SessionDetailPage() {
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent onClose={() => setQrOpen(false)}>
           <DialogHeader>
-            <DialogTitle>QR Code d&apos;inscription</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-purple-400" />
+              QR Code d&apos;inscription
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(inscriptionLink)}`}
-              alt="QR Code inscription"
-              width={250}
-              height={250}
-              className="rounded-lg border border-gray-700"
-            />
-            <code className="text-xs bg-gray-900 px-3 py-2 rounded border border-gray-700 text-gray-300 max-w-full break-all text-center">
-              {inscriptionLink}
-            </code>
-          </div>
+          {inscriptionLink ? (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="bg-white p-4 rounded-xl" id="qr-print-zone">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(inscriptionLink)}&bgcolor=ffffff&color=000000&margin=10`}
+                  alt="QR Code inscription"
+                  width={300}
+                  height={300}
+                />
+                <p className="text-center text-xs text-gray-600 mt-2 font-medium">
+                  {session?.formation.titre}
+                </p>
+                <p className="text-center text-xs text-gray-400">
+                  {formatDate(session?.dateDebut || "")} → {formatDate(session?.dateFin || "")}
+                </p>
+              </div>
+              <p className="text-sm text-gray-400 text-center">
+                Scannez ce QR code pour vous inscrire à la session
+              </p>
+              <code className="text-xs bg-gray-900 px-3 py-2 rounded border border-gray-700 text-gray-400 max-w-full break-all text-center">
+                {inscriptionLink}
+              </code>
+              <div className="flex gap-3">
+                <a
+                  href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(inscriptionLink)}&bgcolor=ffffff&color=000000&margin=10`}
+                  download={`qr-inscription-${id}.png`}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-purple-700 hover:bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors"
+                >
+                  <Download className="h-4 w-4" /> Télécharger
+                </a>
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-600 bg-gray-800 hover:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors"
+                >
+                  <FileText className="h-4 w-4" /> Imprimer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent" />
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setQrOpen(false)}>Fermer</Button>
           </DialogFooter>

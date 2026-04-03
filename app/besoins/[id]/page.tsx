@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail, MapPin, Hash, ExternalLink, FolderOpen } from "lucide-react";
+import { ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail, MapPin, Hash, ExternalLink, FolderOpen, Clock, Send, Receipt, UserPlus } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
@@ -37,17 +37,58 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+type HistoriqueAction = {
+  id: string;
+  createdAt: string;
+  action: string;
+  label: string;
+  detail: string | null;
+  lien: string | null;
+};
+
+function formatRelative(dateStr: string): string {
+  const date = new Date(dateStr);
+  const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Hier";
+  if (diffDays < 7) return `Il y a ${diffDays} jours`;
+  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaine${Math.floor(diffDays / 7) > 1 ? "s" : ""}`;
+  return `Il y a ${Math.floor(diffDays / 30)} mois`;
+}
+
+function actionIcon(action: string) {
+  if (action.startsWith("devis")) return FileText;
+  if (action.startsWith("facture")) return Receipt;
+  if (action === "inscription_creee") return UserPlus;
+  if (action.includes("envoye") || action.includes("convocation")) return Send;
+  return Clock;
+}
+
+function actionColor(action: string): string {
+  if (action.startsWith("devis")) return "bg-blue-900/30 text-blue-400 border-blue-700";
+  if (action.startsWith("facture")) return "bg-orange-900/30 text-orange-400 border-orange-700";
+  if (action === "inscription_creee") return "bg-violet-900/30 text-violet-400 border-violet-700";
+  if (action.includes("envoye") || action.includes("convocation")) return "bg-green-900/30 text-green-400 border-green-700";
+  return "bg-gray-700 text-gray-400 border-gray-600";
+}
+
 export default function BesoinDetailPage() {
   const router = useRouter();
   const { id } = useParams();
   const [besoin, setBesoin] = useState<Besoin | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
+  const [historique, setHistorique] = useState<HistoriqueAction[]>([]);
 
   useEffect(() => {
     fetch(`/api/besoins/${id}`).then((r) => r.ok ? r.json() : null).then((d) => {
       setBesoin(d);
       setLoading(false);
+      if (d?.entrepriseId) {
+        fetch(`/api/entreprises/${d.entrepriseId}/historique`)
+          .then((r) => r.ok ? r.json() : [])
+          .then(setHistorique);
+      }
     });
   }, [id]);
 
@@ -307,6 +348,61 @@ export default function BesoinDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Historique */}
+      {historique.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-gray-400" /> Historique d'activité
+            </h3>
+            {besoin?.entreprise?.id && (
+              <Link
+                href={`/entreprises/${besoin.entreprise.id}?tab=historique`}
+                className="text-xs text-red-500 hover:text-red-400"
+              >
+                Voir tout →
+              </Link>
+            )}
+          </div>
+          <div className="relative">
+            <div className="absolute left-4 top-0 bottom-0 w-px border-l-2 border-dashed border-gray-700" />
+            <div className="space-y-3 pl-10">
+              {historique.slice(0, 10).map((h) => {
+                const Icon = actionIcon(h.action);
+                const colorClass = actionColor(h.action);
+                return (
+                  <div key={h.id} className="relative">
+                    <div className={`absolute -left-6 h-6 w-6 rounded-full border flex items-center justify-center ${colorClass}`}>
+                      <Icon className="h-3 w-3" />
+                    </div>
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          {h.lien ? (
+                            <Link href={h.lien} className="text-xs font-medium text-gray-200 hover:text-red-400">
+                              {h.label}
+                            </Link>
+                          ) : (
+                            <p className="text-xs font-medium text-gray-200">{h.label}</p>
+                          )}
+                          {h.detail && <p className="text-xs text-gray-500 mt-0.5">{h.detail}</p>}
+                        </div>
+                        <span
+                          className="text-xs text-gray-500 shrink-0 cursor-default"
+                          title={new Date(h.createdAt).toLocaleString("fr-FR")}
+                        >
+                          {formatRelative(h.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={showDelete}

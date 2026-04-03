@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
-  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck,
+  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +47,7 @@ const clientNav: NavItem[] = [
   { href: "/espace-client/stagiaires", label: "Nos Stagiaires", icon: Users },
   { href: "/espace-client/documents", label: "Documents", icon: FolderOpen },
   { href: "/espace-client/devis", label: "Devis", icon: FileText },
+  { href: "/espace-client/paiement", label: "Paiement", icon: CreditCard },
   { href: "/espace-client/evaluations", label: "Évaluations", icon: MessageSquare },
 ];
 

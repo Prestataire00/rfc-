@@ -451,4 +451,8 @@ model Parametres {
   conditionsPaiement String @default("Paiement à 30 jours à compter de la date de facturation.")
   mentionsDevis      String @default("Devis valable 30 jours.")
   mentionsFacture    String @default("En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.")
+  iban               String @default("")
+  bic                String @default("")
+  banque             String @default("")
+  moyensPaiement     String @default("virement,cheque,cpf,opco")
 }

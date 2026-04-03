@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield, Building2, Save, FileText } from "lucide-react";
+import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield, Building2, Save, FileText, CreditCard } from "lucide-react";
 
 type Parametres = {
   nomEntreprise: string;
@@ -24,6 +24,10 @@ type Parametres = {
   conditionsPaiement: string;
   mentionsDevis: string;
   mentionsFacture: string;
+  iban: string;
+  bic: string;
+  banque: string;
+  moyensPaiement: string;
 };
 
 const defaultParams: Parametres = {
@@ -41,6 +45,10 @@ const defaultParams: Parametres = {
   conditionsPaiement: "Paiement à 30 jours à compter de la date de facturation.",
   mentionsDevis: "Devis valable 30 jours.",
   mentionsFacture: "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.",
+  iban: "",
+  bic: "",
+  banque: "",
+  moyensPaiement: "virement,cheque,cpf,opco",
 };
 
 export default function ParametresPage() {
@@ -195,6 +203,44 @@ export default function ParametresPage() {
                 </span>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Coordonnées bancaires */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-red-600" />
+              Coordonnées bancaires & paiement
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-400">
+              Ces informations apparaîtront dans l'espace client sous l'onglet Paiement.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>IBAN</Label>
+                <Input value={params.iban} onChange={(e) => updateField("iban", e.target.value)} placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" />
+              </div>
+              <div>
+                <Label>BIC / SWIFT</Label>
+                <Input value={params.bic} onChange={(e) => updateField("bic", e.target.value)} placeholder="XXXXXXXX" />
+              </div>
+              <div>
+                <Label>Banque</Label>
+                <Input value={params.banque} onChange={(e) => updateField("banque", e.target.value)} placeholder="Crédit Agricole, BNP..." />
+              </div>
+            </div>
+            <div>
+              <Label>Moyens de paiement acceptés</Label>
+              <p className="text-xs text-gray-400 mb-2">Séparés par des virgules : <code className="bg-gray-700 px-1 rounded">virement, cheque, carte, especes</code></p>
+              <Input value={params.moyensPaiement} onChange={(e) => updateField("moyensPaiement", e.target.value)} placeholder="virement,cheque" />
+            </div>
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </CardContent>
         </Card>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail, MapPin, Hash, ExternalLink } from "lucide-react";
+import { ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail, MapPin, Hash, ExternalLink, FolderOpen } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
@@ -90,11 +90,31 @@ export default function BesoinDetailPage() {
             <span className="text-sm text-gray-400">Créé le {formatDate(besoin.createdAt)}</span>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          {besoin.entreprise && (
+            <Link
+              href={`/entreprises/${besoin.entreprise.id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-gray-700 border border-gray-600 px-3 py-2 text-sm font-medium text-gray-100 hover:bg-gray-600 transition-colors"
+            >
+              <Building2 className="h-4 w-4 text-gray-400" />
+              Compte client
+              <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+            </Link>
+          )}
+          {besoin.entreprise && (
+            <Link
+              href={`/entreprises/${besoin.entreprise.id}?tab=devis`}
+              className="inline-flex items-center gap-2 rounded-md bg-gray-700 border border-gray-600 px-3 py-2 text-sm font-medium text-gray-100 hover:bg-gray-600 transition-colors"
+            >
+              <FolderOpen className="h-4 w-4 text-gray-400" />
+              Documents
+              <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+            </Link>
+          )}
           {!besoin.devis && (besoin.statut === "nouveau" || besoin.statut === "qualifie") && (
             <Link
               href={`/commercial/devis/nouveau?besoinId=${besoin.id}`}
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
             >
               <FilePlus className="h-4 w-4" /> Générer un devis
             </Link>

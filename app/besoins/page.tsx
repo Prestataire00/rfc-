@@ -122,7 +122,15 @@ export default function BesoinsPage() {
                         className="bg-gray-800 rounded-md border border-gray-700 p-3 cursor-pointer hover:shadow-md transition-all"
                       >
                         <p className="text-sm font-medium text-gray-100 line-clamp-2 mb-1">{b.titre}</p>
-                        {b.entreprise && <p className="text-xs text-gray-400 mb-1">{b.entreprise.nom}</p>}
+                        {b.entreprise && (
+                          <Link
+                            href={`/entreprises/${b.entreprise.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-red-500 hover:underline mb-1 block"
+                          >
+                            {b.entreprise.nom}
+                          </Link>
+                        )}
                         {b.formation && <p className="text-xs text-indigo-600 mb-1">{b.formation.titre}</p>}
                         <div className="flex items-center justify-between mt-2">
                           <span className={`text-xs font-medium ${prio?.color || ""}`}>{prio?.label}</span>
@@ -162,7 +170,13 @@ export default function BesoinsPage() {
                     onClick={() => router.push(`/besoins/${b.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-gray-100">{b.titre}</td>
-                    <td className="px-4 py-3 text-gray-400">{b.entreprise?.nom || "—"}</td>
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      {b.entreprise ? (
+                        <Link href={`/entreprises/${b.entreprise.id}`} className="text-red-500 hover:underline text-sm">
+                          {b.entreprise.nom}
+                        </Link>
+                      ) : <span className="text-gray-400">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-gray-400">{b.formation?.titre || "—"}</td>
                     <td className="px-4 py-3 text-gray-400">{BESOIN_ORIGINES[b.origine as keyof typeof BESOIN_ORIGINES]?.label || b.origine}</td>
                     <td className="px-4 py-3"><span className={`font-medium ${prio?.color}`}>{prio?.label}</span></td>

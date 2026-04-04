@@ -149,12 +149,9 @@ export default function EvaluationPubliquePage() {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-red-50 to-white">
         <header className="bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-            <Image src="/logo-icon.svg" alt="RFC" width={36} height={36} className="shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-gray-900 leading-tight">Rescue Formation Conseil</p>
-              <p className="text-xs text-gray-400">Sécurité · Incendie · Prévention</p>
-            </div>
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg shrink-0" />
+            <span className="text-lg font-bold text-gray-900">RFC</span>
           </div>
         </header>
         <div className="flex-1 flex items-center justify-center px-4 py-12">
@@ -182,12 +179,9 @@ export default function EvaluationPubliquePage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Image src="/logo-icon.svg" alt="RFC" width={36} height={36} className="shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-bold text-gray-900 leading-tight">Rescue Formation Conseil</p>
-            <p className="text-xs text-gray-400">Sécurité · Incendie · Prévention</p>
-          </div>
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg shrink-0" />
+          <span className="text-lg font-bold text-gray-900 flex-1">RFC</span>
           {step > 0 && (
             <span className="text-xs text-gray-400 font-medium">
               {step} / {sections.length + 1}

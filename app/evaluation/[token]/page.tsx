@@ -151,7 +151,11 @@ export default function EvaluationPubliquePage() {
         <header className="bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
             <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg shrink-0" />
-            <span className="text-lg font-bold text-gray-900">RFC</span>
+            <div>
+              <span className="font-bold text-black text-sm">RFC</span>
+              <span className="block text-[9px] text-gray-600 leading-tight">Sécurité - Incendie</span>
+              <span className="block text-[9px] text-gray-600 leading-tight">Prévention</span>
+            </div>
           </div>
         </header>
         <div className="flex-1 flex items-center justify-center px-4 py-12">
@@ -181,7 +185,11 @@ export default function EvaluationPubliquePage() {
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg shrink-0" />
-          <span className="text-lg font-bold text-black flex-1">RFC</span>
+          <div className="flex-1">
+            <span className="font-bold text-black text-sm">RFC</span>
+            <span className="block text-[9px] text-gray-600 leading-tight">Sécurité - Incendie</span>
+            <span className="block text-[9px] text-gray-600 leading-tight">Prévention</span>
+          </div>
           {step > 0 && (
             <span className="text-xs text-gray-400 font-medium">
               {step} / {sections.length + 1}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -134,41 +134,30 @@ export default function EntrepriseDetailPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [historique, setHistorique] = useState<HistoriqueAction[]>([]);
-  const [historiqueLoading, setHistoriqueLoading] = useState(false);
+  const [historiqueLoading, setHistoriqueLoading] = useState(true);
   const [emailConfirmDevis, setEmailConfirmDevis] = useState<Devis | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
 
-  const fetchEntreprise = useCallback(async () => {
-    const res = await fetch(`/api/entreprises/${id}`);
-    if (!res.ok) { setError("Entreprise introuvable"); setLoading(false); return; }
-    setEntreprise(await res.json());
-    setLoading(false);
+  useEffect(() => {
+    fetch(`/api/entreprises/${id}`)
+      .then((res) => {
+        if (!res.ok) { setError("Entreprise introuvable"); return null; }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) setEntreprise(data);
+        setLoading(false);
+      });
+
+    fetch(`/api/entreprises/${id}/historique`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        setHistorique(Array.isArray(data) ? data : []);
+        setHistoriqueLoading(false);
+      })
+      .catch(() => setHistoriqueLoading(false));
   }, [id]);
-
-  const fetchHistorique = useCallback(async () => {
-    setHistoriqueLoading(true);
-    const res = await fetch(`/api/entreprises/${id}/historique`);
-    if (res.ok) setHistorique(await res.json());
-    setHistoriqueLoading(false);
-  }, [id]);
-
-  useEffect(() => {
-    fetchEntreprise();
-  }, [fetchEntreprise]);
-
-  useEffect(() => {
-    if (activeTab === "historique" && historique.length === 0 && !historiqueLoading) {
-      fetchHistorique();
-    }
-  }, [activeTab, historique.length, historiqueLoading, fetchHistorique]);
-
-  // Also fetch historique for mini-view on informations tab
-  useEffect(() => {
-    if (activeTab === "informations" && historique.length === 0 && !historiqueLoading) {
-      fetchHistorique();
-    }
-  }, [activeTab, historique.length, historiqueLoading, fetchHistorique]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -195,7 +184,9 @@ export default function EntrepriseDetailPage() {
     setSendingEmail(false);
     if (res.ok) {
       setEmailMsg(data.skipped ? "SMTP non configuré" : "Email envoyé !");
-      fetchEntreprise();
+      fetch(`/api/entreprises/${id}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => { if (data) setEntreprise(data); });
     } else {
       setEmailMsg(data.error || "Erreur lors de l'envoi");
     }

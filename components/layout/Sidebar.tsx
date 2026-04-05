@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
-  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard, UserPlus,
+  MessageSquare, Award, LogOut, Shield, X, Settings, CreditCard, UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,6 @@ const adminNavGroups: NavGroup[] = [
     label: "Qualité",
     items: [
       { href: "/evaluations", label: "Évaluations", icon: MessageSquare },
-      { href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck },
       { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },

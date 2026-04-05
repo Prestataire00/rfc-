@@ -7,8 +7,6 @@ async function main() {
   console.log("Seeding database...");
 
   // Clean all data in correct order
-  await prisma.preuveQualiopi.deleteMany();
-  await prisma.indicateurQualiopi.deleteMany();
   await prisma.feuillePresence.deleteMany();
   await prisma.attestation.deleteMany();
   await prisma.evaluation.deleteMany();
@@ -538,68 +536,6 @@ async function main() {
     prisma.financement.create({ data: { type: "entreprise", montant: 1500, statut: "accorde", entrepriseId: greenEnergy.id } }),
     prisma.financement.create({ data: { type: "cpf", montant: 2200, reference: "CPF-2026-8877", statut: "en_cours" } }),
   ]);
-
-  // === QUALIOPI INDICATEURS ===
-  const qualiopiIndicateurs = [
-    // Critère 1 : Information du public (indicateurs 1-4)
-    { numero: 1, critere: 1, libelle: "Diffusion d'une information accessible sur les prestations, les resultats obtenus et les tarifs", preuvesAttendues: "Catalogue, site internet, CGV, plaquettes commerciales", statut: "conforme" },
-    { numero: 2, critere: 1, libelle: "Diffusion d'indicateurs de resultats adaptes a la nature des prestations et aux publics accueillis", preuvesAttendues: "Taux de satisfaction, taux de reussite, taux d'insertion", statut: "en_cours" },
-    { numero: 3, critere: 1, libelle: "Obtention des certifications et labels de qualite", preuvesAttendues: "Certificats, labels, habilitations", statut: "non_conforme" },
-    { numero: 4, critere: 1, libelle: "Analyse des besoins du beneficiaire par le prestataire en lien avec le financeur", preuvesAttendues: "Questionnaires de positionnement, entretiens prealables", statut: "conforme" },
-
-    // Critère 2 : Objectifs et adaptation (indicateurs 5-8)
-    { numero: 5, critere: 2, libelle: "Definition des objectifs operationnels et evaluables de la prestation", preuvesAttendues: "Programmes de formation, fiches pedagogiques", statut: "conforme" },
-    { numero: 6, critere: 2, libelle: "Etablissement des contenus et modalites de la prestation", preuvesAttendues: "Programmes detailles, plannings, supports pedagogiques", statut: "conforme" },
-    { numero: 7, critere: 2, libelle: "Adequation des contenus aux exigences de la certification visee", preuvesAttendues: "Referentiels de certification, grilles de correspondance", statut: "en_cours" },
-    { numero: 8, critere: 2, libelle: "Procedures de positionnement et d'evaluation des acquis a l'entree", preuvesAttendues: "Tests de positionnement, grilles d'evaluation initiale", statut: "non_conforme" },
-
-    // Critère 3 : Moyens pédagogiques (indicateurs 9-16)
-    { numero: 9, critere: 3, libelle: "Information des publics sur les conditions de deroulement de la prestation", preuvesAttendues: "Convocations, livret d'accueil, reglement interieur", statut: "conforme" },
-    { numero: 10, critere: 3, libelle: "Adaptation de la prestation et des modalites d'accueil et d'accompagnement", preuvesAttendues: "Procedures d'accueil PSH, adaptations pedagogiques", statut: "en_cours" },
-    { numero: 11, critere: 3, libelle: "Evaluation de l'atteinte des objectifs par les beneficiaires", preuvesAttendues: "Evaluations de fin de formation, QCM, mises en situation", statut: "conforme" },
-    { numero: 12, critere: 3, libelle: "Engagement des beneficiaires et prevention des abandons", preuvesAttendues: "Suivi des absences, relances, entretiens individuels", statut: "non_conforme" },
-    { numero: 13, critere: 3, libelle: "Coordination des apprentissages avec les entreprises", preuvesAttendues: "Conventions de stage, livrets de suivi en entreprise", statut: "non_applicable" },
-    { numero: 14, critere: 3, libelle: "Mise en oeuvre de procedure d'alternance avec les entreprises", preuvesAttendues: "Planning d'alternance, suivi tutoral", statut: "non_applicable" },
-    { numero: 15, critere: 3, libelle: "Realisation d'un bilan et suivi des parcours de formation", preuvesAttendues: "Bilans de formation, attestations de fin de formation", statut: "en_cours" },
-    { numero: 16, critere: 3, libelle: "Mise en oeuvre de mesures pour favoriser l'engagement et prevenir les ruptures de parcours", preuvesAttendues: "Procedures de suivi, accompagnement individuel", statut: "non_conforme" },
-
-    // Critère 4 : Moyens humains (indicateurs 17-20)
-    { numero: 17, critere: 4, libelle: "Adequation des moyens humains, techniques et pedagogiques", preuvesAttendues: "CV des formateurs, inventaire du materiel, salles", statut: "conforme" },
-    { numero: 18, critere: 4, libelle: "Mobilisation et coordination des differents intervenants", preuvesAttendues: "Organigramme, fiches de poste, reunions de coordination", statut: "conforme" },
-    { numero: 19, critere: 4, libelle: "Mise a disposition de ressources pedagogiques au beneficiaire", preuvesAttendues: "Supports de cours, bibliotheque, plateforme e-learning", statut: "en_cours" },
-    { numero: 20, critere: 4, libelle: "Mise en place de personnel dedie a la mobilite internationale", preuvesAttendues: "Procedures mobilite, referent international", statut: "non_applicable" },
-
-    // Critère 5 : Satisfaction et amélioration (indicateurs 21-23)
-    { numero: 21, critere: 5, libelle: "Definition et mise en oeuvre d'une demarche d'amelioration continue", preuvesAttendues: "Plan d'amelioration, revue de direction, indicateurs qualite", statut: "en_cours" },
-    { numero: 22, critere: 5, libelle: "Realisation d'evaluations conformes aux exigences des certifications", preuvesAttendues: "Procedures d'evaluation, jurys, PV de deliberation", statut: "non_conforme" },
-    { numero: 23, critere: 5, libelle: "Veille sur les evolutions des competences, metiers et emplois", preuvesAttendues: "Veille sectorielle, participation a des conferences, abonnements", statut: "conforme" },
-
-    // Critère 6 : Environnement professionnel (indicateurs 24-27)
-    { numero: 24, critere: 6, libelle: "Veille legale et reglementaire sur la formation professionnelle", preuvesAttendues: "Abonnements juridiques, notes de veille, mises a jour des procedures", statut: "conforme" },
-    { numero: 25, critere: 6, libelle: "Veille sur les innovations pedagogiques et technologiques", preuvesAttendues: "Participation a des salons, benchmarks, experimentation d'outils", statut: "en_cours" },
-    { numero: 26, critere: 6, libelle: "Mobilisation d'expertises et de ressources externes", preuvesAttendues: "Partenariats, conventions, intervenants externes", statut: "conforme" },
-    { numero: 27, critere: 6, libelle: "Conformite reglementaire en matiere d'accessibilite handicap", preuvesAttendues: "Referent handicap, procedure d'accueil, partenariats specialises", statut: "non_conforme" },
-
-    // Critère 7 : Processus de certification (indicateurs 28-32)
-    { numero: 28, critere: 7, libelle: "Recueil des appreciations des parties prenantes", preuvesAttendues: "Questionnaires de satisfaction, bilans de formation", statut: "conforme" },
-    { numero: 29, critere: 7, libelle: "Traitement des reclamations et des difficultes rencontrees", preuvesAttendues: "Registre de reclamations, procedures de traitement, suivi des actions", statut: "en_cours" },
-    { numero: 30, critere: 7, libelle: "Mise en oeuvre de mesures d'amelioration a partir des appreciations recueillies", preuvesAttendues: "Plans d'action, comptes rendus de revue, indicateurs d'amelioration", statut: "non_conforme" },
-    { numero: 31, critere: 7, libelle: "Realisation d'actions d'amelioration continue", preuvesAttendues: "Revue annuelle, tableau de bord qualite, actions correctives", statut: "en_cours" },
-    { numero: 32, critere: 7, libelle: "Organisation de la veille sur les evolutions des certifications et habilitations", preuvesAttendues: "Suivi des renouvellements, veille France Competences", statut: "non_conforme" },
-  ];
-
-  for (const ind of qualiopiIndicateurs) {
-    await prisma.indicateurQualiopi.create({
-      data: {
-        numero: ind.numero,
-        critere: ind.critere,
-        libelle: ind.libelle,
-        preuvesAttendues: ind.preuvesAttendues,
-        statut: ind.statut,
-        prioritaire: ind.statut === "non_conforme",
-      },
-    });
-  }
 
   console.log("Seed complete!");
 }

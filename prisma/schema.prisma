@@ -394,36 +394,6 @@ model FeuillePresence {
   @@unique([sessionId, contactId, date])
 }
 
-// ==================== QUALIOPI ====================
-
-model IndicateurQualiopi {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  numero      Int      // Indicateur number (1-32)
-  critere     Int      // Critère number (1-7)
-  libelle     String
-  description String?
-  preuvesAttendues String? // Expected proofs
-  statut      String   @default("non_conforme") // conforme, en_cours, non_conforme, non_applicable
-  commentaire String?
-  dateAudit   DateTime?
-  prioritaire Boolean  @default(false)
-  preuves     PreuveQualiopi[]
-}
-
-model PreuveQualiopi {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  indicateurId  String
-  indicateur    IndicateurQualiopi @relation(fields: [indicateurId], references: [id], onDelete: Cascade)
-  titre         String
-  description   String?
-  fichierUrl    String?
-  type          String   // document, process, enregistrement, temoignage
-  valide        Boolean  @default(false)
-}
-
 // ==================== NOTIFICATIONS ====================
 
 model Notification {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Star, User, BookOpen, Calendar, MessageSquare, CheckCircle, Clock, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, Star, User, BookOpen, Calendar, MessageSquare, CheckCircle, Clock, Pencil, Save, X, Sparkles } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -51,6 +51,12 @@ export default function EvaluationDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
+  // IA
+  const [analyse, setAnalyse] = useState("");
+  const [analyseEdited, setAnalyseEdited] = useState("");
+  const [analyseLoading, setAnalyseLoading] = useState(false);
+  const [analyseError, setAnalyseError] = useState("");
+
   useEffect(() => {
     fetch(`/api/evaluations/${id}`)
       .then((r) => {
@@ -79,6 +85,22 @@ export default function EvaluationDetailPage() {
   const cancelEdit = () => {
     setEditing(false);
     setSaveMsg("");
+  };
+
+  const handleAnalyse = async () => {
+    setAnalyseLoading(true);
+    setAnalyseError("");
+    setAnalyse("");
+    setAnalyseEdited("");
+    const res = await fetch(`/api/evaluations/${id}/analyse`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setAnalyse(data.analyse);
+      setAnalyseEdited(data.analyse);
+    } else {
+      setAnalyseError("Erreur lors de l'analyse. Vérifiez que la clé API Anthropic est configurée.");
+    }
+    setAnalyseLoading(false);
   };
 
   const handleSave = async () => {
@@ -166,6 +188,14 @@ export default function EvaluationDetailPage() {
             {evaluation.estComplete ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
             {evaluation.estComplete ? "Complétée" : "En attente"}
           </span>
+          <button
+            onClick={handleAnalyse}
+            disabled={analyseLoading}
+            className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" />
+            {analyseLoading ? "Analyse en cours..." : "Analyser avec IA"}
+          </button>
           {!editing && (
             <button
               onClick={startEdit}
@@ -379,6 +409,61 @@ export default function EvaluationDetailPage() {
             Commentaire
           </h2>
           <p className="text-gray-300 whitespace-pre-wrap">{evaluation.commentaire}</p>
+        </div>
+      )}
+
+      {/* Analyse IA */}
+      {analyseError && (
+        <div className="mt-6 rounded-lg border border-red-700 bg-red-900/20 p-4 text-sm text-red-400">
+          {analyseError}
+        </div>
+      )}
+
+      {analyseLoading && (
+        <div className="mt-6 rounded-lg border border-violet-700 bg-violet-900/10 p-6 flex items-center gap-3">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+          <span className="text-sm text-violet-300">Claude analyse l&apos;évaluation...</span>
+        </div>
+      )}
+
+      {analyse && (
+        <div className="mt-6 rounded-xl border border-violet-700 bg-gray-800 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-400" />
+              Analyse IA
+            </h2>
+            <button
+              onClick={handleAnalyse}
+              disabled={analyseLoading}
+              className="text-xs text-violet-400 hover:text-violet-300 underline"
+            >
+              Régénérer
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">Vous pouvez modifier le texte ci-dessous librement.</p>
+          <textarea
+            value={analyseEdited}
+            onChange={(e) => setAnalyseEdited(e.target.value)}
+            rows={20}
+            className="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100 px-4 py-3 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y"
+          />
+          <div className="mt-3 flex gap-3">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(analyseEdited);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              Copier
+            </button>
+            <button
+              onClick={() => { setAnalyse(""); setAnalyseEdited(""); }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-400 hover:bg-gray-700 transition-colors"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       )}
     </div>

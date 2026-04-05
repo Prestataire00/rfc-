@@ -53,10 +53,10 @@ function NouveauDevisForm() {
   useEffect(() => {
     Promise.all([
       fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
-      fetch("/api/contacts").then((r) => r.ok ? r.json() : []),
+      fetch("/api/contacts?limit=100").then((r) => r.ok ? r.json() : { data: [] }),
     ]).then(([e, c]) => {
       setEntreprises(Array.isArray(e) ? e : []);
-      setContacts(Array.isArray(c) ? c : []);
+      setContacts(Array.isArray(c?.data) ? c.data : Array.isArray(c) ? c : []);
       // Pre-fill from URL params
       if (paramEntrepriseId) {
         setClientType("entreprise");

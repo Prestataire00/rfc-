@@ -54,6 +54,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/login") return true;
   if (pathname.startsWith("/api/auth")) return true;
   if (pathname.startsWith("/api/evaluations/public")) return true;
+  if (pathname.startsWith("/api/inscription-publique")) return true;
   if (pathname.startsWith("/evaluation/")) return true;
   if (pathname.startsWith("/inscription-stagiaire")) return true;
   if (pathname.startsWith("/_next")) return true;

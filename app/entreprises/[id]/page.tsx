@@ -23,6 +23,8 @@ import {
   Receipt,
   UserPlus,
   Clock,
+  Landmark,
+  X,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -79,6 +81,32 @@ interface Entreprise {
   createdAt: string;
 }
 
+interface Financement {
+  id: string;
+  type: string;
+  montant: number;
+  organisme: string | null;
+  reference: string | null;
+  statut: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+const FINANCEMENT_TYPES: Record<string, { label: string; color: string }> = {
+  opco: { label: "OPCO", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  cpf: { label: "CPF", color: "bg-violet-500/20 text-violet-400 border-violet-500/30" },
+  personnel: { label: "Personnel", color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+  pole_emploi: { label: "Pôle Emploi", color: "bg-teal-500/20 text-teal-400 border-teal-500/30" },
+  entreprise: { label: "Entreprise", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  autre: { label: "Autre", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+};
+
+const FINANCEMENT_STATUTS: Record<string, { label: string; color: string }> = {
+  en_cours: { label: "En attente", color: "bg-sky-500/20 text-sky-400 border-sky-500/30" },
+  accorde: { label: "Accordé", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  refuse: { label: "Refusé", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+};
+
 interface HistoriqueAction {
   id: string;
   createdAt: string;
@@ -88,7 +116,7 @@ interface HistoriqueAction {
   lien: string | null;
 }
 
-type TabKey = "informations" | "contacts" | "devis" | "factures" | "historique";
+type TabKey = "informations" | "contacts" | "devis" | "factures" | "financement" | "historique";
 
 function formatRelative(dateStr: string): string {
   const date = new Date(dateStr);
@@ -135,6 +163,18 @@ export default function EntrepriseDetailPage() {
 
   const [historique, setHistorique] = useState<HistoriqueAction[]>([]);
   const [historiqueLoading, setHistoriqueLoading] = useState(true);
+  const [financements, setFinancements] = useState<Financement[]>([]);
+  const [financementsLoading, setFinancementsLoading] = useState(true);
+  const [showFinancementModal, setShowFinancementModal] = useState(false);
+  const [financementForm, setFinancementForm] = useState({
+    type: "opco",
+    montant: "",
+    organisme: "",
+    reference: "",
+    statut: "en_cours",
+    notes: "",
+  });
+  const [savingFinancement, setSavingFinancement] = useState(false);
   const [emailConfirmDevis, setEmailConfirmDevis] = useState<Devis | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
@@ -157,6 +197,14 @@ export default function EntrepriseDetailPage() {
         setHistoriqueLoading(false);
       })
       .catch(() => setHistoriqueLoading(false));
+
+    fetch(`/api/financements?entrepriseId=${id}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        setFinancements(Array.isArray(data) ? data : []);
+        setFinancementsLoading(false);
+      })
+      .catch(() => setFinancementsLoading(false));
   }, [id]);
 
   const handleDelete = async () => {
@@ -193,6 +241,33 @@ export default function EntrepriseDetailPage() {
     setTimeout(() => setEmailMsg(""), 4000);
   };
 
+  const handleCreateFinancement = async () => {
+    setSavingFinancement(true);
+    const res = await fetch("/api/financements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...financementForm,
+        montant: Number(financementForm.montant),
+        entrepriseId: id,
+      }),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setFinancements((prev) => [created, ...prev]);
+      setShowFinancementModal(false);
+      setFinancementForm({ type: "opco", montant: "", organisme: "", reference: "", statut: "en_cours", notes: "" });
+    }
+    setSavingFinancement(false);
+  };
+
+  const handleDeleteFinancement = async (fId: string) => {
+    const res = await fetch(`/api/financements/${fId}`, { method: "DELETE" });
+    if (res.ok) {
+      setFinancements((prev) => prev.filter((f) => f.id !== fId));
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center py-24">
@@ -217,6 +292,7 @@ export default function EntrepriseDetailPage() {
     { key: "contacts", label: `Contacts (${entreprise.contacts.length})` },
     { key: "devis", label: `Devis (${entreprise.devis.length})` },
     { key: "factures", label: `Factures (${entreprise.factures.length})` },
+    { key: "financement", label: `Financement (${financements.length})` },
     { key: "historique", label: "Historique" },
   ];
 
@@ -668,6 +744,190 @@ export default function EntrepriseDetailPage() {
                 })}
               </tbody>
             </table>
+          )}
+        </div>
+      )}
+
+      {/* Financement */}
+      {activeTab === "financement" && (
+        <div>
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => setShowFinancementModal(true)}
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Ajouter un financement
+            </button>
+          </div>
+
+          {financementsLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+            </div>
+          ) : financements.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Landmark className="h-8 w-8 text-gray-500 mb-3" />
+              <p className="text-sm text-gray-400">Aucun financement enregistré</p>
+              <button
+                onClick={() => setShowFinancementModal(true)}
+                className="mt-3 text-sm text-red-600 hover:underline"
+              >
+                Ajouter un financement
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead className="bg-gray-900">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Montant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Organisme</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Référence</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                  {financements.map((f) => {
+                    const typeInfo = FINANCEMENT_TYPES[f.type];
+                    const statutInfo = FINANCEMENT_STATUTS[f.statut];
+                    return (
+                      <tr key={f.id} className="hover:bg-gray-700 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {typeInfo && <StatutBadge label={typeInfo.label} color={typeInfo.color} />}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
+                          {formatCurrency(f.montant)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {f.organisme || <span className="text-gray-500">—</span>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">
+                          {f.reference || <span className="text-gray-500">—</span>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {statutInfo && <StatutBadge label={statutInfo.label} color={statutInfo.color} />}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                          {formatDate(f.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <button
+                            onClick={() => handleDeleteFinancement(f.id)}
+                            className="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-red-400 transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Modal ajout financement */}
+          {showFinancementModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-full max-w-md mx-4">
+                <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-100">Ajouter un financement</h3>
+                  <button
+                    onClick={() => setShowFinancementModal(false)}
+                    className="p-1 rounded hover:bg-gray-700 text-gray-400"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Type *</label>
+                    <select
+                      value={financementForm.type}
+                      onChange={(e) => setFinancementForm((f) => ({ ...f, type: e.target.value }))}
+                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
+                    >
+                      {Object.entries(FINANCEMENT_TYPES).map(([val, info]) => (
+                        <option key={val} value={val}>{info.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Montant (€) *</label>
+                    <input
+                      type="number"
+                      value={financementForm.montant}
+                      onChange={(e) => setFinancementForm((f) => ({ ...f, montant: e.target.value }))}
+                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Organisme payeur</label>
+                    <input
+                      type="text"
+                      value={financementForm.organisme}
+                      onChange={(e) => setFinancementForm((f) => ({ ...f, organisme: e.target.value }))}
+                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
+                      placeholder="Ex: OPCO Atlas, France Travail…"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Référence OPCO</label>
+                    <input
+                      type="text"
+                      value={financementForm.reference}
+                      onChange={(e) => setFinancementForm((f) => ({ ...f, reference: e.target.value }))}
+                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
+                      placeholder="Optionnel"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Statut</label>
+                    <select
+                      value={financementForm.statut}
+                      onChange={(e) => setFinancementForm((f) => ({ ...f, statut: e.target.value }))}
+                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
+                    >
+                      {Object.entries(FINANCEMENT_STATUTS).map(([val, info]) => (
+                        <option key={val} value={val}>{info.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                    <textarea
+                      value={financementForm.notes}
+                      onChange={(e) => setFinancementForm((f) => ({ ...f, notes: e.target.value }))}
+                      className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100"
+                      rows={2}
+                      placeholder="Optionnel"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 p-4 border-t border-gray-700">
+                  <button
+                    onClick={() => setShowFinancementModal(false)}
+                    className="rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleCreateFinancement}
+                    disabled={savingFinancement || !financementForm.montant}
+                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {savingFinancement ? "Enregistrement…" : "Ajouter"}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

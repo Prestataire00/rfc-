@@ -1,11 +1,24 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import fs from "fs/promises";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: "Stockage non configuré — variables Supabase manquantes" },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const type = formData.get("type") as string;
@@ -19,34 +32,25 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileName = `${Date.now()}-${file.name}`;
-    let chemin = "";
+    const storagePath = `documents/${fileName}`;
 
-    // Try Supabase Storage first
-    try {
-      const { supabase } = await import("@/lib/supabase");
-      const storagePath = `documents/${fileName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("formapro")
+      .upload(storagePath, buffer, {
+        contentType: file.type,
+        upsert: true,
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from("formapro")
-        .upload(storagePath, buffer, {
-          contentType: file.type,
-          upsert: true,
-        });
-
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage.from("formapro").getPublicUrl(storagePath);
-        chemin = urlData.publicUrl;
-      } else {
-        throw uploadError;
-      }
-    } catch (uploadErr) {
-      console.warn("Supabase upload échoué, fallback local:", uploadErr);
-      // Fallback: save locally in public/documents/
-      const dir = path.join(process.cwd(), "public", "documents");
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(path.join(dir, fileName), buffer);
-      chemin = `/documents/${fileName}`;
+    if (uploadError) {
+      console.error("Supabase Storage upload échoué:", uploadError);
+      return NextResponse.json(
+        { error: "Stockage non configuré — échec de l'upload Supabase" },
+        { status: 500 }
+      );
     }
+
+    const { data: urlData } = supabase.storage.from("formapro").getPublicUrl(storagePath);
+    const chemin = urlData.publicUrl;
 
     const document = await prisma.document.create({
       data: {

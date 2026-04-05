@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
     caFactureAnneeAgg,
     caFactureTrimestreAgg,
     caPrevisionnel,
+    caAEncaisserAgg,
     prochainsSessions,
     derniersContacts,
     sessionsSemaine,
@@ -75,6 +76,12 @@ export async function GET(req: NextRequest) {
     prisma.devis.aggregate({
       where: { statut: { in: ["envoye", "signe"] } },
       _sum: { montantTTC: true },
+      _count: true,
+    }),
+    prisma.facture.aggregate({
+      where: { statut: { in: ["en_attente", "envoyee", "en_retard"] } },
+      _sum: { montantTTC: true },
+      _count: true,
     }),
     prisma.session.findMany({
       where: { dateDebut: { gte: now }, statut: { in: ["planifiee", "confirmee"] } },
@@ -153,6 +160,9 @@ export async function GET(req: NextRequest) {
       caFiltre,
       periodLabel,
       caPrevisionnel: caPrevisionnel._sum.montantTTC ?? 0,
+      nbDevisEnCours: caPrevisionnel._count,
+      caAEncaisser: caAEncaisserAgg._sum.montantTTC ?? 0,
+      nbFacturesAEncaisser: caAEncaisserAgg._count,
       nbStagiairesFormes,
       nbFormationsRealisees,
       nbBesoinsEnCours,

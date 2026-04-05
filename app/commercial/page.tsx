@@ -3,12 +3,20 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileText, Plus, Receipt, Download } from "lucide-react";
+import { FileText, Plus, Receipt, Download, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
+
+type TunnelStats = {
+  caPrevisionnel: number;
+  nbDevisEnCours: number;
+  caAEncaisser: number;
+  nbFacturesAEncaisser: number;
+  caFactureMois: number;
+};
 
 type LigneDevis = { id: string; montant: number };
 type Devis = {
@@ -51,6 +59,7 @@ export default function CommercialPage() {
   const [factures, setFactures] = useState<Facture[]>([]);
   const [loadingDevis, setLoadingDevis] = useState(true);
   const [loadingFactures, setLoadingFactures] = useState(true);
+  const [tunnelStats, setTunnelStats] = useState<TunnelStats | null>(null);
   const [filtreStatutFacture, setFiltreStatutFacture] = useState("");
 
   const fetchDevis = useCallback(async () => {
@@ -69,9 +78,24 @@ export default function CommercialPage() {
     setLoadingFactures(false);
   }, [filtreStatutFacture]);
 
+  const fetchTunnelStats = useCallback(async () => {
+    const res = await fetch("/api/dashboard/stats?period=mois");
+    if (res.ok) {
+      const data = await res.json();
+      setTunnelStats({
+        caPrevisionnel: data.stats.caPrevisionnel,
+        nbDevisEnCours: data.stats.nbDevisEnCours,
+        caAEncaisser: data.stats.caAEncaisser,
+        nbFacturesAEncaisser: data.stats.nbFacturesAEncaisser,
+        caFactureMois: data.stats.caFactureMois,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     fetchDevis();
-  }, [fetchDevis]);
+    fetchTunnelStats();
+  }, [fetchDevis, fetchTunnelStats]);
 
   useEffect(() => {
     fetchFactures();
@@ -99,6 +123,32 @@ export default function CommercialPage() {
         title="Commercial"
         description="Gérez vos devis et factures"
       />
+
+      {/* Tunnel CA */}
+      {tunnelStats && (
+        <div className="mb-6">
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Tunnel CA</p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 rounded-lg bg-blue-900/30 dark:bg-blue-900/30 border border-blue-700 p-4 text-center">
+              <div className="text-xs text-blue-400 mb-1">Devis en cours</div>
+              <div className="text-lg font-bold text-blue-300">{formatCurrency(tunnelStats.caPrevisionnel)}</div>
+              <div className="text-xs text-gray-500 mt-1">{tunnelStats.nbDevisEnCours} devis</div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-gray-600 flex-shrink-0" />
+            <div className="flex-1 rounded-lg bg-orange-900/30 dark:bg-orange-900/30 border border-orange-700 p-4 text-center">
+              <div className="text-xs text-orange-400 mb-1">Facturé à encaisser</div>
+              <div className="text-lg font-bold text-orange-300">{formatCurrency(tunnelStats.caAEncaisser)}</div>
+              <div className="text-xs text-gray-500 mt-1">{tunnelStats.nbFacturesAEncaisser} factures</div>
+            </div>
+            <ArrowRight className="h-5 w-5 text-gray-600 flex-shrink-0" />
+            <div className="flex-1 rounded-lg bg-emerald-900/30 dark:bg-emerald-900/30 border border-emerald-700 p-4 text-center">
+              <div className="text-xs text-emerald-400 mb-1">Encaissé</div>
+              <div className="text-lg font-bold text-emerald-300">{formatCurrency(tunnelStats.caFactureMois)}</div>
+              <div className="text-xs text-gray-500 mt-1">ce mois</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs + Export */}
       <div className="flex items-center justify-between mb-6">
@@ -233,44 +283,6 @@ export default function CommercialPage() {
               <Plus className="h-4 w-4" /> Nouvelle facture
             </Link>
           </div>
-
-          {!loadingFactures && (
-            <div className="mb-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Tunnel CA global</p>
-              <div className="flex items-center gap-1">
-                {(() => {
-                  const factureDevisIds = new Set(factures.map((f) => f.devis?.id).filter(Boolean));
-                  const caPrevisionnel = devis
-                    .filter((d) => ["envoye", "accepte"].includes(d.statut) && !factureDevisIds.has(d.id))
-                    .reduce((s, d) => s + d.montantTTC, 0);
-                  const caFacture = factures.filter((f) => f.statut !== "annulee").reduce((s, f) => s + f.montantTTC, 0);
-                  const caEnAttente = factures.filter((f) => ["en_attente", "envoyee", "en_retard"].includes(f.statut)).reduce((s, f) => s + f.montantTTC, 0);
-                  const caEncaisse = factures.filter((f) => f.statut === "payee").reduce((s, f) => s + f.montantTTC, 0);
-                  return (
-                    <>
-                      <div className="flex-1 rounded-md bg-blue-900/30 border border-blue-700 p-3 text-center">
-                        <div className="text-xs text-blue-400 mb-1">Devis en cours</div>
-                        <div className="text-base font-bold text-blue-300">{formatCurrency(caPrevisionnel)}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{devis.filter((d) => ["envoye", "accepte"].includes(d.statut) && !factureDevisIds.has(d.id)).length} devis</div>
-                      </div>
-                      <div className="text-gray-600 text-lg font-bold">→</div>
-                      <div className="flex-1 rounded-md bg-orange-900/30 border border-orange-700 p-3 text-center">
-                        <div className="text-xs text-orange-400 mb-1">Facturé (à encaisser)</div>
-                        <div className="text-base font-bold text-orange-300">{formatCurrency(caEnAttente)}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">sur {formatCurrency(caFacture)} total</div>
-                      </div>
-                      <div className="text-gray-600 text-lg font-bold">→</div>
-                      <div className="flex-1 rounded-md bg-emerald-900/30 border border-emerald-700 p-3 text-center">
-                        <div className="text-xs text-emerald-400 mb-1">Encaissé</div>
-                        <div className="text-base font-bold text-emerald-300">{formatCurrency(caEncaisse)}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{factures.filter((f) => f.statut === "payee").length} factures</div>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
 
           {loadingFactures ? (
             <div className="flex justify-center py-12">

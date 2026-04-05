@@ -48,9 +48,11 @@ export async function POST(req: NextRequest) {
     }, 0);
     const numero = generateNumero("FAC", maxNum);
 
+    const { lignes, ...rest } = body;
+
     const facture = await prisma.facture.create({
       data: {
-        ...body,
+        ...rest,
         numero,
         dateEmission: new Date(),
         dateEcheance: new Date(body.dateEcheance),

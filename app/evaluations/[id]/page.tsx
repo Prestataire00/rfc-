@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Star, User, BookOpen, Calendar, MessageSquare, CheckCircle, Clock } from "lucide-react";
+import { ArrowLeft, Star, User, BookOpen, Calendar, MessageSquare, CheckCircle, Clock, Pencil, Save, X } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -43,6 +43,14 @@ export default function EvaluationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Edit mode
+  const [editing, setEditing] = useState(false);
+  const [editNote, setEditNote] = useState<number>(0);
+  const [editCommentaire, setEditCommentaire] = useState("");
+  const [editComplete, setEditComplete] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
   useEffect(() => {
     fetch(`/api/evaluations/${id}`)
       .then((r) => {
@@ -58,6 +66,44 @@ export default function EvaluationDetailPage() {
         setLoading(false);
       });
   }, [id]);
+
+  const startEdit = () => {
+    if (!evaluation) return;
+    setEditNote(evaluation.noteGlobale ?? 0);
+    setEditCommentaire(evaluation.commentaire ?? "");
+    setEditComplete(evaluation.estComplete);
+    setSaveMsg("");
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setSaveMsg("");
+  };
+
+  const handleSave = async () => {
+    if (!evaluation) return;
+    setSaving(true);
+    setSaveMsg("");
+    const res = await fetch(`/api/evaluations/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        noteGlobale: editNote || null,
+        commentaire: editCommentaire || null,
+        estComplete: editComplete,
+      }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setEvaluation((prev) => prev ? { ...prev, ...updated } : prev);
+      setSaveMsg("Modifications enregistrées");
+      setEditing(false);
+    } else {
+      setSaveMsg("Erreur lors de la sauvegarde");
+    }
+    setSaving(false);
+  };
 
   if (loading) {
     return (
@@ -78,8 +124,7 @@ export default function EvaluationDetailPage() {
     );
   }
 
-  const typeLabel =
-    EVALUATION_TYPES[evaluation.type as keyof typeof EVALUATION_TYPES]?.label || evaluation.type;
+  const typeLabel = EVALUATION_TYPES[evaluation.type as keyof typeof EVALUATION_TYPES]?.label || evaluation.type;
 
   let reponses: ReponseItem[] = [];
   try {
@@ -111,28 +156,120 @@ export default function EvaluationDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100 mb-2">
-            {typeLabel}
-          </h1>
-          <p className="text-gray-400">
-            {evaluation.session.formation.titre}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-100 mb-2">{typeLabel}</h1>
+          <p className="text-gray-400">{evaluation.session.formation.titre}</p>
         </div>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
-            evaluation.estComplete
-              ? "bg-green-900/30 text-green-400"
-              : "bg-gray-700 text-gray-400"
-          }`}
-        >
-          {evaluation.estComplete ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <Clock className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+            evaluation.estComplete ? "bg-green-900/30 text-green-400" : "bg-gray-700 text-gray-400"
+          }`}>
+            {evaluation.estComplete ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+            {evaluation.estComplete ? "Complétée" : "En attente"}
+          </span>
+          {!editing && (
+            <button
+              onClick={startEdit}
+              className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+            >
+              <Pencil className="h-4 w-4" />
+              Modifier
+            </button>
           )}
-          {evaluation.estComplete ? "Complétée" : "En attente"}
-        </span>
+        </div>
       </div>
+
+      {/* Message de sauvegarde */}
+      {saveMsg && !editing && (
+        <div className="mb-4 rounded-md bg-green-900/20 border border-green-700 px-4 py-2 text-sm text-green-400">
+          {saveMsg}
+        </div>
+      )}
+
+      {/* Formulaire d'édition */}
+      {editing && (
+        <div className="mb-8 rounded-xl border border-red-700 bg-gray-800 p-6 space-y-5">
+          <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+            <Pencil className="h-5 w-5 text-red-400" />
+            Modifier l&apos;évaluation
+          </h2>
+
+          {/* Note */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Note globale</label>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setEditNote(n)}
+                  className="p-1 transition-transform hover:scale-110"
+                >
+                  <Star className={`h-8 w-8 ${n <= editNote ? "fill-amber-400 text-amber-400" : "text-gray-600"}`} />
+                </button>
+              ))}
+              {editNote > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setEditNote(0)}
+                  className="ml-2 text-xs text-gray-500 hover:text-gray-300"
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Commentaire */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Commentaire</label>
+            <textarea
+              value={editCommentaire}
+              onChange={(e) => setEditCommentaire(e.target.value)}
+              rows={4}
+              className="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Commentaire libre..."
+            />
+          </div>
+
+          {/* Statut */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-300">Marquer comme complétée</label>
+            <button
+              type="button"
+              onClick={() => setEditComplete(!editComplete)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                editComplete ? "bg-green-600" : "bg-gray-600"
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                editComplete ? "translate-x-6" : "translate-x-1"
+              }`} />
+            </button>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Enregistrement..." : "Enregistrer"}
+            </button>
+            <button
+              onClick={cancelEdit}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Annuler
+            </button>
+            {saveMsg && (
+              <span className="text-sm text-red-400 self-center">{saveMsg}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Info cards row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -148,14 +285,7 @@ export default function EvaluationDetailPage() {
               <span className="text-gray-400 text-lg">/5</span>
               <div className="flex ml-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${
-                      i < evaluation.noteGlobale!
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-gray-600"
-                    }`}
-                  />
+                  <Star key={i} className={`h-5 w-5 ${i < evaluation.noteGlobale! ? "fill-amber-400 text-amber-400" : "text-gray-600"}`} />
                 ))}
               </div>
             </div>
@@ -172,9 +302,7 @@ export default function EvaluationDetailPage() {
           </div>
           {evaluation.contact ? (
             <div>
-              <p className="text-gray-100 font-medium">
-                {evaluation.contact.prenom} {evaluation.contact.nom}
-              </p>
+              <p className="text-gray-100 font-medium">{evaluation.contact.prenom} {evaluation.contact.nom}</p>
               <p className="text-gray-400 text-sm">{evaluation.contact.email}</p>
             </div>
           ) : (
@@ -189,10 +317,7 @@ export default function EvaluationDetailPage() {
             <BookOpen className="h-4 w-4" />
             Session
           </div>
-          <Link
-            href={`/sessions/${evaluation.session.id}`}
-            className="text-red-500 hover:underline font-medium"
-          >
+          <Link href={`/sessions/${evaluation.session.id}`} className="text-red-500 hover:underline font-medium">
             {evaluation.session.formation.titre}
           </Link>
           {evaluation.session.formateur && (
@@ -222,12 +347,8 @@ export default function EvaluationDetailPage() {
               const score = item.note ?? item.score ?? item.value;
               const isNumeric = typeof score === "number";
               const textAnswer = item.reponse || (typeof item.value === "string" ? item.value : null);
-
               return (
-                <div
-                  key={idx}
-                  className="rounded-lg border border-gray-700 bg-gray-800 p-4"
-                >
+                <div key={idx} className="rounded-lg border border-gray-700 bg-gray-800 p-4">
                   <p className="text-sm text-gray-400 mb-2">{label}</p>
                   {isNumeric && (
                     <div className="flex items-center gap-2">
@@ -235,25 +356,14 @@ export default function EvaluationDetailPage() {
                       {typeof score === "number" && score <= 5 && (
                         <div className="flex">
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-4 w-4 ${
-                                i < (score as number)
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "text-gray-600"
-                              }`}
-                            />
+                            <Star key={i} className={`h-4 w-4 ${i < (score as number) ? "fill-amber-400 text-amber-400" : "text-gray-600"}`} />
                           ))}
                         </div>
                       )}
                     </div>
                   )}
-                  {textAnswer && (
-                    <p className="text-gray-300 text-sm mt-1">{textAnswer}</p>
-                  )}
-                  {!isNumeric && !textAnswer && (
-                    <p className="text-gray-500 text-sm">—</p>
-                  )}
+                  {textAnswer && <p className="text-gray-300 text-sm mt-1">{textAnswer}</p>}
+                  {!isNumeric && !textAnswer && <p className="text-gray-500 text-sm">—</p>}
                 </div>
               );
             })}

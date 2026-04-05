@@ -7,17 +7,31 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const statut = searchParams.get("statut") ?? "";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
 
-    const factures = await prisma.facture.findMany({
-      where: statut ? { statut } : {},
-      include: {
-        entreprise: { select: { id: true, nom: true } },
-        devis: { select: { id: true, numero: true } },
-      },
-      orderBy: { createdAt: "desc" },
+    const where = statut ? { statut } : {};
+
+    const [factures, total] = await Promise.all([
+      prisma.facture.findMany({
+        where,
+        include: {
+          entreprise: { select: { id: true, nom: true } },
+          devis: { select: { id: true, numero: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.facture.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: factures,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
-
-    return NextResponse.json(factures);
   } catch (err: unknown) {
     console.error("Erreur GET factures:", err);
     return NextResponse.json({ error: "Erreur lors de la récupération des factures" }, { status: 500 });

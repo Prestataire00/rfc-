@@ -146,17 +146,17 @@ export default function BesoinsPage() {
           })}
         </div>
       ) : (
-        <div className="rounded-lg border bg-gray-800 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border bg-gray-800 overflow-x-auto">
+          <table className="min-w-[640px] w-full text-sm">
             <thead className="bg-gray-900 border-b">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Titre</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Entreprise</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-400">Origine</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Origine</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Priorité</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-400">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -178,10 +178,10 @@ export default function BesoinsPage() {
                       ) : <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-4 py-3 text-gray-400">{b.formation?.titre || "—"}</td>
-                    <td className="px-4 py-3 text-gray-400">{BESOIN_ORIGINES[b.origine as keyof typeof BESOIN_ORIGINES]?.label || b.origine}</td>
+                    <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{BESOIN_ORIGINES[b.origine as keyof typeof BESOIN_ORIGINES]?.label || b.origine}</td>
                     <td className="px-4 py-3"><span className={`font-medium ${prio?.color}`}>{prio?.label}</span></td>
                     <td className="px-4 py-3">{st && <StatutBadge label={st.label} color={st.color} />}</td>
-                    <td className="px-4 py-3 text-gray-400">{formatDate(b.createdAt)}</td>
+                    <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{formatDate(b.createdAt)}</td>
                   </tr>
                 );
               })}

@@ -272,15 +272,15 @@ export default function DocumentsPage() {
       ) : documents.length === 0 ? (
         <EmptyState icon={FolderOpen} title="Aucun document" description="Cliquez sur 'Ajouter un document' pour commencer" />
       ) : (
-        <div className="rounded-lg border bg-gray-800 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border bg-gray-800 overflow-x-auto">
+          <table className="min-w-[640px] w-full text-sm">
             <thead className="bg-gray-900 border-b">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Document</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Type</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-400">{"Lié à"}</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-400">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">{"Lié à"}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Date</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-400">Actions</th>
               </tr>
             </thead>
@@ -326,12 +326,12 @@ export default function DocumentsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-400">{doc.session?.formation?.titre || "\u2014"}</td>
-                  <td className="px-4 py-3 text-gray-400">
+                  <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">
                     {doc.formateur ? `${doc.formateur.prenom} ${doc.formateur.nom}` : ""}
                     {doc.entreprise ? doc.entreprise.nom : ""}
                     {!doc.formateur && !doc.entreprise ? "\u2014" : ""}
                   </td>
-                  <td className="px-4 py-3 text-gray-400">{formatDate(doc.createdAt)}</td>
+                  <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{formatDate(doc.createdAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       {editingId === doc.id ? (

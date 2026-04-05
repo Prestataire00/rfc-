@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -116,13 +117,11 @@ export default function ModifierFormationPage() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
-        <Link
-          href={`/formations/${id}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour à la formation
-        </Link>
+        <Breadcrumb items={[
+          { label: "Formations", href: "/formations" },
+          { label: "Formation", href: `/formations/${id}` },
+          { label: "Modifier" },
+        ]} />
         <h1 className="text-2xl font-bold text-gray-100">Modifier la formation</h1>
         <p className="text-sm text-gray-400 mt-1">Mettez à jour les informations de la formation</p>
       </div>

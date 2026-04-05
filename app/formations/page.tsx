@@ -252,7 +252,7 @@ export default function FormationsPage() {
       ) : viewMode === "list" ? (
         /* Table view */
         <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-[640px] w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
                 <th
@@ -263,7 +263,7 @@ export default function FormationsPage() {
                     Titre <SortIcon field="titre" />
                   </span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Catégorie
                 </th>
                 <th
@@ -285,10 +285,10 @@ export default function FormationsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Niveau
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Sessions
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Statut
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -310,7 +310,7 @@ export default function FormationsPage() {
                         {formation.titre}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
                       {formation.categorie || <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
@@ -322,12 +322,12 @@ export default function FormationsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatutBadge label={niveauLabel} color={niveauColor} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       <span className="inline-flex items-center rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
                         {formation._count.sessions} session{formation._count.sessions !== 1 ? "s" : ""}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       {formation.actif ? (
                         <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2.5 py-0.5 text-xs font-medium">
                           Active

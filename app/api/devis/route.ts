@@ -9,18 +9,32 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const statut = searchParams.get("statut") ?? "";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
 
-    const devis = await prisma.devis.findMany({
-      where: statut ? { statut } : {},
-      include: {
-        entreprise: { select: { id: true, nom: true } },
-        contact: { select: { id: true, nom: true, prenom: true } },
-        lignes: true,
-      },
-      orderBy: { createdAt: "desc" },
+    const where = statut ? { statut } : {};
+
+    const [devis, total] = await Promise.all([
+      prisma.devis.findMany({
+        where,
+        include: {
+          entreprise: { select: { id: true, nom: true } },
+          contact: { select: { id: true, nom: true, prenom: true } },
+          lignes: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.devis.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: devis,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
-
-    return NextResponse.json(devis);
   } catch (err: unknown) {
     console.error("Erreur lors de la récupération des devis:", err);
     return NextResponse.json({ error: "Erreur lors de la récupération des devis" }, { status: 500 });

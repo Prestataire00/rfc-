@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle, QrCode } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -301,9 +302,10 @@ export default function SessionDetailPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <Link href="/sessions" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
-          <ArrowLeft className="h-4 w-4" /> Retour aux sessions
-        </Link>
+        <Breadcrumb items={[
+          { label: "Sessions", href: "/sessions" },
+          { label: session.formation.titre },
+        ]} />
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-3 mb-1">

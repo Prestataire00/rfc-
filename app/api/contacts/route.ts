@@ -8,27 +8,41 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") ?? "";
     const type = searchParams.get("type") ?? "";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
 
-    const contacts = await prisma.contact.findMany({
-      where: {
-        AND: [
-          search
-            ? {
-                OR: [
-                  { nom: { contains: search } },
-                  { prenom: { contains: search } },
-                  { email: { contains: search } },
-                ],
-              }
-            : {},
-          type ? { type } : {},
-        ],
-      },
-      include: { entreprise: { select: { id: true, nom: true } } },
-      orderBy: { createdAt: "desc" },
+    const where = {
+      AND: [
+        search
+          ? {
+              OR: [
+                { nom: { contains: search } },
+                { prenom: { contains: search } },
+                { email: { contains: search } },
+              ],
+            }
+          : {},
+        type ? { type } : {},
+      ],
+    };
+
+    const [contacts, total] = await Promise.all([
+      prisma.contact.findMany({
+        where,
+        include: { entreprise: { select: { id: true, nom: true } } },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.contact.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: contacts,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
-
-    return NextResponse.json(contacts);
   } catch (err: unknown) {
     console.error("Erreur lors de la récupération des contacts:", err);
     return NextResponse.json({ error: "Erreur lors de la récupération des contacts" }, { status: 500 });

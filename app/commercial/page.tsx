@@ -7,6 +7,8 @@ import { FileText, Plus, Receipt, Download, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { Pagination } from "@/components/shared/Pagination";
+import { SkeletonCard, SkeletonTable } from "@/components/shared/Skeleton";
 import { DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 
@@ -59,24 +61,41 @@ export default function CommercialPage() {
   const [factures, setFactures] = useState<Facture[]>([]);
   const [loadingDevis, setLoadingDevis] = useState(true);
   const [loadingFactures, setLoadingFactures] = useState(true);
+  const [facturePage, setFacturePage] = useState(1);
+  const [factureTotalPages, setFactureTotalPages] = useState(1);
+  const [factureTotal, setFactureTotal] = useState(0);
   const [tunnelStats, setTunnelStats] = useState<TunnelStats | null>(null);
   const [filtreStatutFacture, setFiltreStatutFacture] = useState("");
 
   const fetchDevis = useCallback(async () => {
     setLoadingDevis(true);
-    const res = await fetch("/api/devis");
-    if (res.ok) setDevis(await res.json());
+    const res = await fetch("/api/devis?limit=100");
+    if (res.ok) {
+      const json = await res.json();
+      setDevis(json.data ?? json);
+    }
     setLoadingDevis(false);
   }, []);
+
+  useEffect(() => {
+    setFacturePage(1);
+  }, [filtreStatutFacture]);
 
   const fetchFactures = useCallback(async () => {
     setLoadingFactures(true);
     const params = new URLSearchParams();
     if (filtreStatutFacture) params.set("statut", filtreStatutFacture);
+    params.set("page", String(facturePage));
+    params.set("limit", "25");
     const res = await fetch(`/api/factures?${params}`);
-    if (res.ok) setFactures(await res.json());
+    if (res.ok) {
+      const json = await res.json();
+      setFactures(json.data ?? json);
+      setFactureTotal(json.total ?? 0);
+      setFactureTotalPages(json.totalPages ?? 1);
+    }
     setLoadingFactures(false);
-  }, [filtreStatutFacture]);
+  }, [filtreStatutFacture, facturePage]);
 
   const fetchTunnelStats = useCallback(async () => {
     const res = await fetch("/api/dashboard/stats?period=mois");
@@ -199,8 +218,10 @@ export default function CommercialPage() {
           </div>
 
           {loadingDevis ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonCard key={i} className="flex-shrink-0 w-64 h-48" />
+              ))}
             </div>
           ) : devis.length === 0 ? (
             <EmptyState
@@ -285,9 +306,7 @@ export default function CommercialPage() {
           </div>
 
           {loadingFactures ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
-            </div>
+            <SkeletonTable rows={5} cols={7} />
           ) : factures.length === 0 ? (
             <EmptyState
               icon={Receipt}
@@ -295,17 +314,17 @@ export default function CommercialPage() {
               description="Vos factures apparaîtront ici"
             />
           ) : (
-            <div className="rounded-lg border bg-gray-800 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border bg-gray-800 overflow-x-auto">
+              <table className="min-w-[640px] w-full text-sm">
                 <thead className="bg-gray-900 border-b">
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Numéro</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Client</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Devis</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Devis</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Montant TTC</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Échéance</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Date paiement</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Date paiement</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -321,7 +340,7 @@ export default function CommercialPage() {
                         <td className="px-4 py-3 text-gray-300">
                           {f.entreprise?.nom || <span className="text-gray-400">—</span>}
                         </td>
-                        <td className="px-4 py-3 font-mono text-sm">
+                        <td className="px-4 py-3 font-mono text-sm hidden sm:table-cell">
                           {f.devis ? (
                             <span className="text-blue-400">{f.devis.numero}</span>
                           ) : (
@@ -337,7 +356,7 @@ export default function CommercialPage() {
                         <td className="px-4 py-3">
                           {st && <StatutBadge label={st.label} color={st.color} />}
                         </td>
-                        <td className="px-4 py-3 text-gray-400">
+                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">
                           {f.datePaiement ? (
                             formatDate(f.datePaiement)
                           ) : (
@@ -350,6 +369,14 @@ export default function CommercialPage() {
                 </tbody>
               </table>
             </div>
+          )}
+          {!loadingFactures && factures.length > 0 && (
+            <>
+              <Pagination page={facturePage} totalPages={factureTotalPages} onPageChange={setFacturePage} />
+              <p className="text-sm text-gray-400 mt-3 text-center">
+                {factureTotal} facture{factureTotal > 1 ? "s" : ""}
+              </p>
+            </>
           )}
         </>
       )}

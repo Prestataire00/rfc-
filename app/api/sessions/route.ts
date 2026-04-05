@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
     const capacite = searchParams.get("capacite"); // "disponible" | "complet"
     const sortBy = searchParams.get("sortBy") ?? "dateDebut";
     const sortOrder = (searchParams.get("sortOrder") ?? "asc") as "asc" | "desc";
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
 
     const where = {
       AND: [
@@ -50,13 +52,16 @@ export async function GET(req: NextRequest) {
         : { [sortBy]: sortOrder },
     });
 
-    // Filter by capacity client-side (Prisma can't compare _count vs field)
+    // Filter by capacity (Prisma can't compare _count vs field)
     let filtered = sessions;
     if (capacite === "disponible") {
       filtered = sessions.filter((s) => s._count.inscriptions < s.capaciteMax);
     } else if (capacite === "complet") {
       filtered = sessions.filter((s) => s._count.inscriptions >= s.capaciteMax);
     }
+
+    const total = filtered.length;
+    const paginated = filtered.slice((page - 1) * limit, page * limit);
 
     // Get distinct formateurs for filter
     const formateurs = await prisma.formateur.findMany({
@@ -65,7 +70,13 @@ export async function GET(req: NextRequest) {
       orderBy: { nom: "asc" },
     });
 
-    return NextResponse.json({ sessions: filtered, formateurs });
+    return NextResponse.json({
+      data: paginated,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      formateurs,
+    });
   } catch (err: unknown) {
     console.error("Erreur lors de la récupération des sessions:", err);
     return NextResponse.json({ error: "Erreur lors de la récupération des sessions" }, { status: 500 });

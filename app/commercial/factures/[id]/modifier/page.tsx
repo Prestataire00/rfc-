@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { FACTURE_STATUTS } from "@/lib/constants";
 
@@ -116,12 +117,11 @@ export default function FactureModifierPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link
-          href={`/commercial/factures/${id}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" /> Retour à la facture
-        </Link>
+        <Breadcrumb items={[
+          { label: "Commercial", href: "/commercial" },
+          { label: "Facture", href: `/commercial/factures/${id}` },
+          { label: "Modifier" },
+        ]} />
         <h1 className="text-2xl font-bold text-gray-100">
           Modifier la facture {facture.numero}
         </h1>

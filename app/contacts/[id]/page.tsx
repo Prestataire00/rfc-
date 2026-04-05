@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, Building2, Mail, Phone, Briefcase, FileText, Calendar, ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -112,13 +113,10 @@ export default function ContactDetailPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href="/contacts"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour aux contacts
-        </Link>
+        <Breadcrumb items={[
+          { label: "Contacts", href: "/contacts" },
+          { label: `${contact.prenom} ${contact.nom}` },
+        ]} />
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-red-900/30 flex items-center justify-center">

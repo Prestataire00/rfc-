@@ -20,6 +20,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { SkeletonStats, SkeletonCard } from "@/components/shared/Skeleton";
 import { SESSION_STATUTS, CONTACT_TYPES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -155,8 +156,13 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-24">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+      <div className="space-y-6 p-6">
+        <div className="h-8 w-48 animate-pulse rounded bg-gray-700" />
+        <SkeletonStats />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonCard className="h-64" />
+          <SkeletonCard className="h-64" />
+        </div>
       </div>
     );
   }

@@ -130,14 +130,14 @@ export default function UtilisateursPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800 border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-gray-800 border rounded-xl overflow-x-auto">
+        <table className="min-w-[640px] w-full text-sm">
           <thead className="bg-gray-900 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-400">Utilisateur</th>
               <th className="text-left px-4 py-3 font-medium text-gray-400">Email</th>
               <th className="text-left px-4 py-3 font-medium text-gray-400">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-400">Rattachement</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Rattachement</th>
               <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
               <th className="text-right px-4 py-3 font-medium text-gray-400">Actions</th>
             </tr>
@@ -162,7 +162,7 @@ export default function UtilisateursPage() {
                     {roleBadge[user.role]?.label || user.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
+                <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">
                   {user.formateur && `Formateur: ${user.formateur.prenom} ${user.formateur.nom}`}
                   {user.entreprise && `Entreprise: ${user.entreprise.nom}`}
                   {!user.formateur && !user.entreprise && "—"}

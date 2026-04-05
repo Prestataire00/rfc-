@@ -7,6 +7,8 @@ import { CalendarDays, ChevronLeft, ChevronRight, List, Search, AlertTriangle, D
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { Pagination } from "@/components/shared/Pagination";
+import { SkeletonTable, SkeletonCard } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate, cn } from "@/lib/utils";
@@ -45,6 +47,9 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [formateurs, setFormateurs] = useState<Formateur[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [activeTab, setActiveTab] = useState<"liste" | "calendrier" | "grille">("liste");
   const [statut, setStatut] = useState("");
   const [formateurId, setFormateurId] = useState("");
@@ -59,6 +64,10 @@ export default function SessionsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [statut, formateurId, debouncedSearch, capacite]);
+
   const fetchSessions = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
@@ -66,13 +75,17 @@ export default function SessionsPage() {
     if (formateurId) params.set("formateurId", formateurId);
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (capacite) params.set("capacite", capacite);
+    params.set("page", String(page));
+    params.set("limit", "25");
     const res = await fetch(`/api/sessions?${params}`);
     if (!res.ok) { setLoading(false); return; }
     const data = await res.json();
-    setSessions(data.sessions || data);
+    setSessions(data.data ?? data.sessions ?? []);
+    setTotal(data.total ?? 0);
+    setTotalPages(data.totalPages ?? 1);
     if (data.formateurs) setFormateurs(data.formateurs);
     setLoading(false);
-  }, [statut, formateurId, debouncedSearch, capacite]);
+  }, [statut, formateurId, debouncedSearch, capacite, page]);
 
   useEffect(() => {
     fetchSessions();
@@ -239,9 +252,7 @@ export default function SessionsPage() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
-            </div>
+            <SkeletonTable rows={5} cols={7} />
           ) : sessions.length === 0 ? (
             <EmptyState
               icon={CalendarDays}
@@ -259,7 +270,7 @@ export default function SessionsPage() {
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Formation</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Formateur</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Dates</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-400">Lieu</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Lieu</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Participants</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-400">Actions</th>
@@ -297,7 +308,7 @@ export default function SessionsPage() {
                             <div>{formatDate(s.dateDebut)}</div>
                             <div className="text-gray-400 text-xs">→ {formatDate(s.dateFin)}</div>
                           </td>
-                          <td className="px-4 py-3 text-gray-400">
+                          <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">
                             {s.lieu || <span className="text-gray-400">—</span>}
                           </td>
                           <td className="px-4 py-3">
@@ -364,8 +375,9 @@ export default function SessionsPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-sm text-gray-400 mt-3">
-                {sessions.length} session{sessions.length > 1 ? "s" : ""}
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              <p className="text-sm text-gray-400 mt-3 text-center">
+                {total} session{total > 1 ? "s" : ""}
               </p>
             </>
           )}
@@ -415,8 +427,10 @@ export default function SessionsPage() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} className="h-48" />
+              ))}
             </div>
           ) : sessions.length === 0 ? (
             <EmptyState
@@ -504,8 +518,9 @@ export default function SessionsPage() {
                   );
                 })}
               </div>
-              <p className="text-sm text-gray-400 mt-3">
-                {sessions.length} session{sessions.length > 1 ? "s" : ""}
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              <p className="text-sm text-gray-400 mt-3 text-center">
+                {total} session{total > 1 ? "s" : ""}
               </p>
             </>
           )}

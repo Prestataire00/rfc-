@@ -27,7 +27,7 @@ interface Notification {
 type Filter = "toutes" | "non_lues" | "lues";
 
 const typeConfig: Record<string, { icon: typeof Info; color: string; bg: string; border: string }> = {
-  info: { icon: Info, color: "text-red-500", bg: "bg-red-900/20", border: "border-red-700" },
+  info: { icon: Info, color: "text-blue-400", bg: "bg-blue-900/20", border: "border-blue-700" },
   warning: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-900/20", border: "border-amber-700" },
   success: { icon: CheckCircle2, color: "text-green-500", bg: "bg-green-900/20", border: "border-green-700" },
   error: { icon: XCircle, color: "text-red-500", bg: "bg-red-900/20", border: "border-red-700" },

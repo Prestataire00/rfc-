@@ -16,6 +16,7 @@ import {
   Calendar,
   Users,
 } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -126,13 +127,10 @@ export default function FormationDetailPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href="/formations"
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour aux formations
-        </Link>
+        <Breadcrumb items={[
+          { label: "Formations", href: "/formations" },
+          { label: formation.titre },
+        ]} />
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-red-900/30 flex items-center justify-center">

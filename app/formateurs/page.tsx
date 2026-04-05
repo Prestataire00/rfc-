@@ -67,7 +67,7 @@ export default function FormateursPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto rounded-lg">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
@@ -85,7 +85,7 @@ export default function FormateursPage() {
             actionHref={search ? undefined : "/formateurs/nouveau"}
           />
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-[640px] w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -94,10 +94,10 @@ export default function FormateursPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Téléphone
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Spécialités
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -130,10 +130,10 @@ export default function FormateursPage() {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
                       {formateur.telephone || <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 hidden sm:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {specialites.length > 0 ? (
                           specialites.slice(0, 3).map((s, i) => (

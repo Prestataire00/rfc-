@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -178,12 +179,11 @@ export default function ModifierDevisPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <Link
-          href={`/commercial/devis/${id}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" /> Retour au devis
-        </Link>
+        <Breadcrumb items={[
+          { label: "Commercial", href: "/commercial" },
+          { label: "Devis", href: `/commercial/devis/${id}` },
+          { label: "Modifier" },
+        ]} />
         <h1 className="text-2xl font-bold text-gray-100">Modifier le devis</h1>
         <p className="text-gray-400">Mettez à jour les informations du devis</p>
       </div>

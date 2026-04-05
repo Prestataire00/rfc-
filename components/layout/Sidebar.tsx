@@ -12,23 +12,50 @@ import {
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
+type NavGroup = { label: string; items: NavItem[] };
 
-const adminNav: NavItem[] = [
-  { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/formations", label: "Formations", icon: BookOpen },
-  { href: "/sessions", label: "Sessions", icon: CalendarDays },
-  { href: "/besoins", label: "Besoins", icon: ClipboardList },
-  { href: "/contacts", label: "Contacts / Stagiaires", icon: Users },
-  { href: "/entreprises", label: "Entreprises / Clients", icon: Building2 },
-  { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
-  { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
-  { href: "/evaluations", label: "Évaluations", icon: MessageSquare },
-  { href: "/bpf", label: "BPF", icon: BarChart3 },
-  { href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck },
-  { href: "/documents", label: "Documents", icon: FolderOpen },
-  { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
-  { href: "/parametres", label: "Paramètres", icon: Settings },
+const adminDashboard: NavItem = { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard };
+
+const adminNavGroups: NavGroup[] = [
+  {
+    label: "CRM",
+    items: [
+      { href: "/contacts", label: "Contacts / Stagiaires", icon: Users },
+      { href: "/entreprises", label: "Entreprises / Clients", icon: Building2 },
+      { href: "/besoins", label: "Besoins", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Pédagogie",
+    items: [
+      { href: "/formations", label: "Formations", icon: BookOpen },
+      { href: "/sessions", label: "Sessions", icon: CalendarDays },
+      { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
+    ],
+  },
+  {
+    label: "Commercial",
+    items: [
+      { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
+      { href: "/bpf", label: "BPF", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Qualité",
+    items: [
+      { href: "/evaluations", label: "Évaluations", icon: MessageSquare },
+      { href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck },
+      { href: "/documents", label: "Documents", icon: FolderOpen },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
+      { href: "/parametres", label: "Paramètres", icon: Settings },
+      { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    ],
+  },
 ];
 
 const formateurNav: NavItem[] = [
@@ -52,23 +79,41 @@ const clientNav: NavItem[] = [
   { href: "/espace-client/evaluations", label: "Évaluations", icon: MessageSquare },
 ];
 
-const navByRole: Record<string, NavItem[]> = { admin: adminNav, formateur: formateurNav, client: clientNav };
+const flatNavByRole: Record<string, NavItem[]> = { formateur: formateurNav, client: clientNav };
 const roleLabels: Record<string, string> = { admin: "Administrateur", formateur: "Formateur", client: "Client" };
 
 export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string; userName: string; mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
-  const items = navByRole[role] || adminNav;
+  const isAdmin = role === "admin";
+  const flatItems = flatNavByRole[role];
 
   const handleNavClick = () => {
     if (onClose) onClose();
   };
 
+  const renderNavLink = ({ href, label, icon: Icon }: NavItem) => {
+    const dashboards = ["/dashboard", "/espace-formateur", "/espace-client"];
+    const isActive = pathname === href || (!dashboards.includes(href) && pathname.startsWith(href));
+    return (
+      <Link
+        key={href}
+        href={href}
+        onClick={handleNavClick}
+        className={cn(
+          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+          isActive ? "bg-red-100 dark:bg-red-700/20 text-red-400" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+        )}
+      >
+        <Icon className={cn("h-4 w-4", isActive ? "text-red-400" : "text-gray-500 dark:text-gray-400")} />
+        {label}
+      </Link>
+    );
+  };
+
   const sidebarContent = (
     <aside className={cn(
       "flex flex-col bg-white dark:bg-gray-900 h-full",
-      // Desktop: fixed sidebar
       "lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:w-64",
-      // Mobile: full width
       "w-72"
     )}>
       {/* Logo */}
@@ -81,7 +126,6 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
             <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Prévention</span>
           </div>
         </div>
-        {/* Mobile close button */}
         {onClose && (
           <button onClick={onClose} className="lg:hidden p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
             <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -90,25 +134,27 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-        {items.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            pathname === href || (href !== "/dashboard" && href !== "/espace-formateur" && href !== "/espace-client" && pathname.startsWith(href));
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={handleNavClick}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive ? "bg-red-100 dark:bg-red-700/20 text-red-400" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-              )}
-            >
-              <Icon className={cn("h-4 w-4", isActive ? "text-red-400" : "text-gray-500 dark:text-gray-400")} />
-              {label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto p-4">
+        {isAdmin ? (
+          <>
+            {renderNavLink(adminDashboard)}
+            {adminNavGroups.map((group, gi) => (
+              <div key={group.label} className={gi > 0 ? "mt-2" : "mt-3"}>
+                <hr className="border-gray-200 dark:border-gray-700 mb-2" />
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map(renderNavLink)}
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div className="space-y-1">
+            {(flatItems ?? []).map(renderNavLink)}
+          </div>
+        )}
       </nav>
 
       {/* User & Logout */}

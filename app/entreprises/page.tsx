@@ -79,7 +79,7 @@ export default function EntreprisesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
@@ -97,19 +97,19 @@ export default function EntreprisesPage() {
             actionHref={search ? undefined : "/entreprises/nouveau"}
           />
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-[640px] w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Nom
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Secteur
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Ville
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   SIRET
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -128,13 +128,13 @@ export default function EntreprisesPage() {
                       {entreprise.nom}
                     </Link>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
                     {entreprise.secteur || <span className="text-gray-400">—</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                     {entreprise.ville || <span className="text-gray-400">—</span>}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono hidden sm:table-cell">
                     {entreprise.siret || <span className="text-gray-400 font-sans">—</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

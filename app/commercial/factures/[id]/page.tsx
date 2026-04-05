@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Trash2, CheckCircle, FileText, Eye, Download, Plus, X, Mail } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -162,9 +163,10 @@ export default function FactureDetailPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <Link href="/commercial" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
-          <ArrowLeft className="h-4 w-4" /> Retour au commercial
-        </Link>
+        <Breadcrumb items={[
+          { label: "Commercial", href: "/commercial" },
+          { label: `Facture ${facture.numero}` },
+        ]} />
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-1">

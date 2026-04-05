@@ -6,6 +6,8 @@ import { Users, Search, Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { Pagination } from "@/components/shared/Pagination";
+import { SkeletonTable } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { CONTACT_TYPES } from "@/lib/constants";
 
@@ -32,6 +34,9 @@ export default function ContactsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -39,19 +44,27 @@ export default function ContactsPage() {
   }, [search]);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, typeFilter]);
+
+  useEffect(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (typeFilter) params.set("type", typeFilter);
+    params.set("page", String(page));
+    params.set("limit", "25");
 
     setLoading(true);
     fetch(`/api/contacts?${params.toString()}`)
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => {
-        setContacts(Array.isArray(data) ? data : []);
+      .then((res) => res.ok ? res.json() : { data: [], total: 0, page: 1, totalPages: 1 })
+      .then((res) => {
+        setContacts(res.data ?? []);
+        setTotal(res.total ?? 0);
+        setTotalPages(res.totalPages ?? 1);
       })
       .catch(() => setContacts([]))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, typeFilter]);
+  }, [debouncedSearch, typeFilter, page]);
 
   return (
     <div className="p-6">
@@ -99,11 +112,9 @@ export default function ContactsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-          </div>
+          <SkeletonTable rows={6} cols={5} />
         ) : contacts.length === 0 ? (
           <EmptyState
             icon={Users}
@@ -117,7 +128,7 @@ export default function ContactsPage() {
             actionHref={search || typeFilter ? undefined : "/contacts/nouveau"}
           />
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-[640px] w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -126,13 +137,13 @@ export default function ContactsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Téléphone
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Entreprise
                 </th>
               </tr>
@@ -165,7 +176,7 @@ export default function ContactsPage() {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
                       {contact.telephone || <span className="text-gray-400">—</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -173,7 +184,7 @@ export default function ContactsPage() {
                         <StatutBadge label={typeInfo.label} color={typeInfo.color} />
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
                       {contact.entreprise ? (
                         <Link
                           href={`/entreprises/${contact.entreprise.id}`}
@@ -194,9 +205,12 @@ export default function ContactsPage() {
       </div>
 
       {!loading && contacts.length > 0 && (
-        <p className="text-sm text-gray-400 mt-3">
-          {contacts.length} contact{contacts.length > 1 ? "s" : ""}
-        </p>
+        <>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <p className="text-sm text-gray-400 mt-3 text-center">
+            {total} contact{total > 1 ? "s" : ""}
+          </p>
+        </>
       )}
     </div>
   );

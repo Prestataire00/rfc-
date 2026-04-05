@@ -110,7 +110,6 @@ export default function BPFPage() {
                   />
                 </div>
                 <span className="text-[10px] text-gray-400">{MOIS_LABELS[idx]}</span>
-                <span className="text-[10px] font-medium text-gray-300">{m.total || ""}</span>
               </div>
             ))}
           </div>

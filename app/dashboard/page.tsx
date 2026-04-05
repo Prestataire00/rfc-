@@ -261,7 +261,7 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-red-800">CA Previsionnel</span>
           </div>
           <p className="text-3xl font-bold text-red-900">{formatCurrency(stats.caPrevisionnel)}</p>
-          <p className="text-xs text-red-600 mt-1">{stats.devisEnvoyes} devis en cours</p>
+          <p className="text-xs text-red-600 mt-1">{stats.nbDevisEnCours} devis en cours</p>
         </div>
         <div className="rounded-lg border bg-gradient-to-br from-purple-50 to-violet-50 p-5">
           <div className="flex items-center gap-2 mb-2">

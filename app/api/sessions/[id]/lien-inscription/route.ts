@@ -21,7 +21,10 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       });
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const nextAuthUrl = process.env.NEXTAUTH_URL || "";
+    const baseUrl = nextAuthUrl && !nextAuthUrl.includes("localhost")
+      ? nextAuthUrl
+      : `${_req.headers.get("x-forwarded-proto") || "https"}://${_req.headers.get("host")}`;
     return NextResponse.json({
       token,
       lien: `${baseUrl}/inscription-stagiaire/${token}`,

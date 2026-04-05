@@ -48,14 +48,18 @@ export async function POST(req: NextRequest) {
     }, 0);
     const numero = generateNumero("FAC", maxNum);
 
-    const { lignes, ...rest } = body;
-
     const facture = await prisma.facture.create({
       data: {
-        ...rest,
         numero,
+        montantHT: body.montantHT,
+        tauxTVA: body.tauxTVA ?? 20,
+        montantTTC: body.montantTTC,
         dateEmission: new Date(),
         dateEcheance: new Date(body.dateEcheance),
+        notes: body.notes || null,
+        statut: body.statut || "en_attente",
+        devisId: body.devisId || null,
+        entrepriseId: body.entrepriseId || null,
       },
     });
     return NextResponse.json(facture, { status: 201 });

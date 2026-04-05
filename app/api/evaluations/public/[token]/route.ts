@@ -19,7 +19,40 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
     }
 
-    // Fetch configured questionnaire
+    const stagiaire = evaluation.contact
+      ? `${evaluation.contact.prenom} ${evaluation.contact.nom}`
+      : "Anonyme";
+
+    // Detect custom template questions stored in reponses
+    let customQuestions: unknown[] | null = null;
+    try {
+      const parsed = JSON.parse(evaluation.reponses);
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        typeof parsed[0] === "object" &&
+        "type" in parsed[0] &&
+        "label" in parsed[0]
+      ) {
+        customQuestions = parsed;
+      }
+    } catch {
+      // not custom
+    }
+
+    if (customQuestions) {
+      return NextResponse.json({
+        id: evaluation.id,
+        type: evaluation.type,
+        estComplete: evaluation.estComplete,
+        formation: evaluation.session.formation.titre,
+        stagiaire,
+        isCustom: true,
+        questions: customQuestions,
+      });
+    }
+
+    // Old format: fetch questionnaire sections
     const config = await prisma.questionnaireConfig.findUnique({ where: { id: "default" } });
     const sections = evaluation.type === "satisfaction_froid"
       ? (config?.froid ?? [])
@@ -30,9 +63,8 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       type: evaluation.type,
       estComplete: evaluation.estComplete,
       formation: evaluation.session.formation.titre,
-      stagiaire: evaluation.contact
-        ? `${evaluation.contact.prenom} ${evaluation.contact.nom}`
-        : "Anonyme",
+      stagiaire,
+      isCustom: false,
       sections,
     });
   } catch (err: unknown) {
@@ -56,16 +88,26 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ error: "Cette evaluation a deja ete soumise" }, { status: 400 });
     }
 
-    const { noteGlobale, reponses, commentaire } = await req.json();
+    const body = await req.json();
+    const { noteGlobale, reponses, commentaire, isCustom } = body;
 
-    if (!noteGlobale || noteGlobale < 1 || noteGlobale > 5) {
+    if (!isCustom && (!noteGlobale || noteGlobale < 1 || noteGlobale > 5)) {
       return NextResponse.json({ error: "Note globale requise (1-5)" }, { status: 400 });
+    }
+
+    // For custom evaluations, derive noteGlobale from the first note-type answer
+    let finalNote: number | null = noteGlobale || null;
+    if (isCustom && Array.isArray(reponses)) {
+      const firstNote = reponses.find(
+        (r: { type: string; valeur: unknown }) => r.type === "note" && r.valeur !== null
+      );
+      if (firstNote) finalNote = firstNote.valeur as number;
     }
 
     await prisma.evaluation.update({
       where: { tokenAcces: params.token },
       data: {
-        noteGlobale,
+        noteGlobale: finalNote,
         reponses: JSON.stringify(reponses || {}),
         commentaire: commentaire || null,
         estComplete: true,

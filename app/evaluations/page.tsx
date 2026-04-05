@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download } from "lucide-react";
+import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -81,14 +81,23 @@ export default function EvaluationsPage() {
           <h1 className="text-2xl font-bold text-gray-100">Évaluations & Satisfaction</h1>
           <p className="text-gray-400 text-sm">Vue d'ensemble des questionnaires de satisfaction</p>
         </div>
-        <a
-          href="/api/export/evaluations"
-          download
-          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          Exporter CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/evaluations/modeles"
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            Mes modèles
+          </Link>
+          <a
+            href="/api/export/evaluations"
+            download
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Exporter CSV
+          </a>
+        </div>
       </div>
 
       {/* Stats */}

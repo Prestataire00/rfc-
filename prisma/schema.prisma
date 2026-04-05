@@ -347,6 +347,16 @@ model Evaluation {
   contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 }
 
+model EvaluationTemplate {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  nom         String
+  description String?
+  type        String   @default("custom") // satisfaction_chaud, satisfaction_froid, acquis, custom
+  questions   String   @default("[]") // JSON array of question objects
+}
+
 model Attestation {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())

@@ -8,6 +8,17 @@ import { FINANCEMENT_TYPES } from "@/lib/constants";
 
 const MOIS_LABELS = ["Jan", "Fev", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Dec"];
 
+type Facture = {
+  id: string;
+  numero: string;
+  dateEmission: string;
+  montantHT: number;
+  montantTTC: number;
+  statut: string;
+  entreprise: { nom: string } | null;
+  devis: { objet: string } | null;
+};
+
 type BPFData = {
   annee: number;
   sessionsTerminees: number;
@@ -20,6 +31,7 @@ type BPFData = {
   financementsParType: Record<string, number>;
   financements: any[];
   certifications: any[];
+  factures: Facture[];
 };
 
 export default function BPFPage() {
@@ -258,6 +270,67 @@ export default function BPFPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Factures */}
+      <div className="rounded-lg border bg-gray-800 p-6 mb-6">
+        <h3 className="font-semibold text-gray-100 mb-4">Factures {annee}</h3>
+        {data.factures.length === 0 ? (
+          <p className="text-sm text-gray-400">Aucune facture cette annee</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-400">N°</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-400">Client</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-400">Objet</th>
+                  <th className="text-left py-2 px-3 text-xs font-medium text-gray-400">Date</th>
+                  <th className="text-right py-2 px-3 text-xs font-medium text-gray-400">Montant HT</th>
+                  <th className="text-right py-2 px-3 text-xs font-medium text-gray-400">Montant TTC</th>
+                  <th className="text-center py-2 px-3 text-xs font-medium text-gray-400">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.factures.map((f) => (
+                  <tr key={f.id} className="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors">
+                    <td className="py-2 px-3 text-gray-300 font-mono text-xs">{f.numero}</td>
+                    <td className="py-2 px-3 text-gray-300">{f.entreprise?.nom || "—"}</td>
+                    <td className="py-2 px-3 text-gray-400 max-w-[200px] truncate">{f.devis?.objet || "—"}</td>
+                    <td className="py-2 px-3 text-gray-400">{new Date(f.dateEmission).toLocaleDateString("fr-FR")}</td>
+                    <td className="py-2 px-3 text-right text-gray-200">{formatCurrency(f.montantHT)}</td>
+                    <td className="py-2 px-3 text-right text-gray-200">{formatCurrency(f.montantTTC)}</td>
+                    <td className="py-2 px-3 text-center">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                        f.statut === "payee" ? "bg-green-900/30 text-green-400" :
+                        f.statut === "envoyee" ? "bg-blue-900/30 text-blue-400" :
+                        f.statut === "annulee" ? "bg-red-900/30 text-red-400" :
+                        "bg-gray-700 text-gray-400"
+                      }`}>
+                        {f.statut === "payee" ? "Payée" :
+                         f.statut === "envoyee" ? "Envoyée" :
+                         f.statut === "annulee" ? "Annulée" :
+                         f.statut}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-gray-600">
+                  <td colSpan={4} className="py-2 px-3 text-sm font-semibold text-gray-300">Total</td>
+                  <td className="py-2 px-3 text-right text-sm font-semibold text-gray-100">
+                    {formatCurrency(data.factures.reduce((s, f) => s + f.montantHT, 0))}
+                  </td>
+                  <td className="py-2 px-3 text-right text-sm font-semibold text-gray-100">
+                    {formatCurrency(data.factures.reduce((s, f) => s + f.montantTTC, 0))}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

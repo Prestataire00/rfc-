@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       formationsParCategorie,
       sessionsParMois,
       certifications,
+      facturesList,
     ] = await Promise.all([
       prisma.session.count({
         where: { statut: "terminee", dateDebut: { gte: debutAnnee, lte: finAnnee } },
@@ -65,6 +66,15 @@ export async function GET(req: NextRequest) {
           _count: { select: { inscriptions: true } },
         },
       }),
+      // Factures
+      prisma.facture.findMany({
+        where: { dateEmission: { gte: debutAnnee, lte: finAnnee } },
+        include: {
+          entreprise: { select: { nom: true } },
+          devis: { select: { objet: true } },
+        },
+        orderBy: { dateEmission: "desc" },
+      }),
     ]);
 
     // Aggregate by category
@@ -106,6 +116,7 @@ export async function GET(req: NextRequest) {
       financementsParType,
       financements,
       certifications,
+      factures: facturesList,
     });
   } catch (err: unknown) {
     console.error("Erreur GET BPF:", err);

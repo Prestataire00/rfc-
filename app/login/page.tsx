@@ -55,7 +55,7 @@ function LoginForm() {
                 alt="RFC"
                 width={120}
                 height={120}
-                className="mx-auto dark:invert-0 invert dark:hue-rotate-0 hue-rotate-180 dark:brightness-100 brightness-[0.85]"
+                className="mx-auto"
               />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">

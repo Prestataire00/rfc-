@@ -2,8 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import { Star, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, ClipboardList } from "lucide-react";
+
+function LogoRFC({ size = 120 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="250" cy="250" r="249" fill="white"/>
+      <path d="M143 436 A215 215 0 1 1 465 250" stroke="#C41E24" strokeWidth="28" fill="none" strokeLinecap="round"/>
+      <path d="M86 155 A190 190 0 0 0 345 415" stroke="#888888" strokeWidth="18" fill="none" strokeLinecap="round"/>
+      <text x="250" y="258" fontFamily="Arial Black, Arial, Helvetica, sans-serif" fontSize="120" fontWeight="900" fill="#111111" textAnchor="middle">RFC</text>
+      <line x1="55" y1="300" x2="445" y2="300" stroke="#8B1A1A" strokeWidth="2.5"/>
+      <text x="250" y="336" fontFamily="Arial Black, Arial, Helvetica, sans-serif" fontSize="24" fontWeight="900" fill="#111111" textAnchor="middle" letterSpacing="0.5">RESCUE FORMATION CONSEIL 83</text>
+      <text x="250" y="368" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="700" fill="#555555" textAnchor="middle" letterSpacing="1.5">SECURITE - INCENDIE - PREVENTION</text>
+    </svg>
+  );
+}
 
 type Question = { key: string; label: string };
 type Section = { id: string; titre: string; questions: Question[] };
@@ -164,7 +177,7 @@ export default function EvaluationPubliquePage() {
       <div className="min-h-screen flex flex-col bg-slate-50">
         <header className="bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-3">
-            <Image src="/logo-rfc.png" alt="RFC" width={80} height={80} className="shrink-0" />
+            <LogoRFC size={110} />
           </div>
         </header>
         <div className="flex-1 flex items-center justify-center px-4 py-16">
@@ -195,7 +208,7 @@ export default function EvaluationPubliquePage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Image src="/logo-rfc.png" alt="RFC" width={80} height={80} className="shrink-0" />
+          <LogoRFC size={110} />
           <div className="flex-1">
             <p className="text-xs text-gray-400 leading-none mb-0.5">Évaluation de formation</p>
             <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-1">{info?.formation}</p>

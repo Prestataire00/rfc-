@@ -74,7 +74,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="flex items-center gap-2">
-          <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg dark:invert-0 invert dark:hue-rotate-0 hue-rotate-180 dark:brightness-100 brightness-[0.85]" />
+          <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg" />
           <div>
             <span className="font-bold text-black dark:text-white text-sm">RFC</span>
             <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Sécurité - Incendie</span>

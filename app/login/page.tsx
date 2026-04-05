@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Sun, Moon } from "lucide-react";
@@ -49,15 +48,6 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="inline-block mb-4">
-              <Image
-                src="/logo-rfc.png"
-                alt="RFC"
-                width={120}
-                height={120}
-                className="mx-auto"
-              />
-            </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               Rescue Formation Conseil
             </h1>

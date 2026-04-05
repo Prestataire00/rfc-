@@ -4,26 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Star, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, ClipboardList } from "lucide-react";
 
-function LogoRFC({ size = 120 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <path id="topTextPath" d="M 90 310 A 195 195 0 1 1 410 310"/>
-      </defs>
-      <path d="M 60 330 A 222 222 0 1 1 440 330" stroke="#C41E24" strokeWidth="44" fill="none" strokeLinecap="round"/>
-      <path d="M 108 350 A 168 168 0 0 0 392 350" stroke="#888888" strokeWidth="26" fill="none" strokeLinecap="round"/>
-      <text fontFamily="Arial, Helvetica, sans-serif" fontSize="27" fontWeight="700" fill="#333333" letterSpacing="3">
-        <textPath href="#topTextPath" startOffset="7%">RESCUE FORMATION CONSEIL</textPath>
-      </text>
-      <text x="250" y="318" fontFamily="Arial, Helvetica, sans-serif" fontSize="19" fontWeight="600" fill="#777777" textAnchor="middle" letterSpacing="2">SÉCURITÉ - INCENDIE - PRÉVENTION</text>
-      <g transform="translate(250, 215)">
-        <path d="M0,-72 C-12,-54 -38,-28 -32,-3 C-26,20 -14,38 0,52 C14,38 26,20 32,-3 C38,-28 12,-54 0,-72 Z" fill="#C41E24"/>
-        <path d="M0,-42 C-6,-28 -20,-10 -16,7 C-11,22 0,32 0,32 C0,32 11,22 16,7 C20,-10 6,-28 0,-42 Z" fill="#FF6622" opacity="0.8"/>
-        <path d="M0,-18 C-3,-10 -9,0 -7,9 C-4,16 0,20 0,20 C0,20 4,16 7,9 C9,0 3,-10 0,-18 Z" fill="#FFAA44" opacity="0.9"/>
-      </g>
-    </svg>
-  );
-}
 
 type Question = { key: string; label: string };
 type Section = { id: string; titre: string; questions: Question[] };
@@ -182,11 +162,6 @@ export default function EvaluationPubliquePage() {
   if (submitted) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
-        <header className="bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-3">
-            <LogoRFC size={110} />
-          </div>
-        </header>
         <div className="flex-1 flex items-center justify-center px-4 py-16">
           <div className="text-center max-w-md bg-white rounded-3xl shadow-md border border-gray-100 p-10">
             <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
@@ -215,7 +190,6 @@ export default function EvaluationPubliquePage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-4">
-          <LogoRFC size={110} />
           <div className="flex-1">
             <p className="text-xs text-gray-400 leading-none mb-0.5">Évaluation de formation</p>
             <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-1">{info?.formation}</p>

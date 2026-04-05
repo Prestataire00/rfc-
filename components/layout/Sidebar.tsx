@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -73,6 +74,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6">
         <div className="flex items-center gap-2">
+          <Image src="/logorescue.png" alt="RFC" width={44} height={44} className="rounded-lg" />
           <div>
             <span className="font-bold text-black dark:text-white text-sm">RFC</span>
             <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Sécurité - Incendie</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Star, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, ClipboardList } from "lucide-react";
 
@@ -190,6 +191,7 @@ export default function EvaluationPubliquePage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-4">
+          <Image src="/logorescue.png" alt="RFC" width={40} height={40} className="shrink-0 rounded" />
           <div className="flex-1">
             <p className="text-xs text-gray-400 leading-none mb-0.5">Évaluation de formation</p>
             <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-1">{info?.formation}</p>

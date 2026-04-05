@@ -49,7 +49,9 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
         factureId: facture.id,
         devisId: devis.id,
       });
-    } catch {}
+    } catch (logErr) {
+      console.warn("logAction facture_generee échoué:", logErr);
+    }
 
     return NextResponse.json(facture, { status: 201 });
   } catch (err: unknown) {

@@ -68,7 +68,9 @@ export async function POST(req: NextRequest) {
         contactId: devis.contactId ?? undefined,
         devisId: devis.id,
       });
-    } catch {}
+    } catch (logErr) {
+      console.warn("logAction devis_cree échoué:", logErr);
+    }
 
     return NextResponse.json(devis, { status: 201 });
   } catch (err: unknown) {

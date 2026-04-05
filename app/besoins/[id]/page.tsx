@@ -25,10 +25,20 @@ type Besoin = {
   budget: number | null;
   notes: string | null;
   createdAt: string;
-  entreprise: any;
+  entreprise: {
+    id: string;
+    nom: string;
+    secteur: string | null;
+    adresse: string | null;
+    codePostal: string | null;
+    ville: string | null;
+    telephone: string | null;
+    email: string | null;
+    siret: string | null;
+  } | null;
   contact: { id: string; nom: string; prenom: string; email: string; telephone: string | null; poste: string | null } | null;
-  formation: any;
-  devis: any;
+  formation: { id: string; titre: string } | null;
+  devis: { id: string; numero: string; objet: string | null; montantHT: number; montantTTC: number; statut: string } | null;
 };
 
 type HistoriqueAction = {

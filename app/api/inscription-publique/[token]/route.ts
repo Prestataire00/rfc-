@@ -56,30 +56,41 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ error: "Nom, prenom et email requis" }, { status: 400 });
     }
 
-    // Find or create contact
-    let contact = await prisma.contact.findFirst({ where: { email } });
-
-    if (!contact) {
-      // Find or create entreprise if provided
-      let entrepriseId = null;
-      if (entreprise) {
-        let ent = await prisma.entreprise.findFirst({ where: { nom: entreprise } });
-        if (!ent) {
+    // Find or create contact (upsert pour éviter les doublons en cas de race condition)
+    let entrepriseId: string | null = null;
+    if (entreprise) {
+      let ent = await prisma.entreprise.findFirst({ where: { nom: entreprise } });
+      if (!ent) {
+        try {
           ent = await prisma.entreprise.create({ data: { nom: entreprise } });
+        } catch {
+          // Race condition : une autre requête a créé l'entreprise entre temps
+          ent = await prisma.entreprise.findFirst({ where: { nom: entreprise } });
         }
-        entrepriseId = ent.id;
       }
+      entrepriseId = ent?.id ?? null;
+    }
 
-      contact = await prisma.contact.create({
-        data: {
-          nom,
-          prenom,
-          email,
-          telephone: telephone || null,
-          entrepriseId,
-          type: "stagiaire",
-        },
-      });
+    let contact = await prisma.contact.findFirst({ where: { email } });
+    if (!contact) {
+      try {
+        contact = await prisma.contact.create({
+          data: {
+            nom,
+            prenom,
+            email,
+            telephone: telephone || null,
+            entrepriseId,
+            type: "stagiaire",
+          },
+        });
+      } catch {
+        // Race condition : email déjà créé par une autre requête simultanée
+        contact = await prisma.contact.findFirst({ where: { email } });
+        if (!contact) {
+          return NextResponse.json({ error: "Erreur lors de la création du contact" }, { status: 500 });
+        }
+      }
     }
 
     // Check if already inscribed

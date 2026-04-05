@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       } else {
         throw uploadError;
       }
-    } catch {
+    } catch (uploadErr) {
+      console.warn("Supabase upload échoué, fallback local:", uploadErr);
       // Fallback: save locally in public/documents/
       const dir = path.join(process.cwd(), "public", "documents");
       await fs.mkdir(dir, { recursive: true });

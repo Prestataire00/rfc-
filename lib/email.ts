@@ -19,7 +19,7 @@ type EmailOptions = {
   attachments?: { filename: string; content: Buffer | Uint8Array }[];
 };
 
-export async function sendEmail({ to, subject, html, attachments }: EmailOptions) {
+export async function sendEmail({ to, subject, html, attachments }: EmailOptions): Promise<{ skipped: boolean }> {
   // Skip if SMTP not configured
   if (!process.env.SMTP_USER) {
     console.log(`[EMAIL SKIP] SMTP non configure. To: ${to}, Subject: ${subject}`);
@@ -38,7 +38,7 @@ export async function sendEmail({ to, subject, html, attachments }: EmailOptions
   });
 
   console.log(`[EMAIL SENT] To: ${to}, Subject: ${subject}, MessageId: ${result.messageId}`);
-  return result;
+  return { skipped: false };
 }
 
 // ==================== EMAIL TEMPLATES ====================

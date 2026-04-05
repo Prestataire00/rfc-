@@ -68,9 +68,11 @@ export async function POST(req: NextRequest) {
         lien: "/sessions/" + sessionId,
         contactId: contactId,
       });
-    } catch {}
+    } catch (logErr) {
+      console.warn("logAction convocation_envoyee échoué:", logErr);
+    }
 
-    return NextResponse.json({ success: true, skipped: (result as any)?.skipped || false });
+    return NextResponse.json({ success: true, skipped: result.skipped });
   } catch (err: unknown) {
     console.error("Erreur lors de l'envoi de la convocation:", err);
     return NextResponse.json({ error: "Erreur lors de l'envoi de la convocation" }, { status: 500 });

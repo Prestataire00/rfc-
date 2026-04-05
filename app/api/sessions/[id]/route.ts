@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sessionSchema } from "@/lib/validations/session";
 import { sendEmail, evaluationEmail } from "@/lib/email";
+import { SESSION_STATUTS } from "@/lib/constants";
 import { randomBytes } from "crypto";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
@@ -104,7 +105,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { statut } = await req.json();
-    const VALID = ["planifiee", "confirmee", "en_cours", "terminee", "annulee"];
+    const VALID = Object.keys(SESSION_STATUTS);
     if (!statut || !VALID.includes(statut)) {
       return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
     }

@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formateurId = (session.user as any).formateurId;
+    const formateurId = session.user.formateurId;
     if (!formateurId) return NextResponse.json([]);
 
     const disponibilites = await prisma.disponibilite.findMany({
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const formateurId = (session.user as any).formateurId;
+    const formateurId = session.user.formateurId;
     if (!formateurId) return NextResponse.json({ error: "No formateur linked" }, { status: 400 });
 
     const body = await req.json();

@@ -73,7 +73,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           contactId: contactId,
           sessionId: params.id,
         });
-      } catch {}
+      } catch (logErr) {
+        console.warn("logAction inscription_creee échoué:", logErr);
+      }
     }
 
     return NextResponse.json(inscription, { status: 201 });

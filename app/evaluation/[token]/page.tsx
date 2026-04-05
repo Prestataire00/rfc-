@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Star, CheckCircle, AlertCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import Image from "next/image";
+import { Star, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, ClipboardList } from "lucide-react";
 
 type Question = { key: string; label: string };
 type Section = { id: string; titre: string; questions: Question[] };
@@ -14,6 +14,14 @@ const NOTE_LABELS: Record<number, string> = {
   3: "Correct",
   4: "Satisfait",
   5: "Très satisfait",
+};
+
+const NOTE_COLORS: Record<number, string> = {
+  1: "text-red-500",
+  2: "text-orange-500",
+  3: "text-yellow-500",
+  4: "text-lime-500",
+  5: "text-green-500",
 };
 
 // ── Composant étoiles ──────────────────────────────────────────────────────
@@ -27,28 +35,30 @@ function StarRating({
   size?: "sm" | "md" | "lg";
 }) {
   const [hovered, setHovered] = useState(0);
-  const sz = size === "lg" ? "h-10 w-10" : size === "sm" ? "h-5 w-5" : "h-7 w-7";
+  const sz = size === "lg" ? "h-10 w-10" : size === "sm" ? "h-5 w-5" : "h-8 w-8";
   const active = hovered || value;
   return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(n)}
-          onMouseEnter={() => setHovered(n)}
-          onMouseLeave={() => setHovered(0)}
-          className="focus:outline-none transition-transform hover:scale-110"
-        >
-          <Star
-            className={`${sz} transition-colors ${
-              n <= active ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-            }`}
-          />
-        </button>
-      ))}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            onMouseEnter={() => setHovered(n)}
+            onMouseLeave={() => setHovered(0)}
+            className="focus:outline-none transition-all hover:scale-125 active:scale-95"
+          >
+            <Star
+              className={`${sz} transition-all duration-150 drop-shadow-sm ${
+                n <= active ? "text-yellow-400 fill-yellow-400" : "text-gray-200 fill-gray-200"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
       {active > 0 && (
-        <span className="ml-2 text-sm text-gray-500 min-w-[110px]">
+        <span className={`text-sm font-semibold ${NOTE_COLORS[active]}`}>
           {NOTE_LABELS[active]}
         </span>
       )}
@@ -94,7 +104,8 @@ export default function EvaluationPubliquePage() {
   const sections: Section[] = info?.sections ?? [];
   const currentSection = step > 0 && step <= sections.length ? sections[step - 1] : null;
   const isLastStep = step === sections.length + 1;
-  const progress = step === 0 ? 0 : Math.round((step / (sections.length + 1)) * 100);
+  const totalSteps = sections.length + 2; // 0=global, 1..n=sections, last=commentaire
+  const progressPct = Math.round((step / (sections.length + 1)) * 100);
 
   const isSectionComplete = (s: typeof sections[0]) =>
     s.questions.every((q) => reponses[q.key] !== undefined);
@@ -126,16 +137,19 @@ export default function EvaluationPubliquePage() {
   // ── Chargement ────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-red-600 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-600 border-t-transparent" />
+          <p className="text-sm text-gray-400">Chargement de votre évaluation...</p>
+        </div>
       </div>
     );
   }
 
   if (error && !info) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="text-center max-w-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="text-center max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
           <AlertCircle className="h-14 w-14 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">Lien invalide</h2>
           <p className="text-gray-500">{error}</p>
@@ -147,131 +161,139 @@ export default function EvaluationPubliquePage() {
   // ── Confirmation ──────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-red-50 to-white">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         <header className="bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg shrink-0" />
-            <div>
-              <span className="font-bold text-black text-sm">RFC</span>
-              <span className="block text-[9px] text-gray-600 leading-tight">Sécurité - Incendie</span>
-              <span className="block text-[9px] text-gray-600 leading-tight">Prévention</span>
-            </div>
+          <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-3">
+            <Image src="/logo-rfc.png" alt="RFC" width={80} height={80} className="shrink-0" />
           </div>
         </header>
-        <div className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="text-center max-w-md">
+        <div className="flex-1 flex items-center justify-center px-4 py-16">
+          <div className="text-center max-w-md bg-white rounded-3xl shadow-md border border-gray-100 p-10">
             <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-3">Merci pour votre retour !</h1>
-            <p className="text-gray-500 text-base leading-relaxed mb-6">
+            <p className="text-gray-400 text-sm leading-relaxed mb-8">
               Votre évaluation a bien été enregistrée. Vos retours nous permettent d&apos;améliorer continuellement la qualité de nos formations.
             </p>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm text-left">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Formation évaluée</p>
+            <div className="bg-slate-50 rounded-xl p-4 text-left">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Formation évaluée</p>
               <p className="font-semibold text-gray-800">{info?.formation}</p>
             </div>
-            <p className="mt-8 text-sm text-gray-400">RFC — Rescue Formation Conseil</p>
           </div>
         </div>
+        <footer className="text-center py-4 text-xs text-gray-400">
+          RFC — Rescue Formation Conseil · Sécurité · Incendie · Prévention
+        </footer>
       </div>
     );
   }
 
   // ── Formulaire ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Image src="/logo-rfc.png" alt="RFC" width={44} height={44} className="rounded-lg shrink-0" />
+        <div className="max-w-xl mx-auto px-6 py-4 flex items-center gap-4">
+          <Image src="/logo-rfc.png" alt="RFC" width={80} height={80} className="shrink-0" />
           <div className="flex-1">
-            <span className="font-bold text-black text-sm">RFC</span>
-            <span className="block text-[9px] text-gray-600 leading-tight">Sécurité - Incendie</span>
-            <span className="block text-[9px] text-gray-600 leading-tight">Prévention</span>
+            <p className="text-xs text-gray-400 leading-none mb-0.5">Évaluation de formation</p>
+            <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-1">{info?.formation}</p>
           </div>
           {step > 0 && (
-            <span className="text-xs text-gray-400 font-medium">
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full shrink-0">
               {step} / {sections.length + 1}
             </span>
           )}
         </div>
-        {/* Barre de progression sticky */}
-        {step > 0 && (
-          <div className="h-1 bg-gray-100">
-            <div
-              className="h-full bg-red-600 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        )}
+        {/* Barre de progression */}
+        <div className="h-1 bg-gray-100">
+          <div
+            className="h-full bg-red-600 transition-all duration-500 ease-out"
+            style={{ width: step === 0 ? "0%" : `${progressPct}%` }}
+          />
+        </div>
       </header>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 flex flex-col gap-5">
-        {/* Carte formation */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-                {info?.type === "satisfaction_froid"
-                  ? "Satisfaction à froid"
-                  : "Satisfaction à chaud"}
-              </p>
-              <h1 className="text-lg font-bold text-gray-900 leading-snug">{info?.formation}</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Participant : <span className="font-medium text-gray-700">{info?.stagiaire}</span>
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-100">
-              {info?.type === "satisfaction_froid" ? "À froid" : "À chaud"}
-            </span>
-          </div>
-        </div>
+      <main className="flex-1 max-w-xl mx-auto w-full px-4 py-8 flex flex-col gap-5">
 
         {/* ── ÉTAPE 0 : Note globale ── */}
         {step === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-            <div>
-              <h2 className="text-base font-bold text-gray-900 mb-1">Note globale *</h2>
-              <p className="text-sm text-gray-500">
-                Quelle note donneriez-vous globalement à cette formation ?
+          <>
+            {/* Intro */}
+            <div className="text-center py-4">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-red-50 mb-4">
+                <ClipboardList className="h-7 w-7 text-red-600" />
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 mb-1">Évaluation de votre formation</h1>
+              <p className="text-sm text-gray-400">
+                {info?.stagiaire !== "Anonyme" ? `Bonjour ${info?.stagiaire}, votre` : "Votre"} avis compte beaucoup pour nous.
               </p>
             </div>
-            <StarRating value={noteGlobale} onChange={setNoteGlobale} size="lg" />
-            <p className="text-xs text-gray-400">
-              {sections.length + 1} étapes au total · environ 3 minutes
-            </p>
-          </div>
+
+            {/* Carte type */}
+            <div className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+              <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+              <div>
+                <p className="text-xs text-gray-400 uppercase tracking-wider">Type d&apos;évaluation</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {info?.type === "satisfaction_froid" ? "Satisfaction à froid" : "Satisfaction à chaud"}
+                </p>
+              </div>
+              <span className="ml-auto text-xs font-medium text-gray-400">
+                {totalSteps - 1} étape{totalSteps - 2 !== 1 ? "s" : ""} · ~3 min
+              </span>
+            </div>
+
+            {/* Note globale */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <p className="text-xs text-red-600 font-semibold uppercase tracking-wider mb-2">Étape 1</p>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Note globale</h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Quelle note donneriez-vous globalement à cette formation ?
+              </p>
+              <StarRating value={noteGlobale} onChange={setNoteGlobale} size="lg" />
+              {noteGlobale === 0 && (
+                <p className="text-xs text-gray-300 mt-4">Cliquez sur une étoile pour noter</p>
+              )}
+            </div>
+          </>
         )}
 
         {/* ── ÉTAPES 1..N : Sections ── */}
         {currentSection && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-            <div>
-              <p className="text-xs text-red-600 font-semibold uppercase tracking-wide mb-1">
-                Section {step} / {sections.length}
-              </p>
-              <h2 className="text-base font-bold text-gray-900">{currentSection.titre}</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Notez chaque critère de 1 (très insatisfait) à 5 (très satisfait)
-              </p>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {currentSection.questions.map((q) => (
-                <div key={q.key} className="py-4">
-                  <p className="text-sm text-gray-700 mb-3">{q.label}</p>
-                  <StarRating
-                    value={reponses[q.key] || 0}
-                    onChange={(n) => setReponses({ ...reponses, [q.key]: n })}
-                    size="md"
-                  />
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <p className="text-xs text-red-600 font-semibold uppercase tracking-wider mb-2">
+              Section {step} / {sections.length}
+            </p>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">{currentSection.titre}</h2>
+            <p className="text-sm text-gray-400 mb-6">
+              Notez chaque critère de 1 (très insatisfait) à 5 (très satisfait).
+            </p>
+            <div className="space-y-6">
+              {currentSection.questions.map((q, i) => (
+                <div key={q.key} className="pb-6 border-b border-gray-50 last:border-0 last:pb-0">
+                  <div className="flex items-start gap-3 mb-4">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-red-50 text-red-600 text-xs font-bold flex items-center justify-center mt-0.5">
+                      {i + 1}
+                    </span>
+                    <p className="text-sm font-medium text-gray-700 leading-relaxed">{q.label}</p>
+                  </div>
+                  <div className="pl-9">
+                    <StarRating
+                      value={reponses[q.key] || 0}
+                      onChange={(n) => setReponses({ ...reponses, [q.key]: n })}
+                      size="md"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
             {!isSectionComplete(currentSection) && (
-              <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                Veuillez noter tous les critères pour continuer.
-              </p>
+              <div className="mt-5 flex items-center gap-2 bg-amber-50 rounded-xl px-4 py-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                <p className="text-xs text-amber-700">Veuillez noter tous les critères pour continuer.</p>
+              </div>
             )}
           </div>
         )}
@@ -279,57 +301,57 @@ export default function EvaluationPubliquePage() {
         {/* ── DERNIÈRE ÉTAPE : Commentaire + récap ── */}
         {isLastStep && (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-              <div>
-                <h2 className="text-base font-bold text-gray-900 mb-1">Commentaires libres</h2>
-                <p className="text-sm text-gray-500">
-                  Partagez vos remarques, suggestions ou points d&apos;amélioration (optionnel).
-                </p>
-              </div>
-              <textarea
-                value={commentaire}
-                onChange={(e) => setCommentaire(e.target.value)}
-                rows={4}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-gray-50 focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
-                placeholder="Vos remarques nous aident à améliorer nos formations..."
-              />
-            </div>
-
-            {/* Récapitulatif */}
-            <div className="bg-red-50 rounded-2xl border border-red-100 p-5">
-              <h3 className="text-sm font-semibold text-red-800 mb-3">Récapitulatif</h3>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-gray-500">Note globale :</span>
+            {/* Récap */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Récapitulatif</p>
+              <div className="flex items-center gap-3 mb-3">
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <Star
                       key={n}
-                      className={`h-4 w-4 ${
-                        n <= noteGlobale ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                      className={`h-5 w-5 ${
+                        n <= noteGlobale ? "text-yellow-400 fill-yellow-400" : "text-gray-200 fill-gray-200"
                       }`}
                     />
                   ))}
                 </div>
-                <span className="text-xs text-gray-600 font-medium">{NOTE_LABELS[noteGlobale]}</span>
+                <span className={`text-sm font-semibold ${NOTE_COLORS[noteGlobale]}`}>
+                  {NOTE_LABELS[noteGlobale]}
+                </span>
               </div>
-              <p className="text-xs text-gray-500">
-                {Object.keys(reponses).length} critère
-                {Object.keys(reponses).length > 1 ? "s" : ""} évalué
-                {Object.keys(reponses).length > 1 ? "s" : ""}
+              <p className="text-xs text-gray-400">
+                {Object.keys(reponses).length} critère{Object.keys(reponses).length > 1 ? "s" : ""} évalué{Object.keys(reponses).length > 1 ? "s" : ""}
               </p>
             </div>
 
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+            {/* Commentaire */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Commentaires libres</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Partagez vos remarques ou suggestions (optionnel).
+              </p>
+              <textarea
+                value={commentaire}
+                onChange={(e) => setCommentaire(e.target.value)}
+                rows={5}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-slate-50 focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none outline-none transition"
+                placeholder="Vos retours nous aident à améliorer nos formations..."
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600 text-center bg-red-50 rounded-xl py-3 px-4">{error}</p>
+            )}
           </div>
         )}
 
         {/* ── Navigation ── */}
-        <div className={`flex gap-3 ${step === 0 ? "justify-end" : "justify-between"}`}>
+        <div className={`flex gap-3 pt-2 ${step === 0 ? "justify-end" : "justify-between"}`}>
           {step > 0 && (
             <button
               type="button"
               onClick={() => setStep(step - 1)}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
             >
               <ChevronLeft className="h-4 w-4" /> Précédent
             </button>
@@ -339,7 +361,7 @@ export default function EvaluationPubliquePage() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting || noteGlobale === 0}
-              className="flex-1 sm:flex-none sm:min-w-[200px] flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+              className="flex-1 sm:flex-none sm:min-w-[200px] flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors shadow-md"
             >
               {submitting ? (
                 <>
@@ -357,16 +379,16 @@ export default function EvaluationPubliquePage() {
               type="button"
               onClick={() => setStep(step + 1)}
               disabled={!canNext}
-              className="flex-1 sm:flex-none sm:min-w-[160px] flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm"
+              className="flex-1 sm:flex-none sm:min-w-[160px] flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors shadow-md"
             >
-              Suivant <ChevronRight className="h-4 w-4" />
+              Continuer <ChevronRight className="h-4 w-4" />
             </button>
           )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-5 text-xs text-gray-400 border-t border-gray-100 bg-white">
+      <footer className="text-center py-5 text-xs text-gray-300 border-t border-gray-100 bg-white">
         RFC — Rescue Formation Conseil · Sécurité · Incendie · Prévention
       </footer>
     </div>

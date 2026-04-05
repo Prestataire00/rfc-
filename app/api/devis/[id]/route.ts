@@ -42,7 +42,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           entrepriseId: devis.entrepriseId ?? undefined,
           devisId: params.id,
         });
-      } catch {}
+      } catch (logErr) {
+        console.warn("logAction devis_statut échoué:", logErr);
+      }
       return NextResponse.json(devis);
     }
 

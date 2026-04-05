@@ -4,8 +4,16 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Users, CalendarDays, FolderOpen, FileText, CheckCircle } from "lucide-react";
 
+type ClientStats = {
+  nbStagiaires: number;
+  nbSessionsAVenir: number;
+  nbSessionsTerminees: number;
+  nbDocuments: number;
+  nbDevis: number;
+};
+
 export default function EspaceClientPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<ClientStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

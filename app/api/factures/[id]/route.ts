@@ -37,7 +37,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           entrepriseId: facture.entrepriseId ?? undefined,
           factureId: params.id,
         });
-      } catch {}
+      } catch (logErr) {
+        console.warn("logAction facture échoué:", logErr);
+      }
     }
     return NextResponse.json(facture);
   } catch (err: unknown) {

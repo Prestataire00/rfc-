@@ -53,9 +53,11 @@ export async function POST(req: NextRequest) {
         contactId: devis.contactId ?? undefined,
         devisId: devisId,
       });
-    } catch {}
+    } catch (logErr) {
+      console.warn("logAction devis_envoye échoué:", logErr);
+    }
 
-    return NextResponse.json({ success: true, skipped: (result as any)?.skipped || false });
+    return NextResponse.json({ success: true, skipped: result.skipped });
   } catch (err: unknown) {
     console.error("Erreur lors de l'envoi du devis:", err);
     return NextResponse.json({ error: "Erreur lors de l'envoi du devis" }, { status: 500 });

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
   <rect width="500" height="500" fill="white"/>
 
-  <!-- Arc rouge épais : bas-gauche → haut → droite (sens horaire, grand arc) -->
+  <!-- Arc rouge épais -->
   <path d="M125 438 A218 218 0 1 1 464 252" stroke="#CC1A1A" stroke-width="34" fill="none" stroke-linecap="round"/>
 
-  <!-- Arc gris : haut-gauche → bas → droite (sens anti-horaire, petit arc) -->
+  <!-- Arc gris -->
   <path d="M78 152 A192 192 0 0 0 348 420" stroke="#888888" stroke-width="20" fill="none" stroke-linecap="round"/>
 
   <!-- RFC -->
@@ -14,19 +14,16 @@
   <line x1="48" y1="250" x2="452" y2="250" stroke="#8B1A1A" stroke-width="2.2"/>
 
   <!-- RESCUE FORMATION CONSEIL -->
-  <text x="250" y="287" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="25.5" font-weight="900" fill="#111111" text-anchor="middle" letter-spacing="0.3">RESCUE FORMATION CONSEIL</text>
+  <text x="250" y="287" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="25.5" font-weight="900" fill="#111111" text-anchor="middle">RESCUE FORMATION CONSEIL</text>
 
-  <!-- SECURITE - INCENDIE - PREVENTION -->
-  <text x="250" y="313" font-family="Arial, Helvetica, sans-serif" font-size="15.5" font-weight="700" fill="#666666" text-anchor="middle" letter-spacing="2.5">SECURITE - INCENDIE - PREVENTION</text>
+  <!-- SECURITE - INCENDIE - PREVENTION (noir) -->
+  <text x="250" y="313" font-family="Arial, Helvetica, sans-serif" font-size="15.5" font-weight="700" fill="#111111" text-anchor="middle" letter-spacing="2.5">SECURITE - INCENDIE - PREVENTION</text>
 
-  <!-- Emblème flamme (fond gris foncé + flamme rouge) -->
+  <!-- Emblème flamme -->
   <g transform="translate(250, 392)">
     <circle cx="0" cy="0" r="33" fill="#595959" stroke="#7a7a7a" stroke-width="2"/>
-    <!-- Flamme principale -->
     <path d="M0,-21 C-7,-13 -17,-3 -14,9 C-11,19 0,25 0,25 C0,25 11,19 14,9 C17,-3 7,-13 0,-21 Z" fill="#CC1A1A"/>
-    <!-- Flamme interne -->
     <path d="M0,-11 C-4,-5 -9,1 -7,8 C-5,13 0,16 0,16 C0,16 5,13 7,8 C9,1 4,-5 0,-11 Z" fill="#FF5500" opacity="0.88"/>
-    <!-- Reflet haut -->
     <path d="M0,-4 C-2,0 -4,4 -3,7 C-1,9 0,11 0,11 C0,11 1,9 3,7 C4,4 2,0 0,-4 Z" fill="#FFB040" opacity="0.9"/>
   </g>
 </svg>

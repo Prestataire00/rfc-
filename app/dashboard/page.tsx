@@ -40,6 +40,7 @@ type Stats = {
   nbStagiairesFormes: number;
   nbFormationsRealisees: number;
   nbBesoinsEnCours: number;
+  nbDevisEnCours: number;
 };
 
 type Session = {

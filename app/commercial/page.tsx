@@ -49,7 +49,7 @@ type Facture = {
 const PIPELINE_COLUMNS = [
   { key: "brouillon", label: "Brouillon", color: "bg-gray-700 border-gray-600" },
   { key: "envoye", label: "Envoyé", color: "bg-red-900/20 border-red-300" },
-  { key: "accepte", label: "Accepté", color: "bg-green-900/20 border-green-700" },
+  { key: "signe", label: "Signé", color: "bg-green-900/20 border-green-700" },
   { key: "refuse", label: "Refusé", color: "bg-red-900/20 border-red-300" },
   { key: "expire", label: "Expiré", color: "bg-orange-900/20 border-orange-700" },
 ] as const;

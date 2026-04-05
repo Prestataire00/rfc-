@@ -37,7 +37,7 @@ export async function POST(_: NextRequest, { params }: { params: { id: string } 
 
     // Mark devis as accepted if not already
     if (devis.statut === "envoye") {
-      await prisma.devis.update({ where: { id: params.id }, data: { statut: "accepte" } });
+      await prisma.devis.update({ where: { id: params.id }, data: { statut: "signe" } });
     }
 
     try {

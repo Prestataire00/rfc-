@@ -448,7 +448,7 @@ export default function EntrepriseDetailPage() {
             {(() => {
               const factureDevisIds = new Set(entreprise.factures.map((f) => f.devisId).filter(Boolean));
               const caPrevisionnel = entreprise.devis
-                .filter((d) => ["envoye", "accepte", "signe"].includes(d.statut) && !factureDevisIds.has(d.id))
+                .filter((d) => ["envoye", "signe"].includes(d.statut) && !factureDevisIds.has(d.id))
                 .reduce((s, d) => s + d.montantTTC, 0);
               const caFacture = entreprise.factures
                 .filter((f) => f.statut !== "annulee")

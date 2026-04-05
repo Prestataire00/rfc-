@@ -6,7 +6,6 @@ import { escapeCsv, formatDateCsv, csvResponse } from "@/lib/export-utils";
 const STATUTS: Record<string, string> = {
   brouillon: "Brouillon",
   envoye: "Envoyé",
-  accepte: "Accepté",
   signe: "Signé",
   refuse: "Refusé",
   expire: "Expiré",

@@ -7,13 +7,20 @@ import { Star, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, ClipboardLis
 function LogoRFC({ size = 120 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="250" cy="250" r="249" fill="white"/>
-      <path d="M143 436 A215 215 0 1 1 465 250" stroke="#C41E24" strokeWidth="28" fill="none" strokeLinecap="round"/>
-      <path d="M86 155 A190 190 0 0 0 345 415" stroke="#888888" strokeWidth="18" fill="none" strokeLinecap="round"/>
-      <text x="250" y="258" fontFamily="Arial Black, Arial, Helvetica, sans-serif" fontSize="120" fontWeight="900" fill="#111111" textAnchor="middle">RFC</text>
-      <line x1="55" y1="300" x2="445" y2="300" stroke="#8B1A1A" strokeWidth="2.5"/>
-      <text x="250" y="336" fontFamily="Arial Black, Arial, Helvetica, sans-serif" fontSize="24" fontWeight="900" fill="#111111" textAnchor="middle" letterSpacing="0.5">RESCUE FORMATION CONSEIL 83</text>
-      <text x="250" y="368" fontFamily="Arial, Helvetica, sans-serif" fontSize="18" fontWeight="700" fill="#555555" textAnchor="middle" letterSpacing="1.5">SECURITE - INCENDIE - PREVENTION</text>
+      <defs>
+        <path id="topTextPath" d="M 90 310 A 195 195 0 1 1 410 310"/>
+      </defs>
+      <path d="M 60 330 A 222 222 0 1 1 440 330" stroke="#C41E24" strokeWidth="44" fill="none" strokeLinecap="round"/>
+      <path d="M 108 350 A 168 168 0 0 0 392 350" stroke="#888888" strokeWidth="26" fill="none" strokeLinecap="round"/>
+      <text fontFamily="Arial, Helvetica, sans-serif" fontSize="27" fontWeight="700" fill="#333333" letterSpacing="3">
+        <textPath href="#topTextPath" startOffset="7%">RESCUE FORMATION CONSEIL</textPath>
+      </text>
+      <text x="250" y="318" fontFamily="Arial, Helvetica, sans-serif" fontSize="19" fontWeight="600" fill="#777777" textAnchor="middle" letterSpacing="2">SÉCURITÉ - INCENDIE - PRÉVENTION</text>
+      <g transform="translate(250, 215)">
+        <path d="M0,-72 C-12,-54 -38,-28 -32,-3 C-26,20 -14,38 0,52 C14,38 26,20 32,-3 C38,-28 12,-54 0,-72 Z" fill="#C41E24"/>
+        <path d="M0,-42 C-6,-28 -20,-10 -16,7 C-11,22 0,32 0,32 C0,32 11,22 16,7 C20,-10 6,-28 0,-42 Z" fill="#FF6622" opacity="0.8"/>
+        <path d="M0,-18 C-3,-10 -9,0 -7,9 C-4,16 0,20 0,20 C0,20 4,16 7,9 C9,0 3,-10 0,-18 Z" fill="#FFAA44" opacity="0.9"/>
+      </g>
     </svg>
   );
 }

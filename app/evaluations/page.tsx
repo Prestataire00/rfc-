@@ -2,8 +2,8 @@
 // v2 - dashboard style
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -37,6 +37,8 @@ function StatCard({ icon: Icon, label, value, color, sub }: { icon: any; label: 
 
 export default function EvaluationsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const filtre = searchParams.get("filtre"); // "attente" | "completees" | null
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +71,51 @@ export default function EvaluationsPage() {
     return (
       <div className="flex justify-center py-24">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Vue filtrée
+  if (filtre === "attente" || filtre === "completees") {
+    const liste = filtre === "attente" ? pending : completed;
+    const titre = filtre === "attente" ? "En attente de réponse" : "Évaluations complétées";
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-100">{titre} <span className="text-lg font-normal text-gray-400">({liste.length})</span></h1>
+          <Link href="/evaluations" className="inline-flex items-center gap-1.5 rounded-md border border-gray-600 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors">
+            <X className="h-4 w-4" /> Retour
+          </Link>
+        </div>
+        {liste.length === 0 ? (
+          <p className="text-gray-400 text-center py-12">Aucune évaluation</p>
+        ) : (
+          <div className="space-y-2">
+            {liste.map((ev) => (
+              <div
+                key={ev.id}
+                onClick={() => router.push(`/evaluations/${ev.id}`)}
+                className="flex items-center justify-between p-4 rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-700 cursor-pointer transition-colors"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-100 truncate">{ev.session.formation.titre}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {EVALUATION_TYPES[ev.type as keyof typeof EVALUATION_TYPES]?.label} • {ev.contact ? `${ev.contact.prenom} ${ev.contact.nom}` : "—"} • {formatDate(ev.createdAt)}
+                  </p>
+                </div>
+                {ev.estComplete && ev.noteGlobale ? (
+                  <div className="flex items-center gap-1 shrink-0 ml-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className={`h-4 w-4 ${i < ev.noteGlobale! ? "fill-amber-400 text-amber-400" : "text-gray-600"}`} />
+                    ))}
+                  </div>
+                ) : (
+                  <Send className="h-4 w-4 text-gray-500 shrink-0 ml-4" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -190,8 +237,8 @@ export default function EvaluationsPage() {
                 </div>
               ))}
               {pending.length > 5 && (
-                <Link href="/evaluations" className="flex items-center justify-center gap-1 text-sm text-red-500 hover:text-red-400 pt-2">
-                  Voir tout <ArrowRight className="h-4 w-4" />
+                <Link href="/evaluations?filtre=attente" className="flex items-center justify-center gap-1 text-sm text-red-500 hover:text-red-400 pt-2">
+                  Voir tout ({pending.length}) <ArrowRight className="h-4 w-4" />
                 </Link>
               )}
             </div>

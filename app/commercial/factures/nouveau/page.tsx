@@ -46,10 +46,10 @@ export default function NouvelleFacturePage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/entreprises").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/devis?statut=signe").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/devis?statut=signe&limit=100").then((r) => (r.ok ? r.json() : { data: [] })),
     ]).then(([e, d]) => {
-      setEntreprises(e);
-      setDevisList(d);
+      setEntreprises(Array.isArray(e) ? e : []);
+      setDevisList(Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : []);
     });
   }, []);
 

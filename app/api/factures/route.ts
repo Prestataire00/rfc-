@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(facture, { status: 201 });
   } catch (err: unknown) {
-    console.error("Erreur POST facture:", err);
-    return NextResponse.json({ error: "Erreur lors de la création de la facture" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Erreur POST facture:", message);
+    return NextResponse.json({ error: `Erreur: ${message.split("\n").pop()}` }, { status: 500 });
   }
 }

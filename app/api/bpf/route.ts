@@ -98,10 +98,20 @@ export async function GET(req: NextRequest) {
       if (s.statut === "terminee") parMois[m].terminees++;
     });
 
-    // Financements by type
+    // Financements by type (from Financement table + Facture paiements)
     const financementsParType: Record<string, number> = {};
     financements.forEach((f: any) => {
       financementsParType[f.type] = (financementsParType[f.type] || 0) + f.montant;
+    });
+    // Also aggregate from facture paiements (paid invoices)
+    (facturesList as any[]).forEach((f: any) => {
+      if (f.statut === "payee" && Array.isArray(f.paiements)) {
+        f.paiements.forEach((p: any) => {
+          if (p.mode && p.montant) {
+            financementsParType[p.mode] = (financementsParType[p.mode] || 0) + p.montant;
+          }
+        });
+      }
     });
 
     return NextResponse.json({

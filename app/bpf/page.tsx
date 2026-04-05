@@ -96,25 +96,99 @@ export default function BPFPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 mb-6">
-        {/* Sessions par mois */}
+      <div className="col-span-2 grid grid-cols-1 gap-6 mb-6">
+        {/* Sessions par mois — graphique complet */}
         <div className="rounded-lg border bg-gray-800 p-6">
-          <h3 className="font-semibold text-gray-100 mb-4">Sessions par mois</h3>
-          <div className="flex items-end gap-2 h-40">
-            {data.parMois.map((m, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col items-center">
-                  <div
-                    className="w-full bg-red-900/200 rounded-t"
-                    style={{ height: `${(m.total / maxMoisTotal) * 120}px`, minHeight: m.total > 0 ? 4 : 0 }}
-                  />
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-red-400" />
+              Sessions par mois — {annee}
+            </h3>
+            <div className="flex items-center gap-4 text-xs text-gray-400">
+              <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-red-500" />Total</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-green-500" />Terminées</span>
+            </div>
+          </div>
+
+          {/* Chart area */}
+          <div className="relative">
+            {/* Y-axis grid lines */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
+              {[maxMoisTotal, Math.ceil(maxMoisTotal * 0.75), Math.ceil(maxMoisTotal * 0.5), Math.ceil(maxMoisTotal * 0.25), 0].map((val, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 w-4 text-right">{val}</span>
+                  <div className="flex-1 border-t border-gray-700/50" />
                 </div>
-                <span className="text-[10px] text-gray-400">{MOIS_LABELS[idx]}</span>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Bars */}
+            <div className="ml-6 flex items-end gap-1.5 h-48 pb-8">
+              {data.parMois.map((m, idx) => {
+                const totalPct = maxMoisTotal > 0 ? (m.total / maxMoisTotal) * 100 : 0;
+                const termPct = maxMoisTotal > 0 ? (m.terminees / maxMoisTotal) * 100 : 0;
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-0 group relative">
+                    {/* Tooltip */}
+                    {m.total > 0 && (
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-10">
+                        <div className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-gray-100 whitespace-nowrap shadow-lg">
+                          <div className="text-red-400">{m.total} session{m.total > 1 ? "s" : ""}</div>
+                          <div className="text-green-400">{m.terminees} terminée{m.terminees > 1 ? "s" : ""}</div>
+                        </div>
+                        <div className="w-2 h-2 bg-gray-900 border-b border-r border-gray-600 rotate-45 -mt-1" />
+                      </div>
+                    )}
+                    {/* Value above bar */}
+                    {m.total > 0 && (
+                      <span className="text-[10px] font-bold text-gray-300 mb-1">{m.total}</span>
+                    )}
+                    {/* Bar container */}
+                    <div className="w-full flex-1 flex items-end">
+                      <div className="relative w-full" style={{ height: `${Math.max(totalPct, 0)}%`, minHeight: m.total > 0 ? "4px" : "0" }}>
+                        {/* Total bar */}
+                        <div className="absolute inset-0 bg-red-500/30 rounded-t" />
+                        {/* Terminées bar */}
+                        <div
+                          className="absolute bottom-0 left-0 right-0 bg-green-500 rounded-t transition-all"
+                          style={{ height: m.total > 0 ? `${(m.terminees / m.total) * 100}%` : "0%" }}
+                        />
+                        {/* Total outline */}
+                        <div className="absolute inset-0 border-t-2 border-x-2 border-red-500 rounded-t" />
+                      </div>
+                    </div>
+                    <span className={`text-[10px] mt-1 font-medium ${m.total > 0 ? "text-gray-200" : "text-gray-500"}`}>
+                      {MOIS_LABELS[idx]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Summary row */}
+          <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-xs text-gray-400">Total sessions</p>
+              <p className="text-lg font-bold text-gray-100">{data.parMois.reduce((s, m) => s + m.total, 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Terminées</p>
+              <p className="text-lg font-bold text-green-400">{data.parMois.reduce((s, m) => s + m.terminees, 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Mois actifs</p>
+              <p className="text-lg font-bold text-gray-100">{data.parMois.filter((m) => m.total > 0).length}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Pic mensuel</p>
+              <p className="text-lg font-bold text-red-400">{maxMoisTotal} <span className="text-xs font-normal text-gray-400">sessions</span></p>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Par categorie */}
         <div className="rounded-lg border bg-gray-800 p-6">
           <h3 className="font-semibold text-gray-100 mb-4">Par categorie</h3>
@@ -130,7 +204,7 @@ export default function BPFPage() {
                   </div>
                   <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-indigo-900/200 rounded-full"
+                      className="h-full bg-indigo-500 rounded-full"
                       style={{ width: `${(val.sessions / data.sessionsTerminees) * 100}%` }}
                     />
                   </div>

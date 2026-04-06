@@ -55,6 +55,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/inscription-publique")) return true;
   if (pathname.startsWith("/evaluation/")) return true;
   if (pathname.startsWith("/inscription-stagiaire")) return true;
+  if (pathname.startsWith("/presentation")) return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname === "/favicon.ico") return true;
   if (pathname === "/logo.svg") return true;

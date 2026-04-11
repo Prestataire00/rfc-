@@ -1,270 +1,273 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
-  BadgeCheck, BookOpen, Users, ClipboardList, MessageSquare,
-  FileText, BarChart3, CheckCircle2, AlertTriangle, Clock,
-  TrendingUp, Target, Shield, ArrowRight,
+  BadgeCheck, BarChart3, Shield, ChevronLeft, ChevronRight,
+  Search, Download, Target, ClipboardList, Users, BookOpen,
+  TrendingUp, MessageSquare,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface Stats {
-  totalFormations: number;
-  totalSessions: number;
-  totalStagiaires: number;
-  totalEvaluations: number;
-  evaluationsCompletes: number;
-  tauxSatisfaction: number;
-  tauxReussite: number;
-  documentsManquants: number;
+// ─── Types ───
+interface QualiteRow {
+  id: string;
+  formation: string;
+  satisfaction_chaud: number | null;
+  satisfaction_froid: number | null;
+  eval_acquis: number | null;
+  noteGlobale: number | null;
 }
 
-const CRITERES_QUALIOPI = [
-  {
-    numero: 1,
-    titre: "Conditions d'information du public",
-    description: "Informations rendues accessibles au public sur les prestations, les delais, les resultats et les tarifs.",
-    indicateurs: ["1.1", "1.2", "1.3"],
-    icon: Target,
-    color: "text-blue-500 bg-blue-900/30",
-  },
-  {
-    numero: 2,
-    titre: "Identification des objectifs et adaptation",
-    description: "Identification precise des objectifs des prestations et adaptation aux beneficiaires.",
-    indicateurs: ["2.1", "2.2", "2.3", "2.4"],
-    icon: ClipboardList,
-    color: "text-emerald-500 bg-emerald-900/30",
-  },
-  {
-    numero: 3,
-    titre: "Adaptation aux publics beneficiaires",
-    description: "Adaptation aux publics, modalites d'accueil, accompagnement et suivi.",
-    indicateurs: ["3.1", "3.2", "3.3"],
-    icon: Users,
-    color: "text-purple-500 bg-purple-900/30",
-  },
-  {
-    numero: 4,
-    titre: "Adequation des moyens pedagogiques",
-    description: "Adequation des moyens pedagogiques, techniques et d'encadrement.",
-    indicateurs: ["4.1", "4.2", "4.3"],
-    icon: BookOpen,
-    color: "text-amber-500 bg-amber-900/30",
-  },
-  {
-    numero: 5,
-    titre: "Qualification des personnels",
-    description: "Qualification et developpement des competences des personnels.",
-    indicateurs: ["5.1", "5.2"],
-    icon: BadgeCheck,
-    color: "text-red-500 bg-red-900/30",
-  },
-  {
-    numero: 6,
-    titre: "Inscription dans l'environnement professionnel",
-    description: "Inscription et investissement dans l'environnement professionnel.",
-    indicateurs: ["6.1", "6.2", "6.3"],
-    icon: TrendingUp,
-    color: "text-cyan-500 bg-cyan-900/30",
-  },
-  {
-    numero: 7,
-    titre: "Recueil et prise en compte des appreciations",
-    description: "Recueil et prise en compte des appreciations et reclamations.",
-    indicateurs: ["7.1", "7.2", "7.3"],
-    icon: MessageSquare,
-    color: "text-pink-500 bg-pink-900/30",
-  },
+type ViewMode = "table" | "qualiopi";
+
+// ─── Helpers ───
+function fmt(val: number | null): string {
+  if (val === null || val === undefined) return "-- %";
+  return `${val.toFixed(1)} %`;
+}
+
+function fmtCell(val: number | null): { text: string; bg: string } {
+  if (val === null || val === undefined) return { text: "-- %", bg: "" };
+  const bg = val >= 80 ? "bg-emerald-900/30 text-emerald-400" : val >= 50 ? "bg-amber-900/30 text-amber-400" : "bg-red-900/30 text-red-400";
+  return { text: `${val.toFixed(1)} %`, bg };
+}
+
+function avg(values: (number | null)[]): number | null {
+  const valid = values.filter((v): v is number => v !== null && v !== undefined);
+  if (valid.length === 0) return null;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
+}
+
+const COLUMNS = [
+  { key: "satisfaction_chaud" as const, label: "Satisfaction a chaud" },
+  { key: "satisfaction_froid" as const, label: "Satisfaction a froid" },
+  { key: "eval_acquis" as const, label: "Evaluation des acquis" },
+];
+
+const QUALIOPI_CRITERIA = [
+  { num: 1, title: "Information du public", description: "Conditions d'information du public sur les prestations, delais et resultats", indicators: ["satisfaction_chaud"], icon: Target, color: "text-blue-500 bg-blue-900/30" },
+  { num: 2, title: "Identification des objectifs", description: "Identification precise des objectifs et adaptation aux beneficiaires", indicators: ["eval_acquis"], icon: ClipboardList, color: "text-emerald-500 bg-emerald-900/30" },
+  { num: 3, title: "Adaptation des prestations", description: "Adaptation aux publics beneficiaires et modalites d'accueil", indicators: ["satisfaction_chaud"], icon: Users, color: "text-purple-500 bg-purple-900/30" },
+  { num: 4, title: "Moyens pedagogiques", description: "Adequation des moyens pedagogiques, techniques et d'encadrement", indicators: ["satisfaction_chaud", "satisfaction_froid"], icon: BookOpen, color: "text-amber-500 bg-amber-900/30" },
+  { num: 5, title: "Qualification des personnels", description: "Qualification et developpement des competences des personnels", indicators: ["eval_acquis"], icon: BadgeCheck, color: "text-red-500 bg-red-900/30" },
+  { num: 6, title: "Environnement professionnel", description: "Inscription et investissement dans l'environnement professionnel", indicators: ["satisfaction_froid"], icon: TrendingUp, color: "text-cyan-500 bg-cyan-900/30" },
+  { num: 7, title: "Amelioration continue", description: "Recueil et prise en compte des appreciations et reclamations", indicators: ["satisfaction_chaud", "satisfaction_froid", "eval_acquis"], icon: MessageSquare, color: "text-pink-500 bg-pink-900/30" },
 ];
 
 export default function QualiopiPage() {
-  const [stats, setStats] = useState<Stats>({
-    totalFormations: 0, totalSessions: 0, totalStagiaires: 0,
-    totalEvaluations: 0, evaluationsCompletes: 0, tauxSatisfaction: 0,
-    tauxReussite: 0, documentsManquants: 0,
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [searchName, setSearchName] = useState("");
+  const [rows, setRows] = useState<QualiteRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/formations").then((r) => r.ok ? r.json() : { total: 0 }),
-      fetch("/api/sessions").then((r) => r.ok ? r.json() : []),
       fetch("/api/evaluations").then((r) => r.ok ? r.json() : []),
-    ])
-      .then(([formData, sessions, evaluations]) => {
-        const sessionsArr = Array.isArray(sessions) ? sessions : sessions.sessions || [];
-        const evalsArr = Array.isArray(evaluations) ? evaluations : [];
-        const completed = evalsArr.filter((e: any) => e.estComplete);
-        const notes = completed.filter((e: any) => e.noteGlobale).map((e: any) => e.noteGlobale);
-        const avgNote = notes.length > 0 ? notes.reduce((a: number, b: number) => a + b, 0) / notes.length : 0;
+      fetch("/api/sessions").then((r) => r.ok ? r.json() : []),
+    ]).then(([evaluations, sessionsData]) => {
+      const evalsArr = Array.isArray(evaluations) ? evaluations : [];
+      const sessionsArr = Array.isArray(sessionsData) ? sessionsData : sessionsData.sessions || [];
 
-        setStats({
-          totalFormations: formData.total || 0,
-          totalSessions: sessionsArr.length,
-          totalStagiaires: sessionsArr.reduce((acc: number, s: any) => acc + (s._count?.inscriptions || 0), 0),
-          totalEvaluations: evalsArr.length,
-          evaluationsCompletes: completed.length,
-          tauxSatisfaction: Math.round(avgNote * 20),
-          tauxReussite: evalsArr.length > 0 ? Math.round((completed.length / evalsArr.length) * 100) : 0,
-          documentsManquants: 0,
-        });
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      // Group evaluations by session -> formation
+      const sessionMap: Record<string, { formation: string; chaud: number[]; froid: number[]; acquis: number[]; notes: number[] }> = {};
+
+      for (const ev of evalsArr) {
+        const sId = ev.session?.id;
+        const fName = ev.session?.formation?.titre || "Sans titre";
+        if (!sId) continue;
+        if (!sessionMap[sId]) sessionMap[sId] = { formation: fName, chaud: [], froid: [], acquis: [], notes: [] };
+        if (ev.estComplete && ev.noteGlobale) {
+          sessionMap[sId].notes.push(ev.noteGlobale);
+          const pct = ((ev.noteGlobale - 1) / 4) * 100; // Convert 1-5 to 0-100%
+          if (ev.type === "satisfaction_chaud") sessionMap[sId].chaud.push(pct);
+          else if (ev.type === "satisfaction_froid") sessionMap[sId].froid.push(pct);
+          else if (ev.type === "acquis") sessionMap[sId].acquis.push(pct);
+        }
+      }
+
+      // Also add sessions without evaluations
+      for (const s of sessionsArr) {
+        if (!sessionMap[s.id]) {
+          sessionMap[s.id] = { formation: s.formation?.titre || s.lieu || "Session", chaud: [], froid: [], acquis: [], notes: [] };
+        }
+      }
+
+      const mapped: QualiteRow[] = Object.entries(sessionMap).map(([id, data]) => ({
+        id,
+        formation: data.formation,
+        satisfaction_chaud: data.chaud.length > 0 ? data.chaud.reduce((a, b) => a + b, 0) / data.chaud.length : null,
+        satisfaction_froid: data.froid.length > 0 ? data.froid.reduce((a, b) => a + b, 0) / data.froid.length : null,
+        eval_acquis: data.acquis.length > 0 ? data.acquis.reduce((a, b) => a + b, 0) / data.acquis.length : null,
+        noteGlobale: data.notes.length > 0 ? data.notes.reduce((a, b) => a + b, 0) / data.notes.length : null,
+      }));
+
+      setRows(mapped);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  const filtered = rows.filter((r) => {
+    if (!searchName.trim()) return true;
+    return r.formation.toLowerCase().includes(searchName.toLowerCase());
+  });
+
+  const colAverages: Record<string, number | null> = {};
+  for (const col of COLUMNS) {
+    colAverages[col.key] = avg(filtered.map((r) => r[col.key]));
+  }
+
+  function moyenneGen(r: QualiteRow): number | null {
+    return avg([r.satisfaction_chaud, r.satisfaction_froid, r.eval_acquis]);
+  }
+
+  const qualiopiScores = useMemo(() => {
+    const allIndicators: Record<string, number[]> = {};
+    for (const row of filtered) {
+      for (const col of COLUMNS) {
+        const val = row[col.key];
+        if (val !== null) {
+          if (!allIndicators[col.key]) allIndicators[col.key] = [];
+          allIndicators[col.key].push(val);
+        }
+      }
+    }
+    return QUALIOPI_CRITERIA.map((criterion) => {
+      const scores: number[] = [];
+      for (const ind of criterion.indicators) {
+        const vals = allIndicators[ind];
+        if (vals && vals.length > 0) scores.push(vals.reduce((a, b) => a + b, 0) / vals.length);
+      }
+      const score = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      return { ...criterion, score, hasData: scores.length > 0 };
+    });
+  }, [filtered]);
+
   if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-      </div>
-    );
+    return <div className="p-6 flex items-center justify-center py-24"><div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" /></div>;
   }
 
   return (
     <div className="p-6">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-red-900/30 flex items-center justify-center">
-            <BadgeCheck className="h-6 w-6 text-red-500" />
+      <h1 className="text-2xl font-bold text-gray-100 mb-6">Suivi Qualite (Evaluation & Satisfaction)</h1>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex rounded-lg border border-gray-600 overflow-hidden">
+            <button onClick={() => setViewMode("table")} className={`px-3 py-2 text-sm font-medium flex items-center gap-1.5 ${viewMode === "table" ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+              <BarChart3 className="h-4 w-4" /> Tableau
+            </button>
+            <button onClick={() => setViewMode("qualiopi")} className={`px-3 py-2 text-sm font-medium flex items-center gap-1.5 ${viewMode === "qualiopi" ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
+              <Shield className="h-4 w-4" /> Qualiopi
+            </button>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-100">Qualiopi</h1>
-            <p className="text-sm text-gray-400">Tableau de bord qualite - Certification Qualiopi</p>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              placeholder="Rechercher une formation..."
+              className="border border-gray-600 bg-gray-800 rounded-lg pl-9 pr-3 py-2 text-sm w-56 focus:outline-none focus:border-red-500 text-gray-200"
+            />
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/qualiopi/indicateurs" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
-            <BarChart3 className="h-4 w-4" /> Indicateurs
+          <Link href="/qualiopi/amelioration" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
+            Amelioration
           </Link>
-          <Link href="/qualiopi/audits" className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors">
-            <Shield className="h-4 w-4" /> Audits
+          <Link href="/qualiopi/incidents" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
+            Incidents
           </Link>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-emerald-900/30 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-100">{stats.tauxSatisfaction}%</p>
-                <p className="text-xs text-gray-400">Taux satisfaction</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-900/30 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-100">{stats.evaluationsCompletes}/{stats.totalEvaluations}</p>
-                <p className="text-xs text-gray-400">Evaluations completees</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-purple-900/30 flex items-center justify-center">
-                <Users className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-100">{stats.totalStagiaires}</p>
-                <p className="text-xs text-gray-400">Stagiaires formes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-900/30 flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-100">{stats.totalFormations}</p>
-                <p className="text-xs text-gray-400">Formations actives</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {viewMode === "qualiopi" ? (
+        /* ─── VUE QUALIOPI ─── */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {qualiopiScores.map((criterion) => {
+            const statusBorder = !criterion.hasData ? "border-gray-700" : criterion.score !== null && criterion.score >= 80 ? "border-emerald-700" : criterion.score !== null && criterion.score >= 50 ? "border-amber-700" : "border-red-700";
+            const statusBg = !criterion.hasData ? "bg-gray-800" : criterion.score !== null && criterion.score >= 80 ? "bg-emerald-900/20" : criterion.score !== null && criterion.score >= 50 ? "bg-amber-900/20" : "bg-red-900/20";
+            const dotColor = !criterion.hasData ? "bg-gray-500" : criterion.score !== null && criterion.score >= 80 ? "bg-emerald-500" : criterion.score !== null && criterion.score >= 50 ? "bg-amber-500" : "bg-red-500";
+            const Icon = criterion.icon;
 
-      {/* 7 Criteres Qualiopi */}
-      <h2 className="text-lg font-semibold text-gray-100 mb-4">Les 7 criteres du Referentiel National Qualite</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {CRITERES_QUALIOPI.map((critere) => {
-          const Icon = critere.icon;
-          return (
-            <Card key={critere.numero} className="hover:border-gray-600 transition-colors">
-              <CardContent className="pt-5 pb-5">
-                <div className="flex items-start gap-3">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${critere.color}`}>
-                    <Icon className="h-5 w-5" />
+            return (
+              <div key={criterion.num} className={`rounded-xl border-2 p-5 ${statusBorder} ${statusBg}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`w-3 h-3 rounded-full ${dotColor}`} />
+                  <span className="text-xs font-semibold text-gray-400 uppercase">Critere {criterion.num}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${criterion.color}`}>
+                    <Icon className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-red-500">Critere {critere.numero}</span>
-                      <span className="text-[10px] text-gray-500">{critere.indicateurs.length} indicateurs</span>
-                    </div>
-                    <h3 className="text-sm font-semibold text-gray-200 mb-1">{critere.titre}</h3>
-                    <p className="text-xs text-gray-400 line-clamp-2">{critere.description}</p>
+                  <h3 className="font-bold text-gray-200 text-sm">{criterion.title}</h3>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">{criterion.description}</p>
+                <div className="flex items-end justify-between">
+                  <span className="text-2xl font-bold text-gray-100">
+                    {criterion.score !== null ? `${criterion.score.toFixed(0)}%` : "—"}
+                  </span>
+                  {!criterion.hasData && <span className="text-xs text-gray-500">Pas de donnees</span>}
+                </div>
+                <div className="mt-2">
+                  <div className="w-full bg-gray-700 rounded-full h-1.5">
+                    <div className={`h-1.5 rounded-full transition-all ${dotColor}`} style={{ width: `${criterion.score ?? 0}%` }} />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Raccourcis */}
-      <h2 className="text-lg font-semibold text-gray-100 mb-4">Acces rapides</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/evaluations" className="flex items-center gap-3 p-4 rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-750 hover:border-gray-600 transition-colors group">
-          <MessageSquare className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-200">Evaluations</p>
-            <p className="text-xs text-gray-400">Satisfaction & acquis</p>
-          </div>
-          <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-        </Link>
-        <Link href="/documents" className="flex items-center gap-3 p-4 rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-750 hover:border-gray-600 transition-colors group">
-          <FileText className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-200">Documents</p>
-            <p className="text-xs text-gray-400">Gestion documentaire</p>
-          </div>
-          <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-        </Link>
-        <Link href="/qualiopi/indicateurs" className="flex items-center gap-3 p-4 rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-750 hover:border-gray-600 transition-colors group">
-          <BarChart3 className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-200">Indicateurs</p>
-            <p className="text-xs text-gray-400">Suivi des KPIs</p>
-          </div>
-          <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-        </Link>
-        <Link href="/qualiopi/audits" className="flex items-center gap-3 p-4 rounded-lg border border-gray-700 bg-gray-800 hover:bg-gray-750 hover:border-gray-600 transition-colors group">
-          <Shield className="h-5 w-5 text-gray-400 group-hover:text-red-500 transition-colors" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-200">Audits</p>
-            <p className="text-xs text-gray-400">Preparation & suivi</p>
-          </div>
-          <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-        </Link>
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* ─── VUE TABLEAU ─── */
+        <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-x-auto">
+          <table className="w-full text-sm whitespace-nowrap">
+            <thead>
+              <tr className="bg-gray-900 border-b border-gray-700">
+                <th className="px-4 py-3 text-left font-semibold text-gray-400 min-w-[250px]">Formation</th>
+                {COLUMNS.map((col) => (
+                  <th key={col.key} className="px-4 py-3 text-center font-semibold text-gray-400 min-w-[120px]">{col.label}</th>
+                ))}
+                <th className="px-4 py-3 text-center font-semibold text-gray-400 min-w-[120px]">Moyenne Generale</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={COLUMNS.length + 2} className="px-4 py-16 text-center text-gray-500">Aucune donnee disponible</td></tr>
+              ) : (
+                <>
+                  {filtered.map((row) => {
+                    const mGen = moyenneGen(row);
+                    return (
+                      <tr key={row.id} className="border-b border-gray-700 hover:bg-gray-750 transition-colors">
+                        <td className="px-4 py-3 text-red-500 font-medium">{row.formation}</td>
+                        {COLUMNS.map((col) => {
+                          const { text, bg } = fmtCell(row[col.key]);
+                          return <td key={col.key} className={`px-4 py-3 text-center ${bg} rounded-sm`}>{text}</td>;
+                        })}
+                        {(() => { const { text, bg } = fmtCell(mGen); return <td className={`px-4 py-3 text-center font-semibold ${bg} rounded-sm`}>{text}</td>; })()}
+                      </tr>
+                    );
+                  })}
+                  {/* Moyenne Finale */}
+                  <tr className="bg-gray-900 border-t-2 border-gray-600 font-semibold">
+                    <td className="px-4 py-3 text-gray-200">Moyenne Finale</td>
+                    {COLUMNS.map((col) => {
+                      const { text, bg } = fmtCell(colAverages[col.key]);
+                      return <td key={col.key} className={`px-4 py-3 text-center ${bg} rounded-sm`}>{text}</td>;
+                    })}
+                    {(() => {
+                      const allGenAvg = avg(Object.values(colAverages));
+                      const { text, bg } = fmtCell(allGenAvg);
+                      return <td className={`px-4 py-3 text-center ${bg} rounded-sm`}>{text}</td>;
+                    })()}
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

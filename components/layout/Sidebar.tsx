@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
-  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch,
+  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,8 +72,10 @@ const adminNavGroups: NavGroup[] = [
       {
         href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck,
         children: [
-          { href: "/qualiopi", label: "Tableau de bord", icon: BadgeCheck },
+          { href: "/qualiopi", label: "Suivi qualite", icon: BadgeCheck },
           { href: "/qualiopi/indicateurs", label: "Indicateurs", icon: BarChart3 },
+          { href: "/qualiopi/amelioration", label: "Amelioration", icon: ClipboardList },
+          { href: "/qualiopi/incidents", label: "Incidents", icon: AlertTriangle },
           { href: "/qualiopi/audits", label: "Audits", icon: Shield },
         ],
       },

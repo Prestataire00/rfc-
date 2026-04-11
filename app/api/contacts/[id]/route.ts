@@ -16,6 +16,16 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
           orderBy: { createdAt: "desc" },
         },
         devis: { orderBy: { createdAt: "desc" } },
+        attestations: { orderBy: { createdAt: "desc" } },
+        evaluations: { orderBy: { createdAt: "desc" } },
+        besoins: {
+          include: { formation: true },
+          orderBy: { createdAt: "desc" },
+        },
+        feuillesPresence: {
+          include: { session: { include: { formation: true } } },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 

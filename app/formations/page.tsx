@@ -46,70 +46,126 @@ const modaliteIcons: Record<string, React.ReactNode> = {
   mixte: <Shuffle className="h-3.5 w-3.5" />,
 };
 
-// Images par defaut basees sur les mots-cles du titre/categorie
-const IMAGE_KEYWORDS: { keywords: string[]; url: string }[] = [
+// Banque d'images par categorie - plusieurs images par theme pour varier
+const IMAGE_BANK: { keywords: string[]; urls: string[] }[] = [
   {
-    keywords: ["sst", "secouriste", "secourisme", "premiers secours", "sante"],
-    url: "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=600&h=400&fit=crop",
+    keywords: ["sst", "secouriste", "secourisme", "premiers secours", "sante", "mentale"],
+    urls: [
+      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1551190822-a9ce113ac100?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["incendie", "feu", "extincteur", "evacuation", "epi"],
-    url: "https://images.unsplash.com/photo-1486551937199-baf066858de7?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1486551937199-baf066858de7?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1555861496-0666c8981751?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1582585308895-43f1d78f3137?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["habilitation", "electrique", "electricite", "electr"],
-    url: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1544724107-6d5c4caaff30?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["hauteur", "travail en hauteur", "echafaudage", "nacelle", "caces"],
-    url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1590644365607-1c5a5a637bca?w=600&h=400&fit=crop",
+    ],
   },
   {
-    keywords: ["securite", "prevention", "risque", "danger", "epi", "protection"],
-    url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop",
+    keywords: ["securite", "prevention", "risque", "danger", "protection"],
+    urls: [
+      "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1578496479763-c21c718af028?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1574169208507-84376144848b?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["geste", "posture", "ergonomie", "prap", "tms"],
-    url: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=400&fit=crop",
+    ],
   },
   {
-    keywords: ["chimique", "amiante", "biologique", "atex"],
-    url: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&h=400&fit=crop",
-  },
-  {
-    keywords: ["management", "encadrement", "equipe", "leadership"],
-    url: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
-  },
-  {
-    keywords: ["psc1", "pse", "defibrillateur", "dae", "arret cardiaque", "massage", "rcp"],
-    url: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=600&h=400&fit=crop",
+    keywords: ["psc1", "pse", "defibrillateur", "dae", "arret cardiaque", "massage", "rcp", "urgence"],
+    urls: [
+      "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["ssiap", "agent", "surveillance"],
-    url: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["hygiene", "alimentaire", "haccp", "proprete"],
-    url: "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=600&h=400&fit=crop",
+    ],
+  },
+  {
+    keywords: ["management", "encadrement", "equipe", "leadership"],
+    urls: [
+      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop",
+    ],
   },
   {
     keywords: ["formation", "pedagogie", "formateur"],
-    url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=400&fit=crop",
+    urls: [
+      "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&h=400&fit=crop",
+    ],
   },
 ];
 
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=400&fit=crop";
+const DEFAULT_IMAGES = [
+  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop",
+];
+
+// Hash simple sur l'ID pour choisir une image differente par formation
+function hashId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
 
 function getFormationImage(formation: Formation): string {
   if (formation.image) return formation.image;
   const searchText = `${formation.titre} ${formation.categorie || ""}`.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  for (const entry of IMAGE_KEYWORDS) {
+  const h = hashId(formation.id);
+  for (const entry of IMAGE_BANK) {
     if (entry.keywords.some((kw) => searchText.includes(kw))) {
-      return entry.url;
+      return entry.urls[h % entry.urls.length];
     }
   }
-  return DEFAULT_IMAGE;
+  return DEFAULT_IMAGES[h % DEFAULT_IMAGES.length];
 }
 
 type SortField = "titre" | "duree" | "tarif" | "createdAt";

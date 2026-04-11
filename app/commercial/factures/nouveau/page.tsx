@@ -42,6 +42,7 @@ export default function NouvelleFacturePage() {
   });
   const [lignes, setLignes] = useState<Ligne[]>([createLigne()]);
   const [notes, setNotes] = useState("");
+  const [avecTVA, setAvecTVA] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -74,7 +75,8 @@ export default function NouvelleFacturePage() {
   };
 
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
-  const montantTVA = montantHT * (TVA_RATE / 100);
+  const tauxTVA = avecTVA ? TVA_RATE : 0;
+  const montantTVA = montantHT * (tauxTVA / 100);
   const montantTTC = montantHT + montantTVA;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,7 +102,7 @@ export default function NouvelleFacturePage() {
     const payload: Record<string, unknown> = {
       entrepriseId,
       dateEcheance,
-      tauxTVA: TVA_RATE,
+      tauxTVA: tauxTVA,
       montantHT: Math.round(montantHT * 100) / 100,
       montantTTC: Math.round(montantTTC * 100) / 100,
       notes: notes || null,
@@ -287,8 +289,20 @@ export default function NouvelleFacturePage() {
               <Plus className="h-4 w-4" /> Ajouter une ligne
             </button>
 
-            {/* Totaux */}
+            {/* TVA toggle + Totaux */}
             <div className="mt-6 border-t pt-4">
+              <div className="flex items-center gap-3 mb-4">
+                <input
+                  id="avecTVA"
+                  type="checkbox"
+                  checked={avecTVA}
+                  onChange={(e) => setAvecTVA(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-600 text-red-600"
+                />
+                <label htmlFor="avecTVA" className="text-sm font-medium text-gray-300 cursor-pointer">
+                  Appliquer la TVA ({TVA_RATE}%)
+                </label>
+              </div>
               <div className="flex flex-col items-end gap-1 text-sm">
                 <div className="flex gap-8">
                   <span className="text-gray-400">Montant HT</span>
@@ -296,14 +310,16 @@ export default function NouvelleFacturePage() {
                     {formatCurrency(montantHT)}
                   </span>
                 </div>
-                <div className="flex gap-8">
-                  <span className="text-gray-400">TVA ({TVA_RATE}%)</span>
-                  <span className="font-medium text-gray-200 w-32 text-right">
-                    {formatCurrency(montantTVA)}
-                  </span>
-                </div>
+                {avecTVA && (
+                  <div className="flex gap-8">
+                    <span className="text-gray-400">TVA ({TVA_RATE}%)</span>
+                    <span className="font-medium text-gray-200 w-32 text-right">
+                      {formatCurrency(montantTVA)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex gap-8 pt-2 border-t border-gray-700 mt-1">
-                  <span className="font-semibold text-gray-100 text-base">Total TTC</span>
+                  <span className="font-semibold text-gray-100 text-base">{avecTVA ? "Total TTC" : "Total HT"}</span>
                   <span className="font-bold text-lg text-gray-100 w-32 text-right">
                     {formatCurrency(montantTTC)}
                   </span>

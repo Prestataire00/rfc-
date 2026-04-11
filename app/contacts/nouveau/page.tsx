@@ -77,8 +77,19 @@ export default function NouveauContactPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        const fe = data?.error?.fieldErrors; throw new Error(fe ? Object.values(fe).flat().join(", ") : (data?.error?.message || data?.error || "Erreur lors de la création"));
+        const data = await res.json().catch(() => null);
+        let msg = "Erreur lors de la creation du contact";
+        if (data?.error) {
+          if (typeof data.error === "string") {
+            msg = data.error;
+          } else if (data.error.fieldErrors) {
+            const fields = Object.entries(data.error.fieldErrors)
+              .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
+              .join(" | ");
+            if (fields) msg = fields;
+          }
+        }
+        throw new Error(msg);
       }
 
       const contact = await res.json();

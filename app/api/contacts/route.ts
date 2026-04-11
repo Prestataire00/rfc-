@@ -70,6 +70,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(contact, { status: 201 });
   } catch (err: unknown) {
     console.error("Contact creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la création du contact" }, { status: 500 });
+    if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "P2002") {
+      return NextResponse.json({ error: "Un contact avec cet email existe deja." }, { status: 409 });
+    }
+    const message = err instanceof Error ? err.message : "Erreur lors de la creation du contact";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

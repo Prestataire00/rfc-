@@ -35,6 +35,7 @@ export default function NouveauBesoinPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramContactId = searchParams.get("contactId") ?? "";
+  const paramEntrepriseId = searchParams.get("entrepriseId") ?? "";
   const [entreprises, setEntreprises] = useState<Option[]>([]);
   const [contacts, setContacts] = useState<Option[]>([]);
   const [formations, setFormations] = useState<Option[]>([]);
@@ -49,7 +50,7 @@ export default function NouveauBesoinPage() {
     datesSouhaitees: "",
     budget: "",
     notes: "",
-    entrepriseId: "",
+    entrepriseId: paramEntrepriseId,
     contactId: paramContactId,
     formationId: "",
   });

@@ -39,6 +39,7 @@ export default function EvaluationsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filtre = searchParams.get("filtre"); // "attente" | "completees" | null
+  const typeFilter = searchParams.get("type"); // "satisfaction_chaud" | "satisfaction_froid" | "acquis" | null
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,14 +47,16 @@ export default function EvaluationsPage() {
     fetch("/api/evaluations")
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => {
-        setEvaluations(Array.isArray(d) ? d : []);
+        let data = Array.isArray(d) ? d : [];
+        if (typeFilter) data = data.filter((e: Evaluation) => e.type === typeFilter);
+        setEvaluations(data);
         setLoading(false);
       })
       .catch(() => {
         setEvaluations([]);
         setLoading(false);
       });
-  }, []);
+  }, [typeFilter]);
 
   const completed = evaluations.filter((e) => e.estComplete);
   const pending = evaluations.filter((e) => !e.estComplete);

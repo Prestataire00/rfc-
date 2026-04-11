@@ -107,7 +107,12 @@ export default function NouvelleFormationPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la création");
+        const msg = data?.error?.formErrors?.[0]
+          || (data?.error?.fieldErrors && Object.entries(data.error.fieldErrors).map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | "))
+          || data?.error?.message
+          || data?.error
+          || "Erreur lors de la création";
+        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
       }
 
       const formation = await res.json();

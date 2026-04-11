@@ -106,13 +106,21 @@ export default function NouvelleFormationPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        const msg = data?.error?.formErrors?.[0]
-          || (data?.error?.fieldErrors && Object.entries(data.error.fieldErrors).map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | "))
-          || data?.error?.message
-          || data?.error
-          || "Erreur lors de la création";
-        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+        const data = await res.json().catch(() => null);
+        let msg = "Erreur lors de la création";
+        if (data?.error) {
+          if (typeof data.error === "string") {
+            msg = data.error;
+          } else if (data.error.fieldErrors) {
+            const fields = Object.entries(data.error.fieldErrors)
+              .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
+              .join(" | ");
+            if (fields) msg = fields;
+          } else if (data.error.formErrors?.length) {
+            msg = data.error.formErrors[0];
+          }
+        }
+        throw new Error(msg);
       }
 
       const formation = await res.json();
@@ -249,7 +257,7 @@ export default function NouvelleFormationPage() {
                   name="duree"
                   type="number"
                   min="1"
-                  step="0.5"
+                  step="1"
                   value={form.duree}
                   onChange={handleChange}
                   placeholder="14"

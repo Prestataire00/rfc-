@@ -31,11 +31,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const body = await req.json();
     const parsed = formationSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    const formation = await prisma.formation.update({ where: { id: params.id }, data: parsed.data });
+    const cleanData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    );
+    const formation = await prisma.formation.update({ where: { id: params.id }, data: cleanData as typeof parsed.data });
     return NextResponse.json(formation);
   } catch (err: unknown) {
     console.error("Erreur PUT formation:", err);
-    return NextResponse.json({ error: "Erreur lors de la mise à jour de la formation" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Erreur inconnue";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

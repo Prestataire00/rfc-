@@ -3,7 +3,7 @@ import { z } from "zod";
 export const formationSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
   description: z.string().optional(),
-  duree: z.coerce.number().positive("Durée doit être positive"),
+  duree: z.coerce.number().int("La durée doit être un nombre entier").positive("Durée doit être positive"),
   tarif: z.coerce.number().min(0, "Tarif doit être positif ou nul"),
   niveau: z.enum(["tous", "debutant", "intermediaire", "avance"]),
   prerequis: z.string().optional(),

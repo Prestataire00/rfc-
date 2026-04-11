@@ -79,10 +79,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const formation = await prisma.formation.create({ data: parsed.data });
+    // Remove undefined values to let Prisma use defaults
+    const cleanData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    );
+    const formation = await prisma.formation.create({ data: cleanData as typeof parsed.data });
     return NextResponse.json(formation, { status: 201 });
   } catch (err: unknown) {
     console.error("Formation creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la création de la formation" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Erreur inconnue";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

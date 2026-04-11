@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight, Star, Monitor, Video, Shuffle, Clock, Award, Euro, Users } from "lucide-react";
+import {
+  BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+  Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight,
+  Star, Monitor, Video, Shuffle, Clock, Award, Euro, Users, FileText,
+  CheckCircle2, AlertCircle, Archive,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -41,6 +46,72 @@ const modaliteIcons: Record<string, React.ReactNode> = {
   mixte: <Shuffle className="h-3.5 w-3.5" />,
 };
 
+// Images par defaut basees sur les mots-cles du titre/categorie
+const IMAGE_KEYWORDS: { keywords: string[]; url: string }[] = [
+  {
+    keywords: ["sst", "secouriste", "secourisme", "premiers secours", "sante"],
+    url: "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["incendie", "feu", "extincteur", "evacuation", "epi"],
+    url: "https://images.unsplash.com/photo-1486551937199-baf066858de7?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["habilitation", "electrique", "electricite", "electr"],
+    url: "https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["hauteur", "travail en hauteur", "echafaudage", "nacelle", "caces"],
+    url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["securite", "prevention", "risque", "danger", "epi", "protection"],
+    url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["geste", "posture", "ergonomie", "prap", "tms"],
+    url: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["chimique", "amiante", "biologique", "atex"],
+    url: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["management", "encadrement", "equipe", "leadership"],
+    url: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["psc1", "pse", "defibrillateur", "dae", "arret cardiaque", "massage", "rcp"],
+    url: "https://images.unsplash.com/photo-1631815589968-fdb09a223b1e?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["ssiap", "agent", "surveillance"],
+    url: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["hygiene", "alimentaire", "haccp", "proprete"],
+    url: "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&h=400&fit=crop",
+  },
+  {
+    keywords: ["formation", "pedagogie", "formateur"],
+    url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=400&fit=crop",
+  },
+];
+
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&h=400&fit=crop";
+
+function getFormationImage(formation: Formation): string {
+  if (formation.image) return formation.image;
+  const searchText = `${formation.titre} ${formation.categorie || ""}`.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const entry of IMAGE_KEYWORDS) {
+    if (entry.keywords.some((kw) => searchText.includes(kw))) {
+      return entry.url;
+    }
+  }
+  return DEFAULT_IMAGE;
+}
+
 type SortField = "titre" | "duree" | "tarif" | "createdAt";
 
 export default function FormationsPage() {
@@ -59,7 +130,7 @@ export default function FormationsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -114,9 +185,7 @@ export default function FormationsPage() {
         setFormations((prev) => prev.filter((f) => f.id !== id));
         setTotal((prev) => prev - 1);
       }
-    } catch {
-      // silent fail
-    }
+    } catch { /* silent */ }
   };
 
   const handleToggleActif = async (id: string, currentActif: boolean) => {
@@ -127,54 +196,96 @@ export default function FormationsPage() {
         body: JSON.stringify({ actif: !currentActif }),
       });
       if (res.ok) {
-        setFormations((prev) =>
-          prev.map((f) => (f.id === id ? { ...f, actif: !currentActif } : f))
-        );
+        setFormations((prev) => prev.map((f) => (f.id === id ? { ...f, actif: !currentActif } : f)));
       }
-    } catch {
-      // silent fail
-    }
+    } catch { /* silent */ }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortBy !== field) return <ChevronDown className="h-3 w-3 text-gray-300" />;
-    return sortOrder === "asc"
-      ? <ChevronUp className="h-3 w-3 text-red-600" />
-      : <ChevronDown className="h-3 w-3 text-red-600" />;
+    return sortOrder === "asc" ? <ChevronUp className="h-3 w-3 text-red-600" /> : <ChevronDown className="h-3 w-3 text-red-600" />;
   };
 
-  const getNiveauLabel = (value: string) => {
-    return NIVEAUX_FORMATION.find((n) => n.value === value)?.label ?? value;
-  };
-
-  const getModaliteInfo = (value: string) => {
-    return MODALITES_FORMATION[value as keyof typeof MODALITES_FORMATION];
-  };
-
-  const getStatutInfo = (value: string) => {
-    return STATUTS_FORMATION[value as keyof typeof STATUTS_FORMATION];
-  };
-
+  const getNiveauLabel = (value: string) => NIVEAUX_FORMATION.find((n) => n.value === value)?.label ?? value;
+  const getModaliteInfo = (value: string) => MODALITES_FORMATION[value as keyof typeof MODALITES_FORMATION];
+  const getStatutInfo = (value: string) => STATUTS_FORMATION[value as keyof typeof STATUTS_FORMATION];
   const hasFilters = search || actifFilter || categorieFilter || niveauFilter || modaliteFilter || statutFilter;
+
+  // Stats
+  const nbPubliees = formations.filter((f) => f.statut === "publiee").length;
+  const nbBrouillons = formations.filter((f) => f.statut === "brouillon").length;
+  const nbActives = formations.filter((f) => f.actif).length;
 
   return (
     <div className="p-6">
-      <PageHeader
-        title="Formations"
-        description="Gérez votre catalogue de formations"
-        actionLabel="Nouvelle formation"
-        actionHref="/formations/nouveau"
-      />
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-100">Formations</h1>
+          <p className="text-sm text-gray-400 mt-1">Catalogue des formations</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/formations/nouveau"
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
+          >
+            <BookOpen className="h-4 w-4" /> Nouvelle formation
+          </Link>
+          <button
+            onClick={() => window.open("/api/export/formations", "_blank")}
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            <Download className="h-4 w-4" /> Catalogue PDF
+          </button>
+        </div>
+      </div>
 
-      {/* Export button */}
-      <div className="flex justify-end mb-4 -mt-4">
-        <button
-          onClick={() => window.open("/api/export/formations", "_blank")}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          Exporter CSV
-        </button>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-red-900/30 flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-100">{total}</p>
+              <p className="text-xs text-gray-400">Formations totales</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-emerald-900/30 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-100">{nbPubliees}</p>
+              <p className="text-xs text-gray-400">Publiees</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-900/30 flex items-center justify-center">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-100">{nbBrouillons}</p>
+              <p className="text-xs text-gray-400">Brouillons</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-blue-900/30 flex items-center justify-center">
+              <Users className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-100">{nbActives}</p>
+              <p className="text-xs text-gray-400">Actives</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -189,88 +300,39 @@ export default function FormationsPage() {
               className="pl-9"
             />
           </div>
-          <select
-            value={categorieFilter}
-            onChange={(e) => setCategorieFilter(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Toutes les catégories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
+          <select value={categorieFilter} onChange={(e) => setCategorieFilter(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <option value="">Toutes les categories</option>
+            {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
           </select>
-          <select
-            value={niveauFilter}
-            onChange={(e) => setNiveauFilter(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+          <select value={niveauFilter} onChange={(e) => setNiveauFilter(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <option value="">Tous les niveaux</option>
-            {NIVEAUX_FORMATION.map((n) => (
-              <option key={n.value} value={n.value}>{n.label}</option>
-            ))}
+            {NIVEAUX_FORMATION.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
           </select>
-          <select
-            value={modaliteFilter}
-            onChange={(e) => setModaliteFilter(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Toutes les modalités</option>
-            {Object.entries(MODALITES_FORMATION).map(([value, { label }]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
+          <select value={modaliteFilter} onChange={(e) => setModaliteFilter(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <option value="">Toutes les modalites</option>
+            {Object.entries(MODALITES_FORMATION).map(([value, { label }]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-          <select
-            value={statutFilter}
-            onChange={(e) => setStatutFilter(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+          <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <option value="">Tous les statuts</option>
-            {Object.entries(STATUTS_FORMATION).map(([value, { label }]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
+            {Object.entries(STATUTS_FORMATION).map(([value, { label }]) => <option key={value} value={value}>{label}</option>)}
           </select>
-          <select
-            value={actifFilter}
-            onChange={(e) => setActifFilter(e.target.value)}
-            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+          <select value={actifFilter} onChange={(e) => setActifFilter(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <option value="">Actives & inactives</option>
             <option value="true">Actives uniquement</option>
             <option value="false">Inactives uniquement</option>
           </select>
           {hasFilters && (
-            <button
-              onClick={() => { setSearch(""); setActifFilter(""); setCategorieFilter(""); setNiveauFilter(""); setModaliteFilter(""); setStatutFilter(""); }}
-              className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
-            >
+            <button onClick={() => { setSearch(""); setActifFilter(""); setCategorieFilter(""); setNiveauFilter(""); setModaliteFilter(""); setStatutFilter(""); }} className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors">
               Effacer filtres
             </button>
           )}
-
-          {/* Grid/List toggle */}
           <div className="flex items-center gap-1 ml-auto">
-            <button
-              onClick={() => setViewMode("list")}
-              className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
-                viewMode === "list"
-                  ? "bg-gray-700 text-gray-100"
-                  : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-              }`}
-              title="Vue liste"
-            >
+            <button onClick={() => setViewMode("list")} className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${viewMode === "list" ? "bg-gray-700 text-gray-100" : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"}`} title="Vue liste">
               <List className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
-                viewMode === "grid"
-                  ? "bg-gray-700 text-gray-100"
-                  : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-              }`}
-              title="Vue grille"
-            >
+            <button onClick={() => setViewMode("grid")} className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${viewMode === "grid" ? "bg-gray-700 text-gray-100" : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"}`} title="Vue grille">
               <LayoutGrid className="h-4 w-4" />
             </button>
           </div>
@@ -286,64 +348,33 @@ export default function FormationsPage() {
         <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm">
           <EmptyState
             icon={BookOpen}
-            title="Aucune formation trouvée"
-            description={
-              hasFilters
-                ? "Aucune formation ne correspond à votre recherche."
-                : "Commencez par créer votre première formation."
-            }
+            title="Aucune formation trouvee"
+            description={hasFilters ? "Aucune formation ne correspond a votre recherche." : "Commencez par creer votre premiere formation."}
             actionLabel={hasFilters ? undefined : "Nouvelle formation"}
             actionHref={hasFilters ? undefined : "/formations/nouveau"}
           />
         </div>
       ) : viewMode === "list" ? (
-        /* Table view */
+        /* ===== TABLE VIEW ===== */
         <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
           <table className="min-w-[640px] w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
-                <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
-                  onClick={() => handleSort("titre")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Titre <SortIcon field="titre" />
-                  </span>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort("titre")}>
+                  <span className="inline-flex items-center gap-1">Titre <SortIcon field="titre" /></span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
-                  Catégorie
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">Categorie</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Modalite</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort("duree")}>
+                  <span className="inline-flex items-center gap-1">Duree <SortIcon field="duree" /></span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Modalité
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort("tarif")}>
+                  <span className="inline-flex items-center gap-1">Tarif <SortIcon field="tarif" /></span>
                 </th>
-                <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
-                  onClick={() => handleSort("duree")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Durée <SortIcon field="duree" />
-                  </span>
-                </th>
-                <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
-                  onClick={() => handleSort("tarif")}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Tarif <SortIcon field="tarif" />
-                  </span>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Niveau
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
-                  Sessions
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
-                  Statut
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Niveau</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">Sessions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">Statut</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-200">
@@ -355,41 +386,30 @@ export default function FormationsPage() {
                 return (
                   <tr key={formation.id} className="hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {formation.misEnAvant && <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
-                        <Link
-                          href={`/formations/${formation.id}`}
-                          className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
-                        >
-                          {formation.titre}
-                        </Link>
-                        {formation.certifiante && (
-                          <span className="inline-flex items-center rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 px-1.5 py-0.5 text-[10px] font-medium">
-                            CERT
-                          </span>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <img src={getFormationImage(formation)} alt="" className="h-10 w-14 rounded object-cover shrink-0" />
+                        <div className="flex items-center gap-2 min-w-0">
+                          {formation.misEnAvant && <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+                          <Link href={`/formations/${formation.id}`} className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline truncate">
+                            {formation.titre}
+                          </Link>
+                          {formation.certifiante && (
+                            <span className="inline-flex items-center rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 px-1.5 py-0.5 text-[10px] font-medium shrink-0">CERT</span>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
-                      {formation.categorie || <span className="text-gray-400">—</span>}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">{formation.categorie || "—"}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {modaliteInfo && (
                         <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${modaliteInfo.color}`}>
-                          {modaliteIcons[formation.modalite]}
-                          {modaliteInfo.label}
+                          {modaliteIcons[formation.modalite]} {modaliteInfo.label}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                      {formatDuree(formation.duree)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
-                      {formatCurrency(formation.tarif)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatutBadge label={niveauLabel} color={niveauColor} />
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{formatDuree(formation.duree)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">{formatCurrency(formation.tarif)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><StatutBadge label={niveauLabel} color={niveauColor} /></td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       <span className="inline-flex items-center rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
                         {formation._count.sessions} session{formation._count.sessions !== 1 ? "s" : ""}
@@ -397,41 +417,19 @@ export default function FormationsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       <div className="flex items-center gap-1.5">
-                        {statutInfo && (
-                          <StatutBadge label={statutInfo.label} color={statutInfo.color} />
-                        )}
-                        {!formation.actif && (
-                          <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2 py-0.5 text-[10px] font-medium">
-                            OFF
-                          </span>
-                        )}
+                        {statutInfo && <StatutBadge label={statutInfo.label} color={statutInfo.color} />}
+                        {!formation.actif && <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2 py-0.5 text-[10px] font-medium">OFF</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="inline-flex items-center gap-1">
-                        <Link
-                          href={`/formations/${formation.id}/modifier`}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
-                          title="Modifier"
-                        >
+                        <Link href={`/formations/${formation.id}/modifier`} className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors" title="Modifier">
                           <Pencil className="h-4 w-4" />
                         </Link>
-                        <button
-                          onClick={() => handleToggleActif(formation.id, formation.actif)}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
-                          title={formation.actif ? "Désactiver" : "Activer"}
-                        >
-                          {formation.actif ? (
-                            <ToggleRight className="h-4 w-4 text-green-400" />
-                          ) : (
-                            <ToggleLeft className="h-4 w-4" />
-                          )}
+                        <button onClick={() => handleToggleActif(formation.id, formation.actif)} className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors" title={formation.actif ? "Desactiver" : "Activer"}>
+                          {formation.actif ? <ToggleRight className="h-4 w-4 text-green-400" /> : <ToggleLeft className="h-4 w-4" />}
                         </button>
-                        <button
-                          onClick={() => handleDelete(formation.id)}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors"
-                          title="Supprimer"
-                        >
+                        <button onClick={() => handleDelete(formation.id)} className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors" title="Supprimer">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -443,140 +441,93 @@ export default function FormationsPage() {
           </table>
         </div>
       ) : (
-        /* Grid view - SoSafe style cards with images */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        /* ===== GRID VIEW - SoSafe style ===== */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {formations.map((formation) => {
             const niveauLabel = getNiveauLabel(formation.niveau);
-            const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
             const modaliteInfo = getModaliteInfo(formation.modalite);
-            const statutInfo = getStatutInfo(formation.statut);
-            // Gradient placeholder colors based on category
-            const gradients: Record<string, string> = {
-              "Securite": "from-red-800 to-red-600",
-              "Incendie": "from-orange-800 to-orange-600",
-              "Secourisme": "from-emerald-800 to-emerald-600",
-              "Prevention": "from-blue-800 to-blue-600",
-              "Habilitation": "from-purple-800 to-purple-600",
-            };
-            const gradient = Object.entries(gradients).find(([k]) => formation.categorie?.toLowerCase().includes(k.toLowerCase()))?.[1] ?? "from-gray-700 to-gray-600";
+            const imgUrl = getFormationImage(formation);
 
             return (
-              <div
+              <Link
                 key={formation.id}
-                className={`bg-gray-800 rounded-xl border shadow-sm overflow-hidden hover:border-gray-500 hover:shadow-lg transition-all group ${
+                href={`/formations/${formation.id}`}
+                className={`bg-gray-800 rounded-xl border shadow-sm overflow-hidden hover:border-gray-500 hover:shadow-xl transition-all group ${
                   formation.misEnAvant ? "border-amber-700/50 ring-1 ring-amber-700/20" : "border-gray-700"
                 }`}
               >
-                {/* Image / Placeholder */}
-                <Link href={`/formations/${formation.id}`} className="block relative">
-                  {formation.image ? (
-                    <div className="relative h-44 w-full overflow-hidden">
-                      <img
-                        src={formation.image}
-                        alt={formation.titre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    </div>
-                  ) : (
-                    <div className={`relative h-44 w-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                      <BookOpen className="h-16 w-16 text-white/20" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    </div>
-                  )}
-                  {/* Badges overlaid on image */}
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                {/* Image */}
+                <div className="relative h-40 w-full overflow-hidden">
+                  <img
+                    src={imgUrl}
+                    alt={formation.titre}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                  {/* Top badges */}
+                  <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
                     {formation.misEnAvant && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white px-2 py-0.5 text-[11px] font-semibold shadow">
-                        <Star className="h-3 w-3 fill-white" /> Vedette
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white px-2 py-0.5 text-[10px] font-bold shadow">
+                        <Star className="h-2.5 w-2.5 fill-white" /> Vedette
                       </span>
                     )}
                     {formation.certifiante && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/90 text-amber-700 px-2 py-0.5 text-[11px] font-semibold shadow">
-                        <Award className="h-3 w-3" /> Certifiante
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/90 text-amber-700 px-2 py-0.5 text-[10px] font-bold shadow">
+                        <Award className="h-2.5 w-2.5" /> Certifiante
                       </span>
                     )}
                   </div>
-                  <div className="absolute top-3 right-3">
-                    {statutInfo && (
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold shadow ${statutInfo.color}`}>
-                        {statutInfo.label}
+
+                  {/* Category badge on image */}
+                  {formation.categorie && (
+                    <div className="absolute bottom-2.5 left-2.5">
+                      <span className="inline-flex items-center rounded-full bg-red-600/90 text-white px-2.5 py-0.5 text-[10px] font-semibold shadow backdrop-blur-sm">
+                        {formation.categorie}
                       </span>
-                    )}
-                  </div>
-                  {!formation.actif && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white font-bold text-sm bg-black/70 px-3 py-1 rounded-full">Inactive</span>
                     </div>
                   )}
-                </Link>
+
+                  {/* Inactive overlay */}
+                  {!formation.actif && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-bold text-xs bg-black/80 px-3 py-1 rounded-full">Inactive</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Content */}
-                <div className="p-4 flex flex-col gap-3">
-                  <div>
-                    <Link href={`/formations/${formation.id}`} className="text-base font-semibold text-gray-100 hover:text-red-400 transition-colors line-clamp-2">
-                      {formation.titre}
-                    </Link>
-                    {formation.categorie && (
-                      <p className="text-xs text-gray-400 mt-1">{formation.categorie}</p>
-                    )}
-                  </div>
+                <div className="p-3.5">
+                  <h3 className="text-sm font-semibold text-gray-100 line-clamp-2 mb-2 group-hover:text-red-400 transition-colors">
+                    {formation.titre}
+                  </h3>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    <StatutBadge label={niveauLabel} color={niveauColor} />
+                  {/* Meta row */}
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mb-2.5">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> {formation.duree}h
+                    </span>
                     {modaliteInfo && (
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${modaliteInfo.color}`}>
-                        {modaliteIcons[formation.modalite]}
-                        {modaliteInfo.label}
+                      <span className="flex items-center gap-1">
+                        {modaliteIcons[formation.modalite]} {modaliteInfo.label}
                       </span>
                     )}
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1 text-gray-400">
-                      <Clock className="h-3.5 w-3.5" /> {formatDuree(formation.duree)}
-                    </span>
-                    <span className="flex items-center gap-1 font-semibold text-gray-100">
-                      <Euro className="h-3.5 w-3.5 text-gray-400" /> {formatCurrency(formation.tarif)}
-                    </span>
-                    <span className="flex items-center gap-1 text-gray-400 ml-auto">
-                      <Users className="h-3.5 w-3.5" /> {formation._count.sessions}
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" /> {formation._count.sessions} session{formation._count.sessions !== 1 ? "s" : ""}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1 pt-2 border-t border-gray-700">
-                    <Link
-                      href={`/formations/${formation.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/20 transition-colors"
-                    >
-                      Voir le detail
-                    </Link>
-                    <div className="ml-auto flex items-center gap-1">
-                      <Link
-                        href={`/formations/${formation.id}/modifier`}
-                        className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
-                        title="Modifier"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Link>
-                      <button
-                        onClick={() => handleToggleActif(formation.id, formation.actif)}
-                        className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
-                        title={formation.actif ? "Desactiver" : "Activer"}
-                      >
-                        {formation.actif ? <ToggleRight className="h-3.5 w-3.5 text-green-400" /> : <ToggleLeft className="h-3.5 w-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(formation.id)}
-                        className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                  {/* Bottom row */}
+                  <div className="flex items-center justify-between pt-2.5 border-t border-gray-700">
+                    <span className="text-sm font-bold text-gray-100">{formatCurrency(formation.tarif)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-medium text-gray-400 bg-gray-700 rounded-full px-2 py-0.5">
+                        {niveauLabel}
+                      </span>
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -584,27 +535,17 @@ export default function FormationsPage() {
 
       {/* Pagination */}
       {!loading && formations.length > 0 && (
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-400">
             {total} formation{total > 1 ? "s" : ""} au total
           </p>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" /> Précédent
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="inline-flex items-center gap-1 rounded-md border border-gray-600 px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors text-gray-300">
+                <ChevronLeft className="h-4 w-4" /> Precedent
               </button>
-              <span className="text-sm text-gray-400">
-                Page {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-              >
+              <span className="text-sm text-gray-400">Page {page} / {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="inline-flex items-center gap-1 rounded-md border border-gray-600 px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors text-gray-300">
                 Suivant <ChevronRight className="h-4 w-4" />
               </button>
             </div>

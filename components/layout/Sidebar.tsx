@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -7,12 +8,14 @@ import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
-  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard, UserPlus, MapPin,
+  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
+  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: React.ElementType };
-type NavGroup = { label: string; items: NavItem[] };
+type NavItemWithSub = NavItem & { children?: NavItem[] };
+type NavGroup = { label: string; items: NavItemWithSub[] };
 
 const adminDashboard: NavItem = { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard };
 
@@ -20,16 +23,29 @@ const adminNavGroups: NavGroup[] = [
   {
     label: "CRM",
     items: [
-      { href: "/contacts", label: "Contacts / Stagiaires", icon: Users },
-      { href: "/entreprises", label: "Entreprises / Clients", icon: Building2 },
+      {
+        href: "/contacts", label: "Contacts", icon: Users,
+        children: [
+          { href: "/contacts", label: "Tous les contacts", icon: Users },
+          { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: GraduationCap },
+          { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
+          { href: "/contacts?type=prospect", label: "Prospects", icon: UserSearch },
+        ],
+      },
+      { href: "/entreprises", label: "Entreprises", icon: Building2 },
       { href: "/besoins", label: "Besoins", icon: ClipboardList },
     ],
   },
   {
-    label: "Pédagogie",
+    label: "Pedagogie",
     items: [
-      { href: "/formations", label: "Formations", icon: BookOpen },
-      { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
+      {
+        href: "/formations", label: "Formations", icon: BookOpen,
+        children: [
+          { href: "/formations", label: "Catalogue", icon: BookOpen },
+          { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
+        ],
+      },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
       { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
     ],
@@ -42,9 +58,9 @@ const adminNavGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Qualité",
+    label: "Qualite",
     items: [
-      { href: "/evaluations", label: "Évaluations", icon: MessageSquare },
+      { href: "/evaluations", label: "Evaluations", icon: MessageSquare },
       { href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck },
       { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
@@ -53,7 +69,7 @@ const adminNavGroups: NavGroup[] = [
     label: "Admin",
     items: [
       { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
-      { href: "/parametres", label: "Paramètres", icon: Settings },
+      { href: "/parametres", label: "Parametres", icon: Settings },
       { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
     ],
   },
@@ -62,7 +78,7 @@ const adminNavGroups: NavGroup[] = [
 const formateurNav: NavItem[] = [
   { href: "/espace-formateur", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/espace-formateur/planning", label: "Mon Planning", icon: Calendar },
-  { href: "/espace-formateur/disponibilites", label: "Disponibilités", icon: CalendarDays },
+  { href: "/espace-formateur/disponibilites", label: "Disponibilites", icon: CalendarDays },
   { href: "/espace-formateur/sessions", label: "Mes Sessions", icon: BookOpen },
   { href: "/espace-formateur/documents", label: "Mes Documents", icon: FileText },
   { href: "/espace-formateur/feedbacks", label: "Feedbacks", icon: MessageSquare },
@@ -77,7 +93,7 @@ const clientNav: NavItem[] = [
   { href: "/espace-client/documents", label: "Documents", icon: FolderOpen },
   { href: "/espace-client/devis", label: "Devis", icon: FileText },
   { href: "/espace-client/paiement", label: "Paiement", icon: CreditCard },
-  { href: "/espace-client/evaluations", label: "Évaluations", icon: MessageSquare },
+  { href: "/espace-client/evaluations", label: "Evaluations", icon: MessageSquare },
 ];
 
 const flatNavByRole: Record<string, NavItem[]> = { formateur: formateurNav, client: clientNav };
@@ -88,16 +104,47 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
   const isAdmin = role === "admin";
   const flatItems = flatNavByRole[role];
 
+  // Track which parent items are expanded
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    // Auto-expand parent if current path matches one of its children
+    const initial: Record<string, boolean> = {};
+    for (const group of adminNavGroups) {
+      for (const item of group.items) {
+        if (item.children) {
+          const isChildActive = item.children.some((c) => pathname === c.href || pathname.startsWith(c.href.split("?")[0]));
+          if (isChildActive) initial[item.label] = true;
+        }
+      }
+    }
+    return initial;
+  });
+
+  const toggleExpand = (label: string) => {
+    setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const handleNavClick = () => {
     if (onClose) onClose();
   };
 
-  const renderNavLink = ({ href, label, icon: Icon }: NavItem) => {
+  const isLinkActive = (href: string) => {
     const dashboards = ["/dashboard", "/espace-formateur", "/espace-client"];
-    const isActive = pathname === href || (!dashboards.includes(href) && pathname.startsWith(href));
+    const basePath = href.split("?")[0];
+    if (dashboards.includes(basePath)) return pathname === basePath;
+    // For links with query params, match exact href including params
+    if (href.includes("?")) {
+      const url = new URL(href, "http://x");
+      const currentUrl = new URL(pathname + (typeof window !== "undefined" ? window.location.search : ""), "http://x");
+      return url.pathname === currentUrl.pathname && url.search === currentUrl.search;
+    }
+    return pathname === basePath || pathname.startsWith(basePath + "/");
+  };
+
+  const renderNavLink = ({ href, label, icon: Icon }: NavItem) => {
+    const isActive = isLinkActive(href);
     return (
       <Link
-        key={href}
+        key={href + label}
         href={href}
         onClick={handleNavClick}
         className={cn(
@@ -108,6 +155,59 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
         <Icon className={cn("h-4 w-4", isActive ? "text-red-400" : "text-gray-500 dark:text-gray-400")} />
         {label}
       </Link>
+    );
+  };
+
+  const renderNavItemWithSub = (item: NavItemWithSub) => {
+    if (!item.children) return renderNavLink(item);
+
+    const isOpen = expanded[item.label] ?? false;
+    const isParentActive = item.children.some((c) => isLinkActive(c.href));
+    const Icon = item.icon;
+
+    return (
+      <div key={item.label}>
+        <button
+          onClick={() => toggleExpand(item.label)}
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors w-full",
+            isParentActive
+              ? "text-red-400"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          )}
+        >
+          <Icon className={cn("h-4 w-4", isParentActive ? "text-red-400" : "text-gray-500 dark:text-gray-400")} />
+          <span className="flex-1 text-left">{item.label}</span>
+          <ChevronDown className={cn(
+            "h-4 w-4 text-gray-400 transition-transform duration-200",
+            isOpen && "rotate-180"
+          )} />
+        </button>
+        {isOpen && (
+          <div className="ml-4 pl-3 border-l border-gray-200 dark:border-gray-700 space-y-0.5 mt-0.5">
+            {item.children.map((child) => {
+              const isActive = isLinkActive(child.href);
+              const ChildIcon = child.icon;
+              return (
+                <Link
+                  key={child.href + child.label}
+                  href={child.href}
+                  onClick={handleNavClick}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
+                    isActive
+                      ? "bg-red-100 dark:bg-red-700/20 text-red-400"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                >
+                  <ChildIcon className={cn("h-3.5 w-3.5", isActive ? "text-red-400" : "text-gray-400 dark:text-gray-500")} />
+                  {child.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -123,8 +223,8 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
           <Image src="/logorescue.png" alt="RFC" width={44} height={44} className="rounded-lg" />
           <div>
             <span className="font-bold text-black dark:text-white text-sm">RFC</span>
-            <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Sécurité - Incendie</span>
-            <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Prévention</span>
+            <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Securite - Incendie</span>
+            <span className="block text-[9px] text-gray-600 dark:text-gray-400 leading-tight">Prevention</span>
           </div>
         </div>
         {onClose && (
@@ -146,7 +246,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
                   {group.label}
                 </p>
                 <div className="space-y-0.5">
-                  {group.items.map(renderNavLink)}
+                  {group.items.map(renderNavItemWithSub)}
                 </div>
               </div>
             ))}
@@ -174,7 +274,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
           className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          {"Déconnexion"}
+          Deconnexion
         </button>
       </div>
     </aside>

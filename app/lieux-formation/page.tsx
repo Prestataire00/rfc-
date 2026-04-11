@@ -119,7 +119,7 @@ export default function LieuxFormationPage() {
                   </div>
                 </div>
                 {lieu.accessibilitePMR && (
-                  <Accessibility className="h-4 w-4 text-blue-400 shrink-0" title="Accessible PMR" />
+                  <span title="Accessible PMR"><Accessibility className="h-4 w-4 text-blue-400 shrink-0" /></span>
                 )}
               </div>
 

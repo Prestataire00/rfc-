@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight } from "lucide-react";
+import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight, Star, Monitor, Video, Shuffle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { Input } from "@/components/ui/input";
-import { NIVEAUX_FORMATION } from "@/lib/constants";
+import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION } from "@/lib/constants";
 import { formatCurrency, formatDuree } from "@/lib/utils";
 
 interface Formation {
@@ -18,6 +18,10 @@ interface Formation {
   tarif: number;
   niveau: string;
   actif: boolean;
+  modalite: string;
+  statut: string;
+  certifiante: boolean;
+  misEnAvant: boolean;
   _count: {
     sessions: number;
   };
@@ -30,6 +34,12 @@ const niveauColors: Record<string, string> = {
   avance: "bg-purple-900/30 text-purple-400 border-purple-200",
 };
 
+const modaliteIcons: Record<string, React.ReactNode> = {
+  presentiel: <Monitor className="h-3.5 w-3.5" />,
+  distanciel: <Video className="h-3.5 w-3.5" />,
+  mixte: <Shuffle className="h-3.5 w-3.5" />,
+};
+
 type SortField = "titre" | "duree" | "tarif" | "createdAt";
 
 export default function FormationsPage() {
@@ -39,6 +49,8 @@ export default function FormationsPage() {
   const [actifFilter, setActifFilter] = useState("");
   const [categorieFilter, setCategorieFilter] = useState("");
   const [niveauFilter, setNiveauFilter] = useState("");
+  const [modaliteFilter, setModaliteFilter] = useState("");
+  const [statutFilter, setStatutFilter] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortField>("createdAt");
@@ -55,7 +67,7 @@ export default function FormationsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter]);
+  }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter, modaliteFilter, statutFilter]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -63,6 +75,8 @@ export default function FormationsPage() {
     if (actifFilter !== "") params.set("actif", actifFilter);
     if (categorieFilter) params.set("categorie", categorieFilter);
     if (niveauFilter) params.set("niveau", niveauFilter);
+    if (modaliteFilter) params.set("modalite", modaliteFilter);
+    if (statutFilter) params.set("statut", statutFilter);
     params.set("sortBy", sortBy);
     params.set("sortOrder", sortOrder);
     params.set("page", String(page));
@@ -80,7 +94,7 @@ export default function FormationsPage() {
       })
       .catch(() => setFormations([]))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter, sortBy, sortOrder, page]);
+  }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter, modaliteFilter, statutFilter, sortBy, sortOrder, page]);
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -132,7 +146,15 @@ export default function FormationsPage() {
     return NIVEAUX_FORMATION.find((n) => n.value === value)?.label ?? value;
   };
 
-  const hasFilters = search || actifFilter || categorieFilter || niveauFilter;
+  const getModaliteInfo = (value: string) => {
+    return MODALITES_FORMATION[value as keyof typeof MODALITES_FORMATION];
+  };
+
+  const getStatutInfo = (value: string) => {
+    return STATUTS_FORMATION[value as keyof typeof STATUTS_FORMATION];
+  };
+
+  const hasFilters = search || actifFilter || categorieFilter || niveauFilter || modaliteFilter || statutFilter;
 
   return (
     <div className="p-6">
@@ -155,78 +177,102 @@ export default function FormationsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Rechercher une formation..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher une formation..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={categorieFilter}
+            onChange={(e) => setCategorieFilter(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Toutes les catégories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <select
+            value={niveauFilter}
+            onChange={(e) => setNiveauFilter(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Tous les niveaux</option>
+            {NIVEAUX_FORMATION.map((n) => (
+              <option key={n.value} value={n.value}>{n.label}</option>
+            ))}
+          </select>
+          <select
+            value={modaliteFilter}
+            onChange={(e) => setModaliteFilter(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Toutes les modalités</option>
+            {Object.entries(MODALITES_FORMATION).map(([value, { label }]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         </div>
-        <select
-          value={categorieFilter}
-          onChange={(e) => setCategorieFilter(e.target.value)}
-          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="">Toutes les catégories</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <select
-          value={niveauFilter}
-          onChange={(e) => setNiveauFilter(e.target.value)}
-          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="">Tous les niveaux</option>
-          {NIVEAUX_FORMATION.map((n) => (
-            <option key={n.value} value={n.value}>{n.label}</option>
-          ))}
-        </select>
-        <select
-          value={actifFilter}
-          onChange={(e) => setActifFilter(e.target.value)}
-          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="">Actives & inactives</option>
-          <option value="true">Actives uniquement</option>
-          <option value="false">Inactives uniquement</option>
-        </select>
-        {hasFilters && (
-          <button
-            onClick={() => { setSearch(""); setActifFilter(""); setCategorieFilter(""); setNiveauFilter(""); }}
-            className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={statutFilter}
+            onChange={(e) => setStatutFilter(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Effacer filtres
-          </button>
-        )}
+            <option value="">Tous les statuts</option>
+            {Object.entries(STATUTS_FORMATION).map(([value, { label }]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            value={actifFilter}
+            onChange={(e) => setActifFilter(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Actives & inactives</option>
+            <option value="true">Actives uniquement</option>
+            <option value="false">Inactives uniquement</option>
+          </select>
+          {hasFilters && (
+            <button
+              onClick={() => { setSearch(""); setActifFilter(""); setCategorieFilter(""); setNiveauFilter(""); setModaliteFilter(""); setStatutFilter(""); }}
+              className="h-10 px-3 text-sm text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-md transition-colors"
+            >
+              Effacer filtres
+            </button>
+          )}
 
-        {/* Grid/List toggle */}
-        <div className="flex items-center gap-1 ml-auto">
-          <button
-            onClick={() => setViewMode("list")}
-            className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
-              viewMode === "list"
-                ? "bg-gray-700 text-gray-100"
-                : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-            }`}
-            title="Vue liste"
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setViewMode("grid")}
-            className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
-              viewMode === "grid"
-                ? "bg-gray-700 text-gray-100"
-                : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
-            }`}
-            title="Vue grille"
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
+          {/* Grid/List toggle */}
+          <div className="flex items-center gap-1 ml-auto">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
+                viewMode === "list"
+                  ? "bg-gray-700 text-gray-100"
+                  : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+              }`}
+              title="Vue liste"
+            >
+              <List className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`h-10 w-10 inline-flex items-center justify-center rounded-md transition-colors ${
+                viewMode === "grid"
+                  ? "bg-gray-700 text-gray-100"
+                  : "text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+              }`}
+              title="Vue grille"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -266,6 +312,9 @@ export default function FormationsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
                   Catégorie
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Modalité
+                </th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-700 select-none"
                   onClick={() => handleSort("duree")}
@@ -300,18 +349,36 @@ export default function FormationsPage() {
               {formations.map((formation) => {
                 const niveauLabel = getNiveauLabel(formation.niveau);
                 const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
+                const modaliteInfo = getModaliteInfo(formation.modalite);
+                const statutInfo = getStatutInfo(formation.statut);
                 return (
                   <tr key={formation.id} className="hover:bg-gray-700 transition-colors">
                     <td className="px-6 py-4">
-                      <Link
-                        href={`/formations/${formation.id}`}
-                        className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
-                      >
-                        {formation.titre}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        {formation.misEnAvant && <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+                        <Link
+                          href={`/formations/${formation.id}`}
+                          className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
+                        >
+                          {formation.titre}
+                        </Link>
+                        {formation.certifiante && (
+                          <span className="inline-flex items-center rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 px-1.5 py-0.5 text-[10px] font-medium">
+                            CERT
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
                       {formation.categorie || <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {modaliteInfo && (
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${modaliteInfo.color}`}>
+                          {modaliteIcons[formation.modalite]}
+                          {modaliteInfo.label}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                       {formatDuree(formation.duree)}
@@ -328,15 +395,16 @@ export default function FormationsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                      {formation.actif ? (
-                        <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2.5 py-0.5 text-xs font-medium">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2.5 py-0.5 text-xs font-medium">
-                          Inactive
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {statutInfo && (
+                          <StatutBadge label={statutInfo.label} color={statutInfo.color} />
+                        )}
+                        {!formation.actif && (
+                          <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2 py-0.5 text-[10px] font-medium">
+                            OFF
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="inline-flex items-center gap-1">
@@ -379,26 +447,27 @@ export default function FormationsPage() {
           {formations.map((formation) => {
             const niveauLabel = getNiveauLabel(formation.niveau);
             const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
+            const modaliteInfo = getModaliteInfo(formation.modalite);
+            const statutInfo = getStatutInfo(formation.statut);
             return (
               <div
                 key={formation.id}
-                className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm p-5 flex flex-col gap-3 hover:border-gray-600 transition-colors"
+                className={`bg-gray-800 rounded-lg border shadow-sm p-5 flex flex-col gap-3 hover:border-gray-600 transition-colors ${
+                  formation.misEnAvant ? "border-amber-700/50" : "border-gray-700"
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <Link
-                    href={`/formations/${formation.id}`}
-                    className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline line-clamp-2"
-                  >
-                    {formation.titre}
-                  </Link>
-                  {formation.actif ? (
-                    <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2 py-0.5 text-xs font-medium shrink-0">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2 py-0.5 text-xs font-medium shrink-0">
-                      Inactive
-                    </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    {formation.misEnAvant && <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+                    <Link
+                      href={`/formations/${formation.id}`}
+                      className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline line-clamp-2"
+                    >
+                      {formation.titre}
+                    </Link>
+                  </div>
+                  {statutInfo && (
+                    <StatutBadge label={statutInfo.label} color={statutInfo.color} />
                   )}
                 </div>
 
@@ -409,6 +478,17 @@ export default function FormationsPage() {
                     </span>
                   )}
                   <StatutBadge label={niveauLabel} color={niveauColor} />
+                  {modaliteInfo && (
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${modaliteInfo.color}`}>
+                      {modaliteIcons[formation.modalite]}
+                      {modaliteInfo.label}
+                    </span>
+                  )}
+                  {formation.certifiante && (
+                    <span className="inline-flex items-center rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 px-2 py-0.5 text-xs font-medium">
+                      Certifiante
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4 text-sm text-gray-400">

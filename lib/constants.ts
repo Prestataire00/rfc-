@@ -75,9 +75,32 @@ export const FINANCEMENT_TYPES = {
 
 export const NIVEAUX_FORMATION = [
   { value: "tous", label: "Tous niveaux" },
-  { value: "debutant", label: "Debutant" },
-  { value: "intermediaire", label: "Intermediaire" },
-  { value: "avance", label: "Avance" },
+  { value: "debutant", label: "Débutant" },
+  { value: "intermediaire", label: "Intermédiaire" },
+  { value: "avance", label: "Avancé" },
+] as const;
+
+export const MODALITES_FORMATION = {
+  presentiel: { label: "Présentiel", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  distanciel: { label: "Distanciel", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  mixte: { label: "Mixte", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+} as const;
+
+export const STATUTS_FORMATION = {
+  brouillon: { label: "Brouillon", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+  publiee: { label: "Publiée", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  archivee: { label: "Archivée", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+} as const;
+
+export const TYPES_FINANCEMENT = [
+  { value: "opco", label: "OPCO" },
+  { value: "cpf", label: "CPF" },
+  { value: "entreprise", label: "Entreprise" },
+  { value: "personnel", label: "Personnel" },
+  { value: "pole_emploi", label: "France Travail" },
+  { value: "fifpl", label: "FIFPL" },
+  { value: "faf_pm", label: "FAF-PM" },
+  { value: "autre", label: "Autre" },
 ] as const;
 
 export const TVA_RATE = 20;

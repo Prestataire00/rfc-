@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
     const actif = searchParams.get("actif");
     const categorie = searchParams.get("categorie") ?? "";
     const niveau = searchParams.get("niveau") ?? "";
+    const modalite = searchParams.get("modalite") ?? "";
+    const statut = searchParams.get("statut") ?? "";
     const sortBy = searchParams.get("sortBy") ?? "createdAt";
     const sortOrder = (searchParams.get("sortOrder") ?? "desc") as "asc" | "desc";
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
@@ -17,10 +19,20 @@ export async function GET(req: NextRequest) {
 
     const where = {
       AND: [
-        search ? { titre: { contains: search, mode: "insensitive" as const } } : {},
-        actif !== null ? { actif: actif === "true" } : {},
+        search
+          ? {
+              OR: [
+                { titre: { contains: search, mode: "insensitive" as const } },
+                { description: { contains: search, mode: "insensitive" as const } },
+                { categorie: { contains: search, mode: "insensitive" as const } },
+              ],
+            }
+          : {},
+        actif !== null && actif !== "" ? { actif: actif === "true" } : {},
         categorie ? { categorie } : {},
         niveau ? { niveau } : {},
+        modalite ? { modalite } : {},
+        statut ? { statut } : {},
       ],
     };
 
@@ -28,7 +40,9 @@ export async function GET(req: NextRequest) {
       prisma.formation.findMany({
         where,
         include: { _count: { select: { sessions: true } } },
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: sortBy === "misEnAvant"
+          ? [{ misEnAvant: "desc" }, { createdAt: "desc" }]
+          : { [sortBy]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
       }),

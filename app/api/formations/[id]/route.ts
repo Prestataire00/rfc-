@@ -7,7 +7,16 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   try {
     const formation = await prisma.formation.findUnique({
       where: { id: params.id },
-      include: { sessions: { include: { formateur: true, _count: { select: { inscriptions: true } } }, orderBy: { dateDebut: "desc" } } },
+      include: {
+        sessions: {
+          include: {
+            formateur: true,
+            lieuFormation: true,
+            _count: { select: { inscriptions: true } },
+          },
+          orderBy: { dateDebut: "desc" },
+        },
+      },
     });
     if (!formation) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
     return NextResponse.json(formation);

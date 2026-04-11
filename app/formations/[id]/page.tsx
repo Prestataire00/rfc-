@@ -4,24 +4,16 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  BookOpen,
-  Clock,
-  Euro,
-  Tag,
-  FileText,
-  Target,
-  ArrowLeft,
-  Pencil,
-  Trash2,
-  Calendar,
-  Users,
+  BookOpen, Clock, Euro, Tag, FileText, Target, ArrowLeft, Pencil, Trash2,
+  Calendar, Users, Star, Monitor, Video, Shuffle, Award, RefreshCw,
+  Accessibility, BarChart3, Wrench, ClipboardList, GraduationCap, Wallet,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NIVEAUX_FORMATION, SESSION_STATUTS } from "@/lib/constants";
+import { NIVEAUX_FORMATION, SESSION_STATUTS, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
 import { formatDate, formatCurrency, formatDuree } from "@/lib/utils";
 
 interface Formateur {
@@ -53,6 +45,20 @@ interface Formation {
   objectifs: string | null;
   categorie: string | null;
   actif: boolean;
+  modalite: string;
+  statut: string;
+  publicCible: string | null;
+  contenuProgramme: string | null;
+  methodesPedagogiques: string | null;
+  methodesEvaluation: string | null;
+  moyensTechniques: string | null;
+  accessibilite: string | null;
+  indicateursResultats: string | null;
+  typesFinancement: string;
+  certifiante: boolean;
+  codeRNCP: string | null;
+  dureeRecyclage: number | null;
+  misEnAvant: boolean;
   sessions: Session[];
   createdAt: string;
 }
@@ -64,7 +70,13 @@ const niveauColors: Record<string, string> = {
   avance: "bg-purple-900/30 text-purple-400 border-purple-200",
 };
 
-type TabKey = "informations" | "sessions";
+const modaliteIcons: Record<string, React.ReactNode> = {
+  presentiel: <Monitor className="h-4 w-4" />,
+  distanciel: <Video className="h-4 w-4" />,
+  mixte: <Shuffle className="h-4 w-4" />,
+};
+
+type TabKey = "informations" | "programme" | "sessions";
 
 export default function FormationDetailPage() {
   const params = useParams();
@@ -122,6 +134,17 @@ export default function FormationDetailPage() {
 
   const niveauLabel = NIVEAUX_FORMATION.find((n) => n.value === formation.niveau)?.label ?? formation.niveau;
   const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
+  const modaliteInfo = MODALITES_FORMATION[formation.modalite as keyof typeof MODALITES_FORMATION];
+  const statutInfo = STATUTS_FORMATION[formation.statut as keyof typeof STATUTS_FORMATION];
+
+  let financements: string[] = [];
+  try { financements = JSON.parse(formation.typesFinancement); } catch { financements = []; }
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "informations", label: "Informations" },
+    { key: "programme", label: "Programme & Méthodes" },
+    { key: "sessions", label: `Sessions (${formation.sessions.length})` },
+  ];
 
   return (
     <div className="p-6">
@@ -137,17 +160,31 @@ export default function FormationDetailPage() {
               <BookOpen className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-100">{formation.titre}</h1>
+              <div className="flex items-center gap-2">
+                {formation.misEnAvant && <Star className="h-4 w-4 text-amber-400" />}
+                <h1 className="text-2xl font-bold text-gray-100">{formation.titre}</h1>
+              </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <StatutBadge label={niveauLabel} color={niveauColor} />
+                {modaliteInfo && (
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${modaliteInfo.color}`}>
+                    {modaliteIcons[formation.modalite]}
+                    {modaliteInfo.label}
+                  </span>
+                )}
+                {statutInfo && (
+                  <StatutBadge label={statutInfo.label} color={statutInfo.color} />
+                )}
                 {formation.categorie && (
                   <span className="text-sm text-gray-400">{formation.categorie}</span>
                 )}
-                {formation.actif ? (
-                  <span className="inline-flex items-center rounded-full border bg-green-900/30 text-green-400 border-green-700 px-2.5 py-0.5 text-xs font-medium">
-                    Active
+                {formation.certifiante && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 px-2.5 py-0.5 text-xs font-medium">
+                    <Award className="h-3 w-3" />
+                    Certifiante
                   </span>
-                ) : (
+                )}
+                {!formation.actif && (
                   <span className="inline-flex items-center rounded-full border bg-gray-700 text-gray-400 border-gray-700 px-2.5 py-0.5 text-xs font-medium">
                     Inactive
                   </span>
@@ -179,25 +216,25 @@ export default function FormationDetailPage() {
       {/* Tabs */}
       <div className="border-b border-gray-700 mb-6">
         <nav className="flex gap-6">
-          {(["informations", "sessions"] as TabKey[]).map((tab) => (
+          {tabs.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium capitalize border-b-2 transition-colors ${
-                activeTab === tab
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.key
                   ? "border-red-600 text-red-600"
                   : "border-transparent text-gray-400 hover:text-gray-300"
               }`}
             >
-              {tab === "informations" ? "Informations" : `Sessions (${formation.sessions.length})`}
+              {tab.label}
             </button>
           ))}
         </nav>
       </div>
 
+      {/* Tab: Informations */}
       {activeTab === "informations" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Key stats */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Caractéristiques</CardTitle>
@@ -224,6 +261,18 @@ export default function FormationDetailPage() {
                   <span className="text-sm text-gray-300">{formation.categorie}</span>
                 </div>
               )}
+              {formation.certifiante && formation.codeRNCP && (
+                <div className="flex items-center gap-3">
+                  <Award className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span className="text-sm text-gray-300">Code RNCP : {formation.codeRNCP}</span>
+                </div>
+              )}
+              {formation.certifiante && formation.dureeRecyclage && (
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span className="text-sm text-gray-300">Recyclage : {formation.dureeRecyclage} mois</span>
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
                 <span className="text-sm text-gray-400">
@@ -232,6 +281,30 @@ export default function FormationDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Financement */}
+          {financements.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-gray-400" />
+                  Financements acceptés
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {financements.map((f: string) => {
+                    const label = TYPES_FINANCEMENT.find((t) => t.value === f)?.label ?? f;
+                    return (
+                      <span key={f} className="inline-flex items-center rounded-full bg-gray-700 text-gray-300 border border-gray-600 px-2.5 py-0.5 text-xs font-medium">
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Description */}
           {formation.description && (
@@ -263,6 +336,21 @@ export default function FormationDetailPage() {
             </Card>
           )}
 
+          {/* Public cible */}
+          {formation.publicCible && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4 text-gray-400" />
+                  Public cible
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.publicCible}</p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Prérequis */}
           {formation.prerequis && (
             <Card>
@@ -274,9 +362,108 @@ export default function FormationDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Accessibilité */}
+          {formation.accessibilite && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Accessibility className="h-4 w-4 text-gray-400" />
+                  Accessibilité
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.accessibilite}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Indicateurs de résultats */}
+          {formation.indicateursResultats && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-gray-400" />
+                  Indicateurs de résultats
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.indicateursResultats}</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
+      {/* Tab: Programme & Méthodes */}
+      {activeTab === "programme" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {formation.contenuProgramme && (
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-gray-400" />
+                  Contenu du programme
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.contenuProgramme}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {formation.methodesPedagogiques && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Méthodes pédagogiques</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.methodesPedagogiques}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {formation.methodesEvaluation && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Méthodes d'évaluation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.methodesEvaluation}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {formation.moyensTechniques && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-gray-400" />
+                  Moyens techniques
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{formation.moyensTechniques}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!formation.contenuProgramme && !formation.methodesPedagogiques && !formation.methodesEvaluation && !formation.moyensTechniques && (
+            <div className="lg:col-span-2 flex flex-col items-center justify-center py-16 text-center">
+              <ClipboardList className="h-8 w-8 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-400">Aucun contenu pédagogique renseigné</p>
+              <Link
+                href={`/formations/${id}/modifier`}
+                className="mt-3 text-sm text-red-600 hover:underline"
+              >
+                Ajouter le contenu
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Sessions */}
       {activeTab === "sessions" && (
         <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {formation.sessions.length === 0 ? (

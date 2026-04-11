@@ -124,8 +124,50 @@ model Formation {
   certifiante Boolean  @default(false)
   codeRNCP    String?
 
+  // Nouveaux champs inspirés SoSafe
+  modalite           String   @default("presentiel") // presentiel, distanciel, mixte
+  statut             String   @default("brouillon") // brouillon, publiee, archivee
+  publicCible        String?  // public visé
+  contenuProgramme   String?  // contenu détaillé du programme
+  methodesPedagogiques String? // méthodes pédagogiques utilisées
+  methodesEvaluation String?  // méthodes d'évaluation
+  moyensTechniques   String?  // moyens techniques mis à disposition
+  accessibilite      String?  // informations sur l'accessibilité PMR
+  indicateursResultats String? // indicateurs de résultats
+  typesFinancement   String   @default("[]") // JSON array: opco, cpf, entreprise, etc.
+  dureeRecyclage     Int?     // durée de recyclage en mois (pour certifications)
+  misEnAvant         Boolean  @default(false) // formation featured
+
   sessions Session[]
   besoins  BesoinFormation[]
+}
+
+model LieuFormation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom              String
+  adresse          String?
+  codePostal       String?
+  ville            String?
+  pays             String   @default("France")
+  salles           String   @default("[]") // JSON array de noms de salles
+  capacite         Int?
+  equipements      String?  // description des équipements
+  tarifJournee     Float?
+  tarifDemiJournee Float?
+  contactNom       String?
+  contactTelephone String?
+  contactEmail     String?
+  accessibilitePMR Boolean  @default(false)
+  consignesAcces   String?  // comment y accéder
+  infoParking      String?
+  infoTransport    String?
+  notes            String?
+  actif            Boolean  @default(true)
+
+  sessions Session[]
 }
 
 model Session {
@@ -147,6 +189,9 @@ model Session {
 
   formateurId String?
   formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
+
+  lieuFormationId String?
+  lieuFormation   LieuFormation? @relation(fields: [lieuFormationId], references: [id], onDelete: SetNull)
 
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)

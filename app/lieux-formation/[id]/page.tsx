@@ -112,9 +112,38 @@ export default function LieuDetailPage() {
         </div>
       </div>
 
+      {/* Carte Map */}
+      {adresseFull && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4 text-gray-400" /> Localisation</CardTitle>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresseFull)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-red-500 hover:underline"
+              >
+                Ouvrir dans Google Maps
+              </a>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 overflow-hidden rounded-b-lg">
+            <iframe
+              title="Carte du lieu"
+              width="100%"
+              height="300"
+              style={{ border: 0 }}
+              loading="lazy"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(adresseFull)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="text-base">Caractéristiques</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Caracteristiques</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {lieu.capacite && (
               <div className="flex items-center gap-3">

@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   User, Building2, Mail, Phone, Briefcase, FileText, Calendar, Pencil, Trash2,
   BookOpen, ClipboardList, MessageSquare, FolderOpen, Award, Clock,
-  Star, Euro, CheckCircle2, XCircle, AlertCircle, Plus, ExternalLink,
+  Star, Euro, CheckCircle2, XCircle, AlertCircle, Plus, ExternalLink, UserCheck,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -131,6 +131,20 @@ export default function ContactDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const handleConvertToClient = async () => {
+    try {
+      const res = await fetch(`/api/contacts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "client" }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la conversion");
+      setContact((prev) => prev ? { ...prev, type: "client" as keyof typeof CONTACT_TYPES } : prev);
+    } catch {
+      // silent fail
+    }
+  };
+
   const handleDelete = async () => {
     setDeleting(true);
     try {
@@ -202,6 +216,14 @@ export default function ContactDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {contact.type === "prospect" && (
+              <button
+                onClick={handleConvertToClient}
+                className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition-colors"
+              >
+                <UserCheck className="h-4 w-4" /> Convertir en client
+              </button>
+            )}
             <Link
               href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
               className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors"

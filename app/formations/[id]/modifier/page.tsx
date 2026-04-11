@@ -50,6 +50,7 @@ export default function ModifierFormationPage() {
     codeRNCP: "",
     dureeRecyclage: "",
     misEnAvant: false,
+    image: "",
   });
 
   useEffect(() => {
@@ -88,6 +89,7 @@ export default function ModifierFormationPage() {
           codeRNCP: data.codeRNCP ?? "",
           dureeRecyclage: data.dureeRecyclage != null ? String(data.dureeRecyclage) : "",
           misEnAvant: data.misEnAvant ?? false,
+          image: data.image ?? "",
         });
       })
       .catch((err) => setError(err.message))
@@ -144,6 +146,7 @@ export default function ModifierFormationPage() {
         indicateursResultats: form.indicateursResultats || undefined,
         codeRNCP: form.codeRNCP || undefined,
         dureeRecyclage: form.dureeRecyclage ? Number(form.dureeRecyclage) : null,
+        image: form.image || null,
       };
 
       const res = await fetch(`/api/formations/${id}`, {
@@ -291,6 +294,21 @@ export default function ModifierFormationPage() {
                   Mise en avant
                 </Label>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="image">Image de couverture (URL)</Label>
+              <Input
+                id="image"
+                name="image"
+                value={form.image}
+                onChange={handleChange}
+                placeholder="https://exemple.com/image.jpg"
+              />
+              {form.image && (
+                <div className="mt-2 relative w-full h-32 rounded-md overflow-hidden border border-gray-700">
+                  <img src={form.image} alt="Apercu" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

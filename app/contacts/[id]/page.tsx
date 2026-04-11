@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   User, Building2, Mail, Phone, Briefcase, FileText, Calendar, Pencil, Trash2,
   BookOpen, ClipboardList, MessageSquare, FolderOpen, Award, Clock,
-  Star, Euro, CheckCircle2, XCircle, AlertCircle,
+  Star, Euro, CheckCircle2, XCircle, AlertCircle, Plus, ExternalLink,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -203,6 +203,18 @@ export default function ContactDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
+              href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Devis
+            </Link>
+            <Link
+              href={`/besoins/nouveau?contactId=${id}`}
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Besoin
+            </Link>
+            <Link
               href={`/contacts/${id}/modifier`}
               className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
             >
@@ -310,6 +322,43 @@ export default function ContactDetailPage() {
                   <span className="text-sm text-gray-400">Evaluations</span>
                   <span className="text-sm font-semibold text-gray-200">{contact.evaluations.length}</span>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions rapides */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Actions rapides</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-2">
+                <Link
+                  href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+                  className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                >
+                  <Euro className="h-4 w-4 text-red-500" /> Creer un devis
+                </Link>
+                <Link
+                  href={`/besoins/nouveau?contactId=${id}`}
+                  className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                >
+                  <ClipboardList className="h-4 w-4 text-red-500" /> Nouveau besoin
+                </Link>
+                {contact.email && (
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                  >
+                    <Mail className="h-4 w-4 text-blue-400" /> Envoyer un email
+                  </a>
+                )}
+                {contact.telephone && (
+                  <a
+                    href={`tel:${contact.telephone}`}
+                    className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                  >
+                    <Phone className="h-4 w-4 text-green-400" /> Appeler
+                  </a>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -511,12 +560,27 @@ export default function ContactDetailPage() {
 
       {/* ============== TAB: Devis & Factures ============== */}
       {activeTab === "devis" && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+        <div>
+          <div className="flex justify-end mb-4">
+            <Link
+              href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Nouveau devis
+            </Link>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {contact.devis.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Euro className="h-10 w-10 text-gray-600 mb-3" />
               <h3 className="text-base font-medium text-gray-300 mb-1">Aucun devis</h3>
-              <p className="text-sm text-gray-400">Aucun devis associe a ce contact.</p>
+              <p className="text-sm text-gray-400 mb-4">Aucun devis associe a ce contact.</p>
+              <Link
+                href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+                className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
+              >
+                <Plus className="h-4 w-4" /> Creer le premier devis
+              </Link>
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-700">
@@ -553,6 +617,7 @@ export default function ContactDetailPage() {
               </tbody>
             </table>
           )}
+          </div>
         </div>
       )}
 
@@ -628,12 +693,27 @@ export default function ContactDetailPage() {
 
       {/* ============== TAB: Besoins ============== */}
       {activeTab === "besoins" && (
-        <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
+        <div>
+          <div className="flex justify-end mb-4">
+            <Link
+              href={`/besoins/nouveau?contactId=${id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors"
+            >
+              <Plus className="h-4 w-4" /> Nouveau besoin
+            </Link>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
           {contact.besoins.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <ClipboardList className="h-10 w-10 text-gray-600 mb-3" />
               <h3 className="text-base font-medium text-gray-300 mb-1">Aucun besoin</h3>
-              <p className="text-sm text-gray-400">Aucun besoin de formation enregistre pour ce contact.</p>
+              <p className="text-sm text-gray-400 mb-4">Aucun besoin de formation enregistre pour ce contact.</p>
+              <Link
+                href={`/besoins/nouveau?contactId=${id}`}
+                className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
+              >
+                <Plus className="h-4 w-4" /> Creer le premier besoin
+              </Link>
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-700">
@@ -685,6 +765,7 @@ export default function ContactDetailPage() {
               </tbody>
             </table>
           )}
+          </div>
         </div>
       )}
 

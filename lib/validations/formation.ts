@@ -25,6 +25,7 @@ export const formationSchema = z.object({
   certifiante: z.boolean().optional().default(false),
   codeRNCP: z.string().optional(),
   misEnAvant: z.boolean().optional().default(false),
+  image: z.string().optional().nullable(),
 });
 
 export type FormationFormData = z.infer<typeof formationSchema>;

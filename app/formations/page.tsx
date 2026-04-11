@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight, Star, Monitor, Video, Shuffle } from "lucide-react";
+import { BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight, Star, Monitor, Video, Shuffle, Clock, Award, Euro, Users } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -22,6 +22,7 @@ interface Formation {
   statut: string;
   certifiante: boolean;
   misEnAvant: boolean;
+  image: string | null;
   _count: {
     sessions: number;
   };
@@ -442,92 +443,138 @@ export default function FormationsPage() {
           </table>
         </div>
       ) : (
-        /* Grid view */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* Grid view - SoSafe style cards with images */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {formations.map((formation) => {
             const niveauLabel = getNiveauLabel(formation.niveau);
             const niveauColor = niveauColors[formation.niveau] ?? "bg-gray-700 text-gray-300 border-gray-700";
             const modaliteInfo = getModaliteInfo(formation.modalite);
             const statutInfo = getStatutInfo(formation.statut);
+            // Gradient placeholder colors based on category
+            const gradients: Record<string, string> = {
+              "Securite": "from-red-800 to-red-600",
+              "Incendie": "from-orange-800 to-orange-600",
+              "Secourisme": "from-emerald-800 to-emerald-600",
+              "Prevention": "from-blue-800 to-blue-600",
+              "Habilitation": "from-purple-800 to-purple-600",
+            };
+            const gradient = Object.entries(gradients).find(([k]) => formation.categorie?.toLowerCase().includes(k.toLowerCase()))?.[1] ?? "from-gray-700 to-gray-600";
+
             return (
               <div
                 key={formation.id}
-                className={`bg-gray-800 rounded-lg border shadow-sm p-5 flex flex-col gap-3 hover:border-gray-600 transition-colors ${
-                  formation.misEnAvant ? "border-amber-700/50" : "border-gray-700"
+                className={`bg-gray-800 rounded-xl border shadow-sm overflow-hidden hover:border-gray-500 hover:shadow-lg transition-all group ${
+                  formation.misEnAvant ? "border-amber-700/50 ring-1 ring-amber-700/20" : "border-gray-700"
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {formation.misEnAvant && <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
-                    <Link
-                      href={`/formations/${formation.id}`}
-                      className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline line-clamp-2"
-                    >
+                {/* Image / Placeholder */}
+                <Link href={`/formations/${formation.id}`} className="block relative">
+                  {formation.image ? (
+                    <div className="relative h-44 w-full overflow-hidden">
+                      <img
+                        src={formation.image}
+                        alt={formation.titre}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    </div>
+                  ) : (
+                    <div className={`relative h-44 w-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                      <BookOpen className="h-16 w-16 text-white/20" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    </div>
+                  )}
+                  {/* Badges overlaid on image */}
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                    {formation.misEnAvant && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white px-2 py-0.5 text-[11px] font-semibold shadow">
+                        <Star className="h-3 w-3 fill-white" /> Vedette
+                      </span>
+                    )}
+                    {formation.certifiante && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/90 text-amber-700 px-2 py-0.5 text-[11px] font-semibold shadow">
+                        <Award className="h-3 w-3" /> Certifiante
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute top-3 right-3">
+                    {statutInfo && (
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold shadow ${statutInfo.color}`}>
+                        {statutInfo.label}
+                      </span>
+                    )}
+                  </div>
+                  {!formation.actif && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <span className="text-white font-bold text-sm bg-black/70 px-3 py-1 rounded-full">Inactive</span>
+                    </div>
+                  )}
+                </Link>
+
+                {/* Content */}
+                <div className="p-4 flex flex-col gap-3">
+                  <div>
+                    <Link href={`/formations/${formation.id}`} className="text-base font-semibold text-gray-100 hover:text-red-400 transition-colors line-clamp-2">
                       {formation.titre}
                     </Link>
-                  </div>
-                  {statutInfo && (
-                    <StatutBadge label={statutInfo.label} color={statutInfo.color} />
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {formation.categorie && (
-                    <span className="inline-flex items-center rounded-full bg-gray-700 text-gray-300 border border-gray-600 px-2.5 py-0.5 text-xs font-medium">
-                      {formation.categorie}
-                    </span>
-                  )}
-                  <StatutBadge label={niveauLabel} color={niveauColor} />
-                  {modaliteInfo && (
-                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${modaliteInfo.color}`}>
-                      {modaliteIcons[formation.modalite]}
-                      {modaliteInfo.label}
-                    </span>
-                  )}
-                  {formation.certifiante && (
-                    <span className="inline-flex items-center rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 px-2 py-0.5 text-xs font-medium">
-                      Certifiante
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span>{formatDuree(formation.duree)}</span>
-                  <span className="font-medium text-gray-100">{formatCurrency(formation.tarif)}</span>
-                </div>
-
-                <div>
-                  <span className="inline-flex items-center rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-300">
-                    {formation._count.sessions} session{formation._count.sessions !== 1 ? "s" : ""}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 mt-auto pt-2 border-t border-gray-700">
-                  <Link
-                    href={`/formations/${formation.id}/modifier`}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
-                    title="Modifier"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Link>
-                  <button
-                    onClick={() => handleToggleActif(formation.id, formation.actif)}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
-                    title={formation.actif ? "Désactiver" : "Activer"}
-                  >
-                    {formation.actif ? (
-                      <ToggleRight className="h-4 w-4 text-green-400" />
-                    ) : (
-                      <ToggleLeft className="h-4 w-4" />
+                    {formation.categorie && (
+                      <p className="text-xs text-gray-400 mt-1">{formation.categorie}</p>
                     )}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(formation.id)}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    <StatutBadge label={niveauLabel} color={niveauColor} />
+                    {modaliteInfo && (
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${modaliteInfo.color}`}>
+                        {modaliteIcons[formation.modalite]}
+                        {modaliteInfo.label}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center gap-1 text-gray-400">
+                      <Clock className="h-3.5 w-3.5" /> {formatDuree(formation.duree)}
+                    </span>
+                    <span className="flex items-center gap-1 font-semibold text-gray-100">
+                      <Euro className="h-3.5 w-3.5 text-gray-400" /> {formatCurrency(formation.tarif)}
+                    </span>
+                    <span className="flex items-center gap-1 text-gray-400 ml-auto">
+                      <Users className="h-3.5 w-3.5" /> {formation._count.sessions}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 pt-2 border-t border-gray-700">
+                    <Link
+                      href={`/formations/${formation.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/20 transition-colors"
+                    >
+                      Voir le detail
+                    </Link>
+                    <div className="ml-auto flex items-center gap-1">
+                      <Link
+                        href={`/formations/${formation.id}/modifier`}
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
+                        title="Modifier"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Link>
+                      <button
+                        onClick={() => handleToggleActif(formation.id, formation.actif)}
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-gray-100 hover:bg-gray-600 transition-colors"
+                        title={formation.actif ? "Desactiver" : "Activer"}
+                      >
+                        {formation.actif ? <ToggleRight className="h-3.5 w-3.5 text-green-400" /> : <ToggleLeft className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(formation.id)}
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-red-400 hover:bg-gray-600 transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );

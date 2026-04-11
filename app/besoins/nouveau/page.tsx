@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, User, GraduationCap } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 
@@ -33,6 +33,8 @@ const ORIGINES = [
 
 export default function NouveauBesoinPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramContactId = searchParams.get("contactId") ?? "";
   const [entreprises, setEntreprises] = useState<Option[]>([]);
   const [contacts, setContacts] = useState<Option[]>([]);
   const [formations, setFormations] = useState<Option[]>([]);
@@ -41,14 +43,14 @@ export default function NouveauBesoinPage() {
   const [form, setForm] = useState({
     titre: "",
     description: "",
-    origine: "client",
+    origine: paramContactId ? "stagiaire" : "client",
     priorite: "normale",
     nbStagiaires: "",
     datesSouhaitees: "",
     budget: "",
     notes: "",
     entrepriseId: "",
-    contactId: "",
+    contactId: paramContactId,
     formationId: "",
   });
 

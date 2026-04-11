@@ -137,6 +137,7 @@ model Formation {
   typesFinancement   String   @default("[]") // JSON array: opco, cpf, entreprise, etc.
   dureeRecyclage     Int?     // durée de recyclage en mois (pour certifications)
   misEnAvant         Boolean  @default(false) // formation featured
+  image              String?  // URL image de couverture
 
   sessions Session[]
   besoins  BesoinFormation[]

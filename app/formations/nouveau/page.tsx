@@ -45,6 +45,7 @@ export default function NouvelleFormationPage() {
     codeRNCP: "",
     dureeRecyclage: "",
     misEnAvant: false,
+    image: "",
   });
 
   const handleChange = (
@@ -98,6 +99,7 @@ export default function NouvelleFormationPage() {
       if (form.indicateursResultats) payload.indicateursResultats = form.indicateursResultats;
       if (form.codeRNCP) payload.codeRNCP = form.codeRNCP;
       if (form.dureeRecyclage) payload.dureeRecyclage = Number(form.dureeRecyclage);
+      if (form.image) payload.image = form.image;
 
       const res = await fetch("/api/formations", {
         method: "POST",
@@ -239,6 +241,21 @@ export default function NouvelleFormationPage() {
                   Mise en avant
                 </Label>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="image">Image de couverture (URL)</Label>
+              <Input
+                id="image"
+                name="image"
+                value={form.image}
+                onChange={handleChange}
+                placeholder="https://exemple.com/image.jpg"
+              />
+              {form.image && (
+                <div className="mt-2 relative w-full h-32 rounded-md overflow-hidden border border-gray-700">
+                  <img src={form.image} alt="Apercu" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

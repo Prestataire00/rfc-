@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,15 @@ function createLigne(): Ligne {
 
 export default function NouvelleFacturePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramDevisId = searchParams.get("devisId") ?? "";
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [devisList, setDevisList] = useState<Devis[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [entrepriseId, setEntrepriseId] = useState("");
-  const [devisId, setDevisId] = useState("");
+  const [devisId, setDevisId] = useState(paramDevisId);
   const [dateEcheance, setDateEcheance] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
@@ -50,9 +52,30 @@ export default function NouvelleFacturePage() {
       fetch("/api/devis?statut=signe&limit=100").then((r) => (r.ok ? r.json() : { data: [] })),
     ]).then(([e, d]) => {
       setEntreprises(Array.isArray(e) ? e : []);
-      setDevisList(Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : []);
+      const devisArr = Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : [];
+      setDevisList(devisArr);
+
+      // Pre-fill from devisId URL param
+      if (paramDevisId) {
+        fetch(`/api/devis/${paramDevisId}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((devis) => {
+            if (!devis) return;
+            if (devis.entrepriseId) setEntrepriseId(devis.entrepriseId);
+            if (devis.tauxTVA === 0) setAvecTVA(false);
+            if (devis.notes) setNotes(devis.notes);
+            if (devis.lignes && devis.lignes.length > 0) {
+              setLignes(devis.lignes.map((l: any) => ({
+                designation: l.designation,
+                quantite: l.quantite,
+                prixUnitaire: l.prixUnitaire,
+                montant: l.montant,
+              })));
+            }
+          });
+      }
     });
-  }, []);
+  }, [paramDevisId]);
 
   const updateLigne = (index: number, field: keyof Ligne, value: string | number) => {
     setLignes((prev) => {

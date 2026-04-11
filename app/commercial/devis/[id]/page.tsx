@@ -162,7 +162,7 @@ export default function DevisDetailPage() {
   const st = DEVIS_STATUTS[devis.statut as keyof typeof DEVIS_STATUTS];
   const montantTVA = devis.montantHT * (devis.tauxTVA / 100);
   const hasFacture = devis.factures.length > 0;
-  const canGenererFacture = devis.statut === "signe" && !hasFacture;
+  const canGenererFacture = !hasFacture;
   const hasSession = devis.sessions && devis.sessions.length > 0;
   const canPlanifierSession = devis.statut === "signe" && !hasSession;
 
@@ -351,44 +351,50 @@ export default function DevisDetailPage() {
             </div>
           )}
 
-          {/* Générer facture */}
-          {(canGenererFacture || hasFacture) && (
-            <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
-              <h2 className="font-semibold text-gray-100">Facturation</h2>
-              {genError && (
-                <p className="text-sm text-red-600">{genError}</p>
-              )}
-              {hasFacture ? (
-                <div className="space-y-2">
-                  {devis.factures.map((f) => {
-                    const fst = FACTURE_STATUTS[f.statut as keyof typeof FACTURE_STATUTS];
-                    return (
-                      <Link
-                        key={f.id}
-                        href={`/commercial/factures/${f.id}`}
-                        className="flex items-center justify-between p-2 rounded-md border border-gray-700 hover:bg-gray-700 transition-colors"
-                      >
-                        <div>
-                          <p className="text-sm font-medium font-mono">{f.numero}</p>
-                          <p className="text-xs text-gray-400">{formatCurrency(f.montantTTC)}</p>
-                        </div>
-                        {fst && <StatutBadge label={fst.label} color={fst.color} />}
-                      </Link>
-                    );
-                  })}
-                </div>
-              ) : (
+          {/* Facturation */}
+          <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+            <h2 className="font-semibold text-gray-100">Facturation</h2>
+            {genError && (
+              <p className="text-sm text-red-600">{genError}</p>
+            )}
+            {hasFacture ? (
+              <div className="space-y-2">
+                {devis.factures.map((f) => {
+                  const fst = FACTURE_STATUTS[f.statut as keyof typeof FACTURE_STATUTS];
+                  return (
+                    <Link
+                      key={f.id}
+                      href={`/commercial/factures/${f.id}`}
+                      className="flex items-center justify-between p-2 rounded-md border border-gray-700 hover:bg-gray-700 transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-medium font-mono">{f.numero}</p>
+                        <p className="text-xs text-gray-400">{formatCurrency(f.montantTTC)}</p>
+                      </div>
+                      {fst && <StatutBadge label={fst.label} color={fst.color} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-2">
                 <Button
                   onClick={handleGenererFacture}
                   disabled={generatingFacture}
                   className="w-full"
                 >
                   <Receipt className="h-4 w-4 mr-2" />
-                  {generatingFacture ? "Génération..." : "Générer une facture"}
+                  {generatingFacture ? "Generation..." : "Generer automatiquement"}
                 </Button>
-              )}
-            </div>
-          )}
+                <Link
+                  href={`/commercial/factures/nouveau?devisId=${id}`}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-600 transition-colors"
+                >
+                  <Edit className="h-4 w-4" /> Personnaliser la facture
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Lignes devis */}

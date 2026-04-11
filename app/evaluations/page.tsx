@@ -40,34 +40,35 @@ export default function EvaluationsPage() {
   const searchParams = useSearchParams();
   const filtre = searchParams.get("filtre"); // "attente" | "completees" | null
   const typeFilter = searchParams.get("type"); // "satisfaction_chaud" | "satisfaction_froid" | "acquis" | null
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [allEvaluations, setAllEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/evaluations")
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => {
-        let data = Array.isArray(d) ? d : [];
-        if (typeFilter) data = data.filter((e: Evaluation) => e.type === typeFilter);
-        setEvaluations(data);
+        setAllEvaluations(Array.isArray(d) ? d : []);
         setLoading(false);
       })
       .catch(() => {
-        setEvaluations([]);
+        setAllEvaluations([]);
         setLoading(false);
       });
-  }, [typeFilter]);
+  }, []);
 
+  // Filtered evaluations (based on type from sidebar)
+  const evaluations = typeFilter ? allEvaluations.filter((e) => e.type === typeFilter) : allEvaluations;
   const completed = evaluations.filter((e) => e.estComplete);
   const pending = evaluations.filter((e) => !e.estComplete);
   const avgNote = completed.length > 0
     ? completed.reduce((sum, e) => sum + (e.noteGlobale || 0), 0) / completed.length
     : 0;
 
+  // byType always uses ALL evaluations for the global overview
   const byType = Object.entries(EVALUATION_TYPES).map(([key, val]) => ({
     key,
     label: val.label,
-    count: evaluations.filter((e) => e.type === key).length,
+    count: allEvaluations.filter((e) => e.type === key).length,
   }));
 
   if (loading) {
@@ -123,21 +124,36 @@ export default function EvaluationsPage() {
     );
   }
 
+  const typeLabel = typeFilter ? (EVALUATION_TYPES[typeFilter as keyof typeof EVALUATION_TYPES]?.label ?? typeFilter) : null;
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Évaluations & Satisfaction</h1>
-          <p className="text-gray-400 text-sm">Vue d'ensemble des questionnaires de satisfaction</p>
+          <h1 className="text-2xl font-bold text-gray-100">
+            {typeLabel ? typeLabel : "Evaluations & Satisfaction"}
+          </h1>
+          <p className="text-gray-400 text-sm">
+            {typeLabel ? `Filtrage par type : ${typeLabel}` : "Vue d'ensemble des questionnaires de satisfaction"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          {typeFilter && (
+            <Link
+              href="/evaluations"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Voir tout
+            </Link>
+          )}
           <Link
             href="/evaluations/modeles"
             className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            Mes modèles
+            Mes modeles
           </Link>
           <a
             href="/api/export/evaluations"
@@ -165,8 +181,14 @@ export default function EvaluationsPage() {
           <h2 className="font-semibold text-gray-100 mb-4">Répartition par type</h2>
           <div className="space-y-3">
             {byType.map((t) => (
-              <div key={t.key} className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">{t.label}</span>
+              <Link
+                key={t.key}
+                href={typeFilter === t.key ? "/evaluations" : `/evaluations?type=${t.key}`}
+                className={`flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  typeFilter === t.key ? "bg-red-900/20 border border-red-700" : "hover:bg-gray-700"
+                }`}
+              >
+                <span className={`text-sm ${typeFilter === t.key ? "text-red-400 font-medium" : "text-gray-300"}`}>{t.label}</span>
                 <div className="flex items-center gap-3">
                   <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
                     <div
@@ -176,7 +198,7 @@ export default function EvaluationsPage() {
                   </div>
                   <span className="text-sm font-medium text-gray-100 w-8 text-right">{t.count}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

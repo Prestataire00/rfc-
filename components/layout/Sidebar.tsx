@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
-  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, Megaphone,
+  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -101,17 +101,22 @@ const roleLabels: Record<string, string> = { admin: "Administrateur", formateur:
 
 export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string; userName: string; mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const isAdmin = role === "admin";
   const flatItems = flatNavByRole[role];
 
-  // Track which parent items are expanded
+  const currentType = searchParams.get("type") ?? "";
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
-    // Auto-expand parent if current path matches one of its children
     const initial: Record<string, boolean> = {};
     for (const group of adminNavGroups) {
       for (const item of group.items) {
         if (item.children) {
-          const isChildActive = item.children.some((c) => pathname === c.href || pathname.startsWith(c.href.split("?")[0]));
+          const isChildActive = item.children.some((c) => {
+            const [basePath] = c.href.split("?");
+            return pathname.startsWith(basePath);
+          });
           if (isChildActive) initial[item.label] = true;
         }
       }
@@ -129,32 +134,59 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
 
   const isLinkActive = (href: string) => {
     const dashboards = ["/dashboard", "/espace-formateur", "/espace-client"];
-    const basePath = href.split("?")[0];
+    const [basePath, query] = href.split("?");
+
     if (dashboards.includes(basePath)) return pathname === basePath;
-    // For links with query params, match exact href including params
-    if (href.includes("?")) {
-      const url = new URL(href, "http://x");
-      const currentUrl = new URL(pathname + (typeof window !== "undefined" ? window.location.search : ""), "http://x");
-      return url.pathname === currentUrl.pathname && url.search === currentUrl.search;
+
+    // Link with query params: match pathname + specific query param
+    if (query) {
+      const linkParams = new URLSearchParams(query);
+      const linkType = linkParams.get("type");
+      return pathname === basePath && currentType === linkType;
     }
+
+    // Link without query params that has children with query params (e.g. /contacts "Tous les contacts")
+    // Only active when pathname matches AND no type filter is active
+    const hasChildrenWithQuery = adminNavGroups
+      .flatMap((g) => g.items)
+      .some((item) => item.children?.some((c) => c.href === href && item.children?.some((c2) => c2.href.includes("?"))));
+    if (hasChildrenWithQuery) {
+      return pathname === basePath && !currentType;
+    }
+
     return pathname === basePath || pathname.startsWith(basePath + "/");
   };
 
-  const renderNavLink = ({ href, label, icon: Icon }: NavItem) => {
+  const handleLinkClick = (href: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    handleNavClick();
+    router.push(href);
+  };
+
+  const renderNavLink = ({ href, label, icon: Icon }: NavItem, isChild = false) => {
     const isActive = isLinkActive(href);
     return (
-      <Link
+      <a
         key={href + label}
         href={href}
-        onClick={handleNavClick}
+        onClick={(e) => handleLinkClick(href, e)}
         className={cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-          isActive ? "bg-red-100 dark:bg-red-700/20 text-red-400" : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          "flex items-center gap-3 rounded-md px-3 transition-colors cursor-pointer",
+          isChild ? "py-1.5 text-[13px]" : "py-2 text-sm",
+          "font-medium",
+          isActive
+            ? "bg-red-100 dark:bg-red-700/20 text-red-400"
+            : isChild
+              ? "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
         )}
       >
-        <Icon className={cn("h-4 w-4", isActive ? "text-red-400" : "text-gray-500 dark:text-gray-400")} />
+        <Icon className={cn(
+          isChild ? "h-3.5 w-3.5" : "h-4 w-4",
+          isActive ? "text-red-400" : isChild ? "text-gray-400 dark:text-gray-500" : "text-gray-500 dark:text-gray-400"
+        )} />
         {label}
-      </Link>
+      </a>
     );
   };
 
@@ -185,26 +217,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
         </button>
         {isOpen && (
           <div className="ml-4 pl-3 border-l border-gray-200 dark:border-gray-700 space-y-0.5 mt-0.5">
-            {item.children.map((child) => {
-              const isActive = isLinkActive(child.href);
-              const ChildIcon = child.icon;
-              return (
-                <Link
-                  key={child.href + child.label}
-                  href={child.href}
-                  onClick={handleNavClick}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
-                    isActive
-                      ? "bg-red-100 dark:bg-red-700/20 text-red-400"
-                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-                  )}
-                >
-                  <ChildIcon className={cn("h-3.5 w-3.5", isActive ? "text-red-400" : "text-gray-400 dark:text-gray-500")} />
-                  {child.label}
-                </Link>
-              );
-            })}
+            {item.children.map((child) => renderNavLink(child, true))}
           </div>
         )}
       </div>
@@ -253,7 +266,7 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
           </>
         ) : (
           <div className="space-y-1">
-            {(flatItems ?? []).map(renderNavLink)}
+            {(flatItems ?? []).map((item) => renderNavLink(item))}
           </div>
         )}
       </nav>
@@ -280,16 +293,10 @@ export function Sidebar({ role, userName, mobileOpen, onClose }: { role: string;
     </aside>
   );
 
-  // Mobile: overlay + drawer
   if (mobileOpen !== undefined) {
     return (
       <>
-        {/* Desktop sidebar - always visible */}
-        <div className="hidden lg:block">
-          {sidebarContent}
-        </div>
-
-        {/* Mobile overlay */}
+        <div className="hidden lg:block">{sidebarContent}</div>
         {mobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="fixed inset-0 bg-black/50" onClick={onClose} />

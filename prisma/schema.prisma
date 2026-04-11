@@ -97,6 +97,7 @@ model Formateur {
   specialites     String  @default("[]")
   tarifJournalier Float?
   cv              String?
+  photo           String?  // URL photo de profil
   notes           String?
   actif           Boolean @default(true)
 

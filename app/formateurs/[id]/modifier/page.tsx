@@ -31,6 +31,7 @@ export default function ModifierFormateurPage() {
     specialites: "",
     tarifJournalier: "",
     notes: "",
+    photo: "",
   });
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function ModifierFormateurPage() {
           specialites: specialitesArray.join(", "),
           tarifJournalier: data.tarifJournalier != null ? String(data.tarifJournalier) : "",
           notes: data.notes ?? "",
+          photo: data.photo ?? "",
         });
       })
       .catch((err) => setError(err.message))
@@ -114,6 +116,7 @@ export default function ModifierFormateurPage() {
       if (form.telephone) payload.telephone = form.telephone;
       if (form.tarifJournalier) payload.tarifJournalier = Number(form.tarifJournalier);
       if (form.notes) payload.notes = form.notes;
+      payload.photo = form.photo || null;
 
       const res = await fetch(`/api/formateurs/${id}`, {
         method: "PUT",
@@ -189,12 +192,33 @@ export default function ModifierFormateurPage() {
                 />
               </div>
             </div>
+            {/* Photo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="photo">Photo de profil (URL)</Label>
+              <div className="flex items-center gap-4">
+                {form.photo ? (
+                  <img src={form.photo} alt="Photo" className="h-16 w-16 rounded-full object-cover border-2 border-gray-600" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center border-2 border-gray-600">
+                    <span className="text-xl font-bold text-white">{form.prenom[0]?.toUpperCase() || ""}{form.nom[0]?.toUpperCase() || ""}</span>
+                  </div>
+                )}
+                <Input
+                  id="photo"
+                  name="photo"
+                  value={form.photo}
+                  onChange={handleChange}
+                  placeholder="https://exemple.com/photo.jpg"
+                  className="flex-1"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle className="text-base">Coordonnées</CardTitle>
+            <CardTitle className="text-base">Coordonnees</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">

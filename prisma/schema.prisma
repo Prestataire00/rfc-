@@ -562,6 +562,26 @@ model Parametres {
   moyensPaiement     String @default("virement,cpf,opco")
 }
 
+// ==================== MODELES DE MESSAGES ====================
+
+// Templates d'emails / documents parametrables. Chaque type a un template par defaut
+// seede, que l'utilisateur peut ensuite modifier a sa guise.
+// Les variables de la forme {{nom}} sont remplacees au moment de l'envoi.
+model MessageTemplate {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  type        String   @unique // convocation, fiche_besoin_client, fiche_besoin_stagiaire, evaluation_chaud, etc.
+  nom         String
+  description String?
+  objet       String   // objet de l'email (avec variables)
+  contenu     String   // corps HTML (avec variables)
+  variables   String   @default("[]") // JSON array documentant les variables dispo
+  actif       Boolean  @default(true)
+  modifie     Boolean  @default(false) // true si l'admin a modifie le defaut
+}
+
 // ==================== AUTOMATISATIONS ====================
 
 // Regle d'automatisation globale (valeur par defaut appliquee a toutes les sessions)

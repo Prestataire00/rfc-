@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { sendEmail, convocationEmail, evaluationEmail, ficheBesoinClientEmail, ficheBesoinStagiaireEmail } from "@/lib/email";
 import { computeTriggerDate } from "@/lib/automations";
+import { renderMessageTemplate, formatDateFR } from "@/lib/message-templates";
 
 // GET /api/cron/automations
 // Execute toutes les automatisations dont la date de declenchement est passee et qui n'ont pas encore ete executees.
@@ -77,11 +78,20 @@ export async function GET(req: NextRequest) {
 
         try {
           if (global.type === "convocation") {
-            // Envoi de la convocation a tous les inscrits confirmes avec email
             let sent = 0;
             for (const ins of session.inscriptions) {
               if (!ins.contact.email) continue;
-              const mail = convocationEmail({
+              // Priorite au template custom, fallback sur le template code
+              const rendered = await renderMessageTemplate("convocation", {
+                stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                formation: { titre: session.formation.titre },
+                session: {
+                  dateDebut: formatDateFR(session.dateDebut),
+                  dateFin: formatDateFR(session.dateFin),
+                  lieu: session.lieu || "",
+                },
+              });
+              const mail = rendered || convocationEmail({
                 stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
                 formation: { titre: session.formation.titre },
                 session: {
@@ -122,15 +132,19 @@ export async function GET(req: NextRequest) {
                 },
               });
               const lien = `${baseUrl}/evaluation/${token}`;
-              await sendEmail({
-                to: ins.contact.email,
-                ...evaluationEmail({
-                  stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
-                  formation: { titre: session.formation.titre },
-                  type,
-                  lien,
-                }),
-              }).catch((e) => console.error("email evaluation:", e));
+              const tplType = type === "satisfaction_chaud" ? "evaluation_chaud" : "evaluation_froid";
+              const rendered = await renderMessageTemplate(tplType, {
+                stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                formation: { titre: session.formation.titre },
+                lien,
+              });
+              const mail = rendered || evaluationEmail({
+                stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                formation: { titre: session.formation.titre },
+                type,
+                lien,
+              });
+              await sendEmail({ to: ins.contact.email, ...mail }).catch((e) => console.error("email evaluation:", e));
               created++;
             }
             status = "ok";
@@ -160,15 +174,18 @@ export async function GET(req: NextRequest) {
                 },
               });
               const lien = `${baseUrl}/evaluation/${token}`;
-              await sendEmail({
-                to: ins.contact.email,
-                ...evaluationEmail({
-                  stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
-                  formation: { titre: session.formation.titre },
-                  type: "acquis",
-                  lien,
-                }),
-              }).catch(() => {});
+              const rendered = await renderMessageTemplate("positionnement", {
+                stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                formation: { titre: session.formation.titre },
+                lien,
+              });
+              const mail = rendered || evaluationEmail({
+                stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                formation: { titre: session.formation.titre },
+                type: "acquis",
+                lien,
+              });
+              await sendEmail({ to: ins.contact.email, ...mail }).catch(() => {});
               created++;
             }
             status = "ok";
@@ -196,17 +213,22 @@ export async function GET(req: NextRequest) {
               });
             }
             if (destinataireEmail && fiche.statut !== "repondu") {
-              await sendEmail({
-                to: destinataireEmail,
-                ...ficheBesoinClientEmail({
-                  destinataireNom: destinataireNom || entreprise?.nom || "",
-                  entreprise: { nom: entreprise?.nom || "" },
-                  formation: { titre: session.formation.titre },
-                  session: { dateDebut: session.dateDebut.toISOString() },
-                  link: `${baseUrl}/fiche-besoin-client/${fiche.tokenAcces}`,
-                  optionnel: session.modeExpress,
-                }),
+              const link = `${baseUrl}/fiche-besoin-client/${fiche.tokenAcces}`;
+              const rendered = await renderMessageTemplate("fiche_besoin_client", {
+                destinataire: { nom: destinataireNom || entreprise?.nom || "" },
+                formation: { titre: session.formation.titre },
+                session: { dateDebut: formatDateFR(session.dateDebut) },
+                lien: link,
               });
+              const mail = rendered || ficheBesoinClientEmail({
+                destinataireNom: destinataireNom || entreprise?.nom || "",
+                entreprise: { nom: entreprise?.nom || "" },
+                formation: { titre: session.formation.titre },
+                session: { dateDebut: session.dateDebut.toISOString() },
+                link,
+                optionnel: session.modeExpress,
+              });
+              await sendEmail({ to: destinataireEmail, ...mail });
               await prisma.besoinClient.update({ where: { id: fiche.id }, data: { statut: "envoye", dateEnvoi: new Date() } });
             }
             status = "ok";
@@ -232,16 +254,21 @@ export async function GET(req: NextRequest) {
                 });
               }
               if (fiche.statut !== "repondu") {
-                await sendEmail({
-                  to: ins.contact.email,
-                  ...ficheBesoinStagiaireEmail({
-                    stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
-                    formation: { titre: session.formation.titre },
-                    session: { dateDebut: session.dateDebut.toISOString() },
-                    link: `${baseUrl}/fiche-besoin-stagiaire/${fiche.tokenAcces}`,
-                    optionnel: session.modeExpress,
-                  }),
+                const link = `${baseUrl}/fiche-besoin-stagiaire/${fiche.tokenAcces}`;
+                const rendered = await renderMessageTemplate("fiche_besoin_stagiaire", {
+                  stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                  formation: { titre: session.formation.titre },
+                  session: { dateDebut: formatDateFR(session.dateDebut) },
+                  lien: link,
                 });
+                const mail = rendered || ficheBesoinStagiaireEmail({
+                  stagiaire: { prenom: ins.contact.prenom, nom: ins.contact.nom },
+                  formation: { titre: session.formation.titre },
+                  session: { dateDebut: session.dateDebut.toISOString() },
+                  link,
+                  optionnel: session.modeExpress,
+                });
+                await sendEmail({ to: ins.contact.email, ...mail });
                 await prisma.besoinStagiaire.update({ where: { id: fiche.id }, data: { statut: "envoye", dateEnvoi: new Date() } });
                 sent++;
               }

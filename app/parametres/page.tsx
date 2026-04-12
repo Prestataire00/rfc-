@@ -124,6 +124,9 @@ export default function ParametresPage() {
         <a href="/parametres/automations" className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors">
           ⚡ Automatisations des envois
         </a>
+        <a href="/parametres/templates-messages" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
+          ✉️ Modeles de messages
+        </a>
         <a href="/parametres/questionnaire" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
           📋 Configurer le questionnaire d&apos;évaluation
         </a>

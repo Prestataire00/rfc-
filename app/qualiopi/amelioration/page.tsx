@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AISuggestionsDialog } from "@/components/shared/AISuggestionsDialog";
 
 interface Amelioration {
   id: string;
@@ -110,7 +111,24 @@ export default function AmeliorationPage() {
           <h1 className="text-2xl font-bold text-gray-100">Amelioration Continue</h1>
           <p className="text-sm text-gray-400 mt-1">Suivi des actions d&apos;amelioration — Critere Qualiopi n°32</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <AISuggestionsDialog
+            type="amelioration"
+            label="Amelioration continue"
+            buttonLabel="Suggestions IA"
+            count={4}
+            onImport={(picked) => {
+              const newItems: Amelioration[] = picked.map((p, i) => ({
+                id: `ai_${Date.now()}_${i}`,
+                date: new Date().toISOString().split("T")[0],
+                description: String((p as Record<string, unknown>).description ?? ""),
+                action_taken: String((p as Record<string, unknown>).action_taken ?? ""),
+                result: String((p as Record<string, unknown>).result ?? ""),
+                responsible: String((p as Record<string, unknown>).responsible ?? ""),
+              }));
+              setItems((prev) => [...newItems, ...prev]);
+            }}
+          />
           <Button onClick={() => { setForm({ ...EMPTY_FORM }); setError(""); setModalOpen(true); }} className="gap-2 bg-red-600 hover:bg-red-700">
             <Plus className="h-4 w-4" /> Ajouter
           </Button>

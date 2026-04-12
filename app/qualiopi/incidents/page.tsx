@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { AISuggestionsDialog } from "@/components/shared/AISuggestionsDialog";
 
 type Statut = "Ouvert" | "Clos";
 type Source = "Entreprise" | "Apprenant" | "Formateur";
@@ -127,7 +128,35 @@ export default function IncidentsPage() {
           <h1 className="text-2xl font-bold text-gray-100">Incidents & Reclamations</h1>
           <p className="text-sm text-gray-400 mt-1">Gestion des incidents et reclamations — Qualiopi</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <AISuggestionsDialog
+            type="incident"
+            label="Incidents & reclamations"
+            buttonLabel="Suggestions IA"
+            count={4}
+            onImport={(picked) => {
+              const newItems: Incident[] = picked.map((p, i) => {
+                const r = p as Record<string, unknown>;
+                const src = String(r.source ?? "Entreprise");
+                const suj = String(r.sujet ?? "Pedagogique");
+                const grv = String(r.gravite ?? "Faible");
+                return {
+                  id: `ai_${Date.now()}_${i}`,
+                  date: new Date().toISOString().split("T")[0],
+                  nom: String(r.nom ?? ""),
+                  description: String(r.description ?? ""),
+                  statut: "Ouvert" as Statut,
+                  source: (["Entreprise", "Apprenant", "Formateur"].includes(src) ? src : "Entreprise") as Source,
+                  sujet: (["Pedagogique", "Administratif", "Technique"].includes(suj) ? suj : "Pedagogique") as Sujet,
+                  gravite: (["Faible", "Modere", "Grave"].includes(grv) ? grv : "Faible") as Gravite,
+                  formation: "",
+                  action_menee: String(r.action_menee ?? ""),
+                  date_cloture: "",
+                };
+              });
+              setIncidents((prev) => [...newItems, ...prev]);
+            }}
+          />
           <Button onClick={() => { setForm({ ...EMPTY_FORM }); setError(""); setModalOpen(true); }} className="gap-2 bg-red-600 hover:bg-red-700">
             <Plus className="h-4 w-4" /> Nouvel incident
           </Button>

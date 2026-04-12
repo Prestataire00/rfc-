@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Shield, Calendar, CheckCircle2, Clock, AlertTriangle, Plus, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AISuggestionsDialog } from "@/components/shared/AISuggestionsDialog";
 
 interface Audit {
   id: string;
@@ -64,7 +65,8 @@ const statutConfig: Record<string, { label: string; color: string; icon: React.E
 };
 
 export default function AuditsPage() {
-  const [audits] = useState<Audit[]>(MOCK_AUDITS);
+  const [audits, setAudits] = useState<Audit[]>(MOCK_AUDITS);
+  const [pointsAttention, setPointsAttention] = useState<{ id: string; critere: number; titre: string; risque: string; preparation: string; priorite: string }[]>([]);
 
   const prochainAudit = audits.find((a) => a.statut === "planifie" || a.statut === "a_planifier");
   const auditsTermines = audits.filter((a) => a.statut === "termine");
@@ -85,6 +87,27 @@ export default function AuditsPage() {
               <p className="text-sm text-gray-400">Suivi et preparation des audits de certification</p>
             </div>
           </div>
+          <AISuggestionsDialog
+            type="audit"
+            label="Preparation d'audit"
+            buttonLabel="Suggestions IA"
+            count={5}
+            onImport={(picked) => {
+              const newItems = picked.map((p, i) => {
+                const r = p as Record<string, unknown>;
+                const priorite = String(r.priorite ?? "moyenne").toLowerCase();
+                return {
+                  id: `ai_${Date.now()}_${i}`,
+                  critere: Number(r.critere) || 0,
+                  titre: String(r.titre ?? ""),
+                  risque: String(r.risque ?? ""),
+                  preparation: String(r.preparation ?? ""),
+                  priorite: ["haute", "moyenne", "faible"].includes(priorite) ? priorite : "moyenne",
+                };
+              });
+              setPointsAttention((prev) => [...newItems, ...prev]);
+            }}
+          />
         </div>
       </div>
 
@@ -109,6 +132,50 @@ export default function AuditsPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Points d'attention generes par l'IA */}
+      {pointsAttention.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
+            Points d&apos;attention pour le prochain audit
+            <span className="text-xs font-normal text-gray-400">({pointsAttention.length})</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {pointsAttention.map((pt) => {
+              const prioColor = pt.priorite === "haute" ? "border-red-700 bg-red-900/20"
+                : pt.priorite === "moyenne" ? "border-amber-700 bg-amber-900/20"
+                : "border-gray-700 bg-gray-800";
+              const prioText = pt.priorite === "haute" ? "text-red-400"
+                : pt.priorite === "moyenne" ? "text-amber-400"
+                : "text-gray-400";
+              return (
+                <div key={pt.id} className={`rounded-lg border-l-4 p-4 ${prioColor}`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-gray-900 text-gray-300 px-2 py-0.5 text-[10px] font-semibold">
+                        Critere {pt.critere}
+                      </span>
+                      <span className={`text-[10px] uppercase font-bold ${prioText}`}>
+                        {pt.priorite}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setPointsAttention((prev) => prev.filter((p) => p.id !== pt.id))}
+                      className="text-gray-500 hover:text-gray-300 text-xs"
+                      title="Retirer"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <h3 className="font-semibold text-gray-100 text-sm mb-1">{pt.titre}</h3>
+                  {pt.risque && <p className="text-xs text-gray-400 mb-1"><strong>Risque :</strong> {pt.risque}</p>}
+                  {pt.preparation && <p className="text-xs text-gray-300"><strong>A preparer :</strong> {pt.preparation}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Timeline des audits */}

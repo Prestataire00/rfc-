@@ -15,6 +15,12 @@ export type EntrepriseParams = {
   conditionsPaiement: string;
   mentionsDevis: string;
   mentionsFacture: string;
+  iban: string;
+  bic: string;
+  banque: string;
+  moyensPaiement: string;
+  logoUrl: string | null;
+  couleurPrimaire: string;
 };
 
 const DEFAULTS: EntrepriseParams = {
@@ -32,6 +38,12 @@ const DEFAULTS: EntrepriseParams = {
   conditionsPaiement: "Paiement à 30 jours à compter de la date de facturation.",
   mentionsDevis: "Devis valable 30 jours.",
   mentionsFacture: "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.",
+  iban: "",
+  bic: "",
+  banque: "",
+  moyensPaiement: "virement,cpf,opco",
+  logoUrl: null,
+  couleurPrimaire: "#dc2626",
 };
 
 export async function getParametres(): Promise<EntrepriseParams> {

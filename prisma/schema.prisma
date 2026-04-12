@@ -560,6 +560,10 @@ model Parametres {
   bic                String @default("")
   banque             String @default("")
   moyensPaiement     String @default("virement,cpf,opco")
+
+  // Identite visuelle (branding)
+  logoUrl            String?
+  couleurPrimaire    String @default("#dc2626")
 }
 
 // ==================== MODELES DE MESSAGES ====================

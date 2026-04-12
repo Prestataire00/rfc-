@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield, Building2, Save, FileText, CreditCard } from "lucide-react";
+import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield, Building2, Save, FileText, CreditCard, Palette } from "lucide-react";
+import { ImageUpload } from "@/components/shared/ImageUpload";
 
 type Parametres = {
   nomEntreprise: string;
@@ -28,6 +29,8 @@ type Parametres = {
   bic: string;
   banque: string;
   moyensPaiement: string;
+  logoUrl: string | null;
+  couleurPrimaire: string;
 };
 
 const defaultParams: Parametres = {
@@ -49,6 +52,8 @@ const defaultParams: Parametres = {
   bic: "",
   banque: "",
   moyensPaiement: "virement,cpf,opco",
+  logoUrl: null,
+  couleurPrimaire: "#dc2626",
 };
 
 export default function ParametresPage() {
@@ -133,6 +138,63 @@ export default function ParametresPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Identite visuelle (branding) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5 text-red-600" />
+              Identite visuelle
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-400">
+              Logo et couleur appliques automatiquement sur tous les documents generes (PDFs et emails).
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label className="mb-2 block">Logo de l&apos;entreprise</Label>
+                <ImageUpload
+                  value={params.logoUrl || ""}
+                  onChange={(url) => setParams((p) => ({ ...p, logoUrl: url || null }))}
+                  folder="branding"
+                  shape="rect"
+                  size="md"
+                />
+                <p className="text-xs text-gray-500 mt-2">PNG transparent recommande, 400px de large au minimum.</p>
+              </div>
+              <div>
+                <Label htmlFor="couleurPrimaire" className="mb-2 block">Couleur primaire</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="couleurPrimaire"
+                    type="color"
+                    value={params.couleurPrimaire}
+                    onChange={(e) => setParams((p) => ({ ...p, couleurPrimaire: e.target.value }))}
+                    className="h-12 w-16 rounded-md border border-gray-600 bg-transparent cursor-pointer"
+                  />
+                  <Input
+                    value={params.couleurPrimaire}
+                    onChange={(e) => setParams((p) => ({ ...p, couleurPrimaire: e.target.value }))}
+                    placeholder="#dc2626"
+                    className="font-mono"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Utilisee pour les en-tetes, boutons et badges des documents.</p>
+                {/* Apercu */}
+                <div className="mt-3 rounded-md overflow-hidden border border-gray-700">
+                  <div style={{ background: params.couleurPrimaire }} className="px-4 py-3 text-white">
+                    <p className="text-sm font-bold">{params.nomEntreprise}</p>
+                    <p className="text-xs opacity-90">{params.slogan}</p>
+                  </div>
+                  <div className="bg-white px-4 py-3 text-xs text-gray-700">
+                    Apercu : en-tete des documents
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Informations entreprise */}
         <Card>
           <CardHeader>

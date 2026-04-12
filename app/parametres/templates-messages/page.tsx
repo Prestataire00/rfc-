@@ -161,7 +161,7 @@ export default function TemplatesMessagesPage() {
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate font-medium">{t.nom}</span>
-                {t.modifie && <Pencil className="h-3 w-3 text-amber-400 shrink-0" title="Modifie" />}
+                {t.modifie && <span title="Modifie"><Pencil className="h-3 w-3 text-amber-400 shrink-0" /></span>}
               </div>
               {t.description && <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{t.description}</p>}
             </button>

@@ -9,6 +9,12 @@ export const contactSchema = z.object({
   type: z.enum(["client", "prospect", "stagiaire"]),
   entrepriseId: z.string().cuid().optional().nullable(),
   notes: z.string().optional().nullable(),
+  // Donnees stagiaire (Qualiopi / BPF / Passeport Prevention)
+  dateNaissance: z.union([z.string(), z.date()]).optional().nullable(),
+  numeroSecuriteSociale: z.string().optional().nullable(),
+  numeroPasseportPrevention: z.string().optional().nullable(),
+  besoinsAdaptation: z.string().optional().nullable(),
+  niveauFormation: z.string().optional().nullable(),
 });
 
 export type ContactFormData = z.infer<typeof contactSchema>;

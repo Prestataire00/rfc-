@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle, QrCode } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -29,10 +29,38 @@ type Session = {
   statut: string;
   notes: string | null;
   coutFormateur: number | null;
-  formation: { id: string; titre: string; tarif: number };
+  modeExpress?: boolean;
+  declarationPasseportPrevention?: boolean;
+  datePasseportPrevention?: string | null;
+  formation: { id: string; titre: string; tarif: number; categorie?: string | null; certifiante?: boolean };
   formateur: { id: string; nom: string; prenom: string } | null;
   devis: { id: string; numero: string; objet: string; statut: string; montantTTC: number } | null;
   inscriptions: Inscription[];
+};
+
+type BesoinClient = {
+  id: string;
+  statut: string;
+  optionnel: boolean;
+  destinataireNom: string | null;
+  destinataireEmail: string | null;
+  dateEnvoi: string | null;
+  dateReponse: string | null;
+  secteurActivite: string | null;
+  aStagiairesHandicap: boolean;
+  tokenAcces: string;
+};
+
+type BesoinStagiaire = {
+  id: string;
+  statut: string;
+  optionnel: boolean;
+  dateEnvoi: string | null;
+  dateReponse: string | null;
+  estRQTH: boolean;
+  detailsRQTH: string | null;
+  tokenAcces: string;
+  contact: { id: string; nom: string; prenom: string; email: string };
 };
 
 export default function SessionDetailPage() {
@@ -60,6 +88,12 @@ export default function SessionDetailPage() {
   const [confirmTerminee, setConfirmTerminee] = useState(false);
   const [pendingStatut, setPendingStatut] = useState<string | null>(null);
   const [presenceMap, setPresenceMap] = useState<Record<string, { matin: boolean; apresMidi: boolean }>>({});
+  const [besoinsClient, setBesoinsClient] = useState<BesoinClient[]>([]);
+  const [besoinsStagiaire, setBesoinsStagiaire] = useState<BesoinStagiaire[]>([]);
+  const [sendingFiches, setSendingFiches] = useState(false);
+  const [fichesMsg, setFichesMsg] = useState("");
+  const [passeportOpen, setPasseportOpen] = useState(false);
+  const [declarationChecked, setDeclarationChecked] = useState(false);
 
   const fetchSession = useCallback(async () => {
     const res = await fetch(`/api/sessions/${id}`);
@@ -79,7 +113,16 @@ export default function SessionDetailPage() {
     setPresenceMap(map);
   }, [id]);
 
-  useEffect(() => { fetchSession(); fetchPresence(); }, [fetchSession, fetchPresence]);
+  const fetchBesoins = useCallback(async () => {
+    const [rc, rs] = await Promise.all([
+      fetch(`/api/besoin-client?sessionId=${id}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/besoin-stagiaire?sessionId=${id}`).then((r) => r.ok ? r.json() : []),
+    ]);
+    setBesoinsClient(Array.isArray(rc) ? rc : []);
+    setBesoinsStagiaire(Array.isArray(rs) ? rs : []);
+  }, [id]);
+
+  useEffect(() => { fetchSession(); fetchPresence(); fetchBesoins(); }, [fetchSession, fetchPresence, fetchBesoins]);
 
   const fetchContacts = async () => {
     const res = await fetch("/api/contacts");
@@ -87,12 +130,63 @@ export default function SessionDetailPage() {
   };
 
   const handleUpdateStatut = (newStatut: string) => {
+    // Blocage Passeport Prevention pour formations certifiantes
+    if (newStatut === "terminee" && session?.formation.certifiante && !session?.declarationPasseportPrevention) {
+      setDeclarationChecked(false);
+      setPasseportOpen(true);
+      return;
+    }
     if (newStatut === "terminee") {
       setPendingStatut(newStatut);
       setConfirmTerminee(true);
     } else {
       applyStatut(newStatut);
     }
+  };
+
+  const confirmPasseportAndFinalize = async () => {
+    if (!declarationChecked) return;
+    await fetch(`/api/sessions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        declarationPasseportPrevention: true,
+        datePasseportPrevention: new Date().toISOString(),
+      }),
+    });
+    setPasseportOpen(false);
+    setPendingStatut("terminee");
+    setConfirmTerminee(true);
+  };
+
+  const handleSendFichesBesoin = async () => {
+    setSendingFiches(true);
+    setFichesMsg("");
+    try {
+      const res = await fetch(`/api/sessions/${id}/envoyer-fiches-besoin`, { method: "POST" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setFichesMsg(typeof d.error === "string" ? d.error : "Erreur envoi");
+      } else {
+        const data = await res.json();
+        const nbStagiaires = data.fichesStagiaires?.filter((f: { envoye: boolean }) => f.envoye).length || 0;
+        setFichesMsg(`Fiche client ${data.ficheClient?.envoye ? "envoyee" : "creee (SMTP non configure)"}, ${nbStagiaires} fiche(s) stagiaire envoyee(s).`);
+        fetchBesoins();
+      }
+    } catch {
+      setFichesMsg("Erreur reseau");
+    }
+    setSendingFiches(false);
+    setTimeout(() => setFichesMsg(""), 5000);
+  };
+
+  const handleResendFiche = async (type: "client" | "stagiaire", ficheId: string) => {
+    await fetch(`/api/besoin-${type}/${ficheId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "envoyer" }),
+    });
+    fetchBesoins();
   };
 
   const applyStatut = async (newStatut: string) => {
@@ -343,6 +437,37 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
+      {/* Alertes contextuelles (RQTH, secteur SST, express) */}
+      {(() => {
+        const hasRQTH = besoinsStagiaire.some((b) => b.estRQTH);
+        const secteurRepondu = besoinsClient.find((b) => b.secteurActivite)?.secteurActivite;
+        const isSST = session.formation.categorie?.toLowerCase().includes("sst") || session.formation.categorie?.toLowerCase().includes("secouriste");
+        const hasAny = hasRQTH || (isSST && secteurRepondu) || session.modeExpress;
+        if (!hasAny) return null;
+        return (
+          <div className="mb-6 space-y-2">
+            {session.modeExpress && (
+              <div className="flex items-center gap-2 rounded-md border border-amber-700 bg-amber-900/20 px-4 py-2.5 text-sm text-amber-300">
+                <Zap className="h-4 w-4" />
+                <span>Session express : les automatisations temporelles sont desactivees, les fiches besoin sont marquees optionnelles.</span>
+              </div>
+            )}
+            {hasRQTH && (
+              <div className="flex items-center gap-2 rounded-md border border-orange-700 bg-orange-900/20 px-4 py-2.5 text-sm text-orange-300">
+                <Accessibility className="h-4 w-4" />
+                <span><strong>Stagiaires RQTH</strong> identifies. Prevoir les amenagements pedagogiques dans la convention.</span>
+              </div>
+            )}
+            {isSST && secteurRepondu && (
+              <div className="flex items-center gap-2 rounded-md border border-blue-700 bg-blue-900/20 px-4 py-2.5 text-sm text-blue-300">
+                <ClipboardList className="h-4 w-4" />
+                <span>Formation SST : adapter les cas pratiques au secteur <strong>{secteurRepondu.replace(/_/g, " ")}</strong>.</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Info + Documents column */}
         <div className="lg:col-span-1 space-y-4">
@@ -414,6 +539,108 @@ export default function SessionDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Fiches besoin (client + stagiaires) */}
+          <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-red-500" /> Fiches besoin
+              </h2>
+              <button
+                onClick={handleSendFichesBesoin}
+                disabled={sendingFiches || session.inscriptions.length === 0}
+                className="inline-flex items-center gap-1 rounded-md bg-red-600 hover:bg-red-700 px-2.5 py-1 text-xs font-medium text-white transition-colors disabled:opacity-50"
+              >
+                <Send className="h-3 w-3" />
+                {sendingFiches ? "Envoi..." : besoinsClient.length + besoinsStagiaire.length === 0 ? "Envoyer" : "Renvoyer"}
+              </button>
+            </div>
+            {fichesMsg && <p className="text-xs text-gray-400">{fichesMsg}</p>}
+
+            {/* Fiche client */}
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1.5">Client</p>
+              {besoinsClient.length === 0 ? (
+                <p className="text-xs text-gray-500 italic">Aucune fiche envoyee</p>
+              ) : besoinsClient.map((b) => (
+                <div key={b.id} className="flex items-center justify-between p-2 rounded-md border border-gray-700 bg-gray-900 text-xs mb-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-200 truncate">{b.destinataireNom || b.destinataireEmail || "Destinataire inconnu"}</p>
+                    <p className="text-gray-500 text-[10px]">
+                      {b.statut === "repondu" && b.dateReponse
+                        ? `Repondu le ${formatDate(b.dateReponse)}`
+                        : b.dateEnvoi ? `Envoye le ${formatDate(b.dateEnvoi)}` : "En attente"}
+                      {b.optionnel && " · optionnel"}
+                    </p>
+                  </div>
+                  <span className={cn(
+                    "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                    b.statut === "repondu" ? "bg-emerald-900/30 text-emerald-400" :
+                    b.statut === "envoye" ? "bg-blue-900/30 text-blue-400" :
+                    "bg-gray-700 text-gray-400"
+                  )}>
+                    {b.statut === "repondu" ? "Repondu" : b.statut === "envoye" ? "Envoye" : "En attente"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Fiches stagiaires */}
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1.5">Stagiaires</p>
+              {besoinsStagiaire.length === 0 ? (
+                <p className="text-xs text-gray-500 italic">Aucune fiche envoyee</p>
+              ) : besoinsStagiaire.map((b) => (
+                <div key={b.id} className="flex items-center justify-between p-2 rounded-md border border-gray-700 bg-gray-900 text-xs mb-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-gray-200 truncate flex items-center gap-1">
+                      {b.contact.prenom} {b.contact.nom}
+                      {b.estRQTH && <Accessibility className="h-3 w-3 text-orange-400" />}
+                    </p>
+                    <p className="text-gray-500 text-[10px]">
+                      {b.statut === "repondu" && b.dateReponse
+                        ? `Repondu le ${formatDate(b.dateReponse)}`
+                        : b.dateEnvoi ? `Envoye le ${formatDate(b.dateEnvoi)}` : "En attente"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => handleResendFiche("stagiaire", b.id)} className="text-gray-400 hover:text-gray-200" title="Renvoyer l'email">
+                      <Send className="h-3 w-3" />
+                    </button>
+                    <span className={cn(
+                      "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                      b.statut === "repondu" ? "bg-emerald-900/30 text-emerald-400" :
+                      b.statut === "envoye" ? "bg-blue-900/30 text-blue-400" :
+                      "bg-gray-700 text-gray-400"
+                    )}>
+                      {b.statut === "repondu" ? "OK" : b.statut === "envoye" ? "Envoye" : "Attente"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Passeport Prevention (formations certifiantes uniquement) */}
+          {session.formation.certifiante && (
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-2">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                <BadgeCheck className="h-4 w-4 text-amber-500" /> Passeport Prevention
+              </h2>
+              <p className="text-xs text-gray-400">Obligation legale (decret 2022-1434). Requis avant archivage de la session.</p>
+              {session.declarationPasseportPrevention ? (
+                <div className="flex items-center gap-2 rounded-md bg-emerald-900/20 border border-emerald-700 p-2 text-xs text-emerald-300">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Declare{session.datePasseportPrevention ? ` le ${formatDate(session.datePasseportPrevention)}` : ""}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-md bg-amber-900/20 border border-amber-700 p-2 text-xs text-amber-300">
+                  <AlertTriangle className="h-4 w-4" />
+                  Non declare — bloquera le passage en &quot;terminee&quot;
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Devis associé */}
           {session.devis && (
@@ -825,6 +1052,39 @@ export default function SessionDetailPage() {
           setPendingStatut(null);
         }}
       />
+
+      {/* Blocage Passeport Prevention */}
+      <Dialog open={passeportOpen} onOpenChange={setPasseportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BadgeCheck className="h-5 w-5 text-amber-500" /> Declaration Passeport Prevention
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-gray-300">
+              Cette formation est certifiante. Conformement au <strong>decret 2022-1434</strong>, la declaration au Passeport Prevention est obligatoire avant d&apos;archiver la session.
+            </p>
+            <label className="flex items-start gap-3 p-3 rounded-md border border-gray-700 bg-gray-900 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={declarationChecked}
+                onChange={(e) => setDeclarationChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4"
+              />
+              <span className="text-sm text-gray-200">
+                Je confirme avoir effectue la declaration au Passeport Prevention pour tous les stagiaires de cette session certifiante.
+              </span>
+            </label>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setPasseportOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Annuler</button>
+            <Button onClick={confirmPasseportAndFinalize} disabled={!declarationChecked} className="bg-amber-600 hover:bg-amber-700">
+              Valider et terminer la session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete session dialog */}
       <ConfirmDialog

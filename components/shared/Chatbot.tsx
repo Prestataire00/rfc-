@@ -59,7 +59,7 @@ export function Chatbot() {
   const handleReset = () => setMessages([WELCOME]);
 
   // Ne pas afficher le chatbot sur les pages publiques
-  const PUBLIC = ["/login", "/evaluation/", "/inscription-stagiaire"];
+  const PUBLIC = ["/login", "/evaluation/", "/inscription-stagiaire", "/fiche-besoin-client", "/fiche-besoin-stagiaire"];
   if (PUBLIC.some((p) => pathname.startsWith(p))) return null;
 
   return (

@@ -50,14 +50,19 @@ model Entreprise {
   site       String?
   notes      String?
 
-  contacts    Contact[]
-  devis       Devis[]
-  factures    Facture[]
-  users       User[]
-  documents   Document[]
-  besoins     BesoinFormation[]
-  financements Financement[]
-  historique  HistoriqueAction[]
+  // Champs complementaires (Qualiopi / BPF)
+  effectif       Int?
+  typeEntreprise String?  // TPE, PME, ETI, GE
+
+  contacts      Contact[]
+  devis         Devis[]
+  factures      Facture[]
+  users         User[]
+  documents     Document[]
+  besoins       BesoinFormation[]
+  besoinsClient BesoinClient[]
+  financements  Financement[]
+  historique    HistoriqueAction[]
 }
 
 model Contact {
@@ -73,6 +78,13 @@ model Contact {
   notes     String?
   type      String  @default("prospect") // prospect, client, stagiaire
 
+  // Donnees stagiaire (Qualiopi / BPF / Passeport Prevention)
+  dateNaissance              DateTime?
+  numeroSecuriteSociale      String?  // stockage en clair pour l'instant, chiffrement applicatif a prevoir
+  numeroPasseportPrevention  String?  // decret 2022-1434
+  besoinsAdaptation          String?  // RQTH / contraintes
+  niveauFormation            String?  // sans_diplome | cap | bac | bac+2 | autre
+
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
@@ -81,6 +93,7 @@ model Contact {
   attestations     Attestation[]
   evaluations      Evaluation[]
   besoins          BesoinFormation[]
+  besoinsStagiaire BesoinStagiaire[]
   feuillesPresence FeuillePresence[]
   historique       HistoriqueAction[]
 }
@@ -186,6 +199,13 @@ model Session {
   notes         String?
   coutFormateur Float?
 
+  // Chemin express (< 48h) : desactive les automatisations temporelles
+  modeExpress   Boolean @default(false)
+
+  // Conformite Passeport Prevention (decret 2022-1434) pour formations certifiantes
+  declarationPasseportPrevention Boolean   @default(false)
+  datePasseportPrevention        DateTime?
+
   formationId String
   formation   Formation  @relation(fields: [formationId], references: [id], onDelete: Cascade)
 
@@ -198,12 +218,14 @@ model Session {
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
 
-  inscriptions  Inscription[]
+  inscriptions     Inscription[]
   feuillesPresence FeuillePresence[]
-  attestations  Attestation[]
-  evaluations   Evaluation[]
-  feedbacks     FeedbackFormateur[]
-  documents     Document[]
+  attestations     Attestation[]
+  evaluations      Evaluation[]
+  feedbacks        FeedbackFormateur[]
+  documents        Document[]
+  besoinsClient    BesoinClient[]
+  besoinsStagiaire BesoinStagiaire[]
 }
 
 model Inscription {
@@ -530,4 +552,92 @@ model Parametres {
   bic                String @default("")
   banque             String @default("")
   moyensPaiement     String @default("virement,cpf,opco")
+}
+
+// ==================== QUESTIONNAIRES D'ADAPTATION PEDAGOGIQUE ====================
+
+// Fiche besoin envoyee a l'entreprise cliente pour adapter la formation au contexte metier
+model BesoinClient {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionId    String
+  session      Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  tokenAcces  String    @unique
+  statut      String    @default("en_attente") // en_attente, envoye, repondu, incomplet
+  optionnel   Boolean   @default(false) // true en mode session express
+  dateEnvoi   DateTime?
+  dateReponse DateTime?
+
+  // Destinataire (pre-rempli depuis contact entreprise si dispo)
+  destinataireNom    String?
+  destinataireEmail  String?
+
+  // Section 1 - Entreprise
+  secteurActivite  String?
+  effectifTotal    Int?
+  effectifConcerne Int?
+
+  // Section 2 - Stagiaires
+  metiersStagiaires      String?
+  contexteTravail        String?
+  contraintesSpecifiques String?
+
+  // Section 3 - Formation
+  objectifPrincipal   String? // renouvellement_carte_pro | premiere_habilitation | recyclage_annuel | autre
+  objectifsClient     String?
+  casAccidentsRecents Boolean @default(false)
+  detailsCasAccidents String?
+  contraintesHoraires String?
+
+  // Section 4 - Accessibilite
+  aStagiairesHandicap Boolean @default(false)
+  detailsHandicap     String?
+
+  @@index([sessionId])
+  @@index([entrepriseId])
+  @@index([statut])
+}
+
+// Fiche besoin individuelle envoyee a chaque stagiaire (Qualiopi + Passeport Prevention)
+model BesoinStagiaire {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  tokenAcces  String    @unique
+  statut      String    @default("en_attente") // en_attente, envoye, repondu, incomplet
+  optionnel   Boolean   @default(false)
+  dateEnvoi   DateTime?
+  dateReponse DateTime?
+
+  // Section 2 - Prerequis
+  dejaSuivi             Boolean   @default(false)
+  dateDerniereFormation DateTime?
+  niveauFormation       String?
+
+  // Section 3 - Accessibilite & contraintes
+  estRQTH                 Boolean @default(false)
+  detailsRQTH             String?
+  contraintesPhysiques    String?
+  contraintesLangue       String?
+  contraintesAlimentaires String?
+
+  // Section 4 - Consentement
+  consentementRGPD Boolean @default(false)
+  consentementBPF  Boolean @default(false)
+
+  @@unique([sessionId, contactId])
+  @@index([sessionId])
+  @@index([contactId])
+  @@index([statut])
 }

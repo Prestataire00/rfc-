@@ -46,9 +46,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    const data: Record<string, unknown> = { ...parsed.data };
+    if (typeof data.dateNaissance === "string" && data.dateNaissance) {
+      const d = new Date(data.dateNaissance);
+      data.dateNaissance = isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof data.numeroSecuriteSociale === "string" && data.numeroSecuriteSociale) {
+      data.numeroSecuriteSociale = data.numeroSecuriteSociale.replace(/\s/g, "");
+    }
+
     const contact = await prisma.contact.update({
       where: { id: params.id },
-      data: parsed.data,
+      data,
     });
     return NextResponse.json(contact);
   } catch (err: unknown) {

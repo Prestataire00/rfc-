@@ -42,7 +42,14 @@ export default function ModifierContactPage() {
     type: "prospect",
     entrepriseId: "",
     notes: "",
+    dateNaissance: "",
+    numeroSecuriteSociale: "",
+    numeroPasseportPrevention: "",
+    besoinsAdaptation: "",
+    niveauFormation: "",
   });
+  const [secuEditable, setSecuEditable] = useState(false);
+  const [secuMasked, setSecuMasked] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -51,6 +58,8 @@ export default function ModifierContactPage() {
     ])
       .then(([contact, ents]) => {
         if (!contact) { setError("Contact non trouvé"); return; }
+        const rawSecu = contact.numeroSecuriteSociale ?? "";
+        setSecuMasked(rawSecu ? `••••••••••••${rawSecu.slice(-3)}` : "");
         setForm({
           nom: contact.nom ?? "",
           prenom: contact.prenom ?? "",
@@ -60,6 +69,11 @@ export default function ModifierContactPage() {
           type: contact.type ?? "prospect",
           entrepriseId: contact.entrepriseId ?? "",
           notes: contact.notes ?? "",
+          dateNaissance: contact.dateNaissance ? contact.dateNaissance.slice(0, 10) : "",
+          numeroSecuriteSociale: "",
+          numeroPasseportPrevention: contact.numeroPasseportPrevention ?? "",
+          besoinsAdaptation: contact.besoinsAdaptation ?? "",
+          niveauFormation: contact.niveauFormation ?? "",
         });
         setEntreprises(Array.isArray(ents) ? ents : []);
       })
@@ -90,6 +104,21 @@ export default function ModifierContactPage() {
       if (!payload.telephone) delete payload.telephone;
       if (!payload.poste) delete payload.poste;
       if (!payload.notes) delete payload.notes;
+      if (!payload.numeroPasseportPrevention) delete payload.numeroPasseportPrevention;
+      if (!payload.besoinsAdaptation) delete payload.besoinsAdaptation;
+      if (!payload.niveauFormation) delete payload.niveauFormation;
+      // Date naissance
+      if (form.dateNaissance) {
+        payload.dateNaissance = new Date(form.dateNaissance).toISOString();
+      } else {
+        delete payload.dateNaissance;
+      }
+      // N° secu : seulement si modifie (champ editable + rempli)
+      if (!secuEditable || !form.numeroSecuriteSociale) {
+        delete payload.numeroSecuriteSociale;
+      } else {
+        payload.numeroSecuriteSociale = form.numeroSecuriteSociale.replace(/\s/g, "");
+      }
 
       const res = await fetch(`/api/contacts/${id}`, {
         method: "PUT",
@@ -248,6 +277,88 @@ export default function ModifierContactPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Donnees stagiaire (Qualiopi / BPF / Passeport Prevention) */}
+        {form.type === "stagiaire" && (
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">Donnees stagiaire (Qualiopi)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="dateNaissance">Date de naissance</Label>
+                  <Input id="dateNaissance" name="dateNaissance" type="date" value={form.dateNaissance} onChange={handleChange} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="niveauFormation">Niveau de formation</Label>
+                  <select
+                    id="niveauFormation"
+                    name="niveauFormation"
+                    value={form.niveauFormation}
+                    onChange={handleChange}
+                    className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="">Non precise</option>
+                    <option value="sans_diplome">Sans diplome</option>
+                    <option value="cap">CAP / BEP</option>
+                    <option value="bac">BAC</option>
+                    <option value="bac+2">BAC+2</option>
+                    <option value="bac+3">BAC+3</option>
+                    <option value="bac+5">BAC+5 ou plus</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="numeroSecuriteSociale">Numero de securite sociale</Label>
+                  {!secuEditable && secuMasked && (
+                    <button type="button" onClick={() => setSecuEditable(true)} className="text-xs text-red-500 hover:underline">Modifier</button>
+                  )}
+                </div>
+                {secuEditable || !secuMasked ? (
+                  <Input
+                    id="numeroSecuriteSociale"
+                    name="numeroSecuriteSociale"
+                    value={form.numeroSecuriteSociale}
+                    onChange={(e) => setForm((p) => ({ ...p, numeroSecuriteSociale: e.target.value.replace(/[^0-9\s]/g, "") }))}
+                    placeholder="1 99 12 75 123 456 78"
+                    maxLength={21}
+                    className="font-mono"
+                  />
+                ) : (
+                  <Input value={secuMasked} disabled className="font-mono bg-gray-900" />
+                )}
+                <p className="text-xs text-gray-500">Donnee sensible. Accessible uniquement en lecture pour audit Qualiopi.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="numeroPasseportPrevention">Numero Passeport Prevention</Label>
+                <Input
+                  id="numeroPasseportPrevention"
+                  name="numeroPasseportPrevention"
+                  value={form.numeroPasseportPrevention}
+                  onChange={handleChange}
+                  placeholder="Obligation ministerielle (decret 2022-1434)"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="besoinsAdaptation">Besoins d&apos;adaptation / RQTH</Label>
+                <Textarea
+                  id="besoinsAdaptation"
+                  name="besoinsAdaptation"
+                  value={form.besoinsAdaptation}
+                  onChange={handleChange}
+                  placeholder="Contraintes, amenagements souhaites, RQTH..."
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end gap-3">
           <Link

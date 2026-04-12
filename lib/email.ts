@@ -191,3 +191,80 @@ export function evaluationEmail(data: {
     `,
   };
 }
+
+// Fiche besoin CLIENT (envoyee au responsable entreprise)
+export function ficheBesoinClientEmail(data: {
+  destinataireNom: string;
+  entreprise: { nom: string };
+  formation: { titre: string };
+  session: { dateDebut: string };
+  link: string;
+  optionnel?: boolean;
+}) {
+  const dateFmt = new Date(data.session.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const optLabel = data.optionnel
+    ? `<p style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:10px;border-radius:6px;font-size:13px;">Formation en mode express : ce questionnaire est <strong>optionnel</strong>. Vous pouvez le completer apres la formation si vous manquez de temps.</p>`
+    : "";
+  return {
+    subject: `Fiche d'analyse du besoin - ${data.formation.titre}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Fiche d'analyse du besoin</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${data.destinataireNom}</strong>,</p>
+          <p>Afin de preparer au mieux la formation <strong>"${data.formation.titre}"</strong> prevue le <strong>${dateFmt}</strong>${data.entreprise.nom ? ` pour <strong>${data.entreprise.nom}</strong>` : ""}, merci de completer ce questionnaire rapide (5 minutes).</p>
+          <p>Vos reponses nous permettront d'adapter le programme pedagogique (cas pratiques, contraintes terrain, amenagements).</p>
+          ${optLabel}
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${data.link}" style="background: #dc2626; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+              Completer la fiche
+            </a>
+          </div>
+          <p style="color: #64748b; font-size: 12px;">Lien personnel et a usage unique.</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Cordialement,<br>L'equipe RFC</p>
+        </div>
+      </div>
+    `,
+  };
+}
+
+// Fiche besoin STAGIAIRE (envoyee a chaque apprenant)
+export function ficheBesoinStagiaireEmail(data: {
+  stagiaire: { prenom: string; nom: string };
+  formation: { titre: string };
+  session: { dateDebut: string };
+  link: string;
+  optionnel?: boolean;
+}) {
+  const dateFmt = new Date(data.session.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const optLabel = data.optionnel
+    ? `<p style="background:#fef3c7;border:1px solid #fde68a;color:#92400e;padding:10px;border-radius:6px;font-size:13px;">Formation en mode express : ce questionnaire est <strong>optionnel</strong>. Vous pourrez le completer apres la formation.</p>`
+    : "";
+  return {
+    subject: `Fiche individuelle de besoin - ${data.formation.titre}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Fiche individuelle</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${data.stagiaire.prenom} ${data.stagiaire.nom}</strong>,</p>
+          <p>Vous etes inscrit(e) a la formation <strong>"${data.formation.titre}"</strong> du <strong>${dateFmt}</strong>.</p>
+          <p>Merci de completer ce questionnaire individuel (3 minutes) afin que nous puissions adapter la formation a vos besoins (prerequis, contraintes, accessibilite).</p>
+          ${optLabel}
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${data.link}" style="background: #dc2626; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+              Completer ma fiche
+            </a>
+          </div>
+          <p style="color: #64748b; font-size: 12px;">Lien personnel. Vos donnees sont protegees conformement au RGPD.</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Cordialement,<br>L'equipe RFC</p>
+        </div>
+      </div>
+    `,
+  };
+}

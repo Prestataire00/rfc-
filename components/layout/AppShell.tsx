@@ -10,7 +10,7 @@ import { NotificationBell } from "./NotificationBell";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Chatbot } from "@/components/shared/Chatbot";
 
-const PUBLIC_PATHS = ["/login", "/evaluation/", "/inscription-stagiaire"];
+const PUBLIC_PATHS = ["/login", "/evaluation/", "/inscription-stagiaire", "/fiche-besoin-client", "/fiche-besoin-stagiaire"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();

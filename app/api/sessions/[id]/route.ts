@@ -104,10 +104,29 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { statut } = await req.json();
-    const VALID = Object.keys(SESSION_STATUTS);
-    if (!statut || !VALID.includes(statut)) {
-      return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
+    const body = await req.json();
+    const { statut, declarationPasseportPrevention, datePasseportPrevention, modeExpress } = body;
+
+    // Mise a jour partielle : soit statut, soit passeport, soit modeExpress (ou combinaison)
+    const data: Record<string, unknown> = {};
+    if (statut !== undefined) {
+      const VALID = Object.keys(SESSION_STATUTS);
+      if (!VALID.includes(statut)) {
+        return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
+      }
+      data.statut = statut;
+    }
+    if (typeof declarationPasseportPrevention === "boolean") {
+      data.declarationPasseportPrevention = declarationPasseportPrevention;
+    }
+    if (datePasseportPrevention) {
+      data.datePasseportPrevention = new Date(datePasseportPrevention);
+    }
+    if (typeof modeExpress === "boolean") {
+      data.modeExpress = modeExpress;
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "Aucun champ a mettre a jour" }, { status: 400 });
     }
 
     const sessionAvant = await prisma.session.findUnique({
@@ -117,7 +136,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     const session = await prisma.session.update({
       where: { id: params.id },
-      data: { statut },
+      data,
       include: {
         formation: { select: { titre: true } },
         inscriptions: {
@@ -128,7 +147,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
 
     // ── Envoi automatique questionnaire à chaud si passage à "terminee" ────
-    if (statut === "terminee" && sessionAvant?.statut !== "terminee") {
+    if (data.statut === "terminee" && sessionAvant?.statut !== "terminee") {
       const baseUrl = process.env.NEXTAUTH_URL || "https://projetrfc.netlify.app";
 
       for (const inscription of session.inscriptions) {

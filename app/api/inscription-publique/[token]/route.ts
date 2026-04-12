@@ -50,10 +50,14 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ error: "Plus de places disponibles" }, { status: 400 });
     }
 
-    const { nom, prenom, email, telephone, entreprise } = await req.json();
+    const body = await req.json();
+    const { nom, prenom, email, telephone, entreprise, dateNaissance, numeroSecuriteSociale, besoinsAdaptation, consentementRGPD } = body;
 
     if (!nom || !prenom || !email) {
       return NextResponse.json({ error: "Nom, prenom et email requis" }, { status: 400 });
+    }
+    if (!consentementRGPD) {
+      return NextResponse.json({ error: "Le consentement RGPD est obligatoire" }, { status: 400 });
     }
 
     // Find or create contact (upsert pour éviter les doublons en cas de race condition)
@@ -71,6 +75,14 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       entrepriseId = ent?.id ?? null;
     }
 
+    const contactExtraData: Record<string, unknown> = {};
+    if (dateNaissance) {
+      const d = new Date(dateNaissance);
+      if (!isNaN(d.getTime())) contactExtraData.dateNaissance = d;
+    }
+    if (numeroSecuriteSociale) contactExtraData.numeroSecuriteSociale = String(numeroSecuriteSociale).replace(/\s/g, "");
+    if (besoinsAdaptation) contactExtraData.besoinsAdaptation = besoinsAdaptation;
+
     let contact = await prisma.contact.findFirst({ where: { email } });
     if (!contact) {
       try {
@@ -82,6 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
             telephone: telephone || null,
             entrepriseId,
             type: "stagiaire",
+            ...contactExtraData,
           },
         });
       } catch {
@@ -90,6 +103,15 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
         if (!contact) {
           return NextResponse.json({ error: "Erreur lors de la création du contact" }, { status: 500 });
         }
+      }
+    } else if (Object.keys(contactExtraData).length > 0) {
+      // Mise a jour des donnees legales si fournies et manquantes
+      const updateData: Record<string, unknown> = {};
+      if (contactExtraData.dateNaissance && !contact.dateNaissance) updateData.dateNaissance = contactExtraData.dateNaissance;
+      if (contactExtraData.numeroSecuriteSociale && !contact.numeroSecuriteSociale) updateData.numeroSecuriteSociale = contactExtraData.numeroSecuriteSociale;
+      if (contactExtraData.besoinsAdaptation && !contact.besoinsAdaptation) updateData.besoinsAdaptation = contactExtraData.besoinsAdaptation;
+      if (Object.keys(updateData).length > 0) {
+        await prisma.contact.update({ where: { id: contact.id }, data: updateData }).catch(() => {});
       }
     }
 

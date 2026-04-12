@@ -34,6 +34,7 @@ function NouvelleSessionForm() {
     capaciteMax: 10,
     statut: "planifiee",
     notes: "",
+    modeExpress: false,
   });
 
   useEffect(() => {
@@ -115,6 +116,7 @@ function NouvelleSessionForm() {
     if (formData.lieu) payload.lieu = formData.lieu;
     if (formData.notes) payload.notes = formData.notes;
     if (devisId) payload.devisId = devisId;
+    if (formData.modeExpress) payload.modeExpress = true;
 
     const res = await fetch("/api/sessions", {
       method: "POST",
@@ -277,6 +279,24 @@ function NouvelleSessionForm() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Session express */}
+            <div className="space-y-2 rounded-md border border-amber-700/50 bg-amber-900/10 p-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.modeExpress}
+                  onChange={(e) => setFormData((p) => ({ ...p, modeExpress: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-300">Session express (delai &lt; 48h)</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Les fiches besoin seront marquees optionnelles et les automatisations temporelles (convocation J-2) desactivees. Typique pour les renouvellements de carte professionnelle securite.
+                  </p>
+                </div>
+              </label>
             </div>
 
             {/* Notes */}

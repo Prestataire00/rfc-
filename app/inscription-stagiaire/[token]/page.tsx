@@ -17,7 +17,11 @@ export default function InscriptionStagiairePage() {
   } | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ nom: "", prenom: "", email: "", telephone: "", entreprise: "" });
+  const [form, setForm] = useState({
+    nom: "", prenom: "", email: "", telephone: "", entreprise: "",
+    dateNaissance: "", numeroSecuriteSociale: "", besoinsAdaptation: "",
+    consentementRGPD: false,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -34,12 +38,20 @@ export default function InscriptionStagiairePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.consentementRGPD) {
+      setError("Le consentement RGPD est obligatoire");
+      return;
+    }
     setSubmitting(true);
     setError("");
+    const payload = {
+      ...form,
+      numeroSecuriteSociale: form.numeroSecuriteSociale ? form.numeroSecuriteSociale.replace(/\s/g, "") : undefined,
+    };
     const res = await fetch(`/api/inscription-publique/${token}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (res.ok) {
@@ -188,6 +200,59 @@ export default function InscriptionStagiairePage() {
                   className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
                   placeholder="Nom de votre entreprise"
                 />
+              </div>
+
+              {/* Donnees Qualiopi */}
+              <div className="pt-4 border-t border-gray-700">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Donnees obligatoires (Qualiopi)</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Date de naissance <span className="text-red-500">*</span></label>
+                    <input
+                      type="date"
+                      required
+                      value={form.dateNaissance}
+                      onChange={(e) => setForm({ ...form, dateNaissance: e.target.value })}
+                      className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Numero de securite sociale</label>
+                    <input
+                      type="text"
+                      value={form.numeroSecuriteSociale}
+                      onChange={(e) => setForm({ ...form, numeroSecuriteSociale: e.target.value.replace(/[^0-9\s]/g, "") })}
+                      maxLength={21}
+                      placeholder="1 99 12 75 123 456 78"
+                      className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Besoins d&apos;adaptation (optionnel)</label>
+                    <textarea
+                      value={form.besoinsAdaptation}
+                      onChange={(e) => setForm({ ...form, besoinsAdaptation: e.target.value })}
+                      rows={2}
+                      placeholder="RQTH, contraintes physiques, amenagements..."
+                      className="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Consentement RGPD */}
+              <div className="flex items-start gap-3 p-3 rounded-md border border-red-700/50 bg-red-900/10">
+                <input
+                  type="checkbox"
+                  id="rgpd"
+                  checked={form.consentementRGPD}
+                  onChange={(e) => setForm({ ...form, consentementRGPD: e.target.checked })}
+                  className="mt-0.5 h-4 w-4"
+                  required
+                />
+                <label htmlFor="rgpd" className="text-xs text-gray-300 cursor-pointer flex-1">
+                  <strong>J&apos;accepte</strong> la collecte et le traitement de mes donnees personnelles pour la realisation de la formation, conformement au RGPD. *
+                </label>
               </div>
 
               <button

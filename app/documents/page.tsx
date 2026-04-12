@@ -1,13 +1,34 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FolderOpen, FileText, Plus, Download, Trash2, Pencil, X, Check, Upload } from "lucide-react";
+import Link from "next/link";
+import { FolderOpen, FileText, Plus, Download, Trash2, Pencil, X, Check, Upload, Mail, Eye, LayoutTemplate } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/utils";
+
+type MessageTemplate = {
+  id: string;
+  type: string;
+  nom: string;
+  description: string | null;
+  objet: string;
+  contenu: string;
+  modifie: boolean;
+  actif: boolean;
+};
+type DocumentTemplate = {
+  id: string;
+  type: string;
+  nom: string;
+  description: string | null;
+  titre: string;
+  modifie: boolean;
+  actif: boolean;
+};
 
 type Document = {
   id: string;
@@ -35,9 +56,20 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function DocumentsPage() {
+  const [tab, setTab] = useState<"uploads" | "modeles">("uploads");
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
+
+  // Modeles state
+  const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([]);
+  const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
+  const [modelesLoading, setModelesLoading] = useState(false);
+  const [preview, setPreview] = useState<
+    | { kind: "email"; template: MessageTemplate }
+    | { kind: "pdf"; type: string; nom: string }
+    | null
+  >(null);
 
   // Upload modal
   const [showUpload, setShowUpload] = useState(false);
@@ -84,6 +116,20 @@ export default function DocumentsPage() {
       setEntreprises(Array.isArray(e) ? e : []);
     });
   }, []);
+
+  // Charger les modeles quand on passe sur l'onglet
+  useEffect(() => {
+    if (tab !== "modeles" || messageTemplates.length > 0 || documentTemplates.length > 0) return;
+    setModelesLoading(true);
+    Promise.all([
+      fetch("/api/message-templates").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/document-templates").then((r) => (r.ok ? r.json() : [])),
+    ]).then(([m, d]) => {
+      setMessageTemplates(Array.isArray(m) ? m : []);
+      setDocumentTemplates(Array.isArray(d) ? d : []);
+      setModelesLoading(false);
+    });
+  }, [tab, messageTemplates.length, documentTemplates.length]);
 
   const handleUpload = async () => {
     const file = fileInputRef.current?.files?.[0];
@@ -145,8 +191,37 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <PageHeader title="Documents" description="Gestion centralisée des documents" />
+      <PageHeader title="Documents" description="Gestion centralisée des documents et des modeles" />
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-700 mb-6">
+        <button
+          onClick={() => setTab("uploads")}
+          className={`flex items-center gap-1.5 px-4 pb-2 pt-1 text-sm font-medium border-b-2 transition-colors ${
+            tab === "uploads" ? "border-red-600 text-red-500" : "border-transparent text-gray-400 hover:text-gray-300"
+          }`}
+        >
+          <FolderOpen className="h-4 w-4" /> Documents uploades
+        </button>
+        <button
+          onClick={() => setTab("modeles")}
+          className={`flex items-center gap-1.5 px-4 pb-2 pt-1 text-sm font-medium border-b-2 transition-colors ${
+            tab === "modeles" ? "border-red-600 text-red-500" : "border-transparent text-gray-400 hover:text-gray-300"
+          }`}
+        >
+          <LayoutTemplate className="h-4 w-4" /> Modeles
+        </button>
+      </div>
+
+      {tab === "modeles" ? (
+        <ModelesView
+          messageTemplates={messageTemplates}
+          documentTemplates={documentTemplates}
+          loading={modelesLoading}
+          onPreview={setPreview}
+        />
+      ) : (
+      <>
       <div className="flex items-center justify-between gap-4 mb-6">
         <select
           value={filterType}
@@ -388,6 +463,177 @@ export default function DocumentsPage() {
           </table>
         </div>
       )}
+      </>
+      )}
+
+      {/* Preview modal (emails ou PDFs) */}
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setPreview(null)}>
+          <div className="bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-100">
+                {preview.kind === "email" ? `Apercu email — ${preview.template.nom}` : `Apercu PDF — ${preview.nom}`}
+              </h2>
+              <button onClick={() => setPreview(null)} className="text-gray-400 hover:text-gray-200">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="overflow-auto flex-1">
+              {preview.kind === "email" ? (
+                <div className="p-4 space-y-3">
+                  <div className="rounded-md bg-gray-900 border border-gray-700 p-3 text-sm">
+                    <p className="text-[10px] uppercase text-gray-500 font-semibold">Objet</p>
+                    <p className="text-gray-100 mt-1">{preview.template.objet.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => `[${k}]`)}</p>
+                  </div>
+                  <div className="rounded-md bg-white border border-gray-300 p-4">
+                    <div
+                      className="prose prose-sm max-w-none text-gray-900"
+                      dangerouslySetInnerHTML={{
+                        __html: preview.template.contenu.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => `[${k}]`),
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <iframe
+                  src={`/api/pdf/template-preview/${preview.type}`}
+                  title="Apercu PDF"
+                  className="w-full bg-white"
+                  style={{ height: "75vh" }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================== MODELES VIEW ====================
+function ModelesView({
+  messageTemplates,
+  documentTemplates,
+  loading,
+  onPreview,
+}: {
+  messageTemplates: MessageTemplate[];
+  documentTemplates: DocumentTemplate[];
+  loading: boolean;
+  onPreview: (p: { kind: "email"; template: MessageTemplate } | { kind: "pdf"; type: string; nom: string }) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-8">
+      {/* PDF */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-red-500" /> Documents PDF
+            </h2>
+            <p className="text-xs text-gray-400">
+              Convocation, convention, attestation, feuille de presence, devis, facture.
+            </p>
+          </div>
+          <Link
+            href="/parametres/templates-documents"
+            className="text-xs inline-flex items-center gap-1 rounded-md bg-red-600 hover:bg-red-700 text-white px-3 py-1.5"
+          >
+            <Pencil className="h-3 w-3" /> Editer les modeles
+          </Link>
+        </div>
+        {documentTemplates.length === 0 ? (
+          <EmptyState icon={FileText} title="Aucun modele PDF" description="Les modeles seront crees au premier acces." />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {documentTemplates.map((t) => (
+              <div
+                key={t.id}
+                className="rounded-lg border border-gray-700 bg-gray-800 p-4 flex flex-col"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="font-semibold text-gray-100 text-sm leading-tight">{t.nom}</h3>
+                  {t.modifie && <span className="text-[9px] rounded-full bg-amber-900/40 border border-amber-700 text-amber-300 px-1.5 py-0.5 shrink-0">Modifie</span>}
+                </div>
+                {t.description && <p className="text-xs text-gray-400 mb-3 line-clamp-2">{t.description}</p>}
+                <div className="mt-auto flex gap-2">
+                  <button
+                    onClick={() => onPreview({ kind: "pdf", type: t.type, nom: t.nom })}
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-gray-600 bg-gray-900 hover:bg-gray-700 text-gray-200 text-xs px-2 py-1.5"
+                  >
+                    <Eye className="h-3 w-3" /> Apercu
+                  </button>
+                  <Link
+                    href="/parametres/templates-documents"
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1.5"
+                  >
+                    <Pencil className="h-3 w-3" /> Modifier
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Emails */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+              <Mail className="h-5 w-5 text-red-500" /> Emails automatiques
+            </h2>
+            <p className="text-xs text-gray-400">
+              Convocations, fiches besoin, evaluations a chaud/froid, rappels de presence, etc.
+            </p>
+          </div>
+          <Link
+            href="/parametres/templates-messages"
+            className="text-xs inline-flex items-center gap-1 rounded-md bg-red-600 hover:bg-red-700 text-white px-3 py-1.5"
+          >
+            <Pencil className="h-3 w-3" /> Editer les modeles
+          </Link>
+        </div>
+        {messageTemplates.length === 0 ? (
+          <EmptyState icon={Mail} title="Aucun modele email" description="Les modeles seront crees au premier acces." />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {messageTemplates.map((t) => (
+              <div
+                key={t.id}
+                className="rounded-lg border border-gray-700 bg-gray-800 p-4 flex flex-col"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="font-semibold text-gray-100 text-sm leading-tight">{t.nom}</h3>
+                  {t.modifie && <span className="text-[9px] rounded-full bg-amber-900/40 border border-amber-700 text-amber-300 px-1.5 py-0.5 shrink-0">Modifie</span>}
+                </div>
+                {t.description && <p className="text-xs text-gray-400 mb-3 line-clamp-2">{t.description}</p>}
+                <div className="mt-auto flex gap-2">
+                  <button
+                    onClick={() => onPreview({ kind: "email", template: t })}
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-gray-600 bg-gray-900 hover:bg-gray-700 text-gray-200 text-xs px-2 py-1.5"
+                  >
+                    <Eye className="h-3 w-3" /> Apercu
+                  </button>
+                  <Link
+                    href="/parametres/templates-messages"
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1.5"
+                  >
+                    <Pencil className="h-3 w-3" /> Modifier
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

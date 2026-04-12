@@ -47,6 +47,13 @@ const NIVEAUX = [
   { value: "autre", label: "Autre" },
 ];
 
+const NIVEAUX_PREREQUIS = [
+  { value: "debutant", label: "Debutant (aucune experience)" },
+  { value: "intermediaire", label: "Intermediaire (notions)" },
+  { value: "avance", label: "Avance (experience reguliere)" },
+  { value: "expert", label: "Expert" },
+];
+
 function formatSecuDisplay(v: string): string {
   const clean = v.replace(/\s/g, "");
   if (clean.length !== 15) return v;
@@ -74,6 +81,7 @@ export default function FicheBesoinStagiairePage() {
           dejaSuivi: d.dejaSuivi ?? false,
           dateDerniereFormation: d.dateDerniereFormation ? d.dateDerniereFormation.slice(0, 10) : "",
           niveauFormation: d.niveauFormation ?? d.contact?.niveauFormation ?? "",
+          niveauPrerequis: (d as Record<string, unknown>).niveauPrerequis as string ?? "",
           estRQTH: d.estRQTH ?? false,
           detailsRQTH: d.detailsRQTH ?? "",
           contraintesPhysiques: d.contraintesPhysiques ?? "",
@@ -215,6 +223,12 @@ export default function FicheBesoinStagiairePage() {
               <select value={form.niveauFormation as string} onChange={(e) => set("niveauFormation", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white">
                 <option value="">Selectionner...</option>
                 {NIVEAUX.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Votre niveau sur le sujet de la formation">
+              <select value={form.niveauPrerequis as string} onChange={(e) => set("niveauPrerequis", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white">
+                <option value="">Selectionner...</option>
+                {NIVEAUX_PREREQUIS.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
               </select>
             </Field>
           </Section>

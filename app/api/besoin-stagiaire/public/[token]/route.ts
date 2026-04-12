@@ -81,9 +81,11 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     await prisma.besoinStagiaire.update({
       where: { id: fiche.id },
       data: {
+        numeroPasseportPrevention: d.numeroPasseportPrevention ?? null,
         dejaSuivi: d.dejaSuivi,
         dateDerniereFormation: d.dateDerniereFormation ? new Date(d.dateDerniereFormation) : null,
         niveauFormation: d.niveauFormation ?? null,
+        niveauPrerequis: d.niveauPrerequis ?? null,
         estRQTH: d.estRQTH,
         detailsRQTH: d.detailsRQTH ?? null,
         contraintesPhysiques: d.contraintesPhysiques ?? null,

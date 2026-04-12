@@ -33,7 +33,13 @@ const adminNavGroups: NavGroup[] = [
           { href: "/entreprises", label: "Entreprises", icon: Building2 },
         ],
       },
-      { href: "/besoins", label: "Besoins", icon: ClipboardList },
+      {
+        href: "/besoins", label: "Besoins", icon: ClipboardList,
+        children: [
+          { href: "/besoins", label: "Demandes de formation", icon: ClipboardList },
+          { href: "/fiches-besoin", label: "Fiches besoin (Qualiopi)", icon: ClipboardList },
+        ],
+      },
     ],
   },
   {

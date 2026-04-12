@@ -620,10 +620,14 @@ model BesoinStagiaire {
   dateEnvoi   DateTime?
   dateReponse DateTime?
 
+  // Section 1 - Identification (copie figee au moment de la reponse, distincte du Contact)
+  numeroPasseportPrevention String? // decret 2022-1434
+
   // Section 2 - Prerequis
   dejaSuivi             Boolean   @default(false)
   dateDerniereFormation DateTime?
-  niveauFormation       String?
+  niveauFormation       String?  // niveau scolaire general (sans_diplome, cap, bac, etc.)
+  niveauPrerequis       String?  // evaluation des prerequis specifiques a la formation (debutant, intermediaire, avance)
 
   // Section 3 - Accessibilite & contraintes
   estRQTH                 Boolean @default(false)

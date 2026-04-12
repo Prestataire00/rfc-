@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const NIVEAUX_SCOLAIRES = ["sans_diplome", "cap", "bac", "bac+2", "bac+3", "bac+5", "autre"] as const;
+export const NIVEAUX_PREREQUIS = ["debutant", "intermediaire", "avance", "expert"] as const;
 
 // Reponse publique au questionnaire (via token)
 export const besoinStagiaireReponseSchema = z.object({
@@ -13,6 +14,7 @@ export const besoinStagiaireReponseSchema = z.object({
   dejaSuivi: z.boolean().optional().default(false),
   dateDerniereFormation: z.string().optional().nullable(),
   niveauFormation: z.enum(NIVEAUX_SCOLAIRES).optional().nullable(),
+  niveauPrerequis: z.enum(NIVEAUX_PREREQUIS).optional().nullable(),
 
   // Section 3 - Accessibilite & contraintes
   estRQTH: z.boolean().optional().default(false),

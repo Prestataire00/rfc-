@@ -159,25 +159,37 @@ export default function SessionDetailPage() {
     setConfirmTerminee(true);
   };
 
-  const handleSendFichesBesoin = async () => {
+  const handleSendFichesBesoin = async (override?: { destinataireEmail?: string; destinataireNom?: string }) => {
     setSendingFiches(true);
     setFichesMsg("");
     try {
-      const res = await fetch(`/api/sessions/${id}/envoyer-fiches-besoin`, { method: "POST" });
+      const res = await fetch(`/api/sessions/${id}/envoyer-fiches-besoin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(override || {}),
+      });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         setFichesMsg(typeof d.error === "string" ? d.error : "Erreur envoi");
       } else {
         const data = await res.json();
         const nbStagiaires = data.fichesStagiaires?.filter((f: { envoye: boolean }) => f.envoye).length || 0;
-        setFichesMsg(`Fiche client ${data.ficheClient?.envoye ? "envoyee" : "creee (SMTP non configure)"}, ${nbStagiaires} fiche(s) stagiaire envoyee(s).`);
+        const parts: string[] = [];
+        if (data.ficheClient) {
+          parts.push(data.ficheClient.envoye ? "Fiche client envoyee" : "Fiche client creee");
+        }
+        parts.push(`${nbStagiaires} fiche(s) stagiaire envoyee(s)`);
+        if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+          parts.push(...data.warnings);
+        }
+        setFichesMsg(parts.join(" · "));
         fetchBesoins();
       }
     } catch {
       setFichesMsg("Erreur reseau");
     }
     setSendingFiches(false);
-    setTimeout(() => setFichesMsg(""), 5000);
+    setTimeout(() => setFichesMsg(""), 10000);
   };
 
   const handleResendFiche = async (type: "client" | "stagiaire", ficheId: string) => {

@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { conventionPdf } from "@/lib/pdf/templates";
+import { getParametres } from "@/lib/parametres";
+import { resolveBranding } from "@/lib/pdf/branding";
+import { renderDocumentTemplate } from "@/lib/document-templates";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -73,6 +76,19 @@ export async function GET(req: NextRequest, { params }: { params: { sessionId: s
     const montantHT = session.formation.tarif * nbStagiaires;
     const montantTTC = montantHT * 1.2;
 
+    const parametres = await getParametres();
+    const branding = await resolveBranding(parametres);
+    const template = await renderDocumentTemplate("convention", {
+      formation: { titre: session.formation.titre, duree: session.formation.duree },
+      session: { dateDebut, dateFin, lieu: session.lieu || "" },
+      entreprise: {
+        nomEntreprise: parametres.nomEntreprise,
+        adresse: parametres.adresse,
+        siret: parametres.siret,
+        nda: parametres.nda,
+      },
+    });
+
     const docDef = conventionPdf({
       entreprise: {
         nom: entreprise?.nom || "Client",
@@ -90,7 +106,7 @@ export async function GET(req: NextRequest, { params }: { params: { sessionId: s
       montantHT,
       montantTTC,
       numero,
-    });
+    }, { branding, template: template || undefined });
 
     const buffer = await generatePdfBuffer(docDef);
     const slug = entreprise?.nom.replace(/\s+/g, "-").toLowerCase().slice(0, 20) || "client";

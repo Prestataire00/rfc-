@@ -50,7 +50,11 @@ const adminApiPrefixes = [
   "/api/upload",
   "/api/export",
   "/api/notifications",
-  // "/api/pdf" — accessible aux clients et formateurs authentifiés
+  "/api/message-templates",
+  "/api/document-templates",
+  "/api/automations",
+  "/api/pdf/template-preview",
+  // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];
 
 function isPublicPath(pathname: string): boolean {

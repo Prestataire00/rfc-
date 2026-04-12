@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { facturePdf } from "@/lib/pdf/templates";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { getParametres } from "@/lib/parametres";
+import { resolveBranding } from "@/lib/pdf/branding";
+import { renderDocumentTemplate } from "@/lib/document-templates";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -69,6 +72,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       montantTTC: facture.montantTTC,
       notes: facture.notes || undefined,
       devisNumero: facture.devis?.numero || undefined,
+    }, {
+      branding: await resolveBranding(await getParametres()),
+      template: (await renderDocumentTemplate("facture", {
+        entreprise: {
+          nomEntreprise: parametres?.nomEntreprise || "",
+          adresse: parametres?.adresse || "",
+          siret: parametres?.siret || "",
+          nda: parametres?.nda || "",
+        },
+      })) || undefined,
     });
 
     const buffer = await generatePdfBuffer(docDef);

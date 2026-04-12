@@ -566,6 +566,28 @@ model Parametres {
   couleurPrimaire    String @default("#dc2626")
 }
 
+// ==================== MODELES DE DOCUMENTS (PDF) ====================
+
+// Templates des documents PDF generes (convocation, convention, attestation, etc.).
+// Permettent de modifier le texte du document sans toucher au code.
+// Integre automatiquement le logo et la couleur de l'entreprise via Parametres.
+model DocumentTemplate {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  type         String  @unique // convocation, convention, attestation, feuille_presence, devis, facture
+  nom          String
+  description  String?
+  titre        String  // Titre principal en haut du document
+  introduction String? // Paragraphe d'introduction (variables OK)
+  corps        String  // Corps principal (variables OK, saut de ligne \n)
+  mentions     String? // Mentions legales / pied de page
+  variables    String  @default("[]")
+  actif        Boolean @default(true)
+  modifie      Boolean @default(false)
+}
+
 // ==================== MODELES DE MESSAGES ====================
 
 // Templates d'emails / documents parametrables. Chaque type a un template par defaut

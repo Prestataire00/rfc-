@@ -1,12 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { LOGO_BASE64 } from "./logo-base64";
+import type { PdfBranding } from "./branding";
 
 const COLORS = {
-  primary: "#C41E24",    // RFC Red
+  primary: "#C41E24",    // RFC Red (defaut — override via branding)
   dark: "#1a1a1a",       // Dark background
   gray: "#666666",
   light: "#f5f5f5",
   white: "#ffffff",
+};
+
+// Surcharge optionnelle par template (textes libres) + branding entreprise.
+// Si fournis, titre/introduction/corps/mentions remplacent les valeurs codees.
+export type PdfOpts = {
+  branding?: PdfBranding;
+  template?: {
+    titre?: string;
+    introduction?: string;
+    corps?: string;
+    mentions?: string;
+  };
 };
 
 function fmtDate(d: string): string {
@@ -21,7 +34,14 @@ function fmtCurrency(n: number): string {
   return `${n.toFixed(2)} EUR`;
 }
 
-function companyInfo(): string[] {
+function companyInfo(branding?: PdfBranding): string[] {
+  if (branding) {
+    return [
+      branding.nomEntreprise,
+      branding.slogan,
+      branding.siteWeb,
+    ].filter(Boolean);
+  }
   return [
     "RFC - Rescue Formation Conseil",
     "Sécurité - Incendie - Prévention",
@@ -29,21 +49,28 @@ function companyInfo(): string[] {
   ];
 }
 
-function header(title: string) {
+function header(title: string, branding?: PdfBranding) {
+  const logo = branding?.logoBase64 || LOGO_BASE64;
+  const primary = branding?.couleurPrimaire || COLORS.primary;
+  const nom = branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
+  // Affichage texte : "RFC" + nom complet en ligne secondaire si different
+  const shortName = nom.length > 6 ? nom.split(/[\s\-]/)[0].toUpperCase() : nom.toUpperCase();
+  const fullLine = nom.toUpperCase();
+  const slogan = branding?.slogan ?? "Sécurité - Incendie - Prévention";
   return [
     {
       columns: [
         {
           width: 60,
-          image: LOGO_BASE64,
+          image: logo,
           fit: [55, 55] as [number, number],
         },
         {
           width: "auto",
           stack: [
-            { text: "RFC", fontSize: 22, bold: true, color: "#000000", margin: [0, 2, 0, 0] as [number, number, number, number] },
-            { text: "RESCUE FORMATION CONSEIL", fontSize: 8, bold: true, color: "#000000", margin: [0, 1, 0, 0] as [number, number, number, number] },
-            { text: "Sécurité - Incendie - Prévention", fontSize: 7, color: "#333333" },
+            { text: shortName, fontSize: 22, bold: true, color: "#000000", margin: [0, 2, 0, 0] as [number, number, number, number] },
+            { text: fullLine, fontSize: 8, bold: true, color: "#000000", margin: [0, 1, 0, 0] as [number, number, number, number] },
+            ...(slogan ? [{ text: slogan, fontSize: 7, color: "#333333" }] : []),
           ],
         },
         {
@@ -56,18 +83,47 @@ function header(title: string) {
       columnGap: 10,
       margin: [0, 0, 0, 10] as [number, number, number, number],
     },
-    { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 2, lineColor: COLORS.primary }], margin: [0, 0, 0, 20] as [number, number, number, number] },
+    { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 2, lineColor: primary }], margin: [0, 0, 0, 20] as [number, number, number, number] },
   ];
 }
 
-function footer() {
+function footer(branding?: PdfBranding) {
+  const line1 = branding
+    ? [branding.nomEntreprise, branding.slogan].filter(Boolean).join(" | ")
+    : "RFC - Rescue Formation Conseil | Sécurité - Incendie - Prévention";
+  const line2 = branding?.siteWeb || "www.rescueformation83.fr";
   return {
     stack: [
-      { text: "RFC - Rescue Formation Conseil | Sécurité - Incendie - Prévention", fontSize: 8, color: "#333333", alignment: "center" as const },
-      { text: "www.rescueformation83.fr", fontSize: 8, color: "#333333", alignment: "center" as const, margin: [0, 2, 0, 0] as [number, number, number, number] },
+      { text: line1, fontSize: 8, color: "#333333", alignment: "center" as const },
+      ...(line2 ? [{ text: line2, fontSize: 8, color: "#333333", alignment: "center" as const, margin: [0, 2, 0, 0] as [number, number, number, number] }] : []),
     ],
     margin: [0, 20, 0, 0] as [number, number, number, number],
   };
+}
+
+// Helper : genere une palette de styles avec couleur primaire surchargeable.
+function stylesFor(branding?: PdfBranding) {
+  const primary = branding?.couleurPrimaire || COLORS.primary;
+  return {
+    brand: { fontSize: 18, bold: true, color: primary },
+    docTitle: { fontSize: 14, bold: true, color: COLORS.dark },
+    sectionTitle: { fontSize: 12, bold: true, color: primary, margin: [0, 15, 0, 8] as [number, number, number, number] },
+    label: { fontSize: 9, color: COLORS.gray, margin: [0, 2, 0, 0] as [number, number, number, number] },
+    value: { fontSize: 10, color: COLORS.dark },
+    footer: { fontSize: 8, color: COLORS.gray },
+    tableHeader: { fontSize: 9, bold: true, color: "#ffffff", fillColor: primary },
+  };
+}
+
+// Rend le corps libre d'un template (texte avec \n) en array de paragraphes pdfmake.
+function renderTemplateBody(text: string | undefined) {
+  if (!text) return null;
+  const lines = text.split("\n");
+  return lines.map((line) => ({
+    text: line.length ? line : " ",
+    style: "value",
+    margin: [0, 0, 0, line.length ? 4 : 0] as [number, number, number, number],
+  }));
 }
 
 /**
@@ -141,11 +197,18 @@ export function conventionPdf(data: {
   montantHT: number;
   montantTTC: number;
   numero: string;
-}): any {
-  const info = companyInfo();
+}, opts?: PdfOpts): any {
+  const branding = opts?.branding;
+  const tpl = opts?.template;
+  const info = companyInfo(branding);
+  const headerTitle = (tpl?.titre || "CONVENTION DE FORMATION").toUpperCase();
+  const introBody = renderTemplateBody(tpl?.introduction);
+  const corpsBody = renderTemplateBody(tpl?.corps);
+  const mentionsBody = renderTemplateBody(tpl?.mentions);
   return {
     content: [
-      ...header("CONVENTION DE FORMATION"),
+      ...header(headerTitle, branding),
+      ...(introBody ? [{ stack: introBody, margin: [0, 0, 0, 10] as [number, number, number, number] }] : []),
       { text: `Convention N° ${data.numero}`, style: "sectionTitle" },
       {
         columns: [
@@ -199,13 +262,15 @@ export function conventionPdf(data: {
         layout: "lightHorizontalLines",
         margin: [0, 0, 0, 30] as [number, number, number, number],
       },
+      ...(corpsBody ? [{ stack: corpsBody, margin: [0, 10, 0, 10] as [number, number, number, number] }] : []),
       signatureBlock(
         { titre: "Pour l'organisme de formation", nom: info[0] },
         { titre: "Pour le client", nom: data.entreprise.nom }
       ),
-      footer(),
+      ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
+      footer(branding),
     ],
-    styles: defaultStyles,
+    styles: stylesFor(branding),
     defaultStyle: { font: "Helvetica" },
   };
 }
@@ -217,21 +282,29 @@ export function attestationPdf(data: {
   session: { dateDebut: string; dateFin: string; lieu?: string };
   formateur?: { nom: string; prenom: string };
   dateGeneration: string;
-}): any {
+}, opts?: PdfOpts): any {
+  const branding = opts?.branding;
+  const tpl = opts?.template;
+  const primary = branding?.couleurPrimaire || COLORS.primary;
+  const nomOrg = branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
+  const headerTitle = (tpl?.titre || "ATTESTATION DE FIN DE FORMATION").toUpperCase();
+  const introText = tpl?.introduction || `Nous soussignés, ${nomOrg}, organisme de formation, attestons que :`;
+  const corpsBody = renderTemplateBody(tpl?.corps);
+  const mentionsBody = renderTemplateBody(tpl?.mentions);
   return {
     content: [
-      ...header("ATTESTATION DE FIN DE FORMATION"),
+      ...header(headerTitle, branding),
       { text: "\n" },
       {
-        text: "ATTESTATION DE FORMATION",
+        text: tpl?.titre ? tpl.titre : "ATTESTATION DE FORMATION",
         fontSize: 16,
         bold: true,
         alignment: "center" as const,
-        color: COLORS.primary,
+        color: primary,
         margin: [0, 20, 0, 30] as [number, number, number, number],
       },
       {
-        text: "Nous soussignés, RFC - Rescue Formation Conseil, organisme de formation, attestons que :",
+        text: introText,
         style: "value",
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
@@ -270,14 +343,16 @@ export function attestationPdf(data: {
             ],
           }
         : {},
+      ...(corpsBody ? [{ stack: corpsBody, margin: [0, 10, 0, 10] as [number, number, number, number] }] : []),
       { text: `Fait à Toulon, le ${data.dateGeneration}`, style: "value", margin: [0, 20, 0, 0] as [number, number, number, number] },
       signatureBlock(
-        { titre: "Pour RFC - Rescue Formation Conseil", nom: "Le Directeur" },
+        { titre: `Pour ${nomOrg}`, nom: "Le Directeur" },
         { titre: "Signature du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` }
       ),
-      footer(),
+      ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
+      footer(branding),
     ],
-    styles: defaultStyles,
+    styles: stylesFor(branding),
     defaultStyle: { font: "Helvetica" },
   };
 }
@@ -288,10 +363,17 @@ export function convocationPdf(data: {
   formation: { titre: string; duree: number };
   session: { dateDebut: string; dateFin: string; lieu?: string };
   formateur?: { nom: string; prenom: string };
-}): any {
+}, opts?: PdfOpts): any {
+  const branding = opts?.branding;
+  const tpl = opts?.template;
+  const nomOrg = branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
+  const headerTitle = (tpl?.titre || "CONVOCATION").toUpperCase();
+  const introText = tpl?.introduction || `Madame, Monsieur,\n\nNous avons le plaisir de vous confirmer votre inscription à la formation mentionnée ci-dessous :`;
+  const corpsText = tpl?.corps;
+  const mentionsBody = renderTemplateBody(tpl?.mentions);
   return {
     content: [
-      ...header("CONVOCATION"),
+      ...header(headerTitle, branding),
       { text: "\n" },
       {
         text: `${data.stagiaire.prenom} ${data.stagiaire.nom}`,
@@ -308,7 +390,7 @@ export function convocationPdf(data: {
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
       {
-        text: `Madame, Monsieur,\n\nNous avons le plaisir de vous confirmer votre inscription à la formation mentionnée ci-dessous :`,
+        text: introText,
         style: "value",
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
@@ -328,19 +410,20 @@ export function convocationPdf(data: {
         margin: [0, 0, 0, 20] as [number, number, number, number],
       },
       {
-        text: "Nous vous prions de bien vouloir vous présenter 15 minutes avant le début de la formation muni(e) de cette convocation.\n\nNous restons à votre disposition pour toute information complémentaire.",
+        text: corpsText || "Nous vous prions de bien vouloir vous présenter 15 minutes avant le début de la formation muni(e) de cette convocation.\n\nNous restons à votre disposition pour toute information complémentaire.",
         style: "value",
         margin: [0, 0, 0, 20] as [number, number, number, number],
       },
       { text: "Cordialement,", style: "value" },
-      { text: "L'équipe RFC - Rescue Formation Conseil", style: "value", bold: true, margin: [0, 5, 0, 0] as [number, number, number, number] },
+      { text: `L'équipe ${nomOrg}`, style: "value", bold: true, margin: [0, 5, 0, 0] as [number, number, number, number] },
       signatureBlock(
-        { titre: "Pour RFC - Rescue Formation Conseil" },
+        { titre: `Pour ${nomOrg}` },
         { titre: "Accusé de réception du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` }
       ),
-      footer(),
+      ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
+      footer(branding),
     ],
-    styles: defaultStyles,
+    styles: stylesFor(branding),
     defaultStyle: { font: "Helvetica" },
   };
 }
@@ -363,10 +446,14 @@ export function devisPdf(data: {
   tauxTVA: number;
   montantTTC: number;
   notes?: string;
-}): any {
+}, opts?: PdfOpts): any {
+  const branding = opts?.branding;
+  const tpl = opts?.template;
+  const primary = branding?.couleurPrimaire || COLORS.primary;
+  const logo = branding?.logoBase64 || LOGO_BASE64;
   const montantTVA = data.montantHT * (data.tauxTVA / 100);
   const societe = data.societe;
-  const nomSociete = societe?.nom || "RFC - Rescue Formation Conseil";
+  const nomSociete = societe?.nom || branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
 
   // Build emetteur lines
   const emetteurLines: any[] = [
@@ -414,14 +501,14 @@ export function devisPdf(data: {
         columns: [
           {
             width: 70,
-            image: LOGO_BASE64,
+            image: logo,
             fit: [65, 65] as [number, number],
           },
           { width: "*", text: "" },
           {
             width: "auto",
             stack: [
-              { text: "DEVIS", fontSize: 26, bold: true, color: COLORS.dark, alignment: "right" as const },
+              { text: (tpl?.titre || "DEVIS").toUpperCase(), fontSize: 26, bold: true, color: COLORS.dark, alignment: "right" as const },
               { text: `Numéro : ${data.numero}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const, margin: [0, 4, 0, 2] as [number, number, number, number] },
               { text: `Date d'émission : ${fmtDate(data.dateEmission)}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const },
               { text: `Valable jusqu'au : ${fmtDate(data.dateValidite)}`, fontSize: 10, color: COLORS.gray, alignment: "right" as const },
@@ -430,7 +517,7 @@ export function devisPdf(data: {
         ],
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
-      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: COLORS.primary }], margin: [0, 0, 0, 15] as [number, number, number, number] },
+      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: primary }], margin: [0, 0, 0, 15] as [number, number, number, number] },
 
       // ── EMETTEUR / CLIENT ──
       {
@@ -557,7 +644,7 @@ export function devisPdf(data: {
 
       // ── SIGNATURE ──
       signatureBlock(
-        { titre: "Pour RFC - Rescue Formation Conseil", nom: nomSociete },
+        { titre: `Pour ${nomSociete}`, nom: nomSociete },
         { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || data.contact ? `${data.contact?.prenom} ${data.contact?.nom}` : undefined }
       ),
     ],
@@ -568,7 +655,7 @@ export function devisPdf(data: {
       alignment: "center" as const,
       margin: [40, 10, 40, 0] as [number, number, number, number],
     }),
-    styles: defaultStyles,
+    styles: stylesFor(branding),
     defaultStyle: { font: "Roboto" },
   };
 }
@@ -591,10 +678,14 @@ export function facturePdf(data: {
   montantTTC: number;
   notes?: string;
   devisNumero?: string;
-}): any {
+}, opts?: PdfOpts): any {
+  const branding = opts?.branding;
+  const tpl = opts?.template;
+  const primary = branding?.couleurPrimaire || COLORS.primary;
+  const logo = branding?.logoBase64 || LOGO_BASE64;
   const montantTVA = data.montantHT * (data.tauxTVA / 100);
   const societe = data.societe;
-  const nomSociete = societe?.nom || "RFC - Rescue Formation Conseil";
+  const nomSociete = societe?.nom || branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
 
   const emetteurLines: any[] = [
     { text: nomSociete, fontSize: 10, bold: true, color: COLORS.dark },
@@ -639,14 +730,14 @@ export function facturePdf(data: {
         columns: [
           {
             width: 70,
-            image: LOGO_BASE64,
+            image: logo,
             fit: [65, 65] as [number, number],
           },
           { width: "*", text: "" },
           {
             width: "auto",
             stack: [
-              { text: "FACTURE", fontSize: 26, bold: true, color: COLORS.dark, alignment: "right" as const },
+              { text: (tpl?.titre || "FACTURE").toUpperCase(), fontSize: 26, bold: true, color: COLORS.dark, alignment: "right" as const },
               { text: `Numéro : ${data.numero}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const, margin: [0, 4, 0, 2] as [number, number, number, number] },
               { text: `Date d'émission : ${fmtDate(data.dateEmission)}`, fontSize: 10, color: COLORS.dark, alignment: "right" as const },
               { text: `Échéance : ${fmtDate(data.dateEcheance)}`, fontSize: 10, color: COLORS.gray, alignment: "right" as const },
@@ -656,7 +747,7 @@ export function facturePdf(data: {
         ],
         margin: [0, 0, 0, 15] as [number, number, number, number],
       },
-      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: COLORS.primary }], margin: [0, 0, 0, 15] as [number, number, number, number] },
+      { canvas: [{ type: "line" as const, x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1.5, lineColor: primary }], margin: [0, 0, 0, 15] as [number, number, number, number] },
 
       // ── EMETTEUR / CLIENT ──
       {
@@ -792,7 +883,7 @@ export function facturePdf(data: {
       alignment: "center" as const,
       margin: [40, 10, 40, 0] as [number, number, number, number],
     }),
-    styles: defaultStyles,
+    styles: stylesFor(branding),
     defaultStyle: { font: "Roboto" },
   };
 }
@@ -804,7 +895,12 @@ export function feuillePresencePdf(data: {
   formateur?: { nom: string; prenom: string };
   stagiaires: { nom: string; prenom: string }[];
   dates: string[];
-}): any {
+}, opts?: PdfOpts): any {
+  const branding = opts?.branding;
+  const tpl = opts?.template;
+  const headerTitle = (tpl?.titre || "FEUILLE DE PRÉSENCE").toUpperCase();
+  const introBody = renderTemplateBody(tpl?.introduction);
+  const mentionsBody = renderTemplateBody(tpl?.mentions);
   const headerRow = [
     { text: "Nom Prénom", style: "tableHeader" },
     ...data.dates.flatMap((d) => [
@@ -826,7 +922,8 @@ export function feuillePresencePdf(data: {
   return {
     pageOrientation: "landscape" as const,
     content: [
-      ...header("FEUILLE DE PRÉSENCE"),
+      ...header(headerTitle, branding),
+      ...(introBody ? [{ stack: introBody, margin: [0, 0, 0, 10] as [number, number, number, number] }] : []),
       {
         table: {
           widths: ["30%", "70%"],
@@ -863,9 +960,10 @@ export function feuillePresencePdf(data: {
           { text: "Signature du responsable :", style: "label", margin: [0, 30, 0, 0] as [number, number, number, number], width: "50%" },
         ],
       },
-      footer(),
+      ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
+      footer(branding),
     ],
-    styles: defaultStyles,
+    styles: stylesFor(branding),
     defaultStyle: { font: "Helvetica" },
   };
 }

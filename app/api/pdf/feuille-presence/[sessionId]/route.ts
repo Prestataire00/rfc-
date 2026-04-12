@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { feuillePresencePdf } from "@/lib/pdf/templates";
+import { getParametres } from "@/lib/parametres";
+import { resolveBranding } from "@/lib/pdf/branding";
+import { renderDocumentTemplate } from "@/lib/document-templates";
 import { format, eachDayOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -30,14 +33,29 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
     // Limit to 5 days max for layout
     const dates = days.slice(0, 5).map((d) => format(d, "dd/MM", { locale: fr }));
 
+    const dateDebutFmt = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
+    const dateFinFmt = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
+    const parametres = await getParametres();
+    const branding = await resolveBranding(parametres);
+    const template = await renderDocumentTemplate("feuille_presence", {
+      formation: { titre: session.formation.titre, duree: session.formation.duree },
+      session: { dateDebut: dateDebutFmt, dateFin: dateFinFmt, lieu: session.lieu || "" },
+      entreprise: {
+        nomEntreprise: parametres.nomEntreprise,
+        adresse: parametres.adresse,
+        siret: parametres.siret,
+        nda: parametres.nda,
+      },
+    });
+
     const docDef = feuillePresencePdf({
       formation: {
         titre: session.formation.titre,
         duree: session.formation.duree,
       },
       session: {
-        dateDebut: format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr }),
-        dateFin: format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr }),
+        dateDebut: dateDebutFmt,
+        dateFin: dateFinFmt,
         lieu: session.lieu || undefined,
       },
       formateur: session.formateur
@@ -48,7 +66,7 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
         prenom: i.contact.prenom,
       })),
       dates,
-    });
+    }, { branding, template: template || undefined });
 
     const buffer = await generatePdfBuffer(docDef);
 

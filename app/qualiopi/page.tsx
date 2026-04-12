@@ -7,6 +7,7 @@ import {
   Search, Download, Target, ClipboardList, Users, BookOpen,
   TrendingUp, MessageSquare,
 } from "lucide-react";
+import { AIButton } from "@/components/shared/AIButton";
 
 // ─── Types ───
 interface QualiteRow {
@@ -59,6 +60,7 @@ export default function QualiopiPage() {
   const [searchName, setSearchName] = useState("");
   const [rows, setRows] = useState<QualiteRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiResult, setAiResult] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -171,7 +173,10 @@ export default function QualiopiPage() {
             />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <AIButton endpoint="/api/ai/qualiopi" payload={{ action: "synthese_qualite" }} onResult={(t) => setAiResult(t)} label="Synthese IA" size="md" />
+          <AIButton endpoint="/api/ai/qualiopi" payload={{ action: "plan_amelioration" }} onResult={(t) => setAiResult(t)} label="Plan d'amelioration" size="md" />
+          <AIButton endpoint="/api/ai/qualiopi" payload={{ action: "preparer_audit" }} onResult={(t) => setAiResult(t)} label="Preparer audit" size="md" />
           <Link href="/qualiopi/amelioration" className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors">
             Amelioration
           </Link>
@@ -180,6 +185,23 @@ export default function QualiopiPage() {
           </Link>
         </div>
       </div>
+
+      {/* Resultat IA */}
+      {aiResult && (
+        <div className="mb-6 p-4 rounded-xl border border-purple-700 bg-purple-900/10 relative">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-purple-300 flex items-center gap-2">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.09 3.26L16 6.27l-2.91 1.01L12 10.55l-1.09-3.27L8 6.27l3.91-1.01zm0 7.5l1.5 4.5 4.5 1.5-4.5 1.5L12 21.5l-1.5-4.5L6 15.5l4.5-1.5z"/></svg>
+              Analyse IA
+            </h3>
+            <div className="flex items-center gap-2">
+              <button onClick={() => navigator.clipboard.writeText(aiResult)} className="text-xs text-purple-300 hover:text-purple-100">Copier</button>
+              <button onClick={() => setAiResult("")} className="text-xs text-gray-400 hover:text-gray-200">Fermer</button>
+            </div>
+          </div>
+          <pre className="text-sm text-gray-200 whitespace-pre-wrap font-sans leading-relaxed">{aiResult}</pre>
+        </div>
+      )}
 
       {viewMode === "qualiopi" ? (
         /* ─── VUE QUALIOPI ─── */

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, User, GraduationCap } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { AIButton } from "@/components/shared/AIButton";
 
 type Option = { id: string; nom: string; titre?: string; prenom?: string; entrepriseId?: string | null };
 
@@ -211,7 +212,15 @@ export default function NouveauBesoinPage() {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-300">Description</label>
+              <AIButton
+                endpoint="/api/ai/besoin"
+                payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, contactId: form.contactId, entrepriseId: form.entrepriseId }}
+                onResult={(t) => set("description", t)}
+                label="Generer un brief"
+              />
+            </div>
             <textarea
               value={form.description}
               onChange={(e) => set("description", e.target.value)}

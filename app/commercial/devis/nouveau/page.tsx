@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TVA_RATE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
+import { AIButton } from "@/components/shared/AIButton";
 
 type Entreprise = { id: string; nom: string };
 type Contact = { id: string; nom: string; prenom: string; email: string; entrepriseId?: string | null };
@@ -236,7 +237,10 @@ function NouveauDevisForm() {
           <CardContent className="space-y-5">
             {/* Objet */}
             <div className="space-y-1.5">
-              <Label htmlFor="objet">Objet du devis *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="objet">Objet du devis *</Label>
+                <AIButton endpoint="/api/ai/devis" payload={{ action: "objet", entrepriseId: entrepriseId || undefined }} onResult={(t) => setObjet(t)} />
+              </div>
               <Input
                 id="objet"
                 placeholder="Ex: Formation React pour l'équipe technique"
@@ -466,11 +470,14 @@ function NouveauDevisForm() {
         {/* Notes */}
         <Card>
           <CardHeader>
-            <CardTitle>Notes</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Notes</CardTitle>
+              <AIButton endpoint="/api/ai/devis" payload={{ action: "notes", entrepriseId: entrepriseId || undefined }} onResult={(t) => setNotes(t)} />
+            </div>
           </CardHeader>
           <CardContent>
             <Textarea
-              placeholder="Conditions particulières, informations complémentaires..."
+              placeholder="Conditions particulieres, informations complementaires..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}

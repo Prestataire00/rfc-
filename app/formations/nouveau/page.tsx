@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
+import { AIButton } from "@/components/shared/AIButton";
 
 const niveauOptions = NIVEAUX_FORMATION.map((n) => ({ value: n.value, label: n.label }));
 const modaliteOptions = Object.entries(MODALITES_FORMATION).map(([value, { label }]) => ({ value, label }));
@@ -371,7 +372,10 @@ export default function NouvelleFormationPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="description">Description</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description">Description</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "description", titre: form.titre, categorie: form.categorie, niveau: form.niveau, duree: form.duree, modalite: form.modalite }} onResult={(t) => setForm((p) => ({ ...p, description: t }))} />
+              </div>
               <Textarea
                 id="description"
                 name="description"
@@ -382,7 +386,10 @@ export default function NouvelleFormationPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="objectifs">Objectifs pédagogiques</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="objectifs">Objectifs pedagogiques</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "objectifs", titre: form.titre, categorie: form.categorie, niveau: form.niveau, duree: form.duree, description: form.description }} onResult={(t) => setForm((p) => ({ ...p, objectifs: t }))} />
+              </div>
               <Textarea
                 id="objectifs"
                 name="objectifs"
@@ -393,7 +400,10 @@ export default function NouvelleFormationPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="contenuProgramme">Contenu du programme</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="contenuProgramme">Contenu du programme</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "contenuProgramme", titre: form.titre, categorie: form.categorie, niveau: form.niveau, duree: form.duree, description: form.description, objectifs: form.objectifs }} onResult={(t) => setForm((p) => ({ ...p, contenuProgramme: t }))} />
+              </div>
               <Textarea
                 id="contenuProgramme"
                 name="contenuProgramme"
@@ -404,7 +414,10 @@ export default function NouvelleFormationPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="publicCible">Public cible</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="publicCible">Public cible</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "publicCible", titre: form.titre, categorie: form.categorie, niveau: form.niveau, description: form.description }} onResult={(t) => setForm((p) => ({ ...p, publicCible: t }))} />
+              </div>
               <Textarea
                 id="publicCible"
                 name="publicCible"
@@ -415,7 +428,10 @@ export default function NouvelleFormationPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="prerequis">Prérequis</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="prerequis">Prerequis</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "prerequis", titre: form.titre, categorie: form.categorie, niveau: form.niveau }} onResult={(t) => setForm((p) => ({ ...p, prerequis: t }))} />
+              </div>
               <Textarea
                 id="prerequis"
                 name="prerequis"
@@ -435,7 +451,10 @@ export default function NouvelleFormationPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="methodesPedagogiques">Méthodes pédagogiques</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="methodesPedagogiques">Methodes pedagogiques</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "methodesPedagogiques", titre: form.titre, modalite: form.modalite, duree: form.duree }} onResult={(t) => setForm((p) => ({ ...p, methodesPedagogiques: t }))} />
+              </div>
               <Textarea
                 id="methodesPedagogiques"
                 name="methodesPedagogiques"
@@ -446,7 +465,10 @@ export default function NouvelleFormationPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="methodesEvaluation">Méthodes d'évaluation</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="methodesEvaluation">Methodes d&apos;evaluation</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "methodesEvaluation", titre: form.titre, categorie: form.categorie, niveau: form.niveau }} onResult={(t) => setForm((p) => ({ ...p, methodesEvaluation: t }))} />
+              </div>
               <Textarea
                 id="methodesEvaluation"
                 name="methodesEvaluation"
@@ -457,7 +479,10 @@ export default function NouvelleFormationPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="moyensTechniques">Moyens techniques</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="moyensTechniques">Moyens techniques</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "moyensTechniques", titre: form.titre, categorie: form.categorie }} onResult={(t) => setForm((p) => ({ ...p, moyensTechniques: t }))} />
+              </div>
               <Textarea
                 id="moyensTechniques"
                 name="moyensTechniques"
@@ -477,7 +502,10 @@ export default function NouvelleFormationPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="accessibilite">Informations d'accessibilité</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="accessibilite">Informations d&apos;accessibilite</Label>
+                <AIButton endpoint="/api/ai/formation" payload={{ field: "accessibilite", titre: form.titre }} onResult={(t) => setForm((p) => ({ ...p, accessibilite: t }))} />
+              </div>
               <Textarea
                 id="accessibilite"
                 name="accessibilite"

@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   User, Building2, Mail, Phone, Briefcase, FileText, Calendar, Pencil, Trash2,
   BookOpen, ClipboardList, MessageSquare, FolderOpen, Award, Clock,
-  Star, Euro, CheckCircle2, XCircle, AlertCircle, Plus, ExternalLink, UserCheck,
+  Star, Euro, CheckCircle2, XCircle, AlertCircle, Plus, ExternalLink, UserCheck, Sparkles,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -390,27 +390,26 @@ export default function ContactDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-r from-purple-600 to-pink-600">
-                    <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.09 3.26L16 6.27l-2.91 1.01L12 10.55l-1.09-3.27L8 6.27l3.91-1.01zm0 7.5l1.5 4.5 4.5 1.5-4.5 1.5L12 21.5l-1.5-4.5L6 15.5l4.5-1.5z"/></svg>
-                  </span>
+                  <Sparkles className="h-4 w-4 text-red-500" />
                   Assistant IA
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <AIButton endpoint="/api/ai/email" payload={{ type: "prise_contact", contactId: id }} onResult={(t) => setAiResult(t)} label="Email de prise de contact" size="md" className="w-full" />
-                <AIButton endpoint="/api/ai/email" payload={{ type: "suivi_prospect", contactId: id }} onResult={(t) => setAiResult(t)} label="Email de suivi" size="md" className="w-full" />
+                <AIButton endpoint="/api/ai/email" payload={{ type: "prise_contact", contactId: id }} onResult={(t) => setAiResult(t)} label="Email de prise de contact" size="md" className="w-full justify-start" />
+                <AIButton endpoint="/api/ai/email" payload={{ type: "suivi_prospect", contactId: id }} onResult={(t) => setAiResult(t)} label="Email de suivi" size="md" className="w-full justify-start" />
                 {contact.devis.length > 0 && (
-                  <AIButton endpoint="/api/ai/email" payload={{ type: "relance_devis", contactId: id, devisId: contact.devis[0].id }} onResult={(t) => setAiResult(t)} label="Relance devis" size="md" className="w-full" />
+                  <AIButton endpoint="/api/ai/email" payload={{ type: "relance_devis", contactId: id, devisId: contact.devis[0].id }} onResult={(t) => setAiResult(t)} label="Relance devis" size="md" className="w-full justify-start" />
                 )}
                 {aiResult && (
                   <div className="mt-3 p-3 rounded-md bg-gray-900 border border-gray-700 relative">
-                    <button onClick={() => setAiResult("")} className="absolute top-1 right-1 text-gray-500 hover:text-gray-300 text-xs">x</button>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(aiResult)}
-                      className="absolute top-1 right-6 text-gray-500 hover:text-gray-300 text-xs"
-                      title="Copier"
-                    >copier</button>
-                    <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans pt-4">{aiResult}</pre>
+                    <div className="flex items-center justify-between mb-2 text-xs">
+                      <span className="text-gray-500">Reponse IA</span>
+                      <div className="flex gap-2">
+                        <button onClick={() => navigator.clipboard.writeText(aiResult)} className="text-gray-400 hover:text-gray-200">Copier</button>
+                        <button onClick={() => setAiResult("")} className="text-gray-400 hover:text-gray-200">Fermer</button>
+                      </div>
+                    </div>
+                    <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans">{aiResult}</pre>
                   </div>
                 )}
               </CardContent>

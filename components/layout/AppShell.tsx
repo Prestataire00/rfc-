@@ -8,6 +8,7 @@ import { Menu, Sun, Moon } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { NotificationBell } from "./NotificationBell";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { Chatbot } from "@/components/shared/Chatbot";
 
 const PUBLIC_PATHS = ["/login", "/evaluation/", "/inscription-stagiaire"];
 
@@ -88,6 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <div className="p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</div>
       </main>
+      <Chatbot />
     </div>
   );
 }

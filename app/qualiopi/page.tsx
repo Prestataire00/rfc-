@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   BadgeCheck, BarChart3, Shield, ChevronLeft, ChevronRight,
   Search, Download, Target, ClipboardList, Users, BookOpen,
-  TrendingUp, MessageSquare,
+  TrendingUp, MessageSquare, Sparkles,
 } from "lucide-react";
 import { AIButton } from "@/components/shared/AIButton";
 
@@ -188,18 +188,18 @@ export default function QualiopiPage() {
 
       {/* Resultat IA */}
       {aiResult && (
-        <div className="mb-6 p-4 rounded-xl border border-purple-700 bg-purple-900/10 relative">
+        <div className="mb-6 p-4 rounded-xl border border-gray-700 bg-gray-800 relative">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-purple-300 flex items-center gap-2">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.09 3.26L16 6.27l-2.91 1.01L12 10.55l-1.09-3.27L8 6.27l3.91-1.01zm0 7.5l1.5 4.5 4.5 1.5-4.5 1.5L12 21.5l-1.5-4.5L6 15.5l4.5-1.5z"/></svg>
+            <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-red-500" />
               Analyse IA
             </h3>
-            <div className="flex items-center gap-2">
-              <button onClick={() => navigator.clipboard.writeText(aiResult)} className="text-xs text-purple-300 hover:text-purple-100">Copier</button>
-              <button onClick={() => setAiResult("")} className="text-xs text-gray-400 hover:text-gray-200">Fermer</button>
+            <div className="flex items-center gap-3 text-xs">
+              <button onClick={() => navigator.clipboard.writeText(aiResult)} className="text-gray-400 hover:text-gray-200">Copier</button>
+              <button onClick={() => setAiResult("")} className="text-gray-400 hover:text-gray-200">Fermer</button>
             </div>
           </div>
-          <pre className="text-sm text-gray-200 whitespace-pre-wrap font-sans leading-relaxed">{aiResult}</pre>
+          <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">{aiResult}</pre>
         </div>
       )}
 

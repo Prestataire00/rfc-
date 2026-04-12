@@ -559,7 +559,7 @@ export default function SessionDetailPage() {
                 <ClipboardList className="h-4 w-4 text-red-500" /> Fiches besoin
               </h2>
               <button
-                onClick={handleSendFichesBesoin}
+                onClick={() => handleSendFichesBesoin()}
                 disabled={sendingFiches || session.inscriptions.length === 0}
                 className="inline-flex items-center gap-1 rounded-md bg-red-600 hover:bg-red-700 px-2.5 py-1 text-xs font-medium text-white transition-colors disabled:opacity-50"
               >

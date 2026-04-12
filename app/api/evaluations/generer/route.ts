@@ -4,9 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 
 // Generate evaluation tokens for participants, client, or formateur of a session
+// Optionally accepts a templateId (preset or custom) whose questions are snapshotted
+// into each created evaluation so that template edits later don't affect sent forms.
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, type, cible = "stagiaire" } = await req.json();
+    const body = await req.json();
+    const { sessionId, type, cible = "stagiaire", templateId } = body as { sessionId?: string; type?: string; cible?: string; templateId?: string };
 
     if (!sessionId || !type) {
       return NextResponse.json({ error: "sessionId et type requis" }, { status: 400 });
@@ -14,6 +17,20 @@ export async function POST(req: NextRequest) {
 
     if (!["stagiaire", "client", "formateur"].includes(cible)) {
       return NextResponse.json({ error: "cible doit être stagiaire, client ou formateur" }, { status: 400 });
+    }
+
+    // Load template questions for snapshot — either explicit templateId, or default preset for type
+    let questionsSnapshot: string | null = null;
+    if (templateId) {
+      const tpl = await prisma.evaluationTemplate.findUnique({ where: { id: templateId } });
+      if (tpl) questionsSnapshot = tpl.questions;
+    } else if (["satisfaction_chaud", "satisfaction_froid", "acquis"].includes(type)) {
+      // Lookup default preset for this type
+      const presetId = type === "satisfaction_chaud" ? "preset_satisfaction_chaud"
+        : type === "satisfaction_froid" ? "preset_satisfaction_froid"
+        : "preset_acquis_post";
+      const tpl = await prisma.evaluationTemplate.findUnique({ where: { id: presetId } });
+      if (tpl) questionsSnapshot = tpl.questions;
     }
 
     const session = await prisma.session.findUnique({
@@ -59,6 +76,7 @@ export async function POST(req: NextRequest) {
             sessionId,
             contactId: inscription.contactId,
             tokenAcces: token,
+            questionsSnapshot,
           },
         });
         evaluations.push(evaluation);
@@ -99,6 +117,7 @@ export async function POST(req: NextRequest) {
             sessionId,
             contactId: clientContact.id,
             tokenAcces: token,
+            questionsSnapshot,
           },
         });
         evaluations.push(evaluation);
@@ -136,6 +155,7 @@ export async function POST(req: NextRequest) {
             sessionId,
             contactId,
             tokenAcces: token,
+            questionsSnapshot,
           },
         });
         evaluations.push(evaluation);

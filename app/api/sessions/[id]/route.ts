@@ -62,6 +62,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     // ── Envoi automatique questionnaire à chaud si passage à "terminee" ────
     if (rest.statut === "terminee" && sessionAvant?.statut !== "terminee") {
       const baseUrl = process.env.NEXTAUTH_URL || "https://projetrfc.netlify.app";
+      const presetChaud = await prisma.evaluationTemplate.findUnique({ where: { id: "preset_satisfaction_chaud" } });
+      const snapshotChaud = presetChaud?.questions || null;
 
       for (const inscription of session.inscriptions) {
         if (!inscription.contact.email) continue;
@@ -79,6 +81,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
             sessionId: params.id,
             contactId: inscription.contactId,
             tokenAcces: token,
+            questionsSnapshot: snapshotChaud,
           },
         });
 
@@ -149,6 +152,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // ── Envoi automatique questionnaire à chaud si passage à "terminee" ────
     if (data.statut === "terminee" && sessionAvant?.statut !== "terminee") {
       const baseUrl = process.env.NEXTAUTH_URL || "https://projetrfc.netlify.app";
+      const presetChaud = await prisma.evaluationTemplate.findUnique({ where: { id: "preset_satisfaction_chaud" } });
+      const snapshotChaud = presetChaud?.questions || null;
 
       for (const inscription of session.inscriptions) {
         if (!inscription.contact.email) continue;
@@ -166,6 +171,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             sessionId: params.id,
             contactId: inscription.contactId,
             tokenAcces: token,
+            questionsSnapshot: snapshotChaud,
           },
         });
 

@@ -19,6 +19,14 @@ export async function GET(req: NextRequest) {
     const now = new Date();
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
+    // Snapshot des templates presets (pour figer le questionnaire au moment de l'envoi)
+    const [presetChaud, presetFroid] = await Promise.all([
+      prisma.evaluationTemplate.findUnique({ where: { id: "preset_satisfaction_chaud" } }),
+      prisma.evaluationTemplate.findUnique({ where: { id: "preset_satisfaction_froid" } }),
+    ]);
+    const snapshotChaud = presetChaud?.questions || null;
+    const snapshotFroid = presetFroid?.questions || null;
+
     // J+1: sessions ended yesterday
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -67,6 +75,7 @@ export async function GET(req: NextRequest) {
             sessionId: session.id,
             contactId: inscription.contactId,
             tokenAcces: token,
+            questionsSnapshot: snapshotChaud,
           },
         });
 
@@ -116,6 +125,7 @@ export async function GET(req: NextRequest) {
             sessionId: session.id,
             contactId: inscription.contactId,
             tokenAcces: token,
+            questionsSnapshot: snapshotFroid,
           },
         });
 

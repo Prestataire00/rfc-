@@ -3,14 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET: Retrieve evaluation info by token (public, no auth)
+// Priority order for questions source:
+//   1. evaluation.questionsSnapshot (figee au moment de l'envoi)
+//   2. Template preset associe au type (fallback)
+//   3. QuestionnaireConfig (legacy format pour anciennes evals)
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   try {
     const evaluation = await prisma.evaluation.findUnique({
       where: { tokenAcces: params.token },
       include: {
-        session: {
-          include: { formation: { select: { titre: true } } },
-        },
+        session: { include: { formation: { select: { titre: true } } } },
         contact: { select: { nom: true, prenom: true } },
       },
     });
@@ -23,50 +25,52 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       ? `${evaluation.contact.prenom} ${evaluation.contact.nom}`
       : "Anonyme";
 
-    // Detect custom template questions stored in reponses
-    let customQuestions: unknown[] | null = null;
-    try {
-      const parsed = JSON.parse(evaluation.reponses);
-      if (
-        Array.isArray(parsed) &&
-        parsed.length > 0 &&
-        typeof parsed[0] === "object" &&
-        "type" in parsed[0] &&
-        "label" in parsed[0]
-      ) {
-        customQuestions = parsed;
-      }
-    } catch {
-      // not custom
-    }
-
-    if (customQuestions) {
-      return NextResponse.json({
-        id: evaluation.id,
-        type: evaluation.type,
-        estComplete: evaluation.estComplete,
-        formation: evaluation.session.formation.titre,
-        stagiaire,
-        isCustom: true,
-        questions: customQuestions,
-      });
-    }
-
-    // Old format: fetch questionnaire sections
-    const config = await prisma.questionnaireConfig.findUnique({ where: { id: "default" } });
-    const sections = evaluation.type === "satisfaction_froid"
-      ? (config?.froid ?? [])
-      : (config?.chaud ?? []);
-
-    return NextResponse.json({
+    const baseInfo = {
       id: evaluation.id,
       type: evaluation.type,
       estComplete: evaluation.estComplete,
       formation: evaluation.session.formation.titre,
       stagiaire,
-      isCustom: false,
-      sections,
-    });
+    };
+
+    // 1. Snapshot stocke sur l'evaluation — prioritaire
+    if (evaluation.questionsSnapshot) {
+      try {
+        const questions = JSON.parse(evaluation.questionsSnapshot);
+        if (Array.isArray(questions) && questions.length > 0) {
+          return NextResponse.json({ ...baseInfo, isCustom: true, questions });
+        }
+      } catch { /* fall through */ }
+    }
+
+    // 2. Fallback : detecter si reponses contient un custom template (ancien format)
+    try {
+      const parsed = JSON.parse(evaluation.reponses);
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object" && parsed[0] && "type" in parsed[0] && "label" in parsed[0]) {
+        return NextResponse.json({ ...baseInfo, isCustom: true, questions: parsed });
+      }
+    } catch { /* not custom */ }
+
+    // 3. Fallback preset par type
+    if (["satisfaction_chaud", "satisfaction_froid", "acquis"].includes(evaluation.type)) {
+      const presetId = evaluation.type === "satisfaction_chaud" ? "preset_satisfaction_chaud"
+        : evaluation.type === "satisfaction_froid" ? "preset_satisfaction_froid"
+        : "preset_acquis_post";
+      const preset = await prisma.evaluationTemplate.findUnique({ where: { id: presetId } });
+      if (preset) {
+        try {
+          const questions = JSON.parse(preset.questions);
+          if (Array.isArray(questions) && questions.length > 0) {
+            return NextResponse.json({ ...baseInfo, isCustom: true, questions });
+          }
+        } catch { /* fall through */ }
+      }
+    }
+
+    // 4. Legacy: QuestionnaireConfig sections
+    const config = await prisma.questionnaireConfig.findUnique({ where: { id: "default" } });
+    const sections = evaluation.type === "satisfaction_froid" ? (config?.froid ?? []) : (config?.chaud ?? []);
+    return NextResponse.json({ ...baseInfo, isCustom: false, sections });
   } catch (err: unknown) {
     console.error("Erreur recuperation evaluation:", err);
     return NextResponse.json({ error: "Erreur lors de la recuperation de l'evaluation" }, { status: 500 });
@@ -76,17 +80,9 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
 // POST: Submit evaluation (public, no auth)
 export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
   try {
-    const evaluation = await prisma.evaluation.findUnique({
-      where: { tokenAcces: params.token },
-    });
-
-    if (!evaluation) {
-      return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
-    }
-
-    if (evaluation.estComplete) {
-      return NextResponse.json({ error: "Cette evaluation a deja ete soumise" }, { status: 400 });
-    }
+    const evaluation = await prisma.evaluation.findUnique({ where: { tokenAcces: params.token } });
+    if (!evaluation) return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
+    if (evaluation.estComplete) return NextResponse.json({ error: "Cette evaluation a deja ete soumise" }, { status: 400 });
 
     const body = await req.json();
     const { noteGlobale, reponses, commentaire, isCustom } = body;
@@ -95,13 +91,15 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       return NextResponse.json({ error: "Note globale requise (1-5)" }, { status: 400 });
     }
 
-    // For custom evaluations, derive noteGlobale from the first note-type answer
+    // Derive noteGlobale from first "note" answer if custom form
     let finalNote: number | null = noteGlobale || null;
-    if (isCustom && Array.isArray(reponses)) {
-      const firstNote = reponses.find(
-        (r: { type: string; valeur: unknown }) => r.type === "note" && r.valeur !== null
-      );
-      if (firstNote) finalNote = firstNote.valeur as number;
+    if (isCustom && reponses && typeof reponses === "object" && !Array.isArray(reponses)) {
+      // reponses is a map { questionId: value }
+      // Find the first numeric value (first "note" answered)
+      const firstNumeric = Object.values(reponses).find((v) => typeof v === "number");
+      if (typeof firstNumeric === "number" && firstNumeric >= 1 && firstNumeric <= 5) {
+        finalNote = firstNumeric;
+      }
     }
 
     await prisma.evaluation.update({

@@ -210,24 +210,32 @@ export default function NouveauBesoinPage() {
             />
           </div>
 
-          {/* Description */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-gray-300">Description</label>
+          {/* Description detaillee - section mise en avant */}
+          <div className="rounded-lg border border-red-700/30 bg-red-900/5 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-100">Descriptif de la demande *</label>
+                <p className="text-xs text-gray-400 mt-0.5">Contexte, objectifs, contraintes, delais, public cible...</p>
+              </div>
               <AIButton
                 endpoint="/api/ai/besoin"
                 payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, contactId: form.contactId, entrepriseId: form.entrepriseId }}
                 onResult={(t) => set("description", t)}
-                label="Generer un brief"
+                label="Generer un brief IA"
               />
             </div>
             <textarea
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
-              className="w-full rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 py-2 text-sm"
-              rows={3}
-              placeholder="Contexte, objectifs souhaités, contraintes..."
+              className="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100 px-3 py-2.5 text-sm resize-y min-h-[140px]"
+              rows={6}
+              placeholder={`Exemple :
+- Contexte : renouvellement des cartes professionnelles pour nos agents de securite
+- Objectifs : permettre aux 8 stagiaires de reussir la certification SSIAP 1
+- Contraintes : formation obligatoirement le samedi, sur notre site
+- Delais : demarrage souhaite sous 3 semaines`}
             />
+            <p className="text-xs text-gray-500 text-right">{form.description.length} caracteres</p>
           </div>
 
           {/* Formation souhaitée */}

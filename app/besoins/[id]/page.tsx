@@ -238,12 +238,19 @@ export default function BesoinDetailPage() {
       {activeTab === "detail" && (
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2 space-y-6">
-            {besoin.description && (
-              <div className="rounded-lg border bg-gray-800 p-6">
-                <h3 className="font-semibold text-gray-100 mb-2">Description</h3>
-                <p className="text-sm text-gray-400 whitespace-pre-wrap">{besoin.description}</p>
+            <div className="rounded-lg border border-red-700/30 bg-gray-800 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-red-500" /> Descriptif de la demande
+                </h3>
+                <Link href={`/besoins/${besoin.id}/modifier`} className="text-xs text-red-500 hover:underline">Modifier</Link>
               </div>
-            )}
+              {besoin.description ? (
+                <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{besoin.description}</p>
+              ) : (
+                <p className="text-sm text-gray-500 italic">Aucun descriptif renseigne. <Link href={`/besoins/${besoin.id}/modifier`} className="text-red-500 hover:underline">Ajouter</Link></p>
+              )}
+            </div>
 
             <div className="rounded-lg border bg-gray-800 p-6">
               <h3 className="font-semibold text-gray-100 mb-4">Avancement</h3>

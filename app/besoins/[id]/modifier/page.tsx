@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { AIButton } from "@/components/shared/AIButton";
 
 type Option = { id: string; nom: string; titre?: string };
 
@@ -120,14 +121,27 @@ export default function ModifierBesoinPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+          <div className="rounded-lg border border-red-700/30 bg-red-900/5 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-100">Descriptif de la demande</label>
+                <p className="text-xs text-gray-400 mt-0.5">Contexte, objectifs, contraintes, delais, public cible...</p>
+              </div>
+              <AIButton
+                endpoint="/api/ai/besoin"
+                payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, entrepriseId: form.entrepriseId }}
+                onResult={(t) => setForm({ ...form, description: t })}
+                label="Generer un brief IA"
+              />
+            </div>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100"
-              rows={3}
+              className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2.5 text-sm text-gray-100 resize-y min-h-[140px]"
+              rows={6}
+              placeholder="Contexte, objectifs, contraintes, delais..."
             />
+            <p className="text-xs text-gray-500 text-right">{form.description.length} caracteres</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

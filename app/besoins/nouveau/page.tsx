@@ -45,7 +45,9 @@ export default function NouveauBesoinPage() {
   const [form, setForm] = useState({
     titre: "",
     description: "",
-    origine: paramContactId ? "stagiaire" : "client",
+    // L'origine sera ajustee dans le useEffect en fonction du type du contact
+    // (client/prospect -> "client", stagiaire -> "stagiaire")
+    origine: "client",
     priorite: "normale",
     nbStagiaires: "",
     datesSouhaitees: "",
@@ -60,7 +62,25 @@ export default function NouveauBesoinPage() {
     fetch("/api/entreprises").then((r) => r.ok ? r.json() : []).then((d) => setEntreprises(Array.isArray(d) ? d : d.entreprises || []));
     fetch("/api/contacts").then((r) => r.ok ? r.json() : []).then((d) => setContacts(Array.isArray(d) ? d : d.contacts || []));
     fetch("/api/formations").then((r) => r.ok ? r.json() : []).then((d) => setFormations(Array.isArray(d) ? d : d.formations || []));
-  }, []);
+
+    // Si on arrive depuis un contact, ajuster l'origine selon son type reel
+    if (paramContactId) {
+      fetch(`/api/contacts/${paramContactId}`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((contact) => {
+          if (!contact) return;
+          // prospect ou client -> origine "client" (demande entreprise)
+          // stagiaire -> origine "stagiaire" (individuel)
+          // On pre-remplit aussi l'entrepriseId si disponible
+          const newOrigine = contact.type === "stagiaire" ? "stagiaire" : "client";
+          setForm((f) => ({
+            ...f,
+            origine: newOrigine,
+            entrepriseId: contact.entrepriseId || f.entrepriseId,
+          }));
+        });
+    }
+  }, [paramContactId]);
 
   const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 

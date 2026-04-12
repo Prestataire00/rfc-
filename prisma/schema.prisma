@@ -409,6 +409,10 @@ model Evaluation {
   estComplete  Boolean @default(false)
   tokenAcces   String? @unique // pour accès par lien unique
 
+  // Snapshot des questions du template au moment de l'envoi (fige le contenu).
+  // Si null, fallback sur le template associe (ou QuestionnaireConfig pour l'ancien systeme).
+  questionsSnapshot String?
+
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -417,13 +421,16 @@ model Evaluation {
 }
 
 model EvaluationTemplate {
-  id          String   @id @default(cuid())
+  id          String   @id
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   nom         String
   description String?
   type        String   @default("custom") // satisfaction_chaud, satisfaction_froid, acquis, custom
   questions   String   @default("[]") // JSON array of question objects
+  preset      Boolean  @default(false) // true = preset officiel non modifiable
+  icon        String?  // icone lucide ou emoji
+  ordre       Int      @default(0) // ordre d'affichage dans le catalogue
 }
 
 model Attestation {

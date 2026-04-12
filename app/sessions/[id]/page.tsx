@@ -93,6 +93,21 @@ export default function SessionDetailPage() {
   const [sendingFiches, setSendingFiches] = useState(false);
   const [fichesMsg, setFichesMsg] = useState("");
   const [passeportOpen, setPasseportOpen] = useState(false);
+  const [automations, setAutomations] = useState<Array<{
+    type: string;
+    label: string;
+    description: string | null;
+    ordre: number;
+    enabled: boolean;
+    relativeTo: string;
+    offsetDays: number;
+    offsetHours: number;
+    timeOfDay: string | null;
+    executedAt: string | null;
+    executionLog: string | null;
+    isOverride: boolean;
+  }>>([]);
+  const [autoSaving, setAutoSaving] = useState<string | null>(null);
   const [declarationChecked, setDeclarationChecked] = useState(false);
 
   const fetchSession = useCallback(async () => {
@@ -122,7 +137,41 @@ export default function SessionDetailPage() {
     setBesoinsStagiaire(Array.isArray(rs) ? rs : []);
   }, [id]);
 
-  useEffect(() => { fetchSession(); fetchPresence(); fetchBesoins(); }, [fetchSession, fetchPresence, fetchBesoins]);
+  const fetchAutomations = useCallback(async () => {
+    const r = await fetch(`/api/sessions/${id}/automations`);
+    if (r.ok) setAutomations(await r.json());
+  }, [id]);
+
+  const saveAutomation = async (type: string, patch: Partial<{ enabled: boolean; relativeTo: string; offsetDays: number; offsetHours: number; timeOfDay: string | null }>) => {
+    setAutoSaving(type);
+    const current = automations.find((a) => a.type === type);
+    if (!current) { setAutoSaving(null); return; }
+    const merged = {
+      enabled: current.enabled,
+      relativeTo: current.relativeTo,
+      offsetDays: current.offsetDays,
+      offsetHours: current.offsetHours,
+      timeOfDay: current.timeOfDay,
+      canalEmail: true,
+      ...patch,
+    };
+    setAutomations((prev) => prev.map((a) => a.type === type ? { ...a, ...patch, isOverride: true } : a));
+    await fetch(`/api/sessions/${id}/automations/${type}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(merged),
+    });
+    setAutoSaving(null);
+  };
+
+  const resetAutomation = async (type: string) => {
+    setAutoSaving(type);
+    await fetch(`/api/sessions/${id}/automations/${type}`, { method: "DELETE" });
+    await fetchAutomations();
+    setAutoSaving(null);
+  };
+
+  useEffect(() => { fetchSession(); fetchPresence(); fetchBesoins(); fetchAutomations(); }, [fetchSession, fetchPresence, fetchBesoins, fetchAutomations]);
 
   const fetchContacts = async () => {
     const res = await fetch("/api/contacts");
@@ -631,6 +680,108 @@ export default function SessionDetailPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Automatisations */}
+          <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-red-500" /> Automatisations
+              </h2>
+              <Link href="/parametres/automations" className="text-xs text-red-500 hover:underline">Defauts</Link>
+            </div>
+            {automations.length === 0 ? (
+              <p className="text-xs text-gray-500 italic">Chargement...</p>
+            ) : (
+              <div className="space-y-2">
+                {automations.map((a) => {
+                  const done = !!a.executedAt;
+                  const rel = a.relativeTo === "dateDebut" ? "debut"
+                    : a.relativeTo === "dateFin" ? "fin"
+                    : a.relativeTo === "inscription" ? "insc."
+                    : "creation";
+                  const offsetLabel = a.offsetDays === 0 && a.offsetHours === 0
+                    ? `Jour ${rel}`
+                    : a.offsetDays !== 0
+                      ? `${a.offsetDays < 0 ? "J-" : "J+"}${Math.abs(a.offsetDays)} ${rel}`
+                      : `${Math.abs(a.offsetHours)}h ${a.offsetHours < 0 ? "avant" : "apres"} ${rel}`;
+                  return (
+                    <details key={a.type} className="group rounded-md border border-gray-700 bg-gray-900/50">
+                      <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs list-none">
+                        <input
+                          type="checkbox"
+                          checked={a.enabled}
+                          onChange={(e) => { e.stopPropagation(); saveAutomation(a.type, { enabled: e.target.checked }); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-3.5 w-3.5 shrink-0"
+                        />
+                        <span className={`flex-1 min-w-0 truncate ${a.enabled ? "text-gray-200" : "text-gray-500 line-through"}`}>
+                          {a.label}
+                        </span>
+                        <span className={`shrink-0 text-[10px] ${done ? "text-emerald-400" : "text-gray-500"}`}>
+                          {done ? "✓ Fait" : offsetLabel}
+                        </span>
+                        {a.isOverride && !done && (
+                          <span className="shrink-0 text-[9px] text-amber-400" title="Surcharge pour cette session">●</span>
+                        )}
+                      </summary>
+                      <div className="px-3 pb-3 pt-1 border-t border-gray-700 space-y-2">
+                        {a.description && <p className="text-[10px] text-gray-500">{a.description}</p>}
+                        <div className="grid grid-cols-4 gap-1.5">
+                          <select
+                            value={a.relativeTo}
+                            onChange={(e) => saveAutomation(a.type, { relativeTo: e.target.value })}
+                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                          >
+                            <option value="dateDebut">Debut</option>
+                            <option value="dateFin">Fin</option>
+                            <option value="inscription">Inscription</option>
+                            <option value="creation_session">Creation</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={a.offsetDays}
+                            onChange={(e) => saveAutomation(a.type, { offsetDays: parseInt(e.target.value) || 0 })}
+                            placeholder="Jours"
+                            title="Jours (negatif=avant)"
+                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                          />
+                          <input
+                            type="number"
+                            value={a.offsetHours}
+                            onChange={(e) => saveAutomation(a.type, { offsetHours: parseInt(e.target.value) || 0 })}
+                            placeholder="Heures"
+                            title="Heures (negatif=avant)"
+                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                          />
+                          <input
+                            type="time"
+                            value={a.timeOfDay || ""}
+                            onChange={(e) => saveAutomation(a.type, { timeOfDay: e.target.value || null })}
+                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                          />
+                        </div>
+                        {done && (
+                          <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                            Execute le {formatDate(a.executedAt!)} — {a.executionLog || "OK"}
+                          </div>
+                        )}
+                        {a.isOverride && (
+                          <button
+                            onClick={() => resetAutomation(a.type)}
+                            disabled={autoSaving === a.type}
+                            className="text-[10px] text-amber-400 hover:underline"
+                          >
+                            ← Revenir au defaut global
+                          </button>
+                        )}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Passeport Prevention (formations certifiantes uniquement) */}

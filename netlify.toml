@@ -20,3 +20,8 @@
 [[crons]]
   schedule = "0 9 * * *"
   path = "/api/cron/factures"
+
+# Cron : execution horaire des automatisations (convocations, evaluations, fiches, etc)
+[[crons]]
+  schedule = "0 * * * *"
+  path = "/api/cron/automations"

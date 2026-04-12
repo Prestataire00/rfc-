@@ -226,6 +226,7 @@ model Session {
   documents        Document[]
   besoinsClient    BesoinClient[]
   besoinsStagiaire BesoinStagiaire[]
+  automations      SessionAutomation[]
 }
 
 model Inscription {
@@ -559,6 +560,58 @@ model Parametres {
   bic                String @default("")
   banque             String @default("")
   moyensPaiement     String @default("virement,cpf,opco")
+}
+
+// ==================== AUTOMATISATIONS ====================
+
+// Regle d'automatisation globale (valeur par defaut appliquee a toutes les sessions)
+// Types possibles :
+//   fiche_besoin_client, fiche_besoin_stagiaire, positionnement,
+//   convocation, convention, rappel_presence, attestation,
+//   satisfaction_chaud, satisfaction_froid, facture
+model AutomationRule {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type           String  @unique // identifiant unique du type d'action
+  label          String  // libelle affiche
+  description    String? // description longue
+  enabled        Boolean @default(true) // active par defaut pour les nouvelles sessions
+  relativeTo     String  @default("dateDebut") // dateDebut, dateFin, inscription, creation_session
+  offsetDays     Int     @default(0) // negatif = avant, positif = apres
+  offsetHours    Int     @default(0)
+  timeOfDay      String? // HH:MM heure d'envoi preferentielle (ex: "09:00")
+  canalEmail     Boolean @default(true) // envoi par email
+  templateId     String? // ID du template associe (ex: preset_satisfaction_chaud)
+  ordre          Int     @default(0)
+}
+
+// Override par session : si present, remplace la regle globale pour cette session
+model SessionAutomation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  type         String
+  enabled      Boolean  @default(true)
+  relativeTo   String   @default("dateDebut")
+  offsetDays   Int      @default(0)
+  offsetHours  Int      @default(0)
+  timeOfDay    String?
+  canalEmail   Boolean  @default(true)
+  templateId   String?
+
+  // Tracking execution
+  executedAt   DateTime?
+  executionLog String? // message ou erreur de la derniere execution
+
+  @@unique([sessionId, type])
+  @@index([sessionId])
+  @@index([enabled, executedAt])
 }
 
 // ==================== QUESTIONNAIRES D'ADAPTATION PEDAGOGIQUE ====================

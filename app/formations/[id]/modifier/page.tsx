@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
 import { AIButton } from "@/components/shared/AIButton";
+import { ImageUpload } from "@/components/shared/ImageUpload";
 
 const niveauOptions = NIVEAUX_FORMATION.map((n) => ({ value: n.value, label: n.label }));
 const modaliteOptions = Object.entries(MODALITES_FORMATION).map(([value, { label }]) => ({ value, label }));
@@ -297,19 +298,14 @@ export default function ModifierFormationPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="image">Image de couverture (URL)</Label>
-              <Input
-                id="image"
-                name="image"
+              <Label>Image de couverture</Label>
+              <ImageUpload
                 value={form.image}
-                onChange={handleChange}
-                placeholder="https://exemple.com/image.jpg"
+                onChange={(url) => setForm((p) => ({ ...p, image: url }))}
+                folder="formations"
+                shape="rect"
+                size="lg"
               />
-              {form.image && (
-                <div className="mt-2 relative w-full h-32 rounded-md overflow-hidden border border-gray-700">
-                  <img src={form.image} alt="Apercu" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

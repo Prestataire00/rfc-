@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload, FileText, Trash2, ExternalLink } from "lucide-react";
+import { ImageUpload } from "@/components/shared/ImageUpload";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -194,24 +195,21 @@ export default function ModifierFormateurPage() {
             </div>
             {/* Photo */}
             <div className="space-y-1.5">
-              <Label htmlFor="photo">Photo de profil (URL)</Label>
-              <div className="flex items-center gap-4">
-                {form.photo ? (
-                  <img src={form.photo} alt="Photo" className="h-16 w-16 rounded-full object-cover border-2 border-gray-600" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                ) : (
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center border-2 border-gray-600">
-                    <span className="text-xl font-bold text-white">{form.prenom[0]?.toUpperCase() || ""}{form.nom[0]?.toUpperCase() || ""}</span>
+              <Label>Photo de profil</Label>
+              <ImageUpload
+                value={form.photo}
+                onChange={(url) => setForm((p) => ({ ...p, photo: url }))}
+                folder="formateurs"
+                shape="circle"
+                size="md"
+                placeholder={
+                  <div className="h-full w-full rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center">
+                    <span className="text-xl font-bold text-white">
+                      {form.prenom[0]?.toUpperCase() || ""}{form.nom[0]?.toUpperCase() || ""}
+                    </span>
                   </div>
-                )}
-                <Input
-                  id="photo"
-                  name="photo"
-                  value={form.photo}
-                  onChange={handleChange}
-                  placeholder="https://exemple.com/photo.jpg"
-                  className="flex-1"
-                />
-              </div>
+                }
+              />
             </div>
           </CardContent>
         </Card>

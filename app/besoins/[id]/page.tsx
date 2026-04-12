@@ -6,12 +6,13 @@ import Link from "next/link";
 import {
   ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail,
   MapPin, Hash, ExternalLink, FolderOpen, Clock, Send, Receipt, UserPlus,
-  Calendar, CheckCircle2, XCircle, AlertCircle,
+  Calendar, CheckCircle2, XCircle, AlertCircle, Sparkles, Copy,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { AIButton } from "@/components/shared/AIButton";
 
 type Besoin = {
   id: string;
@@ -113,6 +114,8 @@ export default function BesoinDetailPage() {
   const [historique, setHistorique] = useState<HistoriqueAction[]>([]);
   const [historiqueLoading, setHistoriqueLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("detail");
+  const [aiResult, setAiResult] = useState("");
+  const [aiTitle, setAiTitle] = useState("");
 
   useEffect(() => {
     fetch(`/api/besoins/${id}`).then((r) => r.ok ? r.json() : null).then((d) => {
@@ -249,6 +252,67 @@ export default function BesoinDetailPage() {
                 <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{besoin.description}</p>
               ) : (
                 <p className="text-sm text-gray-500 italic">Aucun descriptif renseigne. <Link href={`/besoins/${besoin.id}/modifier`} className="text-red-500 hover:underline">Ajouter</Link></p>
+              )}
+            </div>
+
+            {/* Assistant IA */}
+            <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-red-500" /> Assistant IA
+                </h3>
+                {aiResult && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <button onClick={() => navigator.clipboard.writeText(aiResult)} className="text-gray-400 hover:text-gray-200 inline-flex items-center gap-1">
+                      <Copy className="h-3 w-3" /> Copier
+                    </button>
+                    <button onClick={() => { setAiResult(""); setAiTitle(""); }} className="text-gray-400 hover:text-gray-200">Fermer</button>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mb-3">Exploitez l&apos;IA Claude pour analyser, structurer ou proposer des reponses adaptees a cette demande.</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <AIButton
+                  endpoint="/api/ai/besoin"
+                  payload={{ action: "analyser", titre: besoin.titre, description: besoin.description, origine: besoin.origine, nbStagiaires: besoin.nbStagiaires, contactId: besoin.contact?.id, entrepriseId: besoin.entreprise?.id }}
+                  onResult={(t) => { setAiResult(t); setAiTitle("Analyse de la demande"); }}
+                  label="Analyser"
+                  size="md"
+                  className="w-full"
+                />
+                <AIButton
+                  endpoint="/api/ai/besoin"
+                  payload={{ action: "brief", titre: besoin.titre, description: besoin.description, origine: besoin.origine, nbStagiaires: besoin.nbStagiaires, contactId: besoin.contact?.id, entrepriseId: besoin.entreprise?.id }}
+                  onResult={(t) => { setAiResult(t); setAiTitle("Brief pedagogique"); }}
+                  label="Brief formation"
+                  size="md"
+                  className="w-full"
+                />
+                <AIButton
+                  endpoint="/api/ai/besoin"
+                  payload={{ action: "suggerer_formations", titre: besoin.titre, description: besoin.description, origine: besoin.origine, nbStagiaires: besoin.nbStagiaires, contactId: besoin.contact?.id, entrepriseId: besoin.entreprise?.id }}
+                  onResult={(t) => { setAiResult(t); setAiTitle("Formations suggerees"); }}
+                  label="Suggerer formations"
+                  size="md"
+                  className="w-full"
+                />
+                {besoin.contact?.id && (
+                  <AIButton
+                    endpoint="/api/ai/email"
+                    payload={{ type: "custom", contactId: besoin.contact.id, context: `Demande de formation : ${besoin.titre}\n${besoin.description || ""}\n\nRedige un email de reponse professionnel proposant un rendez-vous pour qualifier le besoin.` }}
+                    onResult={(t) => { setAiResult(t); setAiTitle("Email de reponse au client"); }}
+                    label="Email client"
+                    size="md"
+                    className="w-full"
+                  />
+                )}
+              </div>
+
+              {aiResult && (
+                <div className="mt-4 rounded-md bg-gray-900 border border-gray-700 p-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{aiTitle}</p>
+                  <pre className="text-sm text-gray-200 whitespace-pre-wrap font-sans leading-relaxed">{aiResult}</pre>
+                </div>
               )}
             </div>
 

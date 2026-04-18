@@ -21,6 +21,7 @@ export type EntrepriseParams = {
   moyensPaiement: string;
   logoUrl: string | null;
   couleurPrimaire: string;
+  featureFlags: Record<string, boolean>;
 };
 
 const DEFAULTS: EntrepriseParams = {
@@ -44,13 +45,21 @@ const DEFAULTS: EntrepriseParams = {
   moyensPaiement: "virement,cpf,opco",
   logoUrl: null,
   couleurPrimaire: "#dc2626",
+  featureFlags: {},
 };
 
 export async function getParametres(): Promise<EntrepriseParams> {
   try {
     const params = await prisma.parametres.findUnique({ where: { id: "default" } });
     if (!params) return DEFAULTS;
-    return { ...DEFAULTS, ...params };
+    // Parse featureFlags from JSON string to object
+    let featureFlags: Record<string, boolean> = {};
+    try {
+      if (typeof params.featureFlags === "string") {
+        featureFlags = JSON.parse(params.featureFlags);
+      }
+    } catch { /* keep empty */ }
+    return { ...DEFAULTS, ...params, featureFlags };
   } catch {
     return DEFAULTS;
   }

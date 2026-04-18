@@ -88,14 +88,15 @@ model Contact {
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
-  inscriptions     Inscription[]
-  devis            Devis[]
-  attestations     Attestation[]
-  evaluations      Evaluation[]
-  besoins          BesoinFormation[]
-  besoinsStagiaire BesoinStagiaire[]
-  feuillesPresence FeuillePresence[]
-  historique       HistoriqueAction[]
+  inscriptions       Inscription[]
+  devis              Devis[]
+  attestations       Attestation[]
+  evaluations        Evaluation[]
+  besoins            BesoinFormation[]
+  besoinsStagiaire   BesoinStagiaire[]
+  feuillesPresence   FeuillePresence[]
+  emargementTokens   EmargementToken[]
+  historique         HistoriqueAction[]
 }
 
 model Formateur {
@@ -218,15 +219,16 @@ model Session {
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
 
-  inscriptions     Inscription[]
-  feuillesPresence FeuillePresence[]
-  attestations     Attestation[]
-  evaluations      Evaluation[]
-  feedbacks        FeedbackFormateur[]
-  documents        Document[]
-  besoinsClient    BesoinClient[]
-  besoinsStagiaire BesoinStagiaire[]
-  automations      SessionAutomation[]
+  inscriptions       Inscription[]
+  feuillesPresence   FeuillePresence[]
+  attestations       Attestation[]
+  evaluations        Evaluation[]
+  feedbacks          FeedbackFormateur[]
+  documents          Document[]
+  besoinsClient      BesoinClient[]
+  besoinsStagiaire   BesoinStagiaire[]
+  automations        SessionAutomation[]
+  emargementTokens   EmargementToken[]
 }
 
 model Inscription {
@@ -460,7 +462,23 @@ model FeuillePresence {
   date      DateTime
   matin     Boolean @default(false)
   apresMidi Boolean @default(false)
-  signature String? // could be a signature data URL
+  signature String? // legacy V1 — remplace par champs V2 ci-dessous
+
+  // V2 Emargement numerique — statuts detailles
+  statutMatin     String?  // present, absent, en_retard, excuse, depart_anticipe
+  statutApresMidi String?
+  retardMinutes   Int?     // minutes de retard (si en_retard)
+  departMinutes   Int?     // minutes avant la fin (si depart_anticipe)
+
+  // V2 Signatures numeriques (base64 PNG data URL)
+  signatureMatin     String?
+  signatureApresMidi String?
+
+  // V2 Metadonnees de signature (preuve Qualiopi)
+  signatureMatinIp   String?
+  signatureMatinAt   DateTime?
+  signatureAmIp      String?
+  signatureAmAt      DateTime?
 
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -469,6 +487,32 @@ model FeuillePresence {
   contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, contactId, date])
+}
+
+// ==================== EMARGEMENT NUMERIQUE V2 ====================
+
+// Token pour acces public a l'emargement (QR code ou OTP individuel).
+// Si contactId est null → token QR general (tous les stagiaires de la session peuvent signer).
+// Si contactId est set → token OTP individuel (un seul stagiaire, envoye par email).
+model EmargementToken {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  date      DateTime  // jour concerne
+  creneau   String    // matin | apres_midi
+
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime? // rempli quand le token OTP est utilise
+
+  contactId String?   // null = QR general, set = OTP individuel
+  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([sessionId])
 }
 
 // ==================== NOTIFICATIONS ====================
@@ -564,6 +608,9 @@ model Parametres {
   // Identite visuelle (branding)
   logoUrl            String?
   couleurPrimaire    String @default("#dc2626")
+
+  // Feature flags V2 — JSON : { emargement_v2: boolean, automations_v2: boolean, ... }
+  featureFlags       String @default("{}")
 }
 
 // ==================== MODELES DE DOCUMENTS (PDF) ====================
@@ -658,6 +705,66 @@ model SessionAutomation {
   @@unique([sessionId, type])
   @@index([sessionId])
   @@index([enabled, executedAt])
+}
+
+// ==================== AUTOMATISATIONS V2 (Builder graphique) ====================
+
+// Regle d'automatisation V2 — creee via le builder admin.
+// Pattern : declencheur → conditions → delai → action.
+// Coexiste avec les regles V1 (AutomationRule) sans interference.
+model AutomationRuleV2 {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  description String?
+  enabled     Boolean @default(true)
+  ordre       Int     @default(0)
+
+  // Declencheur
+  trigger     String // inscription, session_start, session_end, j_minus_1, j_minus_7, j_minus_30, status_change, creation_session
+
+  // Conditions (JSON array) : [{ field, operator, value }]
+  // field : formation.categorie, contact.type, inscription.statut, formation.id, financement.type
+  // operator : equals, in, not_equals
+  conditions  String @default("[]")
+
+  // Delai avant execution
+  delayType   String @default("immediate") // immediate, minutes, hours, days
+  delayValue  Int    @default(0)
+
+  // Action a executer
+  actionType   String // send_email, send_sms, generate_document, create_task, change_status
+  actionConfig String @default("{}") // JSON : { templateId?, documentType?, targetStatus?, taskTitle?, smsContent? }
+
+  // Cle de deduplication : empeche les doublons
+  deduplicationKey String @default("session_contact") // session_contact, session, contact
+
+  executions AutomationExecutionV2[]
+}
+
+// Log d'execution des regles V2 — tracabilite complete
+model AutomationExecutionV2 {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  ruleId    String
+  rule      AutomationRuleV2 @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  contactId String?
+
+  status       String  // success, error, skipped, dry_run
+  payload      String? // JSON contexte complet
+  errorMessage String?
+
+  deduplicationHash String?
+
+  @@index([ruleId])
+  @@index([sessionId])
+  @@index([deduplicationHash])
+  @@index([createdAt])
 }
 
 // ==================== QUESTIONNAIRES D'ADAPTATION PEDAGOGIQUE ====================

@@ -3,8 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X } from "lucide-react";
+import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X, ClipboardList, Flame, Snowflake, GraduationCap } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
+
+const TYPE_TABS = [
+  { value: "", label: "Tous", icon: ClipboardList },
+  { value: "satisfaction_chaud", label: "A chaud", icon: Flame },
+  { value: "satisfaction_froid", label: "A froid", icon: Snowflake },
+  { value: "acquis", label: "Acquis", icon: GraduationCap },
+];
 import { formatDate } from "@/lib/utils";
 
 type Evaluation = {
@@ -129,31 +136,18 @@ export default function EvaluationsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">
-            {typeLabel ? typeLabel : "Evaluations & Satisfaction"}
-          </h1>
-          <p className="text-gray-400 text-sm">
-            {typeLabel ? `Filtrage par type : ${typeLabel}` : "Vue d'ensemble des questionnaires de satisfaction"}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-100">Questionnaires</h1>
+          <p className="text-gray-400 text-sm">Satisfaction, positionnement et evaluation des acquis</p>
         </div>
         <div className="flex items-center gap-2">
-          {typeFilter && (
-            <Link
-              href="/evaluations"
-              className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-            >
-              <X className="h-4 w-4" />
-              Voir tout
-            </Link>
-          )}
           <Link
             href="/evaluations/modeles"
             className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
           >
             <FileText className="h-4 w-4" />
-            Mes modeles
+            Modeles
           </Link>
           <a
             href="/api/export/evaluations"
@@ -161,9 +155,29 @@ export default function EvaluationsPage() {
             className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
           >
             <Download className="h-4 w-4" />
-            Exporter CSV
+            Export
           </a>
         </div>
+      </div>
+
+      {/* Type tabs */}
+      <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-700 mb-6 w-fit">
+        {TYPE_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const active = (typeFilter || "") === tab.value;
+          return (
+            <Link
+              key={tab.value}
+              href={tab.value ? `/evaluations?type=${tab.value}` : "/evaluations"}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                active ? "bg-red-600 text-white shadow-sm" : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/50"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Stats */}

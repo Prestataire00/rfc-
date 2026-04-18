@@ -67,15 +67,7 @@ const adminNavGroups: NavGroup[] = [
   {
     label: "Qualite",
     items: [
-      {
-        href: "/evaluations", label: "Evaluations", icon: MessageSquare,
-        children: [
-          { href: "/evaluations", label: "Toutes les evaluations", icon: MessageSquare },
-          { href: "/evaluations?type=satisfaction_chaud", label: "Satisfaction a chaud", icon: MessageSquare },
-          { href: "/evaluations?type=satisfaction_froid", label: "Satisfaction a froid", icon: MessageSquare },
-          { href: "/evaluations?type=acquis", label: "Acquis", icon: ClipboardList },
-        ],
-      },
+      { href: "/evaluations", label: "Questionnaires", icon: ClipboardList },
       {
         href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck,
         children: [

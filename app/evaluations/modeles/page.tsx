@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Plus, Pencil, Trash2, FileText, Copy, Eye, Send, Search, Sparkles,
+  Plus, Pencil, Trash2, FileText, Copy, Eye, Send, Search,
   ThumbsUp, Clock, Target, GraduationCap, UserCheck, Briefcase, Landmark,
-  CheckCircle2,
+  CheckCircle2, Flame, Snowflake,
 } from "lucide-react";
 
 type Template = {
@@ -22,17 +22,17 @@ type Template = {
 };
 
 const TYPE_LABELS: Record<string, string> = {
-  satisfaction_chaud: "Satisfaction a chaud",
-  satisfaction_froid: "Satisfaction a froid",
-  acquis: "Evaluation des acquis",
+  satisfaction_chaud: "A chaud",
+  satisfaction_froid: "A froid",
+  acquis: "Acquis",
   custom: "Personnalise",
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  satisfaction_chaud: "bg-emerald-900/30 text-emerald-400 border-emerald-700",
-  satisfaction_froid: "bg-blue-900/30 text-blue-400 border-blue-700",
-  acquis: "bg-amber-900/30 text-amber-400 border-amber-700",
-  custom: "bg-gray-700 text-gray-300 border-gray-600",
+const TYPE_ICONS: Record<string, React.ElementType> = {
+  satisfaction_chaud: Flame,
+  satisfaction_froid: Snowflake,
+  acquis: GraduationCap,
+  custom: FileText,
 };
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -60,14 +60,12 @@ export default function ModelesPage() {
     setLoading(false);
   }, []);
 
-  // Seed automatique au premier chargement si aucun preset
   useEffect(() => {
     fetch("/api/evaluation-templates")
       .then((r) => r.ok ? r.json() : [])
       .then(async (d) => {
         const arr: Template[] = Array.isArray(d) ? d : [];
-        const hasPresets = arr.some((t) => t.preset);
-        if (!hasPresets) {
+        if (!arr.some((t) => t.preset)) {
           await fetch("/api/evaluation-templates/seed", { method: "POST" });
         }
         await load();
@@ -75,15 +73,10 @@ export default function ModelesPage() {
   }, [load]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce modele ? Cette action est irreversible.")) return;
+    if (!confirm("Supprimer ce modele ?")) return;
     setDeleting(id);
     const res = await fetch(`/api/evaluation-templates/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setTemplates((prev) => prev.filter((t) => t.id !== id));
-    } else {
-      const d = await res.json().catch(() => ({}));
-      alert(d.error || "Suppression impossible");
-    }
+    if (res.ok) setTemplates((prev) => prev.filter((t) => t.id !== id));
     setDeleting(null);
   };
 
@@ -93,28 +86,21 @@ export default function ModelesPage() {
     if (res.ok) {
       const copy = await res.json();
       router.push(`/evaluations/modeles/${copy.id}`);
-    } else {
-      alert("Erreur lors de la duplication");
-      setDuplicating(null);
     }
+    setDuplicating(null);
   };
 
   const handleReseed = async () => {
-    setSeedMsg("Rechargement...");
-    const res = await fetch("/api/evaluation-templates/seed", { method: "POST" });
-    if (res.ok) {
-      setSeedMsg("Templates Qualiopi rechargees");
-      await load();
-      setTimeout(() => setSeedMsg(""), 3000);
-    } else setSeedMsg("Erreur");
+    setSeedMsg("...");
+    await fetch("/api/evaluation-templates/seed", { method: "POST" });
+    await load();
+    setSeedMsg("OK");
+    setTimeout(() => setSeedMsg(""), 2000);
   };
 
   const filtered = templates.filter((t) => {
     if (typeFilter && t.type !== typeFilter) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      if (!t.nom.toLowerCase().includes(s) && !(t.description || "").toLowerCase().includes(s)) return false;
-    }
+    if (search && !t.nom.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
   const presets = filtered.filter((t) => t.preset).sort((a, b) => a.ordre - b.ordre);
@@ -125,113 +111,66 @@ export default function ModelesPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-start justify-between mb-6">
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-red-500" /> Modeles d&apos;evaluation
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Partez d&apos;un template Qualiopi preconstruit et adaptez-le a votre contexte.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-100">Modeles de questionnaires</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{templates.length} modele{templates.length > 1 ? "s" : ""} disponible{templates.length > 1 ? "s" : ""}</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleReseed}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
-            title="Remettre a jour les templates preconstruits"
-          >
-            <CheckCircle2 className="h-4 w-4" /> Recharger presets
+          <button onClick={handleReseed} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300 hover:bg-gray-700">
+            <CheckCircle2 className="h-3.5 w-3.5" /> {seedMsg || "Recharger"}
           </button>
-          <Link
-            href="/evaluations/modeles/nouveau"
-            className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white"
-          >
-            <Plus className="h-4 w-4" /> Nouveau modele vierge
+          <Link href="/evaluations/modeles/nouveau" className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white">
+            <Plus className="h-4 w-4" /> Nouveau
           </Link>
         </div>
       </div>
 
-      {seedMsg && <div className="mb-4 text-xs text-emerald-400">{seedMsg}</div>}
-
       {/* Filtres */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un modele..."
-            className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 pl-9 pr-3 text-sm text-gray-200 focus:outline-none focus:border-red-500"
-          />
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-700">
+          {[{ value: "", label: "Tous" }, ...Object.entries(TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }))].map((tab) => {
+            const active = typeFilter === tab.value;
+            const Icon = TYPE_ICONS[tab.value] || FileText;
+            return (
+              <button key={tab.value} onClick={() => setTypeFilter(tab.value)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${active ? "bg-red-600 text-white" : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/50"}`}>
+                <Icon className="h-3.5 w-3.5" /> {tab.label}
+              </button>
+            );
+          })}
         </div>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm text-gray-200"
-        >
-          <option value="">Tous les types</option>
-          {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full h-9 rounded-lg border border-gray-700 bg-gray-800 pl-9 pr-3 text-sm text-gray-200" />
+        </div>
       </div>
 
-      {/* Templates Qualiopi preconstruits */}
-      <section className="mb-8">
-        <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-lg font-semibold text-gray-100">Templates Qualiopi preconstruits</h2>
-          <span className="inline-flex items-center rounded-full bg-red-900/30 text-red-400 border border-red-700 px-2 py-0.5 text-xs font-medium">
-            Officiel
-          </span>
-          <span className="text-xs text-gray-500">{presets.length}</span>
-        </div>
-        {presets.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-600 bg-gray-800/40 p-8 text-center">
-            <p className="text-sm text-gray-400 mb-3">Aucun preset disponible</p>
-            <button
-              onClick={handleReseed}
-              className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white"
-            >
-              <CheckCircle2 className="h-4 w-4" /> Charger les presets Qualiopi
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Presets Qualiopi */}
+      {presets.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-xs uppercase font-semibold text-gray-500 tracking-wider mb-3">Templates Qualiopi</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {presets.map((t) => (
-              <TemplateCard
-                key={t.id}
-                template={t}
-                onDuplicate={() => handleDuplicate(t.id)}
-                duplicating={duplicating === t.id}
-              />
+              <TemplateCard key={t.id} template={t} onDuplicate={() => handleDuplicate(t.id)} duplicating={duplicating === t.id} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* Mes templates custom */}
+      {/* Mes modeles */}
       <section>
-        <div className="flex items-center gap-2 mb-3">
-          <h2 className="text-lg font-semibold text-gray-100">Mes templates</h2>
-          <span className="text-xs text-gray-500">{customs.length}</span>
-        </div>
+        <h2 className="text-xs uppercase font-semibold text-gray-500 tracking-wider mb-3">Mes modeles</h2>
         {customs.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-600 bg-gray-800/40 p-8 text-center">
-            <FileText className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-            <p className="text-sm text-gray-400 mb-1">Aucun template personnalise</p>
-            <p className="text-xs text-gray-500">Dupliquez un preset ou creez un modele vierge.</p>
+          <div className="rounded-xl border border-dashed border-gray-700 p-10 text-center">
+            <FileText className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">Dupliquez un preset ou creez un modele vierge</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {customs.map((t) => (
-              <TemplateCard
-                key={t.id}
-                template={t}
-                onDuplicate={() => handleDuplicate(t.id)}
-                onDelete={() => handleDelete(t.id)}
-                duplicating={duplicating === t.id}
-                deleting={deleting === t.id}
-              />
+              <TemplateCard key={t.id} template={t} onDuplicate={() => handleDuplicate(t.id)} onDelete={() => handleDelete(t.id)} duplicating={duplicating === t.id} deleting={deleting === t.id} />
             ))}
           </div>
         )}
@@ -240,87 +179,56 @@ export default function ModelesPage() {
   );
 }
 
-function TemplateCard({
-  template,
-  onDuplicate,
-  onDelete,
-  duplicating,
-  deleting,
-}: {
-  template: Template;
-  onDuplicate: () => void;
-  onDelete?: () => void;
-  duplicating?: boolean;
-  deleting?: boolean;
+function TemplateCard({ template, onDuplicate, onDelete, duplicating, deleting }: {
+  template: Template; onDuplicate: () => void; onDelete?: () => void; duplicating?: boolean; deleting?: boolean;
 }) {
   let qCount = 0;
-  let sectionCount = 0;
-  try {
-    const qs = JSON.parse(template.questions);
-    if (Array.isArray(qs)) {
-      sectionCount = qs.filter((q: { type: string }) => q.type === "section").length;
-      qCount = qs.length - sectionCount;
-    }
-  } catch { /* empty */ }
+  try { const qs = JSON.parse(template.questions); if (Array.isArray(qs)) qCount = qs.filter((q: { type: string }) => q.type !== "section").length; } catch { /* */ }
 
   const Icon = getIcon(template.icon);
-  const typeColor = TYPE_COLORS[template.type] || TYPE_COLORS.custom;
+  const TypeIcon = TYPE_ICONS[template.type] || FileText;
 
   return (
-    <div className={`rounded-xl border ${template.preset ? "border-red-900/40 bg-gradient-to-br from-gray-800 to-gray-800/60" : "border-gray-700 bg-gray-800"} p-5 flex flex-col gap-3 hover:border-gray-500 transition-colors`}>
-      <div className="flex items-start gap-3">
-        <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${template.preset ? "bg-red-900/30" : "bg-gray-700"}`}>
-          <Icon className={`h-5 w-5 ${template.preset ? "text-red-400" : "text-gray-400"}`} />
+    <div className="group rounded-xl border border-gray-700 bg-gray-800 hover:border-gray-600 transition-all">
+      <div className="p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="h-9 w-9 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
+            <Icon className="h-4.5 w-4.5 text-gray-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-100 text-sm line-clamp-1">{template.nom}</h3>
+            {template.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{template.description}</p>}
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-100 line-clamp-1">{template.nom}</h3>
-          {template.description && (
-            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{template.description}</p>
+
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="inline-flex items-center gap-1 text-gray-400">
+            <TypeIcon className="h-3 w-3" /> {TYPE_LABELS[template.type] || template.type}
+          </span>
+          <span className="text-gray-600">·</span>
+          <span className="text-gray-500">{qCount} question{qCount > 1 ? "s" : ""}</span>
+          {template.preset && (
+            <>
+              <span className="text-gray-600">·</span>
+              <span className="text-red-400 font-medium">Officiel</span>
+            </>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-xs">
-        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 font-medium ${typeColor}`}>
-          {TYPE_LABELS[template.type] || template.type}
-        </span>
-        <span className="text-gray-500">
-          {qCount} question{qCount !== 1 ? "s" : ""}
-          {sectionCount > 0 && ` · ${sectionCount} section${sectionCount !== 1 ? "s" : ""}`}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-1 pt-2 border-t border-gray-700">
-        <Link
-          href={`/evaluations/modeles/${template.id}`}
-          className="inline-flex items-center justify-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700"
-          title={template.preset ? "Apercu" : "Modifier"}
-        >
+      <div className="flex items-center border-t border-gray-700/50 divide-x divide-gray-700/50">
+        <Link href={`/evaluations/modeles/${template.id}`} className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-colors">
           {template.preset ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-          {template.preset ? "Apercu" : "Modifier"}
+          {template.preset ? "Voir" : "Editer"}
         </Link>
-        <button
-          onClick={onDuplicate}
-          disabled={duplicating}
-          className="inline-flex items-center justify-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-50"
-          title="Dupliquer"
-        >
-          <Copy className="h-3.5 w-3.5" />
-          {duplicating ? "..." : "Dupliquer"}
+        <button onClick={onDuplicate} disabled={duplicating} className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 transition-colors disabled:opacity-50">
+          <Copy className="h-3.5 w-3.5" /> Dupliquer
         </button>
-        <Link
-          href={`/evaluations/modeles/${template.id}/utiliser`}
-          className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-700"
-        >
+        <Link href={`/evaluations/modeles/${template.id}/utiliser`} className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors font-medium">
           <Send className="h-3.5 w-3.5" /> Envoyer
         </Link>
         {onDelete && (
-          <button
-            onClick={onDelete}
-            disabled={deleting}
-            className="inline-flex items-center justify-center rounded-md border border-gray-700 p-1.5 text-gray-500 hover:text-red-400 hover:border-red-700 transition-colors disabled:opacity-50"
-            title="Supprimer"
-          >
+          <button onClick={onDelete} disabled={deleting} className="px-3 inline-flex items-center justify-center py-2.5 text-xs text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-50">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         )}

@@ -48,6 +48,34 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
       },
     });
 
+    // V2 : charger les signatures pour les embarquer dans le PDF
+    const presences = await prisma.feuillePresence.findMany({
+      where: { sessionId: params.sessionId },
+      select: {
+        contactId: true,
+        date: true,
+        statutMatin: true,
+        statutApresMidi: true,
+        signatureMatin: true,
+        signatureApresMidi: true,
+        retardMinutes: true,
+        departMinutes: true,
+      },
+    });
+
+    // Construire une map contactId_date -> { signatures, statuts }
+    type SigData = { signatureMatin?: string; signatureApresMidi?: string; statutMatin?: string; statutApresMidi?: string };
+    const sigMap: Record<string, SigData> = {};
+    for (const p of presences) {
+      const key = `${p.contactId}_${format(new Date(p.date), "dd/MM", { locale: fr })}`;
+      sigMap[key] = {
+        signatureMatin: p.signatureMatin || undefined,
+        signatureApresMidi: p.signatureApresMidi || undefined,
+        statutMatin: p.statutMatin || undefined,
+        statutApresMidi: p.statutApresMidi || undefined,
+      };
+    }
+
     const docDef = feuillePresencePdf({
       formation: {
         titre: session.formation.titre,
@@ -64,8 +92,10 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
       stagiaires: session.inscriptions.map((i) => ({
         nom: i.contact.nom,
         prenom: i.contact.prenom,
+        id: i.contact.id,
       })),
       dates,
+      signatures: sigMap,
     }, { branding, template: template || undefined });
 
     const buffer = await generatePdfBuffer(docDef);

@@ -893,8 +893,9 @@ export function feuillePresencePdf(data: {
   formation: { titre: string; duree: number };
   session: { dateDebut: string; dateFin: string; lieu?: string };
   formateur?: { nom: string; prenom: string };
-  stagiaires: { nom: string; prenom: string }[];
+  stagiaires: { nom: string; prenom: string; id?: string }[];
   dates: string[];
+  signatures?: Record<string, { signatureMatin?: string; signatureApresMidi?: string; statutMatin?: string; statutApresMidi?: string }>;
 }, opts?: PdfOpts): any {
   const branding = opts?.branding;
   const tpl = opts?.template;
@@ -909,12 +910,21 @@ export function feuillePresencePdf(data: {
     ]),
   ];
 
+  const sigData = data.signatures || {};
+
   const bodyRows = data.stagiaires.map((s) => [
     { text: `${s.prenom} ${s.nom}`, style: "value", margin: [2, 5, 2, 5] as [number, number, number, number] },
-    ...data.dates.flatMap(() => [
-      { text: "", margin: [2, 5, 2, 5] as [number, number, number, number] },
-      { text: "", margin: [2, 5, 2, 5] as [number, number, number, number] },
-    ]),
+    ...data.dates.flatMap((d) => {
+      const key = s.id ? `${s.id}_${d}` : "";
+      const sig = key ? sigData[key] : undefined;
+      const matinCell = sig?.signatureMatin
+        ? { image: sig.signatureMatin, fit: [50, 20] as [number, number], margin: [2, 2, 2, 2] as [number, number, number, number] }
+        : { text: sig?.statutMatin || "", fontSize: 7, color: "#666666", alignment: "center" as const, margin: [2, 5, 2, 5] as [number, number, number, number] };
+      const amCell = sig?.signatureApresMidi
+        ? { image: sig.signatureApresMidi, fit: [50, 20] as [number, number], margin: [2, 2, 2, 2] as [number, number, number, number] }
+        : { text: sig?.statutApresMidi || "", fontSize: 7, color: "#666666", alignment: "center" as const, margin: [2, 5, 2, 5] as [number, number, number, number] };
+      return [matinCell, amCell];
+    }),
   ]);
 
   const colWidths = ["auto", ...data.dates.flatMap(() => ["*", "*"])];

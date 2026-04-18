@@ -100,7 +100,7 @@ export default function ContactsPage() {
 
       {/* Type tabs + Search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
-        <div className="flex gap-1 bg-gray-800/50 rounded-lg p-1 border border-gray-700/50">
+        <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-700">
           {TYPE_TABS.map((tab) => {
             const Icon = tab.icon;
             const active = typeFilter === tab.value;
@@ -151,13 +151,13 @@ export default function ContactsPage() {
               <Link
                 key={contact.id}
                 href={`/contacts/${contact.id}`}
-                className="group flex items-center gap-4 rounded-xl border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 hover:border-gray-600 px-4 py-3.5 transition-all"
+                className="group flex items-center gap-4 rounded-xl border border-gray-700 bg-gray-800 hover:bg-gray-750 hover:border-red-700/40 px-4 py-3.5 transition-all shadow-sm"
               >
                 {/* Avatar */}
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                  contact.type === "prospect" ? "bg-amber-900/40 text-amber-400" :
-                  contact.type === "client" ? "bg-emerald-900/40 text-emerald-400" :
-                  "bg-blue-900/40 text-blue-400"
+                  contact.type === "prospect" ? "bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30" :
+                  contact.type === "client" ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30" :
+                  "bg-blue-500/20 text-blue-300 ring-1 ring-blue-500/30"
                 }`}>
                   {contact.prenom[0]}{contact.nom[0]}
                 </div>
@@ -169,10 +169,10 @@ export default function ContactsPage() {
                       {contact.prenom} {contact.nom}
                     </span>
                     {ti && (
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        contact.type === "prospect" ? "bg-amber-900/30 text-amber-400 border border-amber-800/50" :
-                        contact.type === "client" ? "bg-emerald-900/30 text-emerald-400 border border-emerald-800/50" :
-                        "bg-blue-900/30 text-blue-400 border border-blue-800/50"
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        contact.type === "prospect" ? "bg-amber-500/15 text-amber-300" :
+                        contact.type === "client" ? "bg-emerald-500/15 text-emerald-300" :
+                        "bg-blue-500/15 text-blue-300"
                       }`}>
                         {ti.label}
                       </span>
@@ -189,7 +189,7 @@ export default function ContactsPage() {
                 </div>
 
                 {/* Contact info */}
-                <div className="hidden md:flex items-center gap-4 text-xs text-gray-500 shrink-0">
+                <div className="hidden md:flex items-center gap-4 text-xs text-gray-400 shrink-0">
                   {contact.email && (
                     <span className="flex items-center gap-1 max-w-[200px] truncate">
                       <Mail className="h-3 w-3 shrink-0" /> {contact.email}

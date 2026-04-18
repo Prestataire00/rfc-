@@ -3,19 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Users, Search, Download } from "lucide-react";
+import { Users, Search, Download, Plus, Mail, Phone, Building2, UserPlus, UserCheck, User } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { StatutBadge } from "@/components/shared/StatutBadge";
 import { Pagination } from "@/components/shared/Pagination";
 import { SkeletonTable } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { CONTACT_TYPES } from "@/lib/constants";
-
-interface Entreprise {
-  id: string;
-  nom: string;
-}
 
 interface Contact {
   id: string;
@@ -25,9 +19,16 @@ interface Contact {
   telephone: string | null;
   type: keyof typeof CONTACT_TYPES;
   poste: string | null;
-  entreprise: Entreprise | null;
+  entreprise: { id: string; nom: string } | null;
   createdAt: string;
 }
+
+const TYPE_TABS = [
+  { value: "", label: "Tous", icon: Users },
+  { value: "prospect", label: "Prospects", icon: UserPlus },
+  { value: "client", label: "Clients", icon: UserCheck },
+  { value: "stagiaire", label: "Stagiaires", icon: User },
+];
 
 export default function ContactsPage() {
   const searchParams = useSearchParams();
@@ -40,7 +41,6 @@ export default function ContactsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Sync filter when URL query param changes (e.g. sidebar sub-nav click)
   useEffect(() => {
     const urlType = searchParams.get("type") ?? "";
     if (urlType !== typeFilter) setTypeFilter(urlType);
@@ -51,9 +51,7 @@ export default function ContactsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, typeFilter]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -74,151 +72,150 @@ export default function ContactsPage() {
       .finally(() => setLoading(false));
   }, [debouncedSearch, typeFilter, page]);
 
-  return (
-    <div className="p-6">
-      <PageHeader
-        title="Contacts"
-        description="Gérez vos clients, prospects et stagiaires"
-        actionLabel="Nouveau contact"
-        actionHref="/contacts/nouveau"
-      />
+  const typeInfo = (type: string) => CONTACT_TYPES[type as keyof typeof CONTACT_TYPES];
 
-      {/* Export button */}
-      <div className="flex justify-end mb-4 -mt-4">
-        <button
-          onClick={() => window.open("/api/export/contacts", "_blank")}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          Exporter CSV
-        </button>
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-100">Contacts</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{total} contact{total > 1 ? "s" : ""} au total</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.open("/api/export/contacts", "_blank")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" /> Export
+          </button>
+          <Link
+            href="/contacts/nouveau"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Nouveau contact
+          </Link>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+      {/* Type tabs + Search */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+        <div className="flex gap-1 bg-gray-800/50 rounded-lg p-1 border border-gray-700/50">
+          {TYPE_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const active = typeFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setTypeFilter(tab.value)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  active
+                    ? "bg-red-600 text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-gray-700/50"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
-            placeholder="Rechercher un contact..."
+            placeholder="Rechercher..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 bg-gray-800 border-gray-700 h-9 text-sm"
           />
         </div>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="">Tous les types</option>
-          {Object.entries(CONTACT_TYPES).map(([key, val]) => (
-            <option key={key} value={key}>
-              {val.label}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-x-auto">
-        {loading ? (
-          <SkeletonTable rows={6} cols={5} />
-        ) : contacts.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title="Aucun contact trouvé"
-            description={
-              search || typeFilter
-                ? "Aucun contact ne correspond à votre recherche."
-                : "Commencez par ajouter votre premier contact."
-            }
-            actionLabel={search || typeFilter ? undefined : "Nouveau contact"}
-            actionHref={search || typeFilter ? undefined : "/contacts/nouveau"}
-          />
-        ) : (
-          <table className="min-w-[640px] w-full divide-y divide-gray-200">
-            <thead className="bg-gray-900">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Nom
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
-                  Téléphone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">
-                  Entreprise
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-gray-800 divide-y divide-gray-200">
-              {contacts.map((contact) => {
-                const typeInfo = CONTACT_TYPES[contact.type];
-                return (
-                  <tr key={contact.id} className="hover:bg-gray-700 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`/contacts/${contact.id}`}
-                        className="text-sm font-medium text-red-600 hover:text-red-800 hover:underline"
-                      >
-                        {contact.prenom} {contact.nom}
-                      </Link>
-                      {contact.poste && (
-                        <p className="text-xs text-gray-400 mt-0.5">{contact.poste}</p>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                      {contact.email ? (
-                        <a
-                          href={`mailto:${contact.email}`}
-                          className="hover:text-red-600 hover:underline"
-                        >
-                          {contact.email}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
-                      {contact.telephone || <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {typeInfo && (
-                        <StatutBadge label={typeInfo.label} color={typeInfo.color} />
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 hidden sm:table-cell">
-                      {contact.entreprise ? (
-                        <Link
-                          href={`/entreprises/${contact.entreprise.id}`}
-                          className="hover:text-red-600 hover:underline"
-                        >
-                          {contact.entreprise.nom}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* Content */}
+      {loading ? (
+        <SkeletonTable rows={8} cols={5} />
+      ) : contacts.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Aucun contact trouve"
+          description={search || typeFilter ? "Essayez d'autres filtres." : "Ajoutez votre premier contact."}
+          actionLabel={search || typeFilter ? undefined : "Nouveau contact"}
+          actionHref={search || typeFilter ? undefined : "/contacts/nouveau"}
+        />
+      ) : (
+        <div className="space-y-2">
+          {contacts.map((contact) => {
+            const ti = typeInfo(contact.type);
+            return (
+              <Link
+                key={contact.id}
+                href={`/contacts/${contact.id}`}
+                className="group flex items-center gap-4 rounded-xl border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 hover:border-gray-600 px-4 py-3.5 transition-all"
+              >
+                {/* Avatar */}
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                  contact.type === "prospect" ? "bg-amber-900/40 text-amber-400" :
+                  contact.type === "client" ? "bg-emerald-900/40 text-emerald-400" :
+                  "bg-blue-900/40 text-blue-400"
+                }`}>
+                  {contact.prenom[0]}{contact.nom[0]}
+                </div>
+
+                {/* Info principale */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-100 group-hover:text-red-400 transition-colors truncate">
+                      {contact.prenom} {contact.nom}
+                    </span>
+                    {ti && (
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        contact.type === "prospect" ? "bg-amber-900/30 text-amber-400 border border-amber-800/50" :
+                        contact.type === "client" ? "bg-emerald-900/30 text-emerald-400 border border-emerald-800/50" :
+                        "bg-blue-900/30 text-blue-400 border border-blue-800/50"
+                      }`}>
+                        {ti.label}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    {contact.poste && <span className="text-xs text-gray-500">{contact.poste}</span>}
+                    {contact.entreprise && (
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Building2 className="h-3 w-3" /> {contact.entreprise.nom}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contact info */}
+                <div className="hidden md:flex items-center gap-4 text-xs text-gray-500 shrink-0">
+                  {contact.email && (
+                    <span className="flex items-center gap-1 max-w-[200px] truncate">
+                      <Mail className="h-3 w-3 shrink-0" /> {contact.email}
+                    </span>
+                  )}
+                  {contact.telephone && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3 shrink-0" /> {contact.telephone}
+                    </span>
+                  )}
+                </div>
+
+                {/* Fleche */}
+                <div className="text-gray-600 group-hover:text-gray-400 transition-colors shrink-0">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {!loading && contacts.length > 0 && (
-        <>
+        <div className="mt-4">
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          <p className="text-sm text-gray-400 mt-3 text-center">
-            {total} contact{total > 1 ? "s" : ""}
-          </p>
-        </>
+        </div>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email";
 import { renderMessageTemplate } from "@/lib/message-templates";
 import { formatDateFR } from "@/lib/message-templates";
 import { createHash } from "crypto";
+import type { Condition, ActionConfig } from "@/lib/automations-v2-constants";
 
 // Re-export des constantes/types depuis le fichier client-safe
 export {

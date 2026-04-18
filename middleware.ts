@@ -53,6 +53,7 @@ const adminApiPrefixes = [
   "/api/message-templates",
   "/api/document-templates",
   "/api/automations",
+  "/api/automations-v2",
   "/api/pdf/template-preview",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];

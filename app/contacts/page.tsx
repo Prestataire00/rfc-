@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Users, Search, Download, Plus, Mail, Phone, Building2, UserPlus, UserCheck, User } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -32,6 +32,7 @@ const TYPE_TABS = [
 
 export default function ContactsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -107,7 +108,10 @@ export default function ContactsPage() {
             return (
               <button
                 key={tab.value}
-                onClick={() => setTypeFilter(tab.value)}
+                onClick={() => {
+                  setTypeFilter(tab.value);
+                  router.push(tab.value ? `/contacts?type=${tab.value}` : "/contacts");
+                }}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                   active
                     ? "bg-red-600 text-white shadow-sm"

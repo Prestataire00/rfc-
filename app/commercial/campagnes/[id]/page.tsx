@@ -17,6 +17,8 @@ type Campaign = {
   dateEnvoi: string | null;
   nbDestinataires: number;
   nbEnvoyes: number;
+  nbOuverts: number;
+  nbClics: number;
   recipients: { id: string; contactId: string; statut: string; sentAt: string | null }[];
 };
 

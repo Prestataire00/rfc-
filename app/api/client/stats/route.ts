@@ -20,7 +20,10 @@ export async function GET() {
     });
     const contactIds = contacts.map((c) => c.id);
 
-    const [nbStagiaires, nbSessionsAVenir, nbSessionsTerminees, nbDocuments, nbDevis] = await Promise.all([
+    const sixtyDaysFromNow = new Date();
+    sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
+
+    const [nbStagiaires, nbSessionsAVenir, nbSessionsTerminees, nbDocuments, nbDevis, nbRecyclagesUrgents] = await Promise.all([
       prisma.contact.count({ where: { entrepriseId } }),
       prisma.session.count({
         where: {
@@ -36,9 +39,17 @@ export async function GET() {
       }),
       prisma.document.count({ where: { entrepriseId } }),
       prisma.devis.count({ where: { entrepriseId } }),
+      // Certifications expirees ou expirant dans les 60 jours
+      prisma.certificationStagiaire.count({
+        where: {
+          contactId: { in: contactIds },
+          dateExpiration: { lte: sixtyDaysFromNow },
+          statut: { not: "en_cours_recyclage" },
+        },
+      }),
     ]);
 
-    return NextResponse.json({ nbStagiaires, nbSessionsAVenir, nbSessionsTerminees, nbDocuments, nbDevis });
+    return NextResponse.json({ nbStagiaires, nbSessionsAVenir, nbSessionsTerminees, nbDocuments, nbDevis, nbRecyclagesUrgents });
   } catch (err: unknown) {
     console.error("Erreur lors de la récupération des statistiques client:", err);
     return NextResponse.json({ error: "Erreur lors de la récupération des statistiques" }, { status: 500 });

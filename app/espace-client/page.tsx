@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Users, CalendarDays, FolderOpen, FileText, CheckCircle } from "lucide-react";
+import { Users, CalendarDays, FolderOpen, FileText, CheckCircle, ShieldAlert } from "lucide-react";
 
 type ClientStats = {
   nbStagiaires: number;
@@ -10,6 +10,7 @@ type ClientStats = {
   nbSessionsTerminees: number;
   nbDocuments: number;
   nbDevis: number;
+  nbRecyclagesUrgents?: number;
 };
 
 export default function EspaceClientPage() {
@@ -32,6 +33,7 @@ export default function EspaceClientPage() {
     { label: "Formations terminees", value: stats?.nbSessionsTerminees || 0, icon: CheckCircle, color: "bg-green-900/200", href: "/espace-client/formations" },
     { label: "Documents", value: stats?.nbDocuments || 0, icon: FolderOpen, color: "bg-purple-900/200", href: "/espace-client/documents" },
     { label: "Devis", value: stats?.nbDevis || 0, icon: FileText, color: "bg-indigo-900/200", href: "/espace-client/devis" },
+    { label: "Recyclages urgents", value: stats?.nbRecyclagesUrgents || 0, icon: ShieldAlert, color: "bg-red-900/200", href: "/espace-client/recyclages" },
   ];
 
   return (

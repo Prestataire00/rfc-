@@ -116,6 +116,7 @@ const clientNav: NavItem[] = [
   { href: "/espace-client/inscriptions", label: "Inscriptions", icon: UserPlus },
   { href: "/espace-client/documents", label: "Documents", icon: FolderOpen },
   { href: "/espace-client/devis", label: "Devis", icon: FileText },
+  { href: "/espace-client/recyclages", label: "Recyclages", icon: AlertTriangle },
   { href: "/espace-client/paiement", label: "Paiement", icon: CreditCard },
   { href: "/espace-client/evaluations", label: "Evaluations", icon: MessageSquare },
 ];

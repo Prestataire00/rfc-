@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { devisSchema } from "@/lib/validations/devis";
 import { logAction } from "@/lib/historique";
+import { triggerAutomation } from "@/lib/automations-trigger";
+import { notifyAdmins } from "@/lib/notifications";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -30,21 +32,45 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     // Handle simple statut update
     if (body.statut && Object.keys(body).length === 1) {
+      const oldDevis = await prisma.devis.findUnique({
+        where: { id: params.id },
+        select: { statut: true, numero: true, entrepriseId: true, contactId: true },
+      });
       const devis = await prisma.devis.update({
         where: { id: params.id },
         data: { statut: body.statut },
+        include: { entreprise: { select: { nom: true } }, contact: { select: { prenom: true, nom: true } } },
       });
+
       try {
         await logAction({
           action: "devis_statut",
-          label: "Devis " + devis.numero + " → " + body.statut,
+          label: "Devis " + devis.numero + " -> " + body.statut,
           lien: "/commercial/devis/" + params.id,
           entrepriseId: devis.entrepriseId ?? undefined,
           devisId: params.id,
         });
       } catch (logErr) {
-        console.warn("logAction devis_statut échoué:", logErr);
+        console.warn("logAction devis_statut echoue:", logErr);
       }
+
+      // Automations + notifications sur changement de statut
+      if (oldDevis && oldDevis.statut !== body.statut) {
+        const label = devis.entreprise?.nom || (devis.contact ? `${devis.contact.prenom} ${devis.contact.nom}` : "Client");
+
+        if (body.statut === "envoye") {
+          triggerAutomation("devis_sent", { devisId: devis.id, entrepriseId: devis.entrepriseId ?? undefined, contactId: devis.contactId ?? undefined }).catch(() => {});
+          notifyAdmins({ titre: "Devis envoye", message: `${label} — ${devis.numero}`, type: "info", lien: `/commercial/devis/${devis.id}` }).catch(() => {});
+        }
+        if (body.statut === "signe") {
+          triggerAutomation("devis_signed", { devisId: devis.id, entrepriseId: devis.entrepriseId ?? undefined, contactId: devis.contactId ?? undefined }).catch(() => {});
+          notifyAdmins({ titre: "Devis signe", message: `${label} a signe ${devis.numero}`, type: "success", lien: `/commercial/devis/${devis.id}` }).catch(() => {});
+        }
+        if (body.statut === "refuse") {
+          triggerAutomation("devis_refuse" as any, { devisId: devis.id, entrepriseId: devis.entrepriseId ?? undefined }).catch(() => {});
+        }
+      }
+
       return NextResponse.json(devis);
     }
 

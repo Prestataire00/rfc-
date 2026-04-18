@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logAction } from "@/lib/historique";
+import { triggerAutomation } from "@/lib/automations-trigger";
+import { notifyAdmins } from "@/lib/notifications";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -78,10 +80,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
     }
 
+    // Fire-and-forget : automations + notifications
+    triggerAutomation("inscription_created", {
+      inscriptionId: inscription.id,
+      sessionId: params.id,
+      contactId,
+      entrepriseId: contact?.entrepriseId ?? undefined,
+      formationId: sessionWithFormation?.formation.id,
+    }).catch((err) => console.error("[automation] inscription_created:", err));
+
+    const traineeName = contact ? `${contact.prenom} ${contact.nom}` : "Un stagiaire";
+    const sessionTitle = sessionWithFormation?.formation.titre ?? "une session";
+
+    notifyAdmins({
+      titre: "Nouvelle inscription",
+      message: `${traineeName} inscrit(e) a ${sessionTitle}`,
+      type: "info",
+      lien: `/sessions/${params.id}`,
+    }).catch(() => {});
+
     return NextResponse.json(inscription, { status: 201 });
   } catch (err: unknown) {
     console.error("Erreur POST inscription:", err);
-    return NextResponse.json({ error: "Erreur lors de la création de l'inscription" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la creation de l'inscription" }, { status: 500 });
   }
 }
 

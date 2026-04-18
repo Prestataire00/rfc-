@@ -101,6 +101,8 @@ model Contact {
   historique         HistoriqueAction[]
   tags               ContactTag[]
   certifications     CertificationStagiaire[]
+  badges             BadgeAward[]
+  aiDocuments        AiDocumentAnalysis[]
 }
 
 model Formateur {
@@ -161,6 +163,7 @@ model Formation {
   sessions       Session[]
   besoins        BesoinFormation[]
   certifications CertificationStagiaire[]
+  badgeTemplates DigitalBadge[] @relation("BadgeFormation")
 }
 
 model LieuFormation {
@@ -619,6 +622,84 @@ model MarketingOptOut {
   reason    String? // opt-out volontaire, bounce, plainte
 
   @@index([email])
+}
+
+// ==================== BADGES NUMERIQUES (V2 Lot 3) ====================
+
+// Definition d'un badge (template) — cree par l'admin
+model DigitalBadge {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  description String?
+  icone       String?  // URL image / emoji
+  niveau      String   @default("bronze") // bronze, argent, or
+  couleur     String   @default("#dc2626")
+
+  // Critere d'attribution automatique
+  formationId String?  // si set, attribue auto a la completion de cette formation
+  formation   Formation? @relation("BadgeFormation", fields: [formationId], references: [id], onDelete: SetNull)
+
+  actif       Boolean @default(true)
+
+  awards BadgeAward[]
+}
+
+// Attribution d'un badge a un stagiaire
+model BadgeAward {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  badgeId   String
+  badge     DigitalBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  sessionId String? // session d'obtention
+  revoque   Boolean @default(false)
+  revoqueAt DateTime?
+  revoqueRaison String?
+
+  // Token de verification publique
+  verificationToken String @unique @default(cuid())
+
+  @@unique([badgeId, contactId])
+  @@index([contactId])
+  @@index([verificationToken])
+}
+
+// ==================== ANALYSE IA DOCUMENTS (V2 Lot 3) ====================
+
+// Resultat d'analyse IA d'un document uploade (habilitation, carte pro, diplome)
+model AiDocumentAnalysis {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contactId   String
+  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  documentUrl String  // URL du fichier dans Supabase Storage
+  documentNom String  // nom original du fichier
+
+  // Resultats IA
+  typeDetecte      String?  // habilitation_electrique, carte_btp, carte_pro, diplome, autre
+  nomDetecte       String?  // nom du titulaire extrait
+  dateEmission     DateTime?
+  dateExpiration   DateTime?
+  scoreConfiance   Int      @default(0) // 0-100
+  donneesExtraites String   @default("{}") // JSON avec tous les champs extraits
+
+  // Workflow validation
+  statut           String   @default("en_attente") // en_attente, valide_auto, valide_manuel, rejete, a_verifier
+  commentaireAdmin String?
+  valideParId      String?  // userId admin qui a valide
+
+  @@index([contactId])
+  @@index([statut])
 }
 
 // ==================== RECYCLAGES (V2 Lot 2) ====================

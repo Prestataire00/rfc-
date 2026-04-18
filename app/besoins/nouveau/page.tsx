@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, User, GraduationCap } from "lucide-react";
+import { Building2, User, GraduationCap, X, Lock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
 
-type Option = { id: string; nom: string; titre?: string; prenom?: string; entrepriseId?: string | null };
+type Option = {
+  id: string;
+  nom: string;
+  titre?: string;
+  prenom?: string;
+  entrepriseId?: string | null;
+  type?: string;
+};
 
 const ORIGINES = [
   {
@@ -37,16 +44,21 @@ export default function NouveauBesoinPage() {
   const searchParams = useSearchParams();
   const paramContactId = searchParams.get("contactId") ?? "";
   const paramEntrepriseId = searchParams.get("entrepriseId") ?? "";
+
   const [entreprises, setEntreprises] = useState<Option[]>([]);
   const [contacts, setContacts] = useState<Option[]>([]);
   const [formations, setFormations] = useState<Option[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Contact verrouille (venu de l'URL) — ne peut pas etre perdu par accident
+  const [lockedContactId, setLockedContactId] = useState<string>(paramContactId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [lockedContact, setLockedContact] = useState<any>(null);
+
   const [form, setForm] = useState({
     titre: "",
     description: "",
-    // L'origine sera ajustee dans le useEffect en fonction du type du contact
-    // (client/prospect -> "client", stagiaire -> "stagiaire")
     origine: "client",
     priorite: "normale",
     nbStagiaires: "",
@@ -58,53 +70,82 @@ export default function NouveauBesoinPage() {
     formationId: "",
   });
 
+  // Charger les options
   useEffect(() => {
     fetch("/api/entreprises").then((r) => r.ok ? r.json() : []).then((d) => setEntreprises(Array.isArray(d) ? d : d.entreprises || []));
     fetch("/api/contacts").then((r) => r.ok ? r.json() : []).then((d) => setContacts(Array.isArray(d) ? d : d.contacts || []));
     fetch("/api/formations").then((r) => r.ok ? r.json() : []).then((d) => setFormations(Array.isArray(d) ? d : d.formations || []));
+  }, []);
 
-    // Si on arrive depuis un contact, ajuster l'origine selon son type reel
-    if (paramContactId) {
-      fetch(`/api/contacts/${paramContactId}`)
-        .then((r) => r.ok ? r.json() : null)
-        .then((contact) => {
-          if (!contact) return;
-          // prospect ou client -> origine "client" (demande entreprise)
-          // stagiaire -> origine "stagiaire" (individuel)
-          // On pre-remplit aussi l'entrepriseId si disponible
-          const newOrigine = contact.type === "stagiaire" ? "stagiaire" : "client";
-          setForm((f) => ({
-            ...f,
-            origine: newOrigine,
-            entrepriseId: contact.entrepriseId || f.entrepriseId,
-          }));
-        });
-    }
+  // Charger le contact verrouille et pre-remplir l'origine + entreprise
+  useEffect(() => {
+    if (!paramContactId) return;
+    fetch(`/api/contacts/${paramContactId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((contact) => {
+        if (!contact) return;
+        setLockedContact(contact);
+        const newOrigine = contact.type === "stagiaire" ? "stagiaire" : "client";
+        setForm((f) => ({
+          ...f,
+          origine: newOrigine,
+          entrepriseId: f.entrepriseId || contact.entrepriseId || "",
+          contactId: paramContactId,
+        }));
+      });
   }, [paramContactId]);
 
   const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 
-  // Contacts filtrés selon l'entreprise sélectionnée (pour origine client)
-  const contactsFiltres = form.entrepriseId
-    ? contacts.filter((c) => c.entrepriseId === form.entrepriseId)
-    : contacts;
+  // Filtrage contacts : le contact verrouille reste TOUJOURS visible
+  const contactsVisibles = useMemo(() => {
+    if (!form.entrepriseId && !lockedContactId) return contacts;
+    return contacts.filter((c) => {
+      if (c.id === lockedContactId) return true;
+      if (form.entrepriseId) return c.entrepriseId === form.entrepriseId;
+      return true;
+    });
+  }, [contacts, form.entrepriseId, lockedContactId]);
+
+  // Changer d'entreprise ne perd PAS le contactId verrouille
+  function handleEntrepriseChange(newEntrepriseId: string) {
+    setForm((f) => ({
+      ...f,
+      entrepriseId: newEntrepriseId,
+      contactId: lockedContactId || f.contactId,
+    }));
+  }
+
+  // Deverrouiller manuellement
+  function unlockContact() {
+    if (!confirm("Le besoin ne sera plus associe a ce contact. Continuer ?")) return;
+    setLockedContactId("");
+    setLockedContact(null);
+    setForm((f) => ({ ...f, contactId: "" }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSaving(true);
+
+    const payload = {
+      ...form,
+      contactId: lockedContactId || form.contactId,
+    };
+
     try {
       const res = await fetch("/api/besoins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const besoin = await res.json();
         router.push(`/besoins/${besoin.id}`);
       } else {
         const data = await res.json();
-        setError(data.error?.message || data.error || "Erreur lors de la création");
+        setError(data.error?.message || data.error || "Erreur lors de la creation");
       }
     } catch {
       setError("Erreur de connexion au serveur");
@@ -122,9 +163,29 @@ export default function NouveauBesoinPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+      {/* Bandeau : contact verrouille */}
+      {lockedContact && (
+        <div className="max-w-2xl mb-4 rounded-md bg-red-950/30 border border-red-700/50 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Lock className="h-4 w-4 text-red-400" />
+            <div>
+              <p className="text-sm text-gray-200">
+                Besoin associe a : <span className="font-semibold text-red-400">{lockedContact.prenom} {lockedContact.nom}</span>
+                {lockedContact.type && <span className="ml-2 text-xs text-gray-400">({lockedContact.type})</span>}
+              </p>
+              {lockedContact.entreprise?.nom && (
+                <p className="text-xs text-gray-400 mt-0.5">Entreprise : {lockedContact.entreprise.nom}</p>
+              )}
+            </div>
+          </div>
+          <button type="button" onClick={unlockContact} className="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1">
+            <X className="h-3 w-3" /> Changer
+          </button>
+        </div>
+      )}
 
-        {/* Origine — sélection visuelle */}
+      <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+        {/* Origine */}
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 space-y-3">
           <label className="block text-sm font-semibold text-gray-200">Origine de la demande *</label>
           <div className="grid grid-cols-3 gap-3">
@@ -135,11 +196,7 @@ export default function NouveauBesoinPage() {
                 <button
                   key={o.value}
                   type="button"
-                  onClick={() => {
-                    set("origine", o.value);
-                    set("entrepriseId", "");
-                    set("contactId", "");
-                  }}
+                  onClick={() => set("origine", o.value)}
                   className={`rounded-lg border-2 p-4 text-left transition-all ${
                     selected ? o.color : "border-gray-700 bg-gray-700/30 hover:border-gray-500"
                   }`}
@@ -153,46 +210,55 @@ export default function NouveauBesoinPage() {
           </div>
         </div>
 
-        {/* Champs dynamiques selon l'origine */}
+        {/* Champs dynamiques */}
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 space-y-4">
-
-          {/* Client → Entreprise + Contact */}
+          {/* Client */}
           {form.origine === "client" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Entreprise *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Entreprise {!lockedContactId && "*"}
+                </label>
                 <select
                   value={form.entrepriseId}
-                  onChange={(e) => { set("entrepriseId", e.target.value); set("contactId", ""); }}
+                  onChange={(e) => handleEntrepriseChange(e.target.value)}
                   className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
                 >
-                  <option value="">— Sélectionner une entreprise —</option>
+                  <option value="">-- Selectionner une entreprise --</option>
                   {entreprises.map((e) => (
                     <option key={e.id} value={e.id}>{e.nom}</option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Contact référent</label>
-                <select
-                  value={form.contactId}
-                  onChange={(e) => set("contactId", e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-                >
-                  <option value="">— Sélectionner un contact —</option>
-                  {contactsFiltres.map((c) => (
-                    <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
-                  ))}
-                </select>
-                {form.entrepriseId && contactsFiltres.length === 0 && (
-                  <p className="text-xs text-amber-400 mt-1">Aucun contact rattaché à cette entreprise.</p>
+                {lockedContactId && !form.entrepriseId && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Ce prospect n&apos;a pas d&apos;entreprise rattachee. Tu peux en selectionner une ou laisser vide.
+                  </p>
                 )}
               </div>
+              {/* Contact referent : masque si verrouille */}
+              {!lockedContactId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Contact referent</label>
+                  <select
+                    value={form.contactId}
+                    onChange={(e) => set("contactId", e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
+                  >
+                    <option value="">-- Selectionner un contact --</option>
+                    {contactsVisibles.map((c) => (
+                      <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
+                    ))}
+                  </select>
+                  {form.entrepriseId && contactsVisibles.length === 0 && (
+                    <p className="text-xs text-amber-400 mt-1">Aucun contact rattache a cette entreprise.</p>
+                  )}
+                </div>
+              )}
             </>
           )}
 
-          {/* Stagiaire → Contact individuel */}
-          {form.origine === "stagiaire" && (
+          {/* Stagiaire */}
+          {form.origine === "stagiaire" && !lockedContactId && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Stagiaire / Individu *</label>
               <select
@@ -200,7 +266,7 @@ export default function NouveauBesoinPage() {
                 onChange={(e) => set("contactId", e.target.value)}
                 className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
               >
-                <option value="">— Sélectionner un stagiaire —</option>
+                <option value="">-- Selectionner un stagiaire --</option>
                 {contacts.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.prenom} {c.nom}{c.entrepriseId ? "" : " (individuel)"}
@@ -210,10 +276,10 @@ export default function NouveauBesoinPage() {
             </div>
           )}
 
-          {/* Centre → message informatif */}
+          {/* Centre */}
           {form.origine === "centre" && (
             <div className="rounded-md bg-gray-700 px-4 py-3 text-sm text-gray-300">
-              Cette demande est une initiative interne du centre. Elle ne sera pas liée à un client ou stagiaire spécifique.
+              Cette demande est une initiative interne du centre. Elle ne sera pas liee a un client ou stagiaire specifique.
             </div>
           )}
 
@@ -226,11 +292,11 @@ export default function NouveauBesoinPage() {
               value={form.titre}
               onChange={(e) => set("titre", e.target.value)}
               className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-              placeholder="Ex: Formation Sécurité Incendie pour 10 salariés"
+              placeholder="Ex: Formation Securite Incendie pour 10 salaries"
             />
           </div>
 
-          {/* Description detaillee - section mise en avant */}
+          {/* Description */}
           <div className="rounded-lg border border-red-700/30 bg-red-900/5 p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div>
@@ -239,7 +305,7 @@ export default function NouveauBesoinPage() {
               </div>
               <AIButton
                 endpoint="/api/ai/besoin"
-                payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, contactId: form.contactId, entrepriseId: form.entrepriseId }}
+                payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, contactId: lockedContactId || form.contactId, entrepriseId: form.entrepriseId }}
                 onResult={(t) => set("description", t)}
                 label="Generer un brief IA"
               />
@@ -249,106 +315,65 @@ export default function NouveauBesoinPage() {
               onChange={(e) => set("description", e.target.value)}
               className="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100 px-3 py-2.5 text-sm resize-y min-h-[140px]"
               rows={6}
-              placeholder={`Exemple :
-- Contexte : renouvellement des cartes professionnelles pour nos agents de securite
-- Objectifs : permettre aux 8 stagiaires de reussir la certification SSIAP 1
-- Contraintes : formation obligatoirement le samedi, sur notre site
-- Delais : demarrage souhaite sous 3 semaines`}
+              placeholder="Contexte, objectifs, contraintes, delais..."
             />
             <p className="text-xs text-gray-500 text-right">{form.description.length} caracteres</p>
           </div>
 
-          {/* Formation souhaitée */}
+          {/* Formation souhaitee */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Formation souhaitée</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Formation souhaitee</label>
             <select
               value={form.formationId}
               onChange={(e) => set("formationId", e.target.value)}
               className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
             >
-              <option value="">— Pas encore définie —</option>
+              <option value="">-- Pas encore definie --</option>
               {formations.map((f) => (
                 <option key={f.id} value={f.id}>{f.titre}</option>
               ))}
             </select>
           </div>
 
-          {/* Priorité + Nb stagiaires + Budget + Dates */}
+          {/* Priorite + Nb stagiaires + Budget + Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Priorité</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Priorite</label>
               <select
                 value={form.priorite}
                 onChange={(e) => set("priorite", e.target.value)}
                 className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
               >
-                <option value="basse">🔵 Basse</option>
-                <option value="normale">🟡 Normale</option>
-                <option value="haute">🟠 Haute</option>
-                <option value="urgente">🔴 Urgente</option>
+                <option value="basse">Basse</option>
+                <option value="normale">Normale</option>
+                <option value="haute">Haute</option>
+                <option value="urgente">Urgente</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Nb stagiaires estimé</label>
-              <input
-                type="number"
-                min={1}
-                value={form.nbStagiaires}
-                onChange={(e) => set("nbStagiaires", e.target.value)}
-                className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Budget envisagé (€)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.budget}
-                onChange={(e) => set("budget", e.target.value)}
-                className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-              />
+              <label className="block text-sm font-medium text-gray-300 mb-1">Nb stagiaires</label>
+              <input type="number" value={form.nbStagiaires} onChange={(e) => set("nbStagiaires", e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Dates souhaitées</label>
-              <input
-                type="text"
-                value={form.datesSouhaitees}
-                onChange={(e) => set("datesSouhaitees", e.target.value)}
-                className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-                placeholder="Ex: Avril 2026"
-              />
+              <label className="block text-sm font-medium text-gray-300 mb-1">Budget indicatif (EUR)</label>
+              <input type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Dates souhaitees</label>
+              <input type="text" value={form.datesSouhaitees} onChange={(e) => set("datesSouhaitees", e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm" placeholder="Ex: semaine du 15 mai" />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Notes internes</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              className="w-full rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 py-2 text-sm"
-              rows={2}
-              placeholder="Remarques, informations complémentaires..."
-            />
+            <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} className="w-full rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 py-2 text-sm" rows={3} />
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-md bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            {saving ? "Enregistrement..." : "Créer le besoin"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="rounded-md border border-gray-600 px-6 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
-          >
-            Annuler
+        <div className="flex items-center justify-end gap-3">
+          <button type="button" onClick={() => router.back()} className="px-4 py-2 rounded-md border border-gray-600 bg-gray-800 text-sm text-gray-300 hover:bg-gray-700">Annuler</button>
+          <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-sm text-white font-medium disabled:opacity-50">
+            {saving ? "Creation..." : "Creer le besoin"}
           </button>
         </div>
       </form>

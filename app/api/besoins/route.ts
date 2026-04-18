@@ -7,7 +7,7 @@ const besoinSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
   description: z.string().optional().nullable(),
   origine: z.enum(["client", "stagiaire", "centre"]).default("client"),
-  statut: z.enum(["nouveau", "qualifie", "propose", "gagne", "perdu"]).default("nouveau"),
+  statut: z.enum(["nouveau", "qualifie", "devis_envoye", "accepte", "refuse", "archive"]).default("nouveau"),
   priorite: z.enum(["basse", "normale", "haute", "urgente"]).default("normale"),
   nbStagiaires: z.coerce.number().int().positive().optional().nullable(),
   datesSouhaitees: z.string().optional().nullable(),

@@ -56,6 +56,7 @@ const adminApiPrefixes = [
   "/api/automations-v2",
   "/api/tags",
   "/api/campaigns",
+  "/api/badges",
   "/api/pdf/template-preview",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];
@@ -76,6 +77,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/campaigns/unsubscribe")) return true;
   if (pathname.startsWith("/catalogue")) return true;
   if (pathname.startsWith("/api/catalogue")) return true;
+  if (pathname.startsWith("/badges/")) return true;
+  if (pathname.startsWith("/api/badges/verify")) return true;
   if (pathname.startsWith("/presentation")) return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname === "/favicon.ico") return true;

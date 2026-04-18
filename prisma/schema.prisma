@@ -63,6 +63,7 @@ model Entreprise {
   besoinsClient BesoinClient[]
   financements  Financement[]
   historique    HistoriqueAction[]
+  tags          EntrepriseTag[]
 }
 
 model Contact {
@@ -84,6 +85,7 @@ model Contact {
   numeroPasseportPrevention  String?  // decret 2022-1434
   besoinsAdaptation          String?  // RQTH / contraintes
   niveauFormation            String?  // sans_diplome | cap | bac | bac+2 | autre
+  optOutMarketing            Boolean  @default(false) // RGPD : opt-out campagnes marketing
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
@@ -97,6 +99,8 @@ model Contact {
   feuillesPresence   FeuillePresence[]
   emargementTokens   EmargementToken[]
   historique         HistoriqueAction[]
+  tags               ContactTag[]
+  certifications     CertificationStagiaire[]
 }
 
 model Formateur {
@@ -154,8 +158,9 @@ model Formation {
   misEnAvant         Boolean  @default(false) // formation featured
   image              String?  // URL image de couverture
 
-  sessions Session[]
-  besoins  BesoinFormation[]
+  sessions       Session[]
+  besoins        BesoinFormation[]
+  certifications CertificationStagiaire[]
 }
 
 model LieuFormation {
@@ -513,6 +518,135 @@ model EmargementToken {
 
   @@index([token])
   @@index([sessionId])
+}
+
+// ==================== CRM MARKETING (V2 Lot 2) ====================
+
+// Tags libres sur les contacts / entreprises
+model Tag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  nom       String   @unique
+  couleur   String   @default("#6b7280") // hex color pour affichage badge
+
+  contacts    ContactTag[]
+  entreprises EntrepriseTag[]
+}
+
+model ContactTag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  tagId String
+  tag   Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, tagId])
+}
+
+model EntrepriseTag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+
+  tagId String
+  tag   Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([entrepriseId, tagId])
+}
+
+// Campagnes marketing (email / SMS)
+model MarketingCampaign {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom          String
+  description  String?
+  type         String  @default("email") // email, sms
+  statut       String  @default("brouillon") // brouillon, planifiee, envoyee, annulee
+
+  // Ciblage : JSON array de criteres ou liste de tagIds
+  segmentConfig String @default("{}") // JSON { tags: [], formations: [], type: "stagiaire", ... }
+
+  // Contenu
+  objet    String? // sujet email
+  contenu  String? // HTML email ou texte SMS
+  templateId String? // reference un MessageTemplate
+
+  // Planification
+  dateEnvoi    DateTime?
+  dateEnvoyee  DateTime?
+
+  // Stats
+  nbDestinataires Int @default(0)
+  nbEnvoyes       Int @default(0)
+  nbOuverts       Int @default(0)
+  nbClics         Int @default(0)
+  nbDesinscriptions Int @default(0)
+
+  recipients CampaignRecipient[]
+}
+
+model CampaignRecipient {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  campaignId String
+  campaign   MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  contactId String
+
+  statut    String  @default("pending") // pending, sent, opened, clicked, bounced, unsubscribed
+  sentAt    DateTime?
+  openedAt  DateTime?
+  clickedAt DateTime?
+
+  @@unique([campaignId, contactId])
+  @@index([campaignId])
+}
+
+// Opt-out marketing RGPD
+model MarketingOptOut {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  email     String  @unique
+  reason    String? // opt-out volontaire, bounce, plainte
+
+  @@index([email])
+}
+
+// ==================== RECYCLAGES (V2 Lot 2) ====================
+
+// Suivi des certifications stagiaires (date obtention + date expiration calculee)
+model CertificationStagiaire {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contactId   String
+  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  formationId String
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  sessionId   String?  // session d'obtention (si connue)
+
+  dateObtention  DateTime
+  dateExpiration DateTime? // calculee : dateObtention + formation.dureeRecyclage mois
+  statut         String    @default("valide") // valide, expire, en_cours_recyclage
+
+  alerteJ60Envoyee Boolean @default(false)
+  alerteJ30Envoyee Boolean @default(false)
+
+  @@index([contactId])
+  @@index([formationId])
+  @@index([dateExpiration])
 }
 
 // ==================== NOTIFICATIONS ====================

@@ -126,6 +126,8 @@ model Formateur {
   documents      Document[]
   feedbacks      FeedbackFormateur[]
   user           User?
+  notesFrais     NoteFrais[]
+  competences    FormateurCompetence[]
 }
 
 model Formation {
@@ -237,6 +239,8 @@ model Session {
   besoinsStagiaire   BesoinStagiaire[]
   automations        SessionAutomation[]
   emargementTokens   EmargementToken[]
+  forumTopics        ForumTopic[]
+  classeVirtuelle    ClasseVirtuelle?
 }
 
 model Inscription {
@@ -728,6 +732,146 @@ model CertificationStagiaire {
   @@index([contactId])
   @@index([formationId])
   @@index([dateExpiration])
+}
+
+// ==================== FORUM & MESSAGERIE (V2 Lot 4) ====================
+
+model ForumTopic {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  titre     String
+  contenu   String
+  epingle   Boolean @default(false)
+  verrouille Boolean @default(false)
+
+  // Scope : si sessionId set → forum de session, sinon forum general
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  categorie String? // incendie, premiers_secours, general, ...
+
+  auteurId  String // contactId ou formateurId
+  auteurNom String // cache pour affichage
+
+  replies   ForumReply[]
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model ForumReply {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contenu   String
+  topicId   String
+  topic     ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  auteurId  String
+  auteurNom String
+
+  @@index([topicId])
+}
+
+model DirectMessage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  contenu    String
+  expediteur String // userId ou contactId
+  expediteurNom String
+  destinataire String
+  lu         Boolean @default(false)
+
+  @@index([destinataire, lu])
+  @@index([expediteur])
+}
+
+// ==================== NOTES DE FRAIS (V2 Lot 4) ====================
+
+model NoteFrais {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  sessionId   String?
+
+  categorie   String // transport, hebergement, repas, materiel, autre
+  description String
+  montant     Float
+  date        DateTime
+  lieu        String?
+
+  justificatifUrl String? // URL fichier dans Supabase Storage
+  justificatifNom String?
+
+  statut      String @default("soumise") // soumise, approuvee, rejetee, payee
+  commentaireAdmin String?
+  datePaiement DateTime?
+
+  @@index([formateurId])
+  @@index([statut])
+}
+
+// ==================== CLASSES VIRTUELLES (V2 Lot 4) ====================
+
+// Champs supplementaires pour les sessions distancielles
+model ClasseVirtuelle {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionId String @unique
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  lienVisio        String? // URL Zoom/Teams/Meet
+  plateformeVisio  String? // zoom, teams, meet, autre
+  enregistrementUrl String?
+  enregistrementDisponibleJusqua DateTime?
+  ressources       String  @default("[]") // JSON [{ nom, url }]
+  notes            String?
+}
+
+// ==================== COMPETENCES FORMATEURS (V2 Lot 4) ====================
+
+model CompetenceReferentiel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  nom         String @unique // SST, AFGSU 2, Incendie ERP, Habilitation electrique, ...
+  description String?
+  categorie   String? // securite, incendie, sante, ...
+
+  formateurs FormateurCompetence[]
+}
+
+model FormateurCompetence {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  formateurId   String
+  formateur     Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  competenceId  String
+  competence    CompetenceReferentiel @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+
+  niveau        String @default("intermediaire") // debutant, intermediaire, avance, expert
+  justificatifUrl String?
+  dateObtention DateTime?
+  dateExpiration DateTime?
+  valideParAdmin Boolean @default(false)
+  dateValidation DateTime?
+
+  @@unique([formateurId, competenceId])
+  @@index([formateurId])
+  @@index([competenceId])
 }
 
 // ==================== NOTIFICATIONS ====================

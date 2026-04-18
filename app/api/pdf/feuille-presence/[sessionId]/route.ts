@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: { sessionId: 
         formateur: true,
         inscriptions: {
           where: { statut: { in: ["confirmee", "presente", "en_attente"] } },
-          include: { contact: { select: { nom: true, prenom: true } } },
+          include: { contact: { select: { id: true, nom: true, prenom: true } } },
         },
       },
     });

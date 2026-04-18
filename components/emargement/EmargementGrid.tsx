@@ -32,8 +32,8 @@ type EmargementTokenData = {
 
 type Inscription = {
   id: string;
-  contactId: string;
-  contact: { id: string; nom: string; prenom: string; email: string };
+  contactId?: string;
+  contact: { id: string; nom: string; prenom: string; email?: string };
   statut: string;
 };
 
@@ -209,13 +209,13 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
           </thead>
           <tbody>
             {activeInscrits.map((insc) => (
-              <tr key={insc.contactId} className="border-b border-gray-800 hover:bg-gray-800/50">
+              <tr key={insc.contact.id} className="border-b border-gray-800 hover:bg-gray-800/50">
                 <td className="px-3 py-2 sticky left-0 bg-gray-900 z-10">
                   <span className="text-sm text-gray-100 font-medium">{insc.contact.prenom} {insc.contact.nom}</span>
                 </td>
                 {days.map((day) => {
                   const dateStr = format(day, "yyyy-MM-dd");
-                  const p = getPresence(insc.contactId, dateStr);
+                  const p = getPresence(insc.contact.id, dateStr);
                   return ["matin", "apresMidi"].map((slot) => {
                     const statutField = slot === "matin" ? "statutMatin" : "statutApresMidi";
                     const sigField = slot === "matin" ? "signatureMatin" : "signatureApresMidi";
@@ -242,7 +242,7 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
                           <input
                             type="checkbox"
                             checked={!!boolVal}
-                            onChange={() => handleToggleV1(insc.contactId, dateStr, boolField as "matin" | "apresMidi", !!boolVal)}
+                            onChange={() => handleToggleV1(insc.contact.id, dateStr, boolField as "matin" | "apresMidi", !!boolVal)}
                             className="h-4 w-4 rounded"
                           />
                         )}
@@ -256,9 +256,9 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
                       const today = format(new Date(), "yyyy-MM-dd");
                       const hour = new Date().getHours();
                       const creneau = hour < 13 ? "matin" : "apres_midi";
-                      handleSendOtp(insc.contactId, today, creneau);
+                      handleSendOtp(insc.contact.id, today, creneau);
                     }}
-                    disabled={sendingOtp === `${insc.contactId}-${format(new Date(), "yyyy-MM-dd")}-${new Date().getHours() < 13 ? "matin" : "apres_midi"}`}
+                    disabled={sendingOtp === `${insc.contact.id}-${format(new Date(), "yyyy-MM-dd")}-${new Date().getHours() < 13 ? "matin" : "apres_midi"}`}
                     className="inline-flex items-center gap-0.5 rounded border border-gray-600 bg-gray-800 px-1.5 py-1 text-[10px] text-gray-300 hover:bg-gray-700 disabled:opacity-40"
                     title="Envoyer lien OTP par email"
                   >

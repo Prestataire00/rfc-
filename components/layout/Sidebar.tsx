@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
-  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle, Zap, Mail,
+  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle, Zap, Mail, Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -106,6 +106,7 @@ const formateurNav: NavItem[] = [
   { href: "/espace-formateur/disponibilites", label: "Disponibilites", icon: CalendarDays },
   { href: "/espace-formateur/sessions", label: "Mes Sessions", icon: BookOpen },
   { href: "/espace-formateur/documents", label: "Mes Documents", icon: FileText },
+  { href: "/espace-formateur/notes-frais", label: "Notes de frais", icon: Receipt },
   { href: "/espace-formateur/feedbacks", label: "Feedbacks", icon: MessageSquare },
   { href: "/espace-formateur/attestations", label: "Attestations", icon: Award },
 ];

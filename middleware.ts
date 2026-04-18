@@ -57,6 +57,10 @@ const adminApiPrefixes = [
   "/api/tags",
   "/api/campaigns",
   "/api/badges",
+  "/api/forum",
+  "/api/notes-frais",
+  "/api/classes-virtuelles",
+  "/api/competences",
   "/api/pdf/template-preview",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];

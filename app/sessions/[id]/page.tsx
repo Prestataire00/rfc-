@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { SESSION_STATUTS, INSCRIPTION_STATUTS, DEVIS_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
+import { EmargementGrid } from "@/components/emargement/EmargementGrid";
 
 type Contact = { id: string; nom: string; prenom: string; email: string };
 type Inscription = {
@@ -1098,110 +1099,27 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
-      {/* ── Feuille de présence ─────────────────────────────────────────── */}
+      {/* ── Feuille de présence / Emargement V2 ─────────────────────────── */}
       {["confirmee", "en_cours", "terminee"].includes(session.statut) &&
-        session.inscriptions.length > 0 && (() => {
-          const inscriptionsEmargement = session.inscriptions.filter(
-            (i) => i.statut === "confirmee" || i.statut === "presente"
-          );
-          if (inscriptionsEmargement.length === 0) return null;
-
-          const presentsCount = inscriptionsEmargement.filter((insc) =>
-            joursOuvres.some((jour) => {
-              const p = presenceMap[`${insc.contact.id}_${jour.toISOString().split("T")[0]}`];
-              return p?.matin || p?.apresMidi;
-            })
-          ).length;
-
-          return (
-            <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
-              <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                <h2 className="font-semibold text-gray-100 flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-green-500" />
-                  Feuille de présence
-                </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/30 text-green-400 border border-green-700">
-                  {presentsCount}/{inscriptionsEmargement.length} présents
-                </span>
-              </div>
-
-              {joursOuvres.length === 0 ? (
-                <p className="p-4 text-sm text-gray-400">Aucun jour ouvré dans cette période.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="text-sm">
-                    <thead>
-                      {/* Ligne 1 : nom des jours (colspan 2) */}
-                      <tr className="bg-gray-900 border-b border-gray-700">
-                        <th className="text-left px-4 py-3 font-medium text-gray-400 whitespace-nowrap sticky left-0 bg-gray-900 z-10 min-w-[160px]">
-                          Stagiaire
-                        </th>
-                        {joursOuvres.map((jour) => (
-                          <th
-                            key={jour.toISOString()}
-                            colSpan={2}
-                            className="text-center px-2 py-3 font-medium text-gray-400 whitespace-nowrap border-l border-gray-700 min-w-[80px]"
-                          >
-                            {formatJour(jour)}
-                          </th>
-                        ))}
-                      </tr>
-                      {/* Ligne 2 : M / AM */}
-                      <tr className="bg-gray-900 border-b border-gray-700">
-                        <th className="sticky left-0 bg-gray-900 z-10" />
-                        {joursOuvres.map((jour) => [
-                          <th key={`${jour.toISOString()}-m`} className="text-center py-1.5 text-xs font-medium text-gray-500 border-l border-gray-700 w-10">
-                            M
-                          </th>,
-                          <th key={`${jour.toISOString()}-am`} className="text-center py-1.5 text-xs font-medium text-gray-500 w-10">
-                            AM
-                          </th>,
-                        ])}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inscriptionsEmargement.map((insc) => (
-                        <tr key={insc.id} className="border-b border-gray-700 last:border-0 hover:bg-gray-700/30">
-                          <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 bg-gray-800 z-10 font-medium text-gray-200">
-                            {insc.contact.prenom} {insc.contact.nom}
-                          </td>
-                          {joursOuvres.map((jour) => {
-                            const dateStr = jour.toISOString().split("T")[0];
-                            const p = presenceMap[`${insc.contact.id}_${dateStr}`] || { matin: false, apresMidi: false };
-                            return [
-                              <td
-                                key={`${dateStr}-m`}
-                                className={cn("text-center px-3 py-2.5 border-l border-gray-700", p.matin ? "bg-green-900/25" : "")}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={p.matin}
-                                  onChange={(e) => handleTogglePresence(insc.contact.id, jour, "matin", e.target.checked)}
-                                  className="h-4 w-4 rounded accent-red-600 cursor-pointer"
-                                />
-                              </td>,
-                              <td
-                                key={`${dateStr}-am`}
-                                className={cn("text-center px-3 py-2.5", p.apresMidi ? "bg-green-900/25" : "")}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={p.apresMidi}
-                                  onChange={(e) => handleTogglePresence(insc.contact.id, jour, "apresMidi", e.target.checked)}
-                                  className="h-4 w-4 rounded accent-red-600 cursor-pointer"
-                                />
-                              </td>,
-                            ];
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+        session.inscriptions.length > 0 && (
+          <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-green-500" />
+                Emargement
+              </h2>
             </div>
-          );
-        })()}
+            <div className="p-4">
+              <EmargementGrid
+                sessionId={session.id}
+                dateDebut={session.dateDebut}
+                dateFin={session.dateFin}
+                inscriptions={session.inscriptions}
+                formationTitre={session.formation.titre}
+              />
+            </div>
+          </div>
+        )}
 
       {/* Confirm passage à "Terminée" */}
       <ConfirmDialog

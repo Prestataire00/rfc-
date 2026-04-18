@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { triggerAutomation } from "@/lib/automations-trigger";
+import { notifyAdmins } from "@/lib/notifications";
 
 const besoinSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const statut = searchParams.get("statut");
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
     if (statut) where.statut = statut;
 
@@ -30,6 +33,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         entreprise: { select: { id: true, nom: true } },
+        contact: { select: { id: true, prenom: true, nom: true } },
         formation: { select: { id: true, titre: true } },
         devis: { select: { id: true, numero: true, statut: true } },
       },
@@ -38,15 +42,14 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(besoins);
   } catch (err: unknown) {
-    console.error("Erreur lors de la récupération des besoins:", err);
-    return NextResponse.json({ error: "Erreur lors de la récupération des besoins" }, { status: 500 });
+    console.error("Erreur lors de la recuperation des besoins:", err);
+    return NextResponse.json({ error: "Erreur lors de la recuperation des besoins" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  // Nullify empty strings before validation
   const cleaned = { ...body };
   for (const key of ["nbStagiaires", "budget", "entrepriseId", "contactId", "formationId", "description", "datesSouhaitees", "notes"]) {
     if (cleaned[key] === "") cleaned[key] = null;
@@ -73,11 +76,33 @@ export async function POST(req: NextRequest) {
         contactId: parsed.data.contactId || null,
         formationId: parsed.data.formationId || null,
       },
+      include: {
+        entreprise: { select: { nom: true } },
+        contact: { select: { prenom: true, nom: true } },
+      },
     });
+
+    // Fire-and-forget : automations + notifications
+    triggerAutomation("besoin_created", {
+      besoinId: besoin.id,
+      entrepriseId: besoin.entrepriseId ?? undefined,
+      contactId: besoin.contactId ?? undefined,
+      formationId: besoin.formationId ?? undefined,
+    }).catch((err) => console.error("[automation] besoin_created:", err));
+
+    const origineName = besoin.entreprise?.nom
+      || (besoin.contact ? `${besoin.contact.prenom} ${besoin.contact.nom}` : "origine non renseignee");
+
+    notifyAdmins({
+      titre: "Nouveau besoin de formation",
+      message: `${besoin.titre} — ${origineName}`,
+      type: "info",
+      lien: `/besoins/${besoin.id}`,
+    }).catch(() => {});
 
     return NextResponse.json(besoin, { status: 201 });
   } catch (err: unknown) {
     console.error("Besoin creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la création du besoin" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la creation du besoin" }, { status: 500 });
   }
 }

@@ -23,6 +23,7 @@ import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SkeletonStats, SkeletonCard } from "@/components/shared/Skeleton";
 import { SESSION_STATUTS, CONTACT_TYPES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { MaJournee } from "@/components/dashboard/MaJournee";
 
 type Stats = {
   nbContacts: number;
@@ -233,6 +234,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Ma Journee */}
+      <MaJournee />
 
       {/* CA Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

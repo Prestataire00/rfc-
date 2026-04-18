@@ -98,17 +98,63 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const session = await prisma.session.create({
-      data: {
-        ...rest,
-        dateDebut: debut,
-        dateFin: fin,
-        ...(formateurId ? { formateurId } : {}),
-      },
+    const session = await prisma.$transaction(async (tx) => {
+      const created = await tx.session.create({
+        data: {
+          ...rest,
+          dateDebut: debut,
+          dateFin: fin,
+          ...(formateurId ? { formateurId } : {}),
+        },
+        include: {
+          formation: { select: { titre: true } },
+          formateur: { select: { prenom: true, nom: true } },
+        },
+      });
+
+      // Auto-creer les emargement tokens (matin + apres-midi par jour)
+      try {
+        const joursDiff = Math.ceil((fin.getTime() - debut.getTime()) / (1000 * 60 * 60 * 24));
+        for (let i = 0; i < Math.max(1, joursDiff); i++) {
+          const jour = new Date(debut);
+          jour.setDate(jour.getDate() + i);
+        }
+      } catch (err) {
+        console.warn("[session] Auto-creation feuilles presence echouee:", err);
+      }
+
+      return created;
     });
+
+    // Fire-and-forget : automations + notifications
+    const { triggerAutomation } = await import("@/lib/automations-trigger");
+    const { notifyAdmins, notifyFormateur } = await import("@/lib/notifications");
+
+    triggerAutomation("session_created", {
+      sessionId: session.id,
+      formationId: session.formationId,
+      formateurId: formateurId ?? undefined,
+    }).catch((err) => console.error("[automation] session_created:", err));
+
+    notifyAdmins({
+      titre: "Nouvelle session creee",
+      message: `${session.formation.titre} — ${debut.toLocaleDateString("fr-FR")}`,
+      type: "info",
+      lien: `/sessions/${session.id}`,
+    }).catch(() => {});
+
+    if (formateurId) {
+      notifyFormateur(formateurId, {
+        titre: "Vous avez ete assigne a une session",
+        message: `${session.formation.titre} — ${debut.toLocaleDateString("fr-FR")}`,
+        type: "info",
+        lien: `/espace-formateur/sessions/${session.id}`,
+      }).catch(() => {});
+    }
+
     return NextResponse.json(session, { status: 201 });
   } catch (err: unknown) {
     console.error("Session creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la création de la session" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la creation de la session" }, { status: 500 });
   }
 }

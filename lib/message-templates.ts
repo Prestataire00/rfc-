@@ -189,6 +189,22 @@ export const MESSAGE_TEMPLATE_DEFAULTS: MessageTemplateDefault[] = [
     `),
     variables: [...VAR_FORMATION, ...VAR_SESSION],
   },
+  {
+    id: "tpl_emargement_otp",
+    type: "emargement_otp",
+    nom: "Lien de signature individuel (OTP)",
+    description: "Envoye a un stagiaire pour qu'il signe sa presence a distance.",
+    objet: "Signez votre presence - \"{{formation.titre}}\"",
+    contenu: wrap("Signature de presence", `
+      <p>Bonjour <strong>{{stagiaire.prenom}} {{stagiaire.nom}}</strong>,</p>
+      <p>Merci de signer electroniquement votre feuille de presence pour la formation <strong>&quot;{{formation.titre}}&quot;</strong>.</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{{lien}}" style="background: #dc2626; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Signer ma presence</a>
+      </div>
+      <p style="color: #64748b; font-size: 12px;">Ce lien est personnel et valable 24 heures.</p>
+    `),
+    variables: [...VAR_STAGIAIRE, ...VAR_FORMATION, ...VAR_LIEN],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────

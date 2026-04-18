@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
-  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle, Zap,
+  UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle, Zap, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +60,7 @@ const adminNavGroups: NavGroup[] = [
     label: "Commercial",
     items: [
       { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
+      { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
       { href: "/bpf", label: "BPF", icon: BarChart3 },
     ],
   },

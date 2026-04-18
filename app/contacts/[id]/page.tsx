@@ -133,18 +133,58 @@ export default function ContactDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleConvertToClient = async () => {
-    try {
-      const res = await fetch(`/api/contacts/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "client" }),
-      });
-      if (!res.ok) throw new Error("Erreur lors de la conversion");
-      setContact((prev) => prev ? { ...prev, type: "client" as keyof typeof CONTACT_TYPES } : prev);
-    } catch {
-      // silent fail
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertMode, setConvertMode] = useState<"existante" | "nouvelle">("nouvelle");
+  const [convertEntrepriseId, setConvertEntrepriseId] = useState("");
+  const [convertNom, setConvertNom] = useState("");
+  const [convertSiret, setConvertSiret] = useState("");
+  const [convertEmail, setConvertEmail] = useState("");
+  const [convertTel, setConvertTel] = useState("");
+  const [convertAdresse, setConvertAdresse] = useState("");
+  const [convertVille, setConvertVille] = useState("");
+  const [convertCp, setConvertCp] = useState("");
+  const [converting, setConverting] = useState(false);
+  const [convertError, setConvertError] = useState("");
+  const [allEntreprises, setAllEntreprises] = useState<{ id: string; nom: string }[]>([]);
+
+  useEffect(() => {
+    if (convertOpen && allEntreprises.length === 0) {
+      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []).then((d) => setAllEntreprises(Array.isArray(d) ? d : d.entreprises || []));
     }
+  }, [convertOpen, allEntreprises.length]);
+
+  // Pre-remplir si le contact a deja une entreprise
+  useEffect(() => {
+    if (contact?.entreprise) {
+      setConvertMode("existante");
+      setConvertEntrepriseId(contact.entreprise.id);
+    }
+  }, [contact?.entreprise]);
+
+  const handleConvertToClient = async () => {
+    setConverting(true);
+    setConvertError("");
+    try {
+      const body = convertMode === "existante"
+        ? { entrepriseExistanteId: convertEntrepriseId }
+        : { nouvelleEntreprise: { nom: convertNom, siret: convertSiret || undefined, email: convertEmail || undefined, telephone: convertTel || undefined, adresse: convertAdresse || undefined, ville: convertVille || undefined, codePostal: convertCp || undefined } };
+
+      const res = await fetch(`/api/contacts/${id}/convertir`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erreur de conversion");
+      }
+      const updated = await res.json();
+      setContact((prev) => prev ? { ...prev, type: updated.type, entreprise: updated.entreprise } : prev);
+      setConvertOpen(false);
+    } catch (err) {
+      setConvertError(err instanceof Error ? err.message : "Erreur");
+    }
+    setConverting(false);
   };
 
   const handleDelete = async () => {
@@ -220,7 +260,7 @@ export default function ContactDetailPage() {
           <div className="flex items-center gap-2">
             {contact.type === "prospect" && (
               <button
-                onClick={handleConvertToClient}
+                onClick={() => setConvertOpen(true)}
                 className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition-colors"
               >
                 <UserCheck className="h-4 w-4" /> Convertir en client
@@ -843,6 +883,60 @@ export default function ContactDetailPage() {
         onConfirm={handleDelete}
         loading={deleting}
       />
+
+      {/* Dialog conversion prospect -> client */}
+      {convertOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setConvertOpen(false)}>
+          <div className="bg-gray-800 rounded-xl shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-100 mb-1">Convertir en client</h2>
+            <p className="text-sm text-gray-400 mb-4">Rattachez {contact.prenom} {contact.nom} a une entreprise.</p>
+
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <button onClick={() => setConvertMode("existante")} className={`flex-1 rounded-md border-2 p-3 text-sm text-left ${convertMode === "existante" ? "border-emerald-600 bg-emerald-900/20 text-emerald-300" : "border-gray-600 text-gray-400"}`}>
+                  <Building2 className="h-4 w-4 mb-1" /> Entreprise existante
+                </button>
+                <button onClick={() => setConvertMode("nouvelle")} className={`flex-1 rounded-md border-2 p-3 text-sm text-left ${convertMode === "nouvelle" ? "border-emerald-600 bg-emerald-900/20 text-emerald-300" : "border-gray-600 text-gray-400"}`}>
+                  <Plus className="h-4 w-4 mb-1" /> Nouvelle entreprise
+                </button>
+              </div>
+
+              {convertMode === "existante" ? (
+                <select value={convertEntrepriseId} onChange={(e) => setConvertEntrepriseId(e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3">
+                  <option value="">-- Selectionner --</option>
+                  {allEntreprises.map((e) => <option key={e.id} value={e.id}>{e.nom}</option>)}
+                </select>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-400 mb-1">Nom *</label>
+                    <input value={convertNom} onChange={(e) => setConvertNom(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" />
+                  </div>
+                  <div><label className="block text-xs text-gray-400 mb-1">SIRET</label><input value={convertSiret} onChange={(e) => setConvertSiret(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                  <div><label className="block text-xs text-gray-400 mb-1">Email</label><input value={convertEmail} onChange={(e) => setConvertEmail(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                  <div><label className="block text-xs text-gray-400 mb-1">Telephone</label><input value={convertTel} onChange={(e) => setConvertTel(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                  <div><label className="block text-xs text-gray-400 mb-1">Code postal</label><input value={convertCp} onChange={(e) => setConvertCp(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                  <div><label className="block text-xs text-gray-400 mb-1">Ville</label><input value={convertVille} onChange={(e) => setConvertVille(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                  <div><label className="block text-xs text-gray-400 mb-1">Adresse</label><input value={convertAdresse} onChange={(e) => setConvertAdresse(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                </div>
+              )}
+
+              {convertError && <p className="text-sm text-red-400">{convertError}</p>}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button onClick={() => setConvertOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Annuler</button>
+              <button
+                onClick={handleConvertToClient}
+                disabled={converting || (convertMode === "existante" ? !convertEntrepriseId : !convertNom)}
+                className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {converting ? "Conversion..." : "Convertir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

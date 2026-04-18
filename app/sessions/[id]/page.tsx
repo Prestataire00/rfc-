@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SESSION_STATUTS, INSCRIPTION_STATUTS, DEVIS_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { EmargementGrid } from "@/components/emargement/EmargementGrid";
+import { StatusPipeline } from "@/components/shared/StatusPipeline";
 
 type Contact = { id: string; nom: string; prenom: string; email: string };
 type Inscription = {
@@ -484,6 +485,20 @@ export default function SessionDetailPage() {
               </select>
             </div>
             <p className="text-gray-400">{formatDate(session.dateDebut)} - {formatDate(session.dateFin)}</p>
+            <div className="mt-3">
+              <StatusPipeline
+                steps={[
+                  { value: "planifiee", label: "Planifiee" },
+                  { value: "confirmee", label: "Confirmee" },
+                  { value: "en_cours", label: "En cours" },
+                  { value: "terminee", label: "Terminee" },
+                  { value: "annulee", label: "Annulee" },
+                ]}
+                currentStatus={session.statut}
+                lostStatus="annulee"
+                successStatus="terminee"
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <Link

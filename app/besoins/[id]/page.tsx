@@ -13,6 +13,7 @@ import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constan
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AIButton } from "@/components/shared/AIButton";
+import { StatusPipeline } from "@/components/shared/StatusPipeline";
 
 type Besoin = {
   id: string;
@@ -177,7 +178,21 @@ export default function BesoinDetailPage() {
           <div className="flex items-center gap-3 mt-2">
             {st && <StatutBadge label={st.label} color={st.color} />}
             <span className={`text-sm font-medium ${prio?.color}`}>{prio?.label}</span>
-            <span className="text-sm text-gray-400">Créé le {formatDate(besoin.createdAt)}</span>
+            <span className="text-sm text-gray-400">Cree le {formatDate(besoin.createdAt)}</span>
+          </div>
+          <div className="mt-3 max-w-md">
+            <StatusPipeline
+              steps={[
+                { value: "nouveau", label: "Nouveau" },
+                { value: "qualifie", label: "Qualifie" },
+                { value: "devis_envoye", label: "Devis envoye" },
+                { value: "accepte", label: "Accepte" },
+                { value: "refuse", label: "Refuse" },
+              ]}
+              currentStatus={besoin.statut}
+              lostStatus="refuse"
+              successStatus="accepte"
+            />
           </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">

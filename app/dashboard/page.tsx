@@ -41,6 +41,11 @@ type Stats = {
   nbFormationsRealisees: number;
   nbBesoinsEnCours: number;
   nbDevisEnCours: number;
+  // V2 KPIs
+  nbBadges30j: number;
+  nbRecyclagesUrgents: number;
+  nbDocsAValider: number;
+  tauxSignatureNum: number;
 };
 
 type Session = {
@@ -280,6 +285,26 @@ export default function DashboardPage() {
         <StatCard icon={ClipboardList} label="Besoins en cours" value={stats.nbBesoinsEnCours} href="/besoins" color="bg-orange-900/200" />
         <StatCard icon={Users} label="Contacts" value={stats.nbContacts} href="/contacts" color="bg-red-900/200" />
         <StatCard icon={Building2} label="Entreprises" value={stats.nbEntreprises} href="/entreprises" color="bg-violet-500" />
+      </div>
+
+      {/* V2 KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="rounded-lg border border-gray-700 bg-gray-800 p-3">
+          <p className="text-[10px] uppercase text-gray-500 font-semibold">Signature num.</p>
+          <p className="text-xl font-bold text-gray-100">{stats.tauxSignatureNum}%</p>
+        </div>
+        <div className="rounded-lg border border-gray-700 bg-gray-800 p-3">
+          <p className="text-[10px] uppercase text-gray-500 font-semibold">Badges (30j)</p>
+          <p className="text-xl font-bold text-gray-100">{stats.nbBadges30j}</p>
+        </div>
+        <div className={`rounded-lg border p-3 ${stats.nbRecyclagesUrgents > 0 ? "border-amber-700 bg-amber-900/20" : "border-gray-700 bg-gray-800"}`}>
+          <p className="text-[10px] uppercase text-gray-500 font-semibold">Recyclages &lt;60j</p>
+          <p className={`text-xl font-bold ${stats.nbRecyclagesUrgents > 0 ? "text-amber-400" : "text-gray-100"}`}>{stats.nbRecyclagesUrgents}</p>
+        </div>
+        <div className={`rounded-lg border p-3 ${stats.nbDocsAValider > 0 ? "border-blue-700 bg-blue-900/20" : "border-gray-700 bg-gray-800"}`}>
+          <p className="text-[10px] uppercase text-gray-500 font-semibold">Docs a valider</p>
+          <p className={`text-xl font-bold ${stats.nbDocsAValider > 0 ? "text-blue-400" : "text-gray-100"}`}>{stats.nbDocsAValider}</p>
+        </div>
       </div>
 
       {/* Planning du jour */}

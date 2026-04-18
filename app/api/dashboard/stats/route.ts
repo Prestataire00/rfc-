@@ -146,6 +146,43 @@ export async function GET(req: NextRequest) {
   };
   const { value: caFiltre, label: periodLabel } = periodMap[period] || periodMap.mois;
 
+  // ── KPIs V2 ──────────────────────────────────────────────
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysFromNow = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+  const [
+    nbBadges30j,
+    nbRecyclagesUrgents,
+    nbDocsAValider,
+    tauxSignatureNum,
+  ] = await Promise.all([
+    // Badges attribues dans les 30 derniers jours
+    prisma.badgeAward.count({
+      where: { createdAt: { gte: thirtyDaysAgo }, revoque: false },
+    }).catch(() => 0),
+
+    // Certifications expirant dans les 60 jours
+    prisma.certificationStagiaire.count({
+      where: { dateExpiration: { lte: sixtyDaysFromNow }, statut: { not: "en_cours_recyclage" } },
+    }).catch(() => 0),
+
+    // Documents IA en attente de validation
+    prisma.aiDocumentAnalysis.count({
+      where: { statut: { in: ["en_attente", "a_verifier"] } },
+    }).catch(() => 0),
+
+    // Taux de signature numerique (V2 presences avec signature / total presences)
+    (async () => {
+      const totalSlots = await prisma.feuillePresence.count({
+        where: { OR: [{ matin: true }, { apresMidi: true }] },
+      }).catch(() => 0);
+      const signedSlots = await prisma.feuillePresence.count({
+        where: { OR: [{ signatureMatin: { not: null } }, { signatureApresMidi: { not: null } }] },
+      }).catch(() => 0);
+      return totalSlots > 0 ? Math.round((signedSlots / totalSlots) * 100) : 0;
+    })(),
+  ]);
+
   return NextResponse.json({
     stats: {
       nbContacts,
@@ -166,6 +203,11 @@ export async function GET(req: NextRequest) {
       nbStagiairesFormes,
       nbFormationsRealisees,
       nbBesoinsEnCours,
+      // V2 KPIs
+      nbBadges30j,
+      nbRecyclagesUrgents,
+      nbDocsAValider,
+      tauxSignatureNum,
     },
     prochainsSessions,
     derniersContacts,

@@ -30,3 +30,8 @@
 [[crons]]
   schedule = "*/15 * * * *"
   path = "/api/cron/automations-v2"
+
+# Cron recyclages : detecte les certifications expirant J-60/J-30 (quotidien 7h)
+[[crons]]
+  schedule = "0 7 * * *"
+  path = "/api/cron/recyclages"

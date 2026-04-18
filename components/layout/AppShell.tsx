@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { Menu, Sun, Moon } from "lucide-react";
 import { Sidebar } from "./Sidebar";
-import { NotificationBell } from "./NotificationBell";
+import { NotificationBell } from "@/components/shared/NotificationBell";
+import { CommandPalette } from "@/components/shared/CommandPalette";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Chatbot } from "@/components/shared/Chatbot";
 
@@ -90,6 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</div>
       </main>
       <Chatbot />
+      <CommandPalette />
     </div>
   );
 }

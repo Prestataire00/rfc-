@@ -25,3 +25,21 @@ export async function notifyAllAdmins(data: {
     )
   );
 }
+
+// Alias compatible avec le pattern SO SAFE
+export const notifyAdmins = notifyAllAdmins;
+
+// Notifie le formateur via son user lie
+export async function notifyFormateur(formateurId: string, data: {
+  titre: string;
+  message: string;
+  type?: "info" | "warning" | "success" | "error";
+  lien?: string;
+}) {
+  const formateur = await prisma.formateur.findUnique({
+    where: { id: formateurId },
+    include: { user: true },
+  });
+  if (!formateur?.user) return;
+  return createNotification({ ...data, userId: formateur.user.id });
+}

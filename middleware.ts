@@ -74,6 +74,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/emargement/")) return true;
   if (pathname.startsWith("/api/emargement/public")) return true;
   if (pathname.startsWith("/api/campaigns/unsubscribe")) return true;
+  if (pathname.startsWith("/catalogue")) return true;
+  if (pathname.startsWith("/api/catalogue")) return true;
   if (pathname.startsWith("/presentation")) return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname === "/favicon.ico") return true;

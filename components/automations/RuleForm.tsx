@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Save, Trash2, Plus, X } from "lucide-react";
-import { TRIGGER_LABELS, ACTION_TYPE_LABELS, CONDITION_FIELDS } from "@/lib/automations-v2";
+import { TRIGGER_LABELS, ACTION_TYPE_LABELS, CONDITION_FIELDS } from "@/lib/automations-v2-constants";
 
 type Condition = { field: string; operator: string; value: string };
 type ActionConfig = Record<string, string>;

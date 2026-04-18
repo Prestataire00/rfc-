@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Zap, ToggleLeft, ToggleRight, Pencil, Clock, Mail, MessageSquare, FileText, ListChecks } from "lucide-react";
-import { TRIGGER_LABELS, ACTION_TYPE_LABELS } from "@/lib/automations-v2";
+import { TRIGGER_LABELS, ACTION_TYPE_LABELS } from "@/lib/automations-v2-constants";
 
 type Rule = {
   id: string;

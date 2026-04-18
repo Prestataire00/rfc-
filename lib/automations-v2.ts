@@ -1,8 +1,6 @@
 // Moteur d'automatisation V2 — evaluation, deduplication et execution.
-//
-// Pattern : declencheur → conditions → delai → action.
-// Chaque regle est evaluee independamment pour chaque session/contact.
-// La deduplication empeche les doublons via un hash stocke en DB.
+// Ce fichier est SERVER-ONLY (importe prisma, nodemailer, crypto).
+// Les constantes/types sont dans automations-v2-constants.ts (client-safe).
 
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
@@ -10,72 +8,17 @@ import { renderMessageTemplate } from "@/lib/message-templates";
 import { formatDateFR } from "@/lib/message-templates";
 import { createHash } from "crypto";
 
-// ── Types ────────────────────────────────────────────────────────────────
-
-export type Trigger =
-  | "inscription"
-  | "session_start"
-  | "session_end"
-  | "j_minus_1"
-  | "j_minus_3"
-  | "j_minus_7"
-  | "j_minus_14"
-  | "j_minus_30"
-  | "j_plus_1"
-  | "j_plus_7"
-  | "j_plus_21"
-  | "status_change"
-  | "creation_session";
-
-export type ConditionOperator = "equals" | "in" | "not_equals";
-
-export type Condition = {
-  field: string; // formation.categorie, contact.type, inscription.statut, formation.id, financement.type
-  operator: ConditionOperator;
-  value: string | string[];
-};
-
-export type ActionType = "send_email" | "send_sms" | "generate_document" | "create_task" | "change_status";
-
-export type ActionConfig = {
-  templateId?: string;
-  documentType?: string;
-  targetStatus?: string;
-  taskTitle?: string;
-  taskDescription?: string;
-  smsContent?: string;
-};
-
-export const TRIGGER_LABELS: Record<string, string> = {
-  inscription: "Inscription d'un stagiaire",
-  session_start: "Debut de session",
-  session_end: "Fin de session",
-  j_minus_1: "J-1 avant session",
-  j_minus_3: "J-3 avant session",
-  j_minus_7: "J-7 avant session",
-  j_minus_14: "J-14 avant session",
-  j_minus_30: "J-30 avant session",
-  j_plus_1: "J+1 apres session",
-  j_plus_7: "J+7 apres session",
-  j_plus_21: "J+21 apres session",
-  status_change: "Changement de statut",
-  creation_session: "Creation de session",
-};
-
-export const ACTION_TYPE_LABELS: Record<string, string> = {
-  send_email: "Envoyer un email",
-  send_sms: "Envoyer un SMS",
-  generate_document: "Generer un document",
-  create_task: "Creer une tache",
-  change_status: "Changer le statut",
-};
-
-export const CONDITION_FIELDS = [
-  { value: "formation.categorie", label: "Categorie de formation" },
-  { value: "formation.id", label: "Formation specifique" },
-  { value: "contact.type", label: "Type de contact" },
-  { value: "inscription.statut", label: "Statut d'inscription" },
-];
+// Re-export des constantes/types depuis le fichier client-safe
+export {
+  TRIGGER_LABELS,
+  ACTION_TYPE_LABELS,
+  CONDITION_FIELDS,
+  type Trigger,
+  type ConditionOperator,
+  type Condition,
+  type ActionType,
+  type ActionConfig,
+} from "@/lib/automations-v2-constants";
 
 // ── Trigger date computation ─────────────────────────────────────────────
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Star } from "lucide-react";
+import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,9 +129,12 @@ export default function NouvelleFormationPage() {
       }
 
       const formation = await res.json();
+      notify.success("Formation creee", formation.titre);
       router.push(`/formations/${formation.id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      setError(msg);
+      notify.error("Erreur", msg);
       setSaving(false);
     }
   };

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,9 +94,12 @@ export default function NouveauContactPage() {
       }
 
       const contact = await res.json();
+      notify.success("Contact cree", `${contact.prenom} ${contact.nom}`);
       router.push(`/contacts/${contact.id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      setError(msg);
+      notify.error("Erreur", msg);
       setSaving(false);
     }
   };

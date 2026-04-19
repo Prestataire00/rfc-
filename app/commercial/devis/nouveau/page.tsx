@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, FileText } from "lucide-react";
+import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,6 +187,7 @@ function NouveauDevisForm() {
           body: JSON.stringify({ devisId: data.id, statut: "devis_envoye" }),
         });
       }
+      notify.success("Devis cree", data.numero);
       router.push(`/commercial/devis/${data.id}`);
     } else {
       const data = await res.json();

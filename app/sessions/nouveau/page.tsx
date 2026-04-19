@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,6 +127,7 @@ function NouvelleSessionForm() {
 
     if (res.ok) {
       const data = await res.json();
+      notify.success("Session creee");
       router.push(`/sessions/${data.id}`);
     } else {
       const data = await res.json();
@@ -133,8 +135,11 @@ function NouvelleSessionForm() {
       if (fieldErrors) {
         const msgs = Object.values(fieldErrors).flat().join(", ");
         setError(msgs || "Une erreur est survenue.");
+        notify.error("Erreur", msgs);
       } else {
-        setError(data.error?.message || data.error || "Une erreur est survenue.");
+        const msg = data.error?.message || data.error || "Une erreur est survenue.";
+        setError(msg);
+        notify.error("Erreur", typeof msg === "string" ? msg : "Erreur de creation");
       }
       setLoading(false);
     }

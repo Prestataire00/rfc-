@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Search, Loader2, Building2, X } from "lucide-react";
+import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -142,9 +143,12 @@ export default function NouvelleEntreprisePage() {
       }
 
       const entreprise = await res.json();
+      notify.success("Entreprise creee", entreprise.nom);
       router.push(`/entreprises/${entreprise.id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      setError(msg);
+      notify.error("Erreur", msg);
       setSaving(false);
     }
   };

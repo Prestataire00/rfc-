@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, User, GraduationCap, X, Lock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
+import { notify } from "@/lib/toast";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 type Option = {
   id: string;
@@ -69,6 +71,8 @@ export default function NouveauBesoinPage() {
     contactId: paramContactId,
     formationId: "",
   });
+
+  const { hasDraft, clearDraft } = useAutoSave("besoin_draft", form, (f) => setForm(f));
 
   // Charger les options
   useEffect(() => {
@@ -142,13 +146,18 @@ export default function NouveauBesoinPage() {
       });
       if (res.ok) {
         const besoin = await res.json();
+        clearDraft();
+        notify.success("Besoin cree", besoin.titre);
         router.push(`/besoins/${besoin.id}`);
       } else {
         const data = await res.json();
-        setError(data.error?.message || data.error || "Erreur lors de la creation");
+        const msg = data.error?.message || data.error || "Erreur lors de la creation";
+        setError(msg);
+        notify.error("Erreur", msg);
       }
     } catch {
       setError("Erreur de connexion au serveur");
+      notify.error("Erreur", "Connexion au serveur impossible");
     }
     setSaving(false);
   }
@@ -160,6 +169,14 @@ export default function NouveauBesoinPage() {
       {error && (
         <div className="max-w-2xl mb-4 rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
           {error}
+        </div>
+      )}
+
+      {/* Bandeau : brouillon restaure */}
+      {hasDraft && (
+        <div className="max-w-2xl mb-4 rounded-md bg-blue-950/30 border border-blue-700/50 px-4 py-2 flex items-center justify-between">
+          <p className="text-sm text-blue-300">Un brouillon a ete restaure depuis votre derniere visite</p>
+          <button onClick={() => { clearDraft(); setForm({ titre: "", description: "", origine: "client", priorite: "normale", nbStagiaires: "", datesSouhaitees: "", budget: "", notes: "", entrepriseId: paramEntrepriseId, contactId: paramContactId, formationId: "" }); }} className="text-xs text-blue-400 hover:underline">Repartir de zero</button>
         </div>
       )}
 

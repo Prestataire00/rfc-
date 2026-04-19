@@ -46,7 +46,7 @@ export function MaJournee() {
 
   if (total === 0) {
     return (
-      <div className="rounded-xl border border-green-700/50 bg-green-950/20 p-6 mb-6">
+      <div className="rounded-xl border border-green-200 dark:border-green-700/50 bg-green-50 dark:bg-green-950/20 p-6 mb-6">
         <div className="flex items-center gap-3">
           <ClipboardCheck className="h-6 w-6 text-green-500" />
           <div>
@@ -59,7 +59,7 @@ export function MaJournee() {
   }
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-6 mb-6">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 mb-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
@@ -138,12 +138,12 @@ function Section({ title, icon: Icon, color, children }: { title: string; icon: 
 
 function TaskRow({ href, label, sublabel, urgent }: { href: string; label: string; sublabel?: string; urgent?: boolean }) {
   return (
-    <Link href={href} className={`group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-colors ${urgent ? "bg-red-950/40 hover:bg-red-950/60 border border-red-800/40" : "bg-gray-900 hover:bg-gray-700 border border-gray-700/50"}`}>
+    <Link href={href} className={`group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg transition-colors ${urgent ? "bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-800/40" : "bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700/50"}`}>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-100 truncate">{label}</p>
-        {sublabel && <p className="text-xs text-gray-400 truncate">{sublabel}</p>}
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{label}</p>
+        {sublabel && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{sublabel}</p>}
       </div>
-      <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0" />
+      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300 transition-colors flex-shrink-0" />
     </Link>
   );
 }

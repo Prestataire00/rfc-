@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { SESSION_STATUTS, INSCRIPTION_STATUTS, DEVIS_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { EmargementGrid } from "@/components/emargement/EmargementGrid";
+import { notify } from "@/lib/toast";
 import { StatusPipeline } from "@/components/shared/StatusPipeline";
 
 type Contact = { id: string; nom: string; prenom: string; email: string };
@@ -264,6 +265,7 @@ export default function SessionDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+    notify.success("Session supprimee");
     router.push("/sessions");
   };
 
@@ -280,10 +282,12 @@ export default function SessionDetailPage() {
       setAddOpen(false);
       setSelectedContactId("");
       setContactSearch("");
+      notify.success("Inscription ajoutee");
       fetchSession();
     } else {
       const data = await res.json();
       setAddError(data.error || "Erreur lors de l'inscription");
+      notify.error("Erreur", data.error || "Inscription impossible");
     }
     setAdding(false);
   };
@@ -301,6 +305,7 @@ export default function SessionDetailPage() {
     if (!removeConfirm) return;
     setRemoving(true);
     await fetch(`/api/sessions/${id}/inscriptions/${removeConfirm.id}`, { method: "DELETE" });
+    notify.success("Inscription retiree");
     setRemoveConfirm(null);
     setRemoving(false);
     fetchSession();
@@ -362,9 +367,9 @@ export default function SessionDetailPage() {
       body: JSON.stringify({ sessionId: id, contactId }),
     });
     const data = await res.json();
-    if (data.skipped) setEmailMsg("SMTP non configuré (voir .env)");
-    else if (res.ok) setEmailMsg("Convocation envoyée !");
-    else setEmailMsg(data.error || "Erreur d'envoi");
+    if (data.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
+    else if (res.ok) { setEmailMsg("Convocation envoyee !"); notify.success("Convocation envoyee"); }
+    else { setEmailMsg(data.error || "Erreur d'envoi"); notify.error("Erreur envoi", data.error); }
     setSendingEmail(null);
     setTimeout(() => setEmailMsg(""), 3000);
   };

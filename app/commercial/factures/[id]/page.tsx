@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Trash2, CheckCircle, FileText, Eye, Download, Plus, X, Mail } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { notify } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { FACTURE_STATUTS } from "@/lib/constants";
@@ -78,6 +79,7 @@ export default function FactureDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     await fetch(`/api/factures/${id}`, { method: "DELETE" });
+    notify.success("Facture supprimee");
     router.push("/commercial");
   };
 
@@ -88,7 +90,8 @@ export default function FactureDetailPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ statut: newStatut }),
     });
-    if (res.ok) await fetchFacture();
+    if (res.ok) { notify.success("Statut mis a jour", newStatut); await fetchFacture(); }
+    else notify.error("Erreur", "Impossible de changer le statut");
     setUpdatingStatut(false);
   };
 
@@ -102,7 +105,8 @@ export default function FactureDetailPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ statut: "payee", datePaiement: today, paiements: validPaiements }),
     });
-    if (res.ok) await fetchFacture();
+    if (res.ok) { notify.success("Facture marquee payee"); await fetchFacture(); }
+    else notify.error("Erreur", "Impossible de marquer comme payee");
     setMarkingPaid(false);
   };
 
@@ -117,10 +121,12 @@ export default function FactureDetailPage() {
     setEmailOpen(false);
     setSending(false);
     if (res.ok) {
-      setEmailMsg(data.skipped ? "SMTP non configuré (voir .env)" : "Email envoyé avec succès !");
+      if (data.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
+      else { setEmailMsg("Email envoye !"); notify.success("Facture envoyee par email"); }
       fetchFacture();
     } else {
-      setEmailMsg(data.error || "Erreur lors de l'envoi");
+      setEmailMsg(data.error || "Erreur envoi");
+      notify.error("Erreur envoi", data.error);
     }
     setTimeout(() => setEmailMsg(""), 4000);
   };

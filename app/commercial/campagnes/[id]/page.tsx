@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Send, Mail, Users, CheckCircle2, Tag, Plus, X } from "lucide-react";
+import { notify } from "@/lib/toast";
 
 type Campaign = {
   id: string;
@@ -77,7 +78,10 @@ export default function CampaignDetailPage() {
     });
     if (res.ok) {
       setMsg("Enregistre");
+      notify.success("Campagne enregistree");
       setTimeout(() => setMsg(""), 2500);
+    } else {
+      notify.error("Erreur", "Impossible d'enregistrer");
     }
     setSaving(false);
   };
@@ -89,11 +93,12 @@ export default function CampaignDetailPage() {
     if (res.ok) {
       const data = await res.json();
       setMsg(`${data.sent} emails envoyes sur ${data.total}`);
-      // Refresh
+      notify.success("Campagne envoyee", `${data.sent} emails envoyes`);
       const updated = await fetch(`/api/campaigns/${id}`).then((r) => r.json());
       setCampaign(updated);
     } else {
       setMsg("Erreur envoi");
+      notify.error("Erreur", "Envoi de la campagne echoue");
     }
     setSending(false);
   };

@@ -12,6 +12,7 @@ import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AIButton } from "@/components/shared/AIButton";
+import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -181,8 +182,11 @@ export default function ContactDetailPage() {
       const updated = await res.json();
       setContact((prev) => prev ? { ...prev, type: updated.type, entreprise: updated.entreprise } : prev);
       setConvertOpen(false);
+      notify.success("Prospect converti en client");
     } catch (err) {
-      setConvertError(err instanceof Error ? err.message : "Erreur");
+      const msg = err instanceof Error ? err.message : "Erreur";
+      setConvertError(msg);
+      notify.error("Erreur conversion", msg);
     }
     setConverting(false);
   };
@@ -192,8 +196,10 @@ export default function ContactDetailPage() {
     try {
       const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
+      notify.success("Contact supprime");
       router.push("/contacts");
     } catch {
+      notify.error("Erreur", "Suppression impossible");
       setDeleting(false);
       setDeleteOpen(false);
     }

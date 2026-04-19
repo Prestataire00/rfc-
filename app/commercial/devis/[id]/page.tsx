@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { notify } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { DEVIS_STATUTS, FACTURE_STATUTS, SESSION_STATUTS, TVA_RATE } from "@/lib/constants";
@@ -80,6 +81,7 @@ export default function DevisDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     await fetch(`/api/devis/${id}`, { method: "DELETE" });
+    notify.success("Devis supprime");
     router.push("/commercial");
   };
 
@@ -91,7 +93,10 @@ export default function DevisDetailPage() {
       body: JSON.stringify({ statut: newStatut }),
     });
     if (res.ok) {
+      notify.success("Statut mis a jour", newStatut);
       await fetchDevis();
+    } else {
+      notify.error("Erreur", "Impossible de changer le statut");
     }
     setUpdatingStatut(false);
   };
@@ -101,8 +106,10 @@ export default function DevisDetailPage() {
     const res = await fetch(`/api/devis/${id}/dupliquer`, { method: "POST" });
     if (res.ok) {
       const copie = await res.json();
+      notify.success("Devis duplique", copie.numero);
       router.push(`/commercial/devis/${copie.id}`);
     } else {
+      notify.error("Erreur", "Duplication impossible");
       setDuplicating(false);
     }
   };
@@ -118,10 +125,12 @@ export default function DevisDetailPage() {
     setEmailOpen(false);
     setSending(false);
     if (res.ok) {
-      setEmailMsg(data.skipped ? "SMTP non configuré (voir .env)" : "Email envoyé avec succès !");
+      if (data.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
+      else { setEmailMsg("Email envoye !"); notify.success("Devis envoye par email"); }
       fetchDevis();
     } else {
-      setEmailMsg(data.error || "Erreur lors de l'envoi");
+      setEmailMsg(data.error || "Erreur envoi");
+      notify.error("Erreur envoi", data.error);
     }
     setTimeout(() => setEmailMsg(""), 4000);
   };

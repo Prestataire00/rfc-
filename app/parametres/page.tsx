@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield, Building2, Save, FileText, CreditCard, Palette } from "lucide-react";
 import { ImageUpload } from "@/components/shared/ImageUpload";
+import { notify } from "@/lib/toast";
 
 type Parametres = {
   nomEntreprise: string;
@@ -83,7 +84,10 @@ export default function ParametresPage() {
     setSaving(false);
     if (res.ok) {
       setSaved(true);
+      notify.success("Parametres enregistres");
       setTimeout(() => setSaved(false), 3000);
+    } else {
+      notify.error("Erreur", "Impossible d'enregistrer les parametres");
     }
   };
 

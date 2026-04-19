@@ -14,6 +14,7 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AIButton } from "@/components/shared/AIButton";
 import { StatusPipeline } from "@/components/shared/StatusPipeline";
+import { notify } from "@/lib/toast";
 
 type Besoin = {
   id: string;
@@ -146,6 +147,7 @@ export default function BesoinDetailPage() {
 
   async function handleDelete() {
     await fetch(`/api/besoins/${id}`, { method: "DELETE" });
+    notify.success("Besoin supprime");
     router.push("/besoins");
   }
 

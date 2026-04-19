@@ -1,114 +1,75 @@
 export const dynamic = "force-dynamic";
-import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { prisma } from "@/lib/prisma";
-import { checkAIKey, AI_MODEL } from "@/lib/ai";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { checkAIKey, streamClaude, cleanAIResponse, askClaude } from "@/lib/ai";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-// Contexte complet du CRM pour guider Claude
-const CRM_CONTEXT = `Tu es l'assistant IA du CRM RFC (Rescue Formation Conseil), une plateforme de gestion pour organisme de formation professionnelle (securite, incendie, premiers secours, habilitations).
+function buildSystemPrompt(stats: {
+  contacts: number; formations: number; sessions: number; devis: number; factures: number; besoins: number;
+}): string {
+  return `Tu es l'assistant conversationnel du CRM RFC, une plateforme de gestion pour un organisme de formation professionnelle specialise dans la securite, l'incendie, les premiers secours et les habilitations electriques.
 
-Tu dois repondre en francais, de maniere concise et pragmatique. Si l'utilisateur demande ou aller pour une action, donne-lui le chemin exact (ex: /contacts/nouveau, /commercial/devis/nouveau).
+Ton role est d'aider les utilisateurs a naviguer dans le CRM, a comprendre ses fonctionnalites, et a accomplir leurs taches plus vite. Tu reponds en francais, de maniere concise et pragmatique, en 3 a 5 phrases maximum pour une question simple.
 
-## Structure du CRM
+La partie CRM permet de gerer les contacts a /contacts, les entreprises a /entreprises, les besoins a /besoins. La partie pedagogique regroupe les formations a /formations, les sessions a /sessions, les formateurs a /formateurs. La partie commerciale se trouve a /commercial pour devis et factures. La qualite couvre /evaluations et /qualiopi. L'administration est a /parametres et /parametres/automations-v2.
 
-### CRM (gestion clientele)
-- **/contacts** : gestion des contacts (stagiaires, clients, prospects)
-  - Sous-vues : /contacts?type=stagiaire, /contacts?type=client, /contacts?type=prospect
-  - Fiche contact avec onglets : Informations, Formations, Documents, Devis, Evaluations, Besoins
-  - Bouton "Convertir en client" sur les prospects
-- **/entreprises** : gestion des entreprises clientes (sous Contacts)
-- **/besoins** : gestion des besoins de formation exprimes par les clients
+Donnees actuelles : ${stats.contacts} contacts, ${stats.formations} formations, ${stats.sessions} sessions, ${stats.devis} devis, ${stats.factures} factures et ${stats.besoins} besoins.
 
-### Pedagogie
-- **/formations** : catalogue de formations (vue grille avec images, vue liste)
-  - Sous-vues : /formations (catalogue), /lieux-formation (salles)
-  - Fiche formation avec onglets : Description, Sessions, Documents, Evaluations, Programme, Espace Apprenant
-- **/sessions** : sessions de formation planifiees
-- **/formateurs** : equipe de formateurs (avec photo, CV, specialites)
-
-### Commercial
-- **/commercial** : tableau de bord devis et factures
-- **/commercial/devis/nouveau** : creer un devis (peut etre pre-rempli via ?contactId= ou ?entrepriseId= ou ?besoinId=)
-- **/commercial/factures/nouveau** : creer une facture (peut etre pre-rempli via ?devisId=)
-- **/bpf** : Bilan Pedagogique et Financier
-
-### Qualite (Qualiopi)
-- **/evaluations** : gestion des evaluations (satisfaction chaud/froid, acquis)
-- **/qualiopi** : suivi qualite avec tableau et vue Qualiopi (7 criteres RNQ)
-- **/qualiopi/indicateurs** : KPIs qualite
-- **/qualiopi/amelioration** : actions d'amelioration continue (Critere 32)
-- **/qualiopi/incidents** : incidents et reclamations
-- **/qualiopi/audits** : suivi des audits
-
-### Admin
-- **/utilisateurs** : gestion des utilisateurs
-- **/parametres** : parametres de l'entreprise, SMTP, questionnaires
-- **/dashboard/analytics** : statistiques
-
-## Fonctionnalites IA disponibles
-Dans chaque formulaire, des boutons violets "Generer avec IA" permettent de :
-- Generer une description, des objectifs, un programme de formation
-- Rediger un email de prise de contact, de relance
-- Generer un brief de besoin
-- Analyser la qualite et proposer un plan d'amelioration
-
-## Regles
-- Si une question necessite des donnees, utilise les stats fournies dans le contexte utilisateur
-- Si l'utilisateur veut creer/modifier quelque chose, donne le lien direct
-- Si tu ne sais pas, dis-le et suggere de contacter le support
-- Reste professionnel, concis, et utile`;
+Tu ecris en prose normale, jamais de dieses, jamais d'etoiles, jamais de tirets en debut de ligne. Tu es chaleureux et professionnel.`;
+}
 
 export async function POST(req: NextRequest) {
   if (!checkAIKey()) {
-    return NextResponse.json({ error: "Cle Anthropic manquante (ANTHROPIC_API_KEY)" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Cle Anthropic manquante" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 
   try {
     const body = await req.json();
-    const { messages, currentPath } = body as { messages: ChatMessage[]; currentPath?: string };
+    const { messages, stream: shouldStream } = body as { messages: ChatMessage[]; stream?: boolean };
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: "Aucun message" }, { status: 400 });
+    if (!messages?.length) {
+      return new Response(JSON.stringify({ error: "Aucun message" }), { status: 400 });
     }
 
-    // Recupere stats utiles pour contextualiser
-    const [nbContacts, nbFormations, nbSessions, nbDevis, nbFactures, nbBesoins] = await Promise.all([
-      prisma.contact.count().catch(() => 0),
-      prisma.formation.count({ where: { actif: true } }).catch(() => 0),
-      prisma.session.count().catch(() => 0),
-      prisma.devis.count().catch(() => 0),
-      prisma.facture.count().catch(() => 0),
-      prisma.besoinFormation.count().catch(() => 0),
+    const [contacts, formations, sessions, devis, factures, besoins] = await Promise.all([
+      prisma.contact.count().catch(() => 0), prisma.formation.count().catch(() => 0),
+      prisma.session.count().catch(() => 0), prisma.devis.count().catch(() => 0),
+      prisma.facture.count().catch(() => 0), prisma.besoinFormation.count().catch(() => 0),
     ]);
 
-    const contextStats = `
-## Donnees actuelles du CRM
-- ${nbContacts} contacts
-- ${nbFormations} formations actives
-- ${nbSessions} sessions
-- ${nbDevis} devis
-- ${nbFactures} factures
-- ${nbBesoins} besoins de formation
-${currentPath ? `\nPage actuelle de l'utilisateur : ${currentPath}` : ""}
-`.trim();
+    const systemPrompt = buildSystemPrompt({ contacts, formations, sessions, devis, factures, besoins });
 
-    const systemPrompt = `${CRM_CONTEXT}\n\n${contextStats}`;
+    if (shouldStream) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            const claudeStream = await streamClaude(messages, systemPrompt);
+            let buffer = "";
+            for await (const event of claudeStream) {
+              if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+                buffer += event.delta.text;
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanAIResponse(buffer) })}\n\n`));
+              }
+            }
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          } catch (err) {
+            console.error("[chat] stream error", err);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Erreur" })}\n\n`));
+            controller.close();
+          }
+        },
+      });
+      return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" } });
+    }
 
-    const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    });
-
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
-    return NextResponse.json({ text });
-  } catch (err: unknown) {
-    console.error("AI chat error:", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Erreur IA" }, { status: 500 });
+    const text = await askClaude(`${systemPrompt}\n\n${messages.map((m) => `${m.role === "user" ? "Utilisateur" : "Assistant"} : ${m.content}`).join("\n")}`, 1500);
+    return new Response(JSON.stringify({ text }), { headers: { "Content-Type": "application/json" } });
+  } catch (err) {
+    console.error("[chat]", err);
+    return new Response(JSON.stringify({ error: "Erreur" }), { status: 500 });
   }
 }

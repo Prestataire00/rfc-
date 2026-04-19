@@ -23,10 +23,19 @@ export function MaJournee() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard/tasks")
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    function load() {
+      fetch("/api/dashboard/tasks")
+        .then((r) => r.json())
+        .then((d) => { setData(d); setLoading(false); })
+        .catch(() => setLoading(false));
+    }
+    load();
+
+    // Refresh quand l'onglet redevient visible + toutes les 2 min
+    function onVisible() { if (document.visibilityState === "visible") load(); }
+    document.addEventListener("visibilitychange", onVisible);
+    const interval = setInterval(load, 120000);
+    return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
   }, []);
 
   if (loading) {

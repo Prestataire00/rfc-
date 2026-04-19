@@ -4,6 +4,7 @@ import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
         <SessionProvider>
           <ThemeProvider>
             <AppShell>{children}</AppShell>
+            <Toaster position="top-right" richColors closeButton duration={4000} />
           </ThemeProvider>
         </SessionProvider>
       </body>

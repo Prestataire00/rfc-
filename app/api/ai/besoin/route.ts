@@ -56,7 +56,7 @@ Pour chaque formation recommandee, indique :
 - La justification en 1-2 phrases`;
 
       const text = await askClaude(prompt, 1500);
-      return NextResponse.json({ text: stripMarkdown(text) });
+      return NextResponse.json({ text: text });
     }
 
     if (action === "brief") {
@@ -83,7 +83,7 @@ Duree estimee : ...h
 Prerequis : ...`;
 
       const text = await askClaude(prompt, 1500);
-      return NextResponse.json({ text: stripMarkdown(text) });
+      return NextResponse.json({ text: text });
     }
 
     // Analyse par defaut
@@ -109,23 +109,10 @@ Reponds avec :
 5. Type de formation recommande : ...`;
 
     const text = await askClaude(prompt, 1500);
-    return NextResponse.json({ text: stripMarkdown(text) });
+    return NextResponse.json({ text: text });
   } catch (err: unknown) {
     console.error("AI besoin error:", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Erreur IA" }, { status: 500 });
   }
 }
-
-// Nettoyage de securite : retire le Markdown residuel si Claude en met quand meme
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*([^*]+)\*\*/g, "$1")     // **bold** -> bold
-    .replace(/\*([^*]+)\*/g, "$1")          // *italic* -> italic
-    .replace(/^#{1,6}\s+/gm, "")            // ## heading -> heading
-    .replace(/^---+$/gm, "")                // --- separators
-    .replace(/```[\s\S]*?```/g, "")         // code blocks
-    .replace(/`([^`]+)`/g, "$1")            // inline code
-    .replace(/^\* /gm, "- ")               // * bullets -> - bullets
-    .replace(/\n{3,}/g, "\n\n")            // collapse multiple blank lines
-    .trim();
-}
+// stripMarkdown supprime — askClaude fait le nettoyage automatiquement via cleanAIResponse

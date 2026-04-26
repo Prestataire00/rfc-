@@ -40,11 +40,27 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Images Unsplash thematiques (libres de droits, optimisees 800px)
+const IMG = {
+  secourisme: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80",
+  premiers_secours: "https://images.unsplash.com/photo-1612531386530-97286d97c2d2?w=800&q=80",
+  ssiap_initial: "https://images.unsplash.com/photo-1599909533730-3aa97a32c69a?w=800&q=80",
+  ssiap_recyclage: "https://images.unsplash.com/photo-1582551256137-aac63cc92e89?w=800&q=80",
+  ssiap_chef: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&q=80",
+  extincteur: "https://images.unsplash.com/photo-1583922606661-0822ed0bd916?w=800&q=80",
+  evacuation: "https://images.unsplash.com/photo-1584433144859-1fc3ab64a957?w=800&q=80",
+  guide_file: "https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=80",
+  aps: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800&q=80",
+  videoprotection: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&q=80",
+  electricite: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80",
+};
+
 // Catalogue officiel RFC — d'apres le PDF du 01/06/2025
 const CATALOGUE_RFC = [
   // ============= SECOURISME =============
   {
     titre: "Sauveteur Secouriste du Travail (SST)",
+    image: IMG.secourisme,
     description: "Formation initiale SST. Le personnel sera capable de participer a la prevention dans l'entreprise et de connaitre les gestes elementaires de secours dans l'attente des services de secours specialises.",
     duree: 14, tarif: 250, niveau: "tous", certifiante: true,
     categorie: "Secourisme",
@@ -60,6 +76,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "MAC SST - Maintien et actualisation des competences",
+    image: IMG.secourisme,
     description: "Recyclage SST tous les 24 mois. Assurer que les SST conservent leurs connaissances et leurs reflexes pour porter secours rapidement et efficacement.",
     duree: 7, tarif: 150, niveau: "tous", certifiante: true,
     categorie: "Secourisme",
@@ -74,6 +91,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Initiation aux gestes de premiers secours",
+    image: IMG.premiers_secours,
     description: "Acquerir les competences d'intervention en toute securite lors d'un accident et porter secours.",
     duree: 7, tarif: 120, niveau: "tous", certifiante: false,
     categorie: "Secourisme",
@@ -89,6 +107,7 @@ const CATALOGUE_RFC = [
   // ============= SSIAP 1 =============
   {
     titre: "SSIAP 1 - Agent de service de securite incendie",
+    image: IMG.ssiap_initial,
     description: "Formation initiale SSIAP 1 pour postuler a un poste d'agent de securite incendie en ERP ou IGH.",
     duree: 70, tarif: 1200, niveau: "tous", certifiante: true,
     categorie: "Securite Incendie",
@@ -103,6 +122,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Recyclage SSIAP 1",
+    image: IMG.ssiap_recyclage,
     description: "Recyclage triennal SSIAP 1 pour les agents en activite.",
     duree: 14, tarif: 300, niveau: "tous", certifiante: true,
     categorie: "Securite Incendie",
@@ -117,6 +137,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Remise a niveau SSIAP 1",
+    image: IMG.ssiap_recyclage,
     description: "Remise a niveau SSIAP 1 pour agents dont le diplome est perime.",
     duree: 21, tarif: 450, niveau: "tous", certifiante: true,
     categorie: "Securite Incendie",
@@ -132,6 +153,7 @@ const CATALOGUE_RFC = [
   // ============= SSIAP 2 =============
   {
     titre: "SSIAP 2 - Chef d'equipe de service de securite incendie",
+    image: IMG.ssiap_chef,
     description: "Formation initiale SSIAP 2 pour postuler comme chef d'equipe de securite incendie en ERP ou IGH.",
     duree: 70, tarif: 1500, niveau: "intermediaire", certifiante: true,
     categorie: "Securite Incendie",
@@ -146,6 +168,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Recyclage SSIAP 2",
+    image: IMG.ssiap_chef,
     description: "Recyclage triennal SSIAP 2.",
     duree: 14, tarif: 350, niveau: "intermediaire", certifiante: true,
     categorie: "Securite Incendie",
@@ -160,6 +183,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Remise a niveau SSIAP 2",
+    image: IMG.ssiap_chef,
     description: "Remise a niveau SSIAP 2 pour chefs d'equipe dont le diplome est perime.",
     duree: 21, tarif: 500, niveau: "intermediaire", certifiante: true,
     categorie: "Securite Incendie",
@@ -175,6 +199,7 @@ const CATALOGUE_RFC = [
   // ============= SSIAP 3 =============
   {
     titre: "SSIAP 3 - Chef de service de securite incendie",
+    image: IMG.ssiap_chef,
     description: "Formation initiale SSIAP 3 - chef de service securite incendie pour ERP et IGH.",
     duree: 217, tarif: 4500, niveau: "avance", certifiante: true,
     categorie: "Securite Incendie", codeRNCP: "RS5643",
@@ -189,6 +214,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Recyclage SSIAP 3",
+    image: IMG.ssiap_chef,
     description: "Recyclage triennal SSIAP 3.",
     duree: 21, tarif: 600, niveau: "avance", certifiante: true,
     categorie: "Securite Incendie",
@@ -203,6 +229,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Remise a niveau SSIAP 3",
+    image: IMG.ssiap_chef,
     description: "Remise a niveau SSIAP 3 pour chefs de service dont le diplome est perime.",
     duree: 35, tarif: 900, niveau: "avance", certifiante: true,
     categorie: "Securite Incendie", codeRNCP: "RS5643",
@@ -218,6 +245,7 @@ const CATALOGUE_RFC = [
   // ============= EXERCICES INCENDIE =============
   {
     titre: "Exercice de manipulation des moyens de secours",
+    image: IMG.extincteur,
     description: "Formation pratique a la manipulation des extincteurs en cas de depart de feu.",
     duree: 2, tarif: 80, niveau: "tous", certifiante: false,
     categorie: "Securite Incendie",
@@ -232,6 +260,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Exercice d'evacuation",
+    image: IMG.evacuation,
     description: "Formation pratique a l'evacuation d'urgence en cas d'alerte incendie.",
     duree: 1, tarif: 50, niveau: "tous", certifiante: false,
     categorie: "Securite Incendie",
@@ -246,6 +275,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Guide-file et Serre-file",
+    image: IMG.guide_file,
     description: "Formation des guides et serre-files responsables de l'evacuation des locaux.",
     duree: 4, tarif: 100, niveau: "tous", certifiante: false,
     categorie: "Securite Incendie",
@@ -262,6 +292,7 @@ const CATALOGUE_RFC = [
   // ============= APS / PREVENTION SECURITE =============
   {
     titre: "TFP APS - Agent de Prevention et de Securite",
+    image: IMG.aps,
     description: "Titre a finalite professionnelle d'agent de prevention et de securite. Obligatoire pour exercer en tant qu'agent de securite et obtenir la carte professionnelle CNAPS.",
     duree: 175, tarif: 2500, niveau: "tous", certifiante: true,
     categorie: "Prevention Securite", codeRNCP: "RNCP37035",
@@ -276,6 +307,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "MAC APS - Maintien et actualisation des competences APS",
+    image: IMG.aps,
     description: "Recyclage quinquennal obligatoire pour les agents de prevention et securite.",
     duree: 34, tarif: 600, niveau: "tous", certifiante: true,
     categorie: "Prevention Securite",
@@ -292,6 +324,7 @@ const CATALOGUE_RFC = [
   // ============= VIDEOPROTECTION =============
   {
     titre: "OVP - Operateur Videoprotection",
+    image: IMG.videoprotection,
     description: "Formation initiale d'operateur videoprotection - Titre RNCP 37737.",
     duree: 159, tarif: 2200, niveau: "tous", certifiante: true,
     categorie: "Videoprotection", codeRNCP: "RNCP37737",
@@ -306,6 +339,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "OVP - Module complementaire (titulaires APS)",
+    image: IMG.videoprotection,
     description: "Module videoprotection complementaire pour titulaires de la carte APS surveillance humaine.",
     duree: 95, tarif: 1500, niveau: "tous", certifiante: true,
     categorie: "Videoprotection", codeRNCP: "RNCP37737",
@@ -320,6 +354,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "MAC OVP - Recyclage Operateur Videoprotection",
+    image: IMG.videoprotection,
     description: "Recyclage quinquennal des operateurs videoprotection.",
     duree: 31, tarif: 550, niveau: "tous", certifiante: true,
     categorie: "Videoprotection",
@@ -336,6 +371,7 @@ const CATALOGUE_RFC = [
   // ============= HABILITATION ELECTRIQUE =============
   {
     titre: "Habilitation electrique H0-B0",
+    image: IMG.electricite,
     description: "Habilitation electrique non electricien (executant) pour personnes intervenant a proximite d'installations electriques.",
     duree: 7, tarif: 200, niveau: "tous", certifiante: true,
     categorie: "Habilitation Electrique",
@@ -350,6 +386,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Habilitation electrique BS-BE",
+    image: IMG.electricite,
     description: "Habilitation electrique pour intervention de manoeuvres simples sur installations basse tension.",
     duree: 14, tarif: 350, niveau: "tous", certifiante: true,
     categorie: "Habilitation Electrique",
@@ -364,6 +401,7 @@ const CATALOGUE_RFC = [
   },
   {
     titre: "Habilitation electrique BR-H0V",
+    image: IMG.electricite,
     description: "Habilitation electrique pour interventions completes en basse tension (BR) et travaux a proximite haute tension (H0V).",
     duree: 21, tarif: 500, niveau: "intermediaire", certifiante: true,
     categorie: "Habilitation Electrique",

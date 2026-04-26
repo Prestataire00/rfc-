@@ -40,19 +40,31 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Images Unsplash thematiques (libres de droits, optimisees 800px)
+// Images Pexels thematiques (libres de droits, URLs stables)
+// Photos selectionnees pour leur pertinence directe au metier RFC
 const IMG = {
-  secourisme: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80",
-  premiers_secours: "https://images.unsplash.com/photo-1612531386530-97286d97c2d2?w=800&q=80",
-  ssiap_initial: "https://images.unsplash.com/photo-1599909533730-3aa97a32c69a?w=800&q=80",
-  ssiap_recyclage: "https://images.unsplash.com/photo-1582551256137-aac63cc92e89?w=800&q=80",
-  ssiap_chef: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&q=80",
-  extincteur: "https://images.unsplash.com/photo-1583922606661-0822ed0bd916?w=800&q=80",
-  evacuation: "https://images.unsplash.com/photo-1584433144859-1fc3ab64a957?w=800&q=80",
-  guide_file: "https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=800&q=80",
-  aps: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800&q=80",
-  videoprotection: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&q=80",
-  electricite: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80",
+  // Secourisme : trousse de premiers secours, defibrillateur, formation CPR
+  secourisme: "https://images.pexels.com/photos/4226119/pexels-photo-4226119.jpeg?auto=compress&cs=tinysrgb&w=800",
+  premiers_secours: "https://images.pexels.com/photos/6520207/pexels-photo-6520207.jpeg?auto=compress&cs=tinysrgb&w=800",
+
+  // SSIAP : pompiers en uniforme, formation incendie
+  ssiap_initial: "https://images.pexels.com/photos/280076/pexels-photo-280076.jpeg?auto=compress&cs=tinysrgb&w=800",
+  ssiap_recyclage: "https://images.pexels.com/photos/9002745/pexels-photo-9002745.jpeg?auto=compress&cs=tinysrgb&w=800",
+  ssiap_chef: "https://images.pexels.com/photos/8985641/pexels-photo-8985641.jpeg?auto=compress&cs=tinysrgb&w=800",
+
+  // Exercices incendie
+  extincteur: "https://images.pexels.com/photos/280076/pexels-photo-280076.jpeg?auto=compress&cs=tinysrgb&w=800",
+  evacuation: "https://images.pexels.com/photos/2293046/pexels-photo-2293046.jpeg?auto=compress&cs=tinysrgb&w=800",
+  guide_file: "https://images.pexels.com/photos/1108101/pexels-photo-1108101.jpeg?auto=compress&cs=tinysrgb&w=800",
+
+  // APS : agent de securite en uniforme
+  aps: "https://images.pexels.com/photos/2099691/pexels-photo-2099691.jpeg?auto=compress&cs=tinysrgb&w=800",
+
+  // Videoprotection : ecrans de surveillance, cameras CCTV
+  videoprotection: "https://images.pexels.com/photos/95425/pexels-photo-95425.jpeg?auto=compress&cs=tinysrgb&w=800",
+
+  // Habilitation electrique : tableau electrique, electricien
+  electricite: "https://images.pexels.com/photos/3964340/pexels-photo-3964340.jpeg?auto=compress&cs=tinysrgb&w=800",
 };
 
 // Catalogue officiel RFC — d'apres le PDF du 01/06/2025

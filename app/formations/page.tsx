@@ -6,8 +6,9 @@ import {
   BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
   Download, Pencil, Trash2, LayoutGrid, List, ToggleLeft, ToggleRight,
   Star, Monitor, Video, Shuffle, Clock, Award, Euro, Users, FileText,
-  CheckCircle2, AlertCircle, Archive,
+  CheckCircle2, AlertCircle, Archive, Sparkles,
 } from "lucide-react";
+import { notify } from "@/lib/toast";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -287,6 +288,19 @@ export default function FormationsPage() {
           >
             <BookOpen className="h-4 w-4" /> Nouvelle formation
           </Link>
+          <button
+            onClick={async () => {
+              if (!confirm("Importer le catalogue officiel RFC (23 formations) ? Les formations existantes ne seront pas modifiees.")) return;
+              const promise = fetch("/api/formations/seed-rfc", { method: "POST" }).then((r) => r.ok ? r.json() : Promise.reject());
+              notify.promise(promise, { loading: "Import en cours...", success: "Catalogue RFC importe", error: "Erreur d'import" });
+              await promise;
+              window.location.reload();
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            title="Importer le catalogue officiel RFC (23 formations)"
+          >
+            <Sparkles className="h-4 w-4 text-red-500" /> Importer catalogue RFC
+          </button>
           <button
             onClick={() => window.open("/api/export/formations", "_blank")}
             className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"

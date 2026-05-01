@@ -31,6 +31,7 @@ const adminPages = [
 
 // Admin-only API prefixes
 const adminApiPrefixes = [
+  "/api/ai",
   "/api/formations",
   "/api/sessions",
   "/api/contacts",

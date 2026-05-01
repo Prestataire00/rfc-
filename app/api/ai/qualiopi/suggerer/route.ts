@@ -2,11 +2,14 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
+import { aiGuard } from "@/lib/ai-guard";
 
 // POST /api/ai/qualiopi/suggerer
 // Body: { type: "amelioration" | "incident" | "audit", count?: number }
 // Retour: { items: [...] } tableau structure d'actions/incidents/points d'audit
 export async function POST(req: NextRequest) {
+  const guard = await aiGuard(req);
+  if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
 
   try {

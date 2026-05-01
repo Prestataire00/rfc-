@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Anthropic from "@anthropic-ai/sdk";
+import { aiGuard } from "@/lib/ai-guard";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -9,6 +10,8 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // Analyse un document uploade (habilitation, carte pro, diplome) avec Claude Vision.
 // Body: { contactId, documentUrl, documentNom }
 export async function POST(req: NextRequest) {
+  const guard = await aiGuard(req);
+  if (!guard.ok) return guard.response;
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: "Cle API Anthropic non configuree" }, { status: 500 });

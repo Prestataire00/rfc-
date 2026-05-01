@@ -1,10 +1,13 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { aiGuard } from "@/lib/ai-guard";
 
 // PUT /api/ai/document-analysis/[id] — validation manuelle admin
 // Body: { statut: "valide_manuel" | "rejete", commentaireAdmin? }
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const guard = await aiGuard(req);
+  if (!guard.ok) return guard.response;
   try {
     const body = await req.json();
     const validStatuts = ["valide_manuel", "rejete", "a_verifier", "valide_auto"];

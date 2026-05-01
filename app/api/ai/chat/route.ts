@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAIKey, streamClaude, cleanAIResponse, askClaude } from "@/lib/ai";
+import { aiGuard } from "@/lib/ai-guard";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -21,6 +22,8 @@ Tu ecris en prose normale, jamais de dieses, jamais d'etoiles, jamais de tirets 
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await aiGuard(req);
+  if (!guard.ok) return guard.response;
   if (!checkAIKey()) {
     return new Response(JSON.stringify({ error: "Cle Anthropic manquante" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }

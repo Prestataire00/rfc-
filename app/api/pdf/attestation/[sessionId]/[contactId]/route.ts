@@ -6,14 +6,12 @@ import { attestationPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
+import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { sessionId: string; contactId: string } }
-) {
-  try {
+export const GET = withErrorHandlerParams<{ sessionId: string; contactId: string }>(
+  async (_req: NextRequest, { params }) => {
     const [session, contact, parametres] = await Promise.all([
       prisma.session.findUnique({
         where: { id: params.sessionId },
@@ -65,8 +63,5 @@ export async function GET(
         "Content-Disposition": `attachment; filename="attestation-${contact.prenom}-${contact.nom}.pdf"`,
       },
     });
-  } catch (err: unknown) {
-    console.error("Erreur generation attestation PDF:", err);
-    return NextResponse.json({ error: "Erreur lors de la generation de l'attestation" }, { status: 500 });
   }
-}
+);

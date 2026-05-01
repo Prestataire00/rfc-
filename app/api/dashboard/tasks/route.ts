@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
-export async function GET() {
+export const GET = withErrorHandler(async () => {
   const now = new Date();
   const j15 = new Date(now); j15.setDate(j15.getDate() - 15);
   const j3 = new Date(now); j3.setDate(j3.getDate() - 3);
@@ -56,8 +57,8 @@ export async function GET() {
       inscriptionsAValider,
       recyclages: recyclagesRaw.map((r) => ({ ...r, label: r.formation?.titre || "Certification", expireLe: r.dateExpiration })),
     });
-  } catch (err) {
-    console.error("[dashboard/tasks]", err);
+  } catch {
+    // Fallback gracieux : on renvoie des listes vides plutôt qu'une erreur 500
     return NextResponse.json({ sessionsJour: [], devisARelancer: [], facturesEnRetard: [], besoinsAQualifier: [], inscriptionsAValider: [], recyclages: [] });
   }
-}
+});

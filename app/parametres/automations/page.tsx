@@ -109,10 +109,14 @@ export default function AutomationsSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-md bg-blue-900/20 border border-blue-700 px-4 py-3 text-sm text-blue-300 flex items-start gap-2 mb-6">
+      <div className="rounded-md bg-amber-900/20 border border-amber-600 px-4 py-3 text-sm text-amber-200 flex items-start gap-2 mb-6">
         <Info className="h-4 w-4 mt-0.5 shrink-0" />
         <div>
-          Les automatisations s&apos;executent toutes les heures via un cron. <strong>J-2</strong> signifie 2 jours avant, <strong>J+1</strong> signifie le lendemain. Chaque regle peut etre desactivee ou surchargee session par session.
+          <strong>Moteur V1 déprécié.</strong> Les règles ci-dessous ne sont plus exécutées par le cron.
+          Utilisez le nouveau builder graphique :{" "}
+          <Link href="/parametres/automations-v2" className="underline hover:text-amber-100">
+            Automations V2
+          </Link>.
         </div>
       </div>
 

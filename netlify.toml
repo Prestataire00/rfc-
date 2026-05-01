@@ -21,10 +21,11 @@
   schedule = "0 9 * * *"
   path = "/api/cron/factures"
 
-# Cron : execution horaire des automatisations V1 (convocations, evaluations, fiches, etc)
-[[crons]]
-  schedule = "0 * * * *"
-  path = "/api/cron/automations"
+# V1 cron désactivé — moteur déprécié au profit du V2 (chantier 2).
+# La route /api/cron/automations répond désormais 410 Gone.
+# [[crons]]
+#   schedule = "0 * * * *"
+#   path = "/api/cron/automations"
 
 # Cron V2 : moteur d'automatisation graphique (toutes les 15 min pour reactivite)
 [[crons]]

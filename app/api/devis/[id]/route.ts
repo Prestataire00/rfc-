@@ -77,21 +77,23 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
   const montantTTC = montantHT * (1 + tauxTVA / 100);
 
-  await prisma.ligneDevis.deleteMany({ where: { devisId: params.id } });
-
-  const devis = await prisma.devis.update({
-    where: { id: params.id },
-    data: {
-      ...rest,
-      tauxTVA,
-      montantHT,
-      montantTTC,
-      dateValidite: new Date(dateValidite),
-      entrepriseId: entrepriseId || null,
-      contactId: contactId || null,
-      lignes: { create: lignes },
-    },
-    include: { lignes: true },
+  // Atomique : on remplace les lignes seulement si l'update du devis réussit.
+  const devis = await prisma.$transaction(async (tx) => {
+    await tx.ligneDevis.deleteMany({ where: { devisId: params.id } });
+    return tx.devis.update({
+      where: { id: params.id },
+      data: {
+        ...rest,
+        tauxTVA,
+        montantHT,
+        montantTTC,
+        dateValidite: new Date(dateValidite),
+        entrepriseId: entrepriseId || null,
+        contactId: contactId || null,
+        lignes: { create: lignes },
+      },
+      include: { lignes: true },
+    });
   });
   return NextResponse.json(devis);
 });

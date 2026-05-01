@@ -1,41 +1,32 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const evaluation = await prisma.evaluation.findUnique({
-      where: { id: params.id },
-      include: {
-        session: { include: { formation: true, formateur: true } },
-        contact: true,
-      },
-    });
-    if (!evaluation) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(evaluation);
-  } catch (err: unknown) {
-    console.error("Erreur GET évaluation:", err);
-    return NextResponse.json({ error: "Erreur lors de la récupération de l'évaluation" }, { status: 500 });
-  }
-}
+export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const evaluation = await prisma.evaluation.findUnique({
+    where: { id: params.id },
+    include: {
+      session: { include: { formation: true, formateur: true } },
+      contact: true,
+    },
+  });
+  if (!evaluation) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(evaluation);
+});
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const body = await req.json();
+export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const body = await req.json();
 
-    const evaluation = await prisma.evaluation.update({
-      where: { id: params.id },
-      data: {
-        noteGlobale: body.noteGlobale ? parseInt(body.noteGlobale) : null,
-        reponses: body.reponses ? JSON.stringify(body.reponses) : undefined,
-        commentaire: body.commentaire || null,
-        estComplete: body.estComplete ?? false,
-      },
-    });
+  const evaluation = await prisma.evaluation.update({
+    where: { id: params.id },
+    data: {
+      noteGlobale: body.noteGlobale ? parseInt(body.noteGlobale) : null,
+      reponses: body.reponses ? JSON.stringify(body.reponses) : undefined,
+      commentaire: body.commentaire || null,
+      estComplete: body.estComplete ?? false,
+    },
+  });
 
-    return NextResponse.json(evaluation);
-  } catch (err: unknown) {
-    console.error("Erreur PUT évaluation:", err);
-    return NextResponse.json({ error: "Erreur lors de la mise à jour de l'évaluation" }, { status: 500 });
-  }
-}
+  return NextResponse.json(evaluation);
+});

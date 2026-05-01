@@ -2,76 +2,58 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { contactSchema } from "@/lib/validations/contact";
+import { withErrorHandlerParams } from "@/lib/api-wrapper";
+import { parsePartialBody } from "@/lib/validations/helpers";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const contact = await prisma.contact.findUnique({
-      where: { id: params.id },
-      include: {
-        entreprise: true,
-        inscriptions: {
-          include: {
-            session: { include: { formation: true } },
-          },
-          orderBy: { createdAt: "desc" },
+export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const contact = await prisma.contact.findUnique({
+    where: { id: params.id },
+    include: {
+      entreprise: true,
+      inscriptions: {
+        include: {
+          session: { include: { formation: true } },
         },
-        devis: { orderBy: { createdAt: "desc" } },
-        attestations: { orderBy: { createdAt: "desc" } },
-        evaluations: { orderBy: { createdAt: "desc" } },
-        besoins: {
-          include: { formation: true },
-          orderBy: { createdAt: "desc" },
-        },
-        feuillesPresence: {
-          include: { session: { include: { formation: true } } },
-          orderBy: { createdAt: "desc" },
-        },
+        orderBy: { createdAt: "desc" },
       },
-    });
+      devis: { orderBy: { createdAt: "desc" } },
+      attestations: { orderBy: { createdAt: "desc" } },
+      evaluations: { orderBy: { createdAt: "desc" } },
+      besoins: {
+        include: { formation: true },
+        orderBy: { createdAt: "desc" },
+      },
+      feuillesPresence: {
+        include: { session: { include: { formation: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
 
-    if (!contact) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
-    return NextResponse.json(contact);
-  } catch (err: unknown) {
-    console.error("Erreur GET contact:", err);
-    return NextResponse.json({ error: "Erreur lors de la récupération du contact" }, { status: 500 });
+  if (!contact) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
+  return NextResponse.json(contact);
+});
+
+export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
+  const parsed = await parsePartialBody(req, contactSchema);
+
+  const data: Record<string, unknown> = { ...parsed };
+  if (typeof data.dateNaissance === "string" && data.dateNaissance) {
+    const d = new Date(data.dateNaissance);
+    data.dateNaissance = isNaN(d.getTime()) ? null : d;
   }
-}
-
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const body = await req.json();
-    const parsed = contactSchema.partial().safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    }
-
-    const data: Record<string, unknown> = { ...parsed.data };
-    if (typeof data.dateNaissance === "string" && data.dateNaissance) {
-      const d = new Date(data.dateNaissance);
-      data.dateNaissance = isNaN(d.getTime()) ? null : d;
-    }
-    if (typeof data.numeroSecuriteSociale === "string" && data.numeroSecuriteSociale) {
-      data.numeroSecuriteSociale = data.numeroSecuriteSociale.replace(/\s/g, "");
-    }
-
-    const contact = await prisma.contact.update({
-      where: { id: params.id },
-      data,
-    });
-    return NextResponse.json(contact);
-  } catch (err: unknown) {
-    console.error("Erreur PUT contact:", err);
-    return NextResponse.json({ error: "Erreur lors de la mise à jour du contact" }, { status: 500 });
+  if (typeof data.numeroSecuriteSociale === "string" && data.numeroSecuriteSociale) {
+    data.numeroSecuriteSociale = data.numeroSecuriteSociale.replace(/\s/g, "");
   }
-}
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    await prisma.contact.delete({ where: { id: params.id } });
-    return NextResponse.json({ success: true });
-  } catch (err: unknown) {
-    console.error("Erreur DELETE contact:", err);
-    return NextResponse.json({ error: "Erreur lors de la suppression du contact" }, { status: 500 });
-  }
-}
+  const contact = await prisma.contact.update({
+    where: { id: params.id },
+    data,
+  });
+  return NextResponse.json(contact);
+});
+
+export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  await prisma.contact.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
+});

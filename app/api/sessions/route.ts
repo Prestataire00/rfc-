@@ -2,10 +2,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sessionSchema } from "@/lib/validations/session";
+import { withErrorHandler } from "@/lib/api-wrapper";
+import { parseBody } from "@/lib/validations/helpers";
+import { logger } from "@/lib/logger";
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
     const statut = searchParams.get("statut") ?? "";
     const formationId = searchParams.get("formationId") ?? "";
     const formateurId = searchParams.get("formateurId") ?? "";
@@ -70,25 +72,19 @@ export async function GET(req: NextRequest) {
       orderBy: { nom: "asc" },
     });
 
-    return NextResponse.json({
-      data: paginated,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-      formateurs,
-    });
-  } catch (err: unknown) {
-    console.error("Erreur lors de la récupération des sessions:", err);
-    return NextResponse.json({ error: "Erreur lors de la récupération des sessions" }, { status: 500 });
-  }
-}
+  return NextResponse.json({
+    data: paginated,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+    formateurs,
+  });
+});
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parsed = sessionSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const parsed = await parseBody(req, sessionSchema);
 
-  const { dateDebut, dateFin, formateurId, ...rest } = parsed.data;
+  const { dateDebut, dateFin, formateurId, ...rest } = parsed;
 
   const debut = new Date(dateDebut);
   const fin = new Date(dateFin);
@@ -97,8 +93,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "La date de fin doit etre apres la date de debut" }, { status: 400 });
   }
 
-  try {
-    const session = await prisma.$transaction(async (tx) => {
+  const session = await prisma.$transaction(async (tx) => {
       const created = await tx.session.create({
         data: {
           ...rest,
@@ -112,49 +107,45 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Auto-creer les emargement tokens (matin + apres-midi par jour)
-      try {
-        const joursDiff = Math.ceil((fin.getTime() - debut.getTime()) / (1000 * 60 * 60 * 24));
-        for (let i = 0; i < Math.max(1, joursDiff); i++) {
-          const jour = new Date(debut);
-          jour.setDate(jour.getDate() + i);
-        }
-      } catch (err) {
-        console.warn("[session] Auto-creation feuilles presence echouee:", err);
+    // Auto-creer les emargement tokens (matin + apres-midi par jour)
+    try {
+      const joursDiff = Math.ceil((fin.getTime() - debut.getTime()) / (1000 * 60 * 60 * 24));
+      for (let i = 0; i < Math.max(1, joursDiff); i++) {
+        const jour = new Date(debut);
+        jour.setDate(jour.getDate() + i);
       }
-
-      return created;
-    });
-
-    // Fire-and-forget : automations + notifications
-    const { triggerAutomation } = await import("@/lib/automations-trigger");
-    const { notifyAdmins, notifyFormateur } = await import("@/lib/notifications");
-
-    triggerAutomation("session_created", {
-      sessionId: session.id,
-      formationId: session.formationId,
-      formateurId: formateurId ?? undefined,
-    }).catch((err) => console.error("[automation] session_created:", err));
-
-    notifyAdmins({
-      titre: "Nouvelle session creee",
-      message: `${session.formation.titre} — ${debut.toLocaleDateString("fr-FR")}`,
-      type: "info",
-      lien: `/sessions/${session.id}`,
-    }).catch(() => {});
-
-    if (formateurId) {
-      notifyFormateur(formateurId, {
-        titre: "Vous avez ete assigne a une session",
-        message: `${session.formation.titre} — ${debut.toLocaleDateString("fr-FR")}`,
-        type: "info",
-        lien: `/espace-formateur/sessions/${session.id}`,
-      }).catch(() => {});
+    } catch (err) {
+      logger.warn("session.auto_create_feuilles_presence_failed", { error: String(err) });
     }
 
-    return NextResponse.json(session, { status: 201 });
-  } catch (err: unknown) {
-    console.error("Session creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la creation de la session" }, { status: 500 });
+    return created;
+  });
+
+  // Fire-and-forget : automations + notifications
+  const { triggerAutomation } = await import("@/lib/automations-trigger");
+  const { notifyAdmins, notifyFormateur } = await import("@/lib/notifications");
+
+  triggerAutomation("session_created", {
+    sessionId: session.id,
+    formationId: session.formationId,
+    formateurId: formateurId ?? undefined,
+  }).catch((err) => logger.error("automation.session_created_failed", err));
+
+  notifyAdmins({
+    titre: "Nouvelle session creee",
+    message: `${session.formation.titre} — ${debut.toLocaleDateString("fr-FR")}`,
+    type: "info",
+    lien: `/sessions/${session.id}`,
+  }).catch(() => {});
+
+  if (formateurId) {
+    notifyFormateur(formateurId, {
+      titre: "Vous avez ete assigne a une session",
+      message: `${session.formation.titre} — ${debut.toLocaleDateString("fr-FR")}`,
+      type: "info",
+      lien: `/espace-formateur/sessions/${session.id}`,
+    }).catch(() => {});
   }
-}
+
+  return NextResponse.json(session, { status: 201 });
+});

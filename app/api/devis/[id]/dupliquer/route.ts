@@ -2,30 +2,33 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateNumero } from "@/lib/utils";
+import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const original = await prisma.devis.findUnique({
-      where: { id: params.id },
-      include: { lignes: true },
-    });
+// Duplique un devis : nouveau devis + N lignes copiees.
+// Atomique : si une ligne echoue, le devis n'est pas cree (etat coherent).
+export const POST = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
+  const original = await prisma.devis.findUnique({
+    where: { id: params.id },
+    include: { lignes: true },
+  });
 
-    if (!original) {
-      return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
-    }
+  if (!original) {
+    return NextResponse.json({ error: "Devis introuvable" }, { status: 404 });
+  }
 
-    const allDevis = await prisma.devis.findMany({ select: { numero: true } });
-    const maxNum = allDevis.reduce((max, d) => {
-      const n = parseInt(d.numero.split("-").pop() || "0");
-      return n > max ? n : max;
-    }, 0);
-    const numero = generateNumero("DEV", maxNum);
+  const allDevis = await prisma.devis.findMany({ select: { numero: true } });
+  const maxNum = allDevis.reduce((max, d) => {
+    const n = parseInt(d.numero.split("-").pop() || "0");
+    return n > max ? n : max;
+  }, 0);
+  const numero = generateNumero("DEV", maxNum);
 
-    const now = new Date();
-    const dateValidite = new Date(now);
-    dateValidite.setDate(dateValidite.getDate() + 30);
+  const now = new Date();
+  const dateValidite = new Date(now);
+  dateValidite.setDate(dateValidite.getDate() + 30);
 
-    const copie = await prisma.devis.create({
+  const copie = await prisma.$transaction(async (tx) => {
+    return tx.devis.create({
       data: {
         numero,
         objet: `Copie - ${original.objet}`,
@@ -43,10 +46,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
         },
       },
     });
+  });
 
-    return NextResponse.json(copie, { status: 201 });
-  } catch (err: unknown) {
-    console.error("Erreur duplication devis:", err);
-    return NextResponse.json({ error: "Erreur lors de la duplication du devis" }, { status: 500 });
-  }
-}
+  return NextResponse.json(copie, { status: 201 });
+});

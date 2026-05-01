@@ -67,3 +67,37 @@ export async function streamClaude(
     messages,
   });
 }
+
+// Analyse une image (habilitation, carte pro, diplôme, etc.) via Claude Vision.
+// Retourne le texte brut renvoyé par le modèle — au caller de parser le JSON attendu.
+type VisionMediaType = "image/png" | "image/jpeg" | "image/gif" | "image/webp";
+
+export async function askClaudeVision(
+  imageBase64: string,
+  mediaType: VisionMediaType,
+  prompt: string,
+  maxTokens = 1500
+): Promise<string> {
+  const message = await client.messages.create({
+    model: AI_MODEL,
+    max_tokens: maxTokens,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
+          { type: "text", text: prompt },
+        ],
+      },
+    ],
+  });
+  return message.content[0].type === "text" ? message.content[0].text : "";
+}
+
+export function normalizeVisionMediaType(contentType: string | null): VisionMediaType {
+  const ct = (contentType || "").toLowerCase();
+  if (ct.startsWith("image/jpeg") || ct.startsWith("image/jpg")) return "image/jpeg";
+  if (ct.startsWith("image/gif")) return "image/gif";
+  if (ct.startsWith("image/webp")) return "image/webp";
+  return "image/png";
+}

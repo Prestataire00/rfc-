@@ -3,17 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
+import { withErrorHandler } from "@/lib/api-wrapper";
+import { logger } from "@/lib/logger";
 
 // POST /api/ai/qualiopi/suggerer
 // Body: { type: "amelioration" | "incident" | "audit", count?: number }
 // Retour: { items: [...] } tableau structure d'actions/incidents/points d'audit
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const guard = await aiGuard(req);
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
 
-  try {
-    const body = await req.json();
+  const body = await req.json();
     const type = body.type as "amelioration" | "incident" | "audit";
     const count = Math.min(10, Math.max(1, body.count || 3));
 
@@ -104,14 +105,10 @@ Concentre-toi sur les vrais risques detectables dans les donnees, pas sur une ch
       const jsonStr = firstBracket >= 0 && lastBracket > firstBracket ? cleaned.slice(firstBracket, lastBracket + 1) : cleaned;
       const parsed = JSON.parse(jsonStr);
       if (Array.isArray(parsed)) items = parsed;
-    } catch (parseErr) {
-      console.error("JSON parse error, raw text:", text.slice(0, 500));
+    } catch {
+      logger.error("ai.qualiopi.parse_failed", undefined, { raw: text.slice(0, 500) });
       return NextResponse.json({ error: "Reponse IA non parsable", raw: text.slice(0, 1000) }, { status: 500 });
     }
 
-    return NextResponse.json({ items });
-  } catch (err: unknown) {
-    console.error("AI qualiopi suggerer error:", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Erreur IA" }, { status: 500 });
-  }
-}
+  return NextResponse.json({ items });
+});

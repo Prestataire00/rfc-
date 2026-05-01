@@ -3,13 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const guard = await aiGuard(req);
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
-  try {
-    const body = await req.json();
+  const body = await req.json();
     const { action, titre, description, origine, nbStagiaires, contactId, entrepriseId } = body;
 
     let contexte = `Besoin : ${titre || "Non precise"}`;
@@ -111,11 +111,6 @@ Reponds avec :
 
 5. Type de formation recommande : ...`;
 
-    const text = await askClaude(prompt, 1500);
-    return NextResponse.json({ text: text });
-  } catch (err: unknown) {
-    console.error("AI besoin error:", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Erreur IA" }, { status: 500 });
-  }
-}
-// stripMarkdown supprime — askClaude fait le nettoyage automatiquement via cleanAIResponse
+  const text = await askClaude(prompt, 1500);
+  return NextResponse.json({ text: text });
+});

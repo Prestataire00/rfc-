@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   User, Building2, Mail, Phone, Briefcase, FileText, Calendar, Pencil, Trash2,
-  BookOpen, ClipboardList, MessageSquare, FolderOpen, Award, Clock,
-  Star, Euro, CheckCircle2, XCircle, AlertCircle, Plus, ExternalLink, UserCheck, Sparkles,
+  BookOpen, ClipboardList, MessageSquare, FolderOpen, Clock,
+  Star, Euro, CheckCircle2, AlertCircle, Plus, UserCheck, Sparkles,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -20,95 +20,8 @@ import {
   BESOIN_STATUTS, BESOIN_PRIORITES, EVALUATION_TYPES,
 } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
-
-interface Session {
-  id: string;
-  dateDebut: string;
-  dateFin: string;
-  statut: keyof typeof SESSION_STATUTS;
-  lieu: string | null;
-  formation: { id: string; titre: string };
-}
-
-interface Inscription {
-  id: string;
-  statut: keyof typeof INSCRIPTION_STATUTS;
-  createdAt: string;
-  session: Session;
-}
-
-interface Devis {
-  id: string;
-  numero: string;
-  objet: string;
-  montantHT: number;
-  montantTTC: number;
-  statut: keyof typeof DEVIS_STATUTS;
-  dateEmission: string;
-  dateValidite: string;
-}
-
-interface Attestation {
-  id: string;
-  type: string;
-  statut: string;
-  createdAt: string;
-  session: { id: string; formation: { titre: string } };
-}
-
-interface EvaluationData {
-  id: string;
-  type: keyof typeof EVALUATION_TYPES;
-  noteGlobale: number | null;
-  estComplete: boolean;
-  commentaire: string | null;
-  createdAt: string;
-  session: { id: string; formation: { titre: string } };
-}
-
-interface Besoin {
-  id: string;
-  titre: string;
-  statut: keyof typeof BESOIN_STATUTS;
-  priorite: keyof typeof BESOIN_PRIORITES;
-  nbStagiaires: number | null;
-  createdAt: string;
-  formation: { id: string; titre: string } | null;
-}
-
-interface FeuillePresence {
-  id: string;
-  date: string;
-  matin: boolean;
-  apresMidi: boolean;
-  session: { id: string; formation: { titre: string } };
-}
-
-interface Entreprise {
-  id: string;
-  nom: string;
-}
-
-interface Contact {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string | null;
-  telephone: string | null;
-  type: keyof typeof CONTACT_TYPES;
-  poste: string | null;
-  notes: string | null;
-  entreprise: Entreprise | null;
-  inscriptions: Inscription[];
-  devis: Devis[];
-  attestations: Attestation[];
-  evaluations: EvaluationData[];
-  besoins: Besoin[];
-  feuillesPresence: FeuillePresence[];
-  createdAt: string;
-}
-
-type TabKey = "informations" | "formations" | "documents" | "devis" | "evaluations" | "besoins";
+import type { Contact, TabKey } from "./types";
+import { DocumentsTab } from "./DocumentsTab";
 
 export default function ContactDetailPage() {
   const params = useParams();
@@ -579,82 +492,7 @@ export default function ContactDetailPage() {
 
       {/* ============== TAB: Documents ============== */}
       {activeTab === "documents" && (
-        <div className="space-y-6">
-          {/* Attestations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Award className="h-4 w-4 text-gray-400" /> Attestations
-                {contact.attestations.length > 0 && (
-                  <span className="ml-auto text-xs text-gray-400">{contact.attestations.length} attestation(s)</span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contact.attestations.length === 0 ? (
-                <p className="text-sm text-gray-500 italic py-4 text-center">Aucune attestation generee.</p>
-              ) : (
-                <div className="space-y-3">
-                  {contact.attestations.map((att) => (
-                    <div key={att.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
-                      <div>
-                        <p className="text-sm font-medium text-gray-200">
-                          {att.type === "fin_formation" ? "Attestation de fin de formation" :
-                           att.type === "presence" ? "Attestation de presence" :
-                           att.type === "competences" ? "Attestation de competences" : att.type}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">{att.session?.formation?.titre} - {formatDate(att.createdAt)}</p>
-                      </div>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        att.statut === "envoyee" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
-                        att.statut === "validee" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" :
-                        "bg-gray-700 text-gray-300 border border-gray-600"
-                      }`}>
-                        {att.statut === "generee" ? "Generee" : att.statut === "validee" ? "Validee" : "Envoyee"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Feuilles de presence */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-gray-400" /> Feuilles de presence
-                {contact.feuillesPresence.length > 0 && (
-                  <span className="ml-auto text-xs text-gray-400">{contact.feuillesPresence.length} feuille(s)</span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contact.feuillesPresence.length === 0 ? (
-                <p className="text-sm text-gray-500 italic py-4 text-center">Aucune feuille de presence.</p>
-              ) : (
-                <div className="space-y-3">
-                  {contact.feuillesPresence.map((fp) => (
-                    <div key={fp.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-0">
-                      <div>
-                        <p className="text-sm font-medium text-gray-200">{fp.session?.formation?.titre}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{formatDate(fp.date)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${fp.matin ? "bg-emerald-500/20 text-emerald-400" : "bg-gray-700 text-gray-500"}`}>
-                          {fp.matin ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />} Matin
-                        </span>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${fp.apresMidi ? "bg-emerald-500/20 text-emerald-400" : "bg-gray-700 text-gray-500"}`}>
-                          {fp.apresMidi ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />} Apres-midi
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <DocumentsTab attestations={contact.attestations} feuillesPresence={contact.feuillesPresence} />
       )}
 
       {/* ============== TAB: Devis & Factures ============== */}

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { MapPin, Search, Pencil, Trash2, Users, Phone, Mail, Accessibility } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 interface LieuFormation {
   id: string;
@@ -27,8 +29,6 @@ interface LieuFormation {
 }
 
 export default function LieuxFormationPage() {
-  const [lieux, setLieux] = useState<LieuFormation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -37,25 +37,21 @@ export default function LieuxFormationPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
-
-    setLoading(true);
-    fetch(`/api/lieux-formation?${params.toString()}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data: any) => {
-        if (data?.lieux) setLieux(data.lieux);
-      })
-      .catch(() => setLieux([]))
-      .finally(() => setLoading(false));
+    return `/api/lieux-formation?${params.toString()}`;
   }, [debouncedSearch]);
+
+  const { data, isLoading, mutate } = useApi<{ lieux: LieuFormation[] }>(url);
+  const lieux: LieuFormation[] = data?.lieux ?? [];
+  const loading = isLoading;
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Supprimer ce lieu de formation ?")) return;
     try {
-      const res = await fetch(`/api/lieux-formation/${id}`, { method: "DELETE" });
-      if (res.ok) setLieux((prev) => prev.filter((l) => l.id !== id));
+      await api.delete(`/api/lieux-formation/${id}`);
+      await mutate();
     } catch { /* silent */ }
   };
 

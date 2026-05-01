@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   BadgeCheck, BarChart3, Shield, ChevronLeft, ChevronRight,
@@ -8,6 +8,7 @@ import {
   TrendingUp, MessageSquare, Sparkles,
 } from "lucide-react";
 import { AIButton } from "@/components/shared/AIButton";
+import { useApi } from "@/hooks/useApi";
 
 // ─── Types ───
 interface QualiteRow {
@@ -58,54 +59,53 @@ const QUALIOPI_CRITERIA = [
 export default function QualiopiPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [searchName, setSearchName] = useState("");
-  const [rows, setRows] = useState<QualiteRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [aiResult, setAiResult] = useState("");
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/evaluations").then((r) => r.ok ? r.json() : []),
-      fetch("/api/sessions").then((r) => r.ok ? r.json() : []),
-    ]).then(([evaluations, sessionsData]) => {
-      const evalsArr = Array.isArray(evaluations) ? evaluations : [];
-      const sessionsArr = Array.isArray(sessionsData) ? sessionsData : sessionsData.sessions || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: evaluationsData, isLoading: evalLoading } = useApi<any>("/api/evaluations");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sessionsData, isLoading: sessionsLoading } = useApi<any>("/api/sessions");
+  const loading = evalLoading || sessionsLoading;
 
-      // Group evaluations by session -> formation
-      const sessionMap: Record<string, { formation: string; chaud: number[]; froid: number[]; acquis: number[]; notes: number[] }> = {};
+  const rows = useMemo<QualiteRow[]>(() => {
+    const evalsArr = Array.isArray(evaluationsData) ? evaluationsData : [];
+    const sessionsArr = Array.isArray(sessionsData)
+      ? sessionsData
+      : sessionsData?.sessions || sessionsData?.data || [];
 
-      for (const ev of evalsArr) {
-        const sId = ev.session?.id;
-        const fName = ev.session?.formation?.titre || "Sans titre";
-        if (!sId) continue;
-        if (!sessionMap[sId]) sessionMap[sId] = { formation: fName, chaud: [], froid: [], acquis: [], notes: [] };
-        if (ev.estComplete && ev.noteGlobale) {
-          sessionMap[sId].notes.push(ev.noteGlobale);
-          const pct = ((ev.noteGlobale - 1) / 4) * 100; // Convert 1-5 to 0-100%
-          if (ev.type === "satisfaction_chaud") sessionMap[sId].chaud.push(pct);
-          else if (ev.type === "satisfaction_froid") sessionMap[sId].froid.push(pct);
-          else if (ev.type === "acquis") sessionMap[sId].acquis.push(pct);
-        }
+    // Group evaluations by session -> formation
+    const sessionMap: Record<string, { formation: string; chaud: number[]; froid: number[]; acquis: number[]; notes: number[] }> = {};
+
+    for (const ev of evalsArr) {
+      const sId = ev.session?.id;
+      const fName = ev.session?.formation?.titre || "Sans titre";
+      if (!sId) continue;
+      if (!sessionMap[sId]) sessionMap[sId] = { formation: fName, chaud: [], froid: [], acquis: [], notes: [] };
+      if (ev.estComplete && ev.noteGlobale) {
+        sessionMap[sId].notes.push(ev.noteGlobale);
+        const pct = ((ev.noteGlobale - 1) / 4) * 100; // Convert 1-5 to 0-100%
+        if (ev.type === "satisfaction_chaud") sessionMap[sId].chaud.push(pct);
+        else if (ev.type === "satisfaction_froid") sessionMap[sId].froid.push(pct);
+        else if (ev.type === "acquis") sessionMap[sId].acquis.push(pct);
       }
+    }
 
-      // Also add sessions without evaluations
-      for (const s of sessionsArr) {
-        if (!sessionMap[s.id]) {
-          sessionMap[s.id] = { formation: s.formation?.titre || s.lieu || "Session", chaud: [], froid: [], acquis: [], notes: [] };
-        }
+    // Also add sessions without evaluations
+    for (const s of sessionsArr) {
+      if (!sessionMap[s.id]) {
+        sessionMap[s.id] = { formation: s.formation?.titre || s.lieu || "Session", chaud: [], froid: [], acquis: [], notes: [] };
       }
+    }
 
-      const mapped: QualiteRow[] = Object.entries(sessionMap).map(([id, data]) => ({
-        id,
-        formation: data.formation,
-        satisfaction_chaud: data.chaud.length > 0 ? data.chaud.reduce((a, b) => a + b, 0) / data.chaud.length : null,
-        satisfaction_froid: data.froid.length > 0 ? data.froid.reduce((a, b) => a + b, 0) / data.froid.length : null,
-        eval_acquis: data.acquis.length > 0 ? data.acquis.reduce((a, b) => a + b, 0) / data.acquis.length : null,
-        noteGlobale: data.notes.length > 0 ? data.notes.reduce((a, b) => a + b, 0) / data.notes.length : null,
-      }));
-
-      setRows(mapped);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    return Object.entries(sessionMap).map(([id, data]) => ({
+      id,
+      formation: data.formation,
+      satisfaction_chaud: data.chaud.length > 0 ? data.chaud.reduce((a, b) => a + b, 0) / data.chaud.length : null,
+      satisfaction_froid: data.froid.length > 0 ? data.froid.reduce((a, b) => a + b, 0) / data.froid.length : null,
+      eval_acquis: data.acquis.length > 0 ? data.acquis.reduce((a, b) => a + b, 0) / data.acquis.length : null,
+      noteGlobale: data.notes.length > 0 ? data.notes.reduce((a, b) => a + b, 0) / data.notes.length : null,
+    }));
+  }, [evaluationsData, sessionsData]);
 
   const filtered = rows.filter((r) => {
     if (!searchName.trim()) return true;

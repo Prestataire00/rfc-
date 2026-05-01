@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Building2, Search, Download, Plus, MapPin, Users, Hash, Mail, Phone } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Input } from "@/components/ui/input";
+import { useApi } from "@/hooks/useApi";
 
 interface Entreprise {
   id: string;
@@ -20,8 +21,6 @@ interface Entreprise {
 }
 
 export default function EntreprisesPage() {
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -30,16 +29,15 @@ export default function EntreprisesPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
-    setLoading(true);
-    fetch(`/api/entreprises?${params.toString()}`)
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => setEntreprises(Array.isArray(data) ? data : []))
-      .catch(() => setEntreprises([]))
-      .finally(() => setLoading(false));
+    return `/api/entreprises?${params.toString()}`;
   }, [debouncedSearch]);
+
+  const { data, isLoading } = useApi<Entreprise[]>(url);
+  const entreprises = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   return (
     <div>

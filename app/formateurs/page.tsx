@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   GraduationCap, Search, Mail, Phone, Euro, BookOpen, Star,
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, parseSpecialites } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 interface Formateur {
   id: string;
@@ -49,8 +50,6 @@ function getInitials(prenom: string, nom: string): string {
 }
 
 export default function FormateursPage() {
-  const [formateurs, setFormateurs] = useState<Formateur[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -60,17 +59,15 @@ export default function FormateursPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
-
-    setLoading(true);
-    fetch(`/api/formateurs?${params.toString()}`)
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => setFormateurs(Array.isArray(data) ? data : []))
-      .catch(() => setFormateurs([]))
-      .finally(() => setLoading(false));
+    return `/api/formateurs?${params.toString()}`;
   }, [debouncedSearch]);
+
+  const { data, isLoading } = useApi<Formateur[]>(url);
+  const formateurs = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   const actifs = formateurs.filter((f) => f.actif);
 

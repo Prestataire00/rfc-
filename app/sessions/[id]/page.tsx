@@ -3,68 +3,21 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Search, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { SESSION_STATUTS, INSCRIPTION_STATUTS, DEVIS_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { EmargementGrid } from "@/components/emargement/EmargementGrid";
 import { notify } from "@/lib/toast";
 import { StatusPipeline } from "@/components/shared/StatusPipeline";
-
-type Contact = { id: string; nom: string; prenom: string; email: string };
-type Inscription = {
-  id: string;
-  statut: string;
-  contact: Contact & { entreprise?: { id: string; nom: string } | null };
-  dateInscription: string;
-};
-type Session = {
-  id: string;
-  dateDebut: string;
-  dateFin: string;
-  lieu: string | null;
-  capaciteMax: number;
-  statut: string;
-  notes: string | null;
-  coutFormateur: number | null;
-  modeExpress?: boolean;
-  declarationPasseportPrevention?: boolean;
-  datePasseportPrevention?: string | null;
-  formation: { id: string; titre: string; tarif: number; categorie?: string | null; certifiante?: boolean };
-  formateur: { id: string; nom: string; prenom: string } | null;
-  devis: { id: string; numero: string; objet: string; statut: string; montantTTC: number } | null;
-  inscriptions: Inscription[];
-};
-
-type BesoinClient = {
-  id: string;
-  statut: string;
-  optionnel: boolean;
-  destinataireNom: string | null;
-  destinataireEmail: string | null;
-  dateEnvoi: string | null;
-  dateReponse: string | null;
-  secteurActivite: string | null;
-  aStagiairesHandicap: boolean;
-  tokenAcces: string;
-};
-
-type BesoinStagiaire = {
-  id: string;
-  statut: string;
-  optionnel: boolean;
-  dateEnvoi: string | null;
-  dateReponse: string | null;
-  estRQTH: boolean;
-  detailsRQTH: string | null;
-  tokenAcces: string;
-  contact: { id: string; nom: string; prenom: string; email: string };
-};
+import type { Contact, Session, BesoinClient, BesoinStagiaire } from "./types";
+import { AddInscriptionDialog } from "./AddInscriptionDialog";
+import { QRCodeDialog } from "./QRCodeDialog";
+import { PasseportPreventionDialog } from "./PasseportPreventionDialog";
+import { FichesBesoinSection } from "./FichesBesoinSection";
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -623,85 +576,15 @@ export default function SessionDetailPage() {
           </div>
 
           {/* Fiches besoin (client + stagiaires) */}
-          <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-red-500" /> Fiches besoin
-              </h2>
-              <button
-                onClick={() => handleSendFichesBesoin()}
-                disabled={sendingFiches || session.inscriptions.length === 0}
-                className="inline-flex items-center gap-1 rounded-md bg-red-600 hover:bg-red-700 px-2.5 py-1 text-xs font-medium text-white transition-colors disabled:opacity-50"
-              >
-                <Send className="h-3 w-3" />
-                {sendingFiches ? "Envoi..." : besoinsClient.length + besoinsStagiaire.length === 0 ? "Envoyer" : "Renvoyer"}
-              </button>
-            </div>
-            {fichesMsg && <p className="text-xs text-gray-400">{fichesMsg}</p>}
-
-            {/* Fiche client */}
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1.5">Client</p>
-              {besoinsClient.length === 0 ? (
-                <p className="text-xs text-gray-500 italic">Aucune fiche envoyee</p>
-              ) : besoinsClient.map((b) => (
-                <div key={b.id} className="flex items-center justify-between p-2 rounded-md border border-gray-700 bg-gray-900 text-xs mb-1">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-200 truncate">{b.destinataireNom || b.destinataireEmail || "Destinataire inconnu"}</p>
-                    <p className="text-gray-500 text-[10px]">
-                      {b.statut === "repondu" && b.dateReponse
-                        ? `Repondu le ${formatDate(b.dateReponse)}`
-                        : b.dateEnvoi ? `Envoye le ${formatDate(b.dateEnvoi)}` : "En attente"}
-                      {b.optionnel && " · optionnel"}
-                    </p>
-                  </div>
-                  <span className={cn(
-                    "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-                    b.statut === "repondu" ? "bg-emerald-900/30 text-emerald-400" :
-                    b.statut === "envoye" ? "bg-blue-900/30 text-blue-400" :
-                    "bg-gray-700 text-gray-400"
-                  )}>
-                    {b.statut === "repondu" ? "Repondu" : b.statut === "envoye" ? "Envoye" : "En attente"}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Fiches stagiaires */}
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-1.5">Stagiaires</p>
-              {besoinsStagiaire.length === 0 ? (
-                <p className="text-xs text-gray-500 italic">Aucune fiche envoyee</p>
-              ) : besoinsStagiaire.map((b) => (
-                <div key={b.id} className="flex items-center justify-between p-2 rounded-md border border-gray-700 bg-gray-900 text-xs mb-1">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-200 truncate flex items-center gap-1">
-                      {b.contact.prenom} {b.contact.nom}
-                      {b.estRQTH && <Accessibility className="h-3 w-3 text-orange-400" />}
-                    </p>
-                    <p className="text-gray-500 text-[10px]">
-                      {b.statut === "repondu" && b.dateReponse
-                        ? `Repondu le ${formatDate(b.dateReponse)}`
-                        : b.dateEnvoi ? `Envoye le ${formatDate(b.dateEnvoi)}` : "En attente"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button onClick={() => handleResendFiche("stagiaire", b.id)} className="text-gray-400 hover:text-gray-200" title="Renvoyer l'email">
-                      <Send className="h-3 w-3" />
-                    </button>
-                    <span className={cn(
-                      "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-                      b.statut === "repondu" ? "bg-emerald-900/30 text-emerald-400" :
-                      b.statut === "envoye" ? "bg-blue-900/30 text-blue-400" :
-                      "bg-gray-700 text-gray-400"
-                    )}>
-                      {b.statut === "repondu" ? "OK" : b.statut === "envoye" ? "Envoye" : "Attente"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FichesBesoinSection
+            besoinsClient={besoinsClient}
+            besoinsStagiaire={besoinsStagiaire}
+            sendingFiches={sendingFiches}
+            fichesMsg={fichesMsg}
+            inscriptionsCount={session.inscriptions.length}
+            onSendFiches={() => handleSendFichesBesoin()}
+            onResendFiche={handleResendFiche}
+          />
 
           {/* Automatisations */}
           <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
@@ -1155,37 +1038,13 @@ export default function SessionDetailPage() {
       />
 
       {/* Blocage Passeport Prevention */}
-      <Dialog open={passeportOpen} onOpenChange={setPasseportOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BadgeCheck className="h-5 w-5 text-amber-500" /> Declaration Passeport Prevention
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <p className="text-gray-300">
-              Cette formation est certifiante. Conformement au <strong>decret 2022-1434</strong>, la declaration au Passeport Prevention est obligatoire avant d&apos;archiver la session.
-            </p>
-            <label className="flex items-start gap-3 p-3 rounded-md border border-gray-700 bg-gray-900 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={declarationChecked}
-                onChange={(e) => setDeclarationChecked(e.target.checked)}
-                className="mt-0.5 h-4 w-4"
-              />
-              <span className="text-sm text-gray-200">
-                Je confirme avoir effectue la declaration au Passeport Prevention pour tous les stagiaires de cette session certifiante.
-              </span>
-            </label>
-          </div>
-          <DialogFooter>
-            <button onClick={() => setPasseportOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Annuler</button>
-            <Button onClick={confirmPasseportAndFinalize} disabled={!declarationChecked} className="bg-amber-600 hover:bg-amber-700">
-              Valider et terminer la session
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PasseportPreventionDialog
+        open={passeportOpen}
+        onOpenChange={setPasseportOpen}
+        declarationChecked={declarationChecked}
+        setDeclarationChecked={setDeclarationChecked}
+        onConfirm={confirmPasseportAndFinalize}
+      />
 
       {/* Delete session dialog */}
       <ConfirmDialog
@@ -1208,112 +1067,30 @@ export default function SessionDetailPage() {
       />
 
       {/* Add inscription dialog with search */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent onClose={() => setAddOpen(false)}>
-          <DialogHeader>
-            <DialogTitle>Ajouter un participant</DialogTitle>
-          </DialogHeader>
-          {addError && (
-            <p className="text-sm text-red-600 bg-red-900/20 border border-red-700 rounded-md px-3 py-2">{addError}</p>
-          )}
-          <div className="py-2 space-y-3">
-            {/* Search contacts */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher un contact..."
-                value={contactSearch}
-                onChange={(e) => setContactSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <label className="text-sm font-medium text-gray-300 block">Sélectionner un contact</label>
-            <select
-              value={selectedContactId}
-              onChange={(e) => setSelectedContactId(e.target.value)}
-              className="w-full h-auto rounded-md border border-gray-600 bg-gray-800 px-3 text-sm"
-              size={Math.min(8, Math.max(3, availableContacts.length + 1))}
-            >
-              <option value="">-- Choisir un contact --</option>
-              {availableContacts.map((c) => (
-                <option key={c.id} value={c.id}>{c.prenom} {c.nom} — {c.email}</option>
-              ))}
-            </select>
-            {availableContacts.length === 0 && contacts.length > 0 && !contactSearch && (
-              <p className="text-xs text-gray-400">Tous les contacts sont déjà inscrits.</p>
-            )}
-            {availableContacts.length === 0 && contactSearch && (
-              <p className="text-xs text-gray-400">Aucun contact ne correspond à &quot;{contactSearch}&quot;</p>
-            )}
-            <p className="text-xs text-gray-400">{availableContacts.length} contact{availableContacts.length !== 1 ? "s" : ""} disponible{availableContacts.length !== 1 ? "s" : ""}</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Annuler</Button>
-            <Button onClick={handleAddInscription} disabled={!selectedContactId || adding}>
-              {adding ? "Inscription..." : "Inscrire"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddInscriptionDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        availableContacts={availableContacts}
+        selectedContactId={selectedContactId}
+        setSelectedContactId={setSelectedContactId}
+        contactSearch={contactSearch}
+        setContactSearch={setContactSearch}
+        adding={adding}
+        addError={addError}
+        onSubmit={handleAddInscription}
+        contactsCount={contacts.length}
+      />
 
       {/* QR Code modal */}
-      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent onClose={() => setQrOpen(false)}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-purple-400" />
-              QR Code d&apos;inscription
-            </DialogTitle>
-          </DialogHeader>
-          {inscriptionLink ? (
-            <div className="flex flex-col items-center gap-4 py-4">
-              <div className="bg-white p-4 rounded-xl" id="qr-print-zone">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(inscriptionLink)}&bgcolor=ffffff&color=000000&margin=10`}
-                  alt="QR Code inscription"
-                  width={300}
-                  height={300}
-                />
-                <p className="text-center text-xs text-gray-600 mt-2 font-medium">
-                  {session?.formation.titre}
-                </p>
-                <p className="text-center text-xs text-gray-400">
-                  {formatDate(session?.dateDebut || "")} → {formatDate(session?.dateFin || "")}
-                </p>
-              </div>
-              <p className="text-sm text-gray-400 text-center">
-                Scannez ce QR code pour vous inscrire à la session
-              </p>
-              <code className="text-xs bg-gray-900 px-3 py-2 rounded border border-gray-700 text-gray-400 max-w-full break-all text-center">
-                {inscriptionLink}
-              </code>
-              <div className="flex gap-3">
-                <a
-                  href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(inscriptionLink)}&bgcolor=ffffff&color=000000&margin=10`}
-                  download={`qr-inscription-${id}.png`}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-purple-700 hover:bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors"
-                >
-                  <Download className="h-4 w-4" /> Télécharger
-                </a>
-                <button
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-600 bg-gray-800 hover:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors"
-                >
-                  <FileText className="h-4 w-4" /> Imprimer
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent" />
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setQrOpen(false)}>Fermer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <QRCodeDialog
+        open={qrOpen}
+        onOpenChange={setQrOpen}
+        inscriptionLink={inscriptionLink}
+        sessionId={id}
+        formationTitre={session?.formation.titre}
+        dateDebut={session?.dateDebut}
+        dateFin={session?.dateFin}
+      />
     </div>
   );
 }

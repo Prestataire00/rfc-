@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Bell,
   Info,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { cn, formatRelative, formatDatetime } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 interface Notification {
   id: string;
@@ -40,49 +42,27 @@ const filters: { key: Filter; label: string }[] = [
 ];
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<Filter>("toutes");
-  const [loading, setLoading] = useState(true);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications");
-      if (!res.ok) return;
-      const data = await res.json();
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+  const { data, isLoading, mutate } = useApi<{ notifications: Notification[]; unreadCount: number }>(
+    "/api/notifications"
+  );
+  const notifications: Notification[] = data?.notifications ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
+  const loading = isLoading;
 
   const markAsRead = async (id: string) => {
-    await fetch("/api/notifications", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, lu: true } : n))
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    try {
+      await api.put("/api/notifications", { id });
+      await mutate();
+    } catch { /* silent */ }
   };
 
   const markAllAsRead = async () => {
-    await fetch("/api/notifications", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all: true }),
-    });
-    setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
-    setUnreadCount(0);
+    try {
+      await api.put("/api/notifications", { all: true });
+      await mutate();
+    } catch { /* silent */ }
   };
 
   const filtered = notifications.filter((n) => {

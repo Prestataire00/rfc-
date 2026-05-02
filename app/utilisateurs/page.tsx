@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Shield, UserCheck, UserX, KeyRound } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type User = {
   id: string;
@@ -23,53 +25,37 @@ const roleBadge: Record<string, { label: string; class: string }> = {
 };
 
 export default function UtilisateursPage() {
-  const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
-  const [loading, setLoading] = useState(true);
   const [resetUserId, setResetUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [resetMsg, setResetMsg] = useState("");
 
-  useEffect(() => {
-    fetch("/api/utilisateurs")
-      .then((r) => r.ok ? r.json() : [])
-      .then((data) => {
-        setUsers(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUsers([]);
-        setLoading(false);
-      });
-  }, []);
+  const { data, isLoading, mutate } = useApi<User[]>("/api/utilisateurs");
+  const users = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   const toggleActif = async (user: User) => {
-    await fetch(`/api/utilisateurs/${user.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ actif: !user.actif }),
-    });
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, actif: !u.actif } : u)));
+    try {
+      await api.put(`/api/utilisateurs/${user.id}`, { actif: !user.actif });
+      await mutate();
+    } catch { /* silent */ }
   };
 
   const handleResetPassword = async () => {
     if (!resetUserId || !newPassword) return;
-    const res = await fetch(`/api/utilisateurs/${resetUserId}/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: newPassword }),
-    });
-    if (res.ok) {
+    try {
+      await api.post(`/api/utilisateurs/${resetUserId}/reset-password`, { password: newPassword });
       setResetMsg("Mot de passe modifie avec succes");
       setNewPassword("");
       setTimeout(() => {
         setResetUserId(null);
         setResetMsg("");
       }, 2000);
-    } else {
-      const data = await res.json();
-      setResetMsg(data.error || "Erreur");
+    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = e as { message?: string; body?: any };
+      setResetMsg(err?.body?.error || err?.message || "Erreur");
     }
   };
 

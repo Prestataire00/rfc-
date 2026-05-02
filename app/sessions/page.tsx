@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight, List, Search, AlertTriangle, Download, Pencil, Trash2, LayoutGrid } from "lucide-react";
@@ -12,6 +12,8 @@ import { SkeletonTable, SkeletonCard } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate, cn } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Session = {
   id: string;
@@ -44,12 +46,7 @@ function getFirstDayOfMonth(year: number, month: number) {
 
 export default function SessionsPage() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [formateurs, setFormateurs] = useState<Formateur[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [activeTab, setActiveTab] = useState<"liste" | "calendrier" | "grille">("liste");
   const [statut, setStatut] = useState("");
   const [formateurId, setFormateurId] = useState("");
@@ -68,8 +65,7 @@ export default function SessionsPage() {
     setPage(1);
   }, [statut, formateurId, debouncedSearch, capacite]);
 
-  const fetchSessions = useCallback(async () => {
-    setLoading(true);
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (statut) params.set("statut", statut);
     if (formateurId) params.set("formateurId", formateurId);
@@ -77,19 +73,21 @@ export default function SessionsPage() {
     if (capacite) params.set("capacite", capacite);
     params.set("page", String(page));
     params.set("limit", "25");
-    const res = await fetch(`/api/sessions?${params}`);
-    if (!res.ok) { setLoading(false); return; }
-    const data = await res.json();
-    setSessions(data.data ?? data.sessions ?? []);
-    setTotal(data.total ?? 0);
-    setTotalPages(data.totalPages ?? 1);
-    if (data.formateurs) setFormateurs(data.formateurs);
-    setLoading(false);
+    return `/api/sessions?${params.toString()}`;
   }, [statut, formateurId, debouncedSearch, capacite, page]);
 
-  useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+  const { data, isLoading, mutate } = useApi<{
+    data?: Session[];
+    sessions?: Session[];
+    total?: number;
+    totalPages?: number;
+    formateurs?: Formateur[];
+  }>(url);
+  const sessions: Session[] = data?.data ?? data?.sessions ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const formateurs: Formateur[] = data?.formateurs ?? [];
+  const loading = isLoading;
 
   const sessionsByDate = sessions.reduce((acc, s) => {
     const d = new Date(s.dateDebut);
@@ -123,23 +121,17 @@ export default function SessionsPage() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Supprimer cette session ?")) return;
-    const res = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setSessions((prev) => prev.filter((s) => s.id !== id));
-    }
+    try {
+      await api.delete(`/api/sessions/${id}`);
+      await mutate();
+    } catch { /* silent */ }
   };
 
   const handleChangeStatut = async (id: string, newStatut: string) => {
-    const res = await fetch(`/api/sessions/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ statut: newStatut }),
-    });
-    if (res.ok) {
-      setSessions((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, statut: newStatut } : s))
-      );
-    }
+    try {
+      await api.put(`/api/sessions/${id}`, { statut: newStatut });
+      await mutate();
+    } catch { /* silent */ }
   };
 
   const getCapacityInfo = (s: Session) => {

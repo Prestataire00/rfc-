@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Download, TrendingUp, Users, CalendarDays, BarChart3, Percent, PieChart } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 interface AnalyticsData {
   months: string[];
@@ -41,16 +41,8 @@ const statutBarColors: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/dashboard/analytics")
-      .then((res) => res.ok ? res.json() : null)
-      .then((d) => setData(d))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isLoading } = useApi<AnalyticsData>("/api/dashboard/analytics");
+  const loading = isLoading;
 
   const handleExport = (type: string) => {
     window.open(`/api/export/${type}`, "_blank");

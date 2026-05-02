@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   BookOpen, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
@@ -15,6 +15,8 @@ import { StatutBadge } from "@/components/shared/StatutBadge";
 import { Input } from "@/components/ui/input";
 import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION } from "@/lib/constants";
 import { formatCurrency, formatDuree } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 interface Formation {
   id: string;
@@ -172,21 +174,16 @@ function getFormationImage(formation: Formation): string {
 type SortField = "titre" | "duree" | "tarif" | "createdAt";
 
 export default function FormationsPage() {
-  const [formations, setFormations] = useState<Formation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actifFilter, setActifFilter] = useState("");
   const [categorieFilter, setCategorieFilter] = useState("");
   const [niveauFilter, setNiveauFilter] = useState("");
   const [modaliteFilter, setModaliteFilter] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortField>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
   useEffect(() => {
@@ -198,7 +195,7 @@ export default function FormationsPage() {
     setPage(1);
   }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter, modaliteFilter, statutFilter]);
 
-  useEffect(() => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (actifFilter !== "") params.set("actif", actifFilter);
@@ -210,20 +207,20 @@ export default function FormationsPage() {
     params.set("sortOrder", sortOrder);
     params.set("page", String(page));
     params.set("limit", "20");
-
-    setLoading(true);
-    fetch(`/api/formations?${params.toString()}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data: any) => {
-        if (!data) return;
-        setFormations(Array.isArray(data.formations) ? data.formations : []);
-        setTotalPages(data.totalPages || 1);
-        setTotal(data.total || 0);
-        if (data.categories) setCategories(data.categories);
-      })
-      .catch(() => setFormations([]))
-      .finally(() => setLoading(false));
+    return `/api/formations?${params.toString()}`;
   }, [debouncedSearch, actifFilter, categorieFilter, niveauFilter, modaliteFilter, statutFilter, sortBy, sortOrder, page]);
+
+  const { data, isLoading, mutate } = useApi<{
+    formations: Formation[];
+    total: number;
+    totalPages: number;
+    categories?: string[];
+  }>(url);
+  const formations: Formation[] = Array.isArray(data?.formations) ? data!.formations : [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const categories: string[] = data?.categories ?? [];
+  const loading = isLoading;
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) {
@@ -237,24 +234,15 @@ export default function FormationsPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Supprimer cette formation ?")) return;
     try {
-      const res = await fetch(`/api/formations/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setFormations((prev) => prev.filter((f) => f.id !== id));
-        setTotal((prev) => prev - 1);
-      }
+      await api.delete(`/api/formations/${id}`);
+      await mutate();
     } catch { /* silent */ }
   };
 
   const handleToggleActif = async (id: string, currentActif: boolean) => {
     try {
-      const res = await fetch(`/api/formations/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actif: !currentActif }),
-      });
-      if (res.ok) {
-        setFormations((prev) => prev.map((f) => (f.id === id ? { ...f, actif: !currentActif } : f)));
-      }
+      await api.put(`/api/formations/${id}`, { actif: !currentActif });
+      await mutate();
     } catch { /* silent */ }
   };
 

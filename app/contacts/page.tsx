@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Users, Search, Download, Plus, Mail, Phone, Building2, UserPlus, UserCheck, User } from "lucide-react";
@@ -10,6 +10,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { SkeletonTable } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { CONTACT_TYPES } from "@/lib/constants";
+import { useApi } from "@/hooks/useApi";
 
 interface Contact {
   id: string;
@@ -33,14 +34,10 @@ const TYPE_TABS = [
 export default function ContactsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState(searchParams.get("type") ?? "");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const urlType = searchParams.get("type") ?? "";
@@ -54,24 +51,20 @@ export default function ContactsPage() {
 
   useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter]);
 
-  useEffect(() => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (debouncedSearch) params.set("search", debouncedSearch);
     if (typeFilter) params.set("type", typeFilter);
     params.set("page", String(page));
     params.set("limit", "25");
-
-    setLoading(true);
-    fetch(`/api/contacts?${params.toString()}`)
-      .then((res) => res.ok ? res.json() : { data: [], total: 0, page: 1, totalPages: 1 })
-      .then((res) => {
-        setContacts(res.data ?? []);
-        setTotal(res.total ?? 0);
-        setTotalPages(res.totalPages ?? 1);
-      })
-      .catch(() => setContacts([]))
-      .finally(() => setLoading(false));
+    return `/api/contacts?${params.toString()}`;
   }, [debouncedSearch, typeFilter, page]);
+
+  const { data, isLoading } = useApi<{ data: Contact[]; total: number; totalPages: number }>(url);
+  const contacts: Contact[] = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const loading = isLoading;
 
   const typeInfo = (type: string) => CONTACT_TYPES[type as keyof typeof CONTACT_TYPES];
 

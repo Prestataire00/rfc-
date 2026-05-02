@@ -1,10 +1,10 @@
 "use client";
 // v2 - dashboard style
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X, ClipboardList, Flame, Snowflake, GraduationCap } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
+import { useApi } from "@/hooks/useApi";
 
 const TYPE_TABS = [
   { value: "", label: "Tous", icon: ClipboardList },
@@ -47,21 +47,9 @@ export default function EvaluationsPage() {
   const searchParams = useSearchParams();
   const filtre = searchParams.get("filtre"); // "attente" | "completees" | null
   const typeFilter = searchParams.get("type"); // "satisfaction_chaud" | "satisfaction_froid" | "acquis" | null
-  const [allEvaluations, setAllEvaluations] = useState<Evaluation[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/evaluations")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => {
-        setAllEvaluations(Array.isArray(d) ? d : []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setAllEvaluations([]);
-        setLoading(false);
-      });
-  }, []);
+  const { data, isLoading } = useApi<Evaluation[]>("/api/evaluations");
+  const allEvaluations = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   // Filtered evaluations (based on type from sidebar)
   const evaluations = typeFilter ? allEvaluations.filter((e) => e.type === typeFilter) : allEvaluations;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -24,6 +24,7 @@ import { SkeletonStats, SkeletonCard } from "@/components/shared/Skeleton";
 import { SESSION_STATUTS, CONTACT_TYPES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { MaJournee } from "@/components/dashboard/MaJournee";
+import { useApi } from "@/hooks/useApi";
 
 type Stats = {
   nbContacts: number;
@@ -143,23 +144,22 @@ type Notification = {
 };
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"mois" | "trimestre" | "annee">("mois");
 
-  useEffect(() => {
-    Promise.all([
-      fetch(`/api/dashboard/stats?period=${period}`).then((r) => r.ok ? r.json() : null),
-      fetch("/api/notifications").then((r) => r.ok ? r.json() : []),
-    ]).then(([d, n]) => {
-      setData(d);
-      setNotifications(Array.isArray(n) ? n : []);
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
-  }, [period]);
+  const { data: statsData, isLoading: statsLoading } = useApi<DashboardData>(
+    `/api/dashboard/stats?period=${period}`
+  );
+  const { data: notifsData, isLoading: notifsLoading } = useApi<Notification[] | { notifications: Notification[] }>(
+    "/api/notifications"
+  );
+
+  const data = statsData ?? null;
+  const notifications = Array.isArray(notifsData)
+    ? notifsData
+    : Array.isArray((notifsData as { notifications?: Notification[] } | undefined)?.notifications)
+      ? ((notifsData as { notifications: Notification[] }).notifications)
+      : [];
+  const loading = statsLoading || notifsLoading;
 
   if (loading) {
     return (

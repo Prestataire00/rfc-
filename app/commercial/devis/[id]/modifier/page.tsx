@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TVA_RATE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type Entreprise = { id: string; nom: string };
 type Contact = { id: string; nom: string; prenom: string; email: string };
@@ -23,6 +25,17 @@ type Ligne = {
   montant: number;
 };
 
+type DevisData = {
+  objet?: string;
+  notes?: string | null;
+  dateValidite?: string;
+  entrepriseId?: string | null;
+  contactId?: string | null;
+  entreprise?: { id: string };
+  contact?: { id: string };
+  lignes?: Ligne[];
+};
+
 function createLigne(): Ligne {
   return { designation: "", quantite: 1, prixUnitaire: 0, montant: 0 };
 }
@@ -30,10 +43,6 @@ function createLigne(): Ligne {
 export default function ModifierDevisPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [clientType, setClientType] = useState<"entreprise" | "contact">("entreprise");
@@ -44,47 +53,40 @@ export default function ModifierDevisPage() {
   const [lignes, setLignes] = useState<Ligne[]>([createLigne()]);
   const [notes, setNotes] = useState("");
 
-  const fetchData = useCallback(async () => {
-    const [devisRes, entreprisesRes, contactsRes] = await Promise.all([
-      fetch(`/api/devis/${id}`),
-      fetch("/api/entreprises"),
-      fetch("/api/contacts"),
-    ]);
+  const { data: devis, isLoading: devisLoading } = useApi<DevisData>(`/api/devis/${id}`);
+  const { data: entreprisesData, isLoading: entreprisesLoading } = useApi<Entreprise[]>("/api/entreprises");
+  const { data: contactsData, isLoading: contactsLoading } = useApi<Contact[]>("/api/contacts");
+  const { trigger: updateDevis, isMutating: loading } = useApiMutation<Record<string, unknown>>(`/api/devis/${id}`, "PUT");
 
-    if (devisRes.ok) {
-      const devis = await devisRes.json();
-      setObjet(devis.objet || "");
-      setNotes(devis.notes || "");
-      setDateValidite(devis.dateValidite?.split("T")[0] || "");
-
-      if (devis.entrepriseId || devis.entreprise) {
-        setClientType("entreprise");
-        setEntrepriseId(devis.entrepriseId || devis.entreprise?.id || "");
-      } else if (devis.contactId || devis.contact) {
-        setClientType("contact");
-        setContactId(devis.contactId || devis.contact?.id || "");
-      }
-
-      if (devis.lignes && devis.lignes.length > 0) {
-        setLignes(
-          devis.lignes.map((l: { designation: string; quantite: number; prixUnitaire: number; montant: number }) => ({
-            designation: l.designation,
-            quantite: l.quantite,
-            prixUnitaire: l.prixUnitaire,
-            montant: l.montant,
-          }))
-        );
-      }
-    }
-
-    if (entreprisesRes.ok) setEntreprises(await entreprisesRes.json());
-    if (contactsRes.ok) setContacts(await contactsRes.json());
-    setPageLoading(false);
-  }, [id]);
+  const entreprises = entreprisesData ?? [];
+  const contacts = contactsData ?? [];
+  const pageLoading = devisLoading || entreprisesLoading || contactsLoading;
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!devis) return;
+    setObjet(devis.objet || "");
+    setNotes(devis.notes || "");
+    setDateValidite(devis.dateValidite?.split("T")[0] || "");
+
+    if (devis.entrepriseId || devis.entreprise) {
+      setClientType("entreprise");
+      setEntrepriseId(devis.entrepriseId || devis.entreprise?.id || "");
+    } else if (devis.contactId || devis.contact) {
+      setClientType("contact");
+      setContactId(devis.contactId || devis.contact?.id || "");
+    }
+
+    if (devis.lignes && devis.lignes.length > 0) {
+      setLignes(
+        devis.lignes.map((l) => ({
+          designation: l.designation,
+          quantite: l.quantite,
+          prixUnitaire: l.prixUnitaire,
+          montant: l.montant,
+        }))
+      );
+    }
+  }, [devis]);
 
   const updateLigne = (index: number, field: keyof Ligne, value: string | number) => {
     setLignes((prev) => {
@@ -136,8 +138,6 @@ export default function ModifierDevisPage() {
       return;
     }
 
-    setLoading(true);
-
     const payload = {
       objet,
       entrepriseId: clientType === "entreprise" ? entrepriseId : null,
@@ -153,18 +153,16 @@ export default function ModifierDevisPage() {
       })),
     };
 
-    const res = await fetch(`/api/devis/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
+    try {
+      await updateDevis(payload);
       router.push(`/commercial/devis/${id}`);
-    } else {
-      const data = await res.json();
-      setError(data.error?.formErrors?.join(", ") || "Une erreur est survenue.");
-      setLoading(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: { formErrors?: string[] } } | null;
+        setError(body?.error?.formErrors?.join(", ") || err.message || "Une erreur est survenue.");
+      } else {
+        setError("Une erreur est survenue.");
+      }
     }
   };
 

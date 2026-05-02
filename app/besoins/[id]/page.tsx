@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AIButton } from "@/components/shared/AIButton";
 import { StatusPipeline } from "@/components/shared/StatusPipeline";
 import { notify } from "@/lib/toast";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 type Besoin = {
   id: string;
@@ -110,43 +111,33 @@ type TabKey = "detail" | "historique";
 export default function BesoinDetailPage() {
   const router = useRouter();
   const { id } = useParams();
-  const [besoin, setBesoin] = useState<Besoin | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
-  const [historique, setHistorique] = useState<HistoriqueAction[]>([]);
-  const [historiqueLoading, setHistoriqueLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("detail");
   const [aiResult, setAiResult] = useState("");
   const [aiTitle, setAiTitle] = useState("");
 
-  useEffect(() => {
-    fetch(`/api/besoins/${id}`).then((r) => r.ok ? r.json() : null).then((d) => {
-      setBesoin(d);
-      setLoading(false);
-      const params = new URLSearchParams();
-      if (d?.entreprise?.id) params.append("entrepriseId", d.entreprise.id);
-      if (d?.contact?.id) params.append("contactId", d.contact.id);
-      if (params.toString()) {
-        setHistoriqueLoading(true);
-        fetch(`/api/historique?${params}`)
-          .then((r) => r.ok ? r.json() : [])
-          .then((data) => { setHistorique(data); setHistoriqueLoading(false); });
-      }
-    });
-  }, [id]);
+  const { data: besoin, isLoading: loading, mutate } = useApi<Besoin | null>(`/api/besoins/${id}`);
+  const { trigger: updateBesoin } = useApiMutation<Partial<Besoin>>(`/api/besoins/${id}`, "PUT");
+  const { trigger: deleteBesoin } = useApiMutation(`/api/besoins/${id}`, "DELETE");
+
+  const historiqueUrl = useMemo(() => {
+    if (!besoin) return null;
+    const params = new URLSearchParams();
+    if (besoin.entreprise?.id) params.append("entrepriseId", besoin.entreprise.id);
+    if (besoin.contact?.id) params.append("contactId", besoin.contact.id);
+    return params.toString() ? `/api/historique?${params}` : null;
+  }, [besoin]);
+  const { data: historiqueData, isLoading: historiqueLoading } = useApi<HistoriqueAction[]>(historiqueUrl);
+  const historique = historiqueData ?? [];
 
   async function updateStatut(statut: string) {
     if (!besoin) return;
-    await fetch(`/api/besoins/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...besoin, statut }),
-    });
-    setBesoin({ ...besoin, statut });
+    await updateBesoin({ ...besoin, statut });
+    await mutate({ ...besoin, statut }, { revalidate: false });
   }
 
   async function handleDelete() {
-    await fetch(`/api/besoins/${id}`, { method: "DELETE" });
+    await deleteBesoin();
     notify.success("Besoin supprime");
     router.push("/besoins");
   }

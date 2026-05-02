@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Star, User, BookOpen, Calendar, MessageSquare, CheckCircle, Clock, Pencil, Save, X, Sparkles } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 type Evaluation = {
   id: string;
@@ -39,39 +40,29 @@ type ReponseItem = {
 export default function EvaluationDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data: evaluation, error, isLoading: loading, mutate } = useApi<Evaluation>(`/api/evaluations/${id}`);
+  const { trigger: saveEvaluation, isMutating: saving } = useApiMutation<{
+    noteGlobale: number | null;
+    commentaire: string | null;
+    estComplete: boolean;
+  }, Partial<Evaluation>>(`/api/evaluations/${id}`, "PUT");
+  const { trigger: analyseEvaluation, isMutating: analyseLoading } = useApiMutation<undefined, { analyse: string }>(
+    `/api/evaluations/${id}/analyse`,
+    "POST"
+  );
 
   // Edit mode
   const [editing, setEditing] = useState(false);
   const [editNote, setEditNote] = useState<number>(0);
   const [editCommentaire, setEditCommentaire] = useState("");
   const [editComplete, setEditComplete] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
   // IA
   const [analyse, setAnalyse] = useState("");
   const [analyseEdited, setAnalyseEdited] = useState("");
-  const [analyseLoading, setAnalyseLoading] = useState(false);
   const [analyseError, setAnalyseError] = useState("");
-
-  useEffect(() => {
-    fetch(`/api/evaluations/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Évaluation introuvable");
-        return r.json();
-      })
-      .then((data) => {
-        setEvaluation(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [id]);
 
   const startEdit = () => {
     if (!evaluation) return;
@@ -88,43 +79,35 @@ export default function EvaluationDetailPage() {
   };
 
   const handleAnalyse = async () => {
-    setAnalyseLoading(true);
     setAnalyseError("");
     setAnalyse("");
     setAnalyseEdited("");
-    const res = await fetch(`/api/evaluations/${id}/analyse`, { method: "POST" });
-    if (res.ok) {
-      const data = await res.json();
-      setAnalyse(data.analyse);
-      setAnalyseEdited(data.analyse);
-    } else {
+    try {
+      const data = await analyseEvaluation();
+      setAnalyse(data?.analyse || "");
+      setAnalyseEdited(data?.analyse || "");
+    } catch {
       setAnalyseError("Erreur lors de l'analyse. Vérifiez que la clé API Anthropic est configurée.");
     }
-    setAnalyseLoading(false);
   };
 
   const handleSave = async () => {
     if (!evaluation) return;
-    setSaving(true);
     setSaveMsg("");
-    const res = await fetch(`/api/evaluations/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const updated = await saveEvaluation({
         noteGlobale: editNote || null,
         commentaire: editCommentaire || null,
         estComplete: editComplete,
-      }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setEvaluation((prev) => prev ? { ...prev, ...updated } : prev);
+      });
+      if (updated) {
+        await mutate((prev) => prev ? { ...prev, ...updated } : prev, { revalidate: false });
+      }
       setSaveMsg("Modifications enregistrées");
       setEditing(false);
-    } else {
+    } catch {
       setSaveMsg("Erreur lors de la sauvegarde");
     }
-    setSaving(false);
   };
 
   if (loading) {
@@ -138,7 +121,7 @@ export default function EvaluationDetailPage() {
   if (error || !evaluation) {
     return (
       <div className="py-12 text-center">
-        <p className="text-gray-400 mb-4">{error || "Évaluation introuvable"}</p>
+        <p className="text-gray-400 mb-4">{error?.message || "Évaluation introuvable"}</p>
         <Link href="/evaluations" className="text-red-500 hover:underline">
           Retour aux évaluations
         </Link>

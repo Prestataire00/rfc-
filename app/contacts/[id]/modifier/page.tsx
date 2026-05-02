@@ -12,10 +12,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CONTACT_TYPES } from "@/lib/constants";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 interface Entreprise {
   id: string;
   nom: string;
+}
+
+interface ContactData {
+  nom?: string;
+  prenom?: string;
+  email?: string | null;
+  telephone?: string | null;
+  poste?: string | null;
+  type?: string;
+  entrepriseId?: string | null;
+  notes?: string | null;
+  dateNaissance?: string | null;
+  numeroSecuriteSociale?: string | null;
+  numeroPasseportPrevention?: string | null;
+  besoinsAdaptation?: string | null;
+  niveauFormation?: string | null;
 }
 
 const typeOptions = Object.entries(CONTACT_TYPES).map(([key, val]) => ({
@@ -28,9 +46,6 @@ export default function ModifierContactPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -51,35 +66,36 @@ export default function ModifierContactPage() {
   const [secuEditable, setSecuEditable] = useState(false);
   const [secuMasked, setSecuMasked] = useState("");
 
+  const { data: contact, error: contactError, isLoading: loadingContact } = useApi<ContactData>(`/api/contacts/${id}`);
+  const { data: entreprisesData, isLoading: loadingEnts } = useApi<Entreprise[]>("/api/entreprises");
+  const entreprises: Entreprise[] = Array.isArray(entreprisesData) ? entreprisesData : [];
+  const loading = loadingContact || loadingEnts;
+  const { trigger: updateContact, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/contacts/${id}`, "PUT");
+
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/contacts/${id}`).then((r) => r.ok ? r.json() : null),
-      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
-    ])
-      .then(([contact, ents]) => {
-        if (!contact) { setError("Contact non trouvé"); return; }
-        const rawSecu = contact.numeroSecuriteSociale ?? "";
-        setSecuMasked(rawSecu ? `••••••••••••${rawSecu.slice(-3)}` : "");
-        setForm({
-          nom: contact.nom ?? "",
-          prenom: contact.prenom ?? "",
-          email: contact.email ?? "",
-          telephone: contact.telephone ?? "",
-          poste: contact.poste ?? "",
-          type: contact.type ?? "prospect",
-          entrepriseId: contact.entrepriseId ?? "",
-          notes: contact.notes ?? "",
-          dateNaissance: contact.dateNaissance ? contact.dateNaissance.slice(0, 10) : "",
-          numeroSecuriteSociale: "",
-          numeroPasseportPrevention: contact.numeroPasseportPrevention ?? "",
-          besoinsAdaptation: contact.besoinsAdaptation ?? "",
-          niveauFormation: contact.niveauFormation ?? "",
-        });
-        setEntreprises(Array.isArray(ents) ? ents : []);
-      })
-      .catch(() => setError("Erreur lors du chargement"))
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!contact) return;
+    const rawSecu = contact.numeroSecuriteSociale ?? "";
+    setSecuMasked(rawSecu ? `••••••••••••${rawSecu.slice(-3)}` : "");
+    setForm({
+      nom: contact.nom ?? "",
+      prenom: contact.prenom ?? "",
+      email: contact.email ?? "",
+      telephone: contact.telephone ?? "",
+      poste: contact.poste ?? "",
+      type: contact.type ?? "prospect",
+      entrepriseId: contact.entrepriseId ?? "",
+      notes: contact.notes ?? "",
+      dateNaissance: contact.dateNaissance ? contact.dateNaissance.slice(0, 10) : "",
+      numeroSecuriteSociale: "",
+      numeroPasseportPrevention: contact.numeroPasseportPrevention ?? "",
+      besoinsAdaptation: contact.besoinsAdaptation ?? "",
+      niveauFormation: contact.niveauFormation ?? "",
+    });
+  }, [contact]);
+
+  useEffect(() => {
+    if (contactError) setError("Contact non trouvé");
+  }, [contactError]);
 
   const entrepriseOptions = [
     { value: "", label: "Aucune entreprise" },
@@ -95,46 +111,38 @@ export default function ModifierContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
+
+    const payload: Record<string, unknown> = { ...form };
+    if (!payload.entrepriseId) delete payload.entrepriseId;
+    if (!payload.email) delete payload.email;
+    if (!payload.telephone) delete payload.telephone;
+    if (!payload.poste) delete payload.poste;
+    if (!payload.notes) delete payload.notes;
+    if (!payload.numeroPasseportPrevention) delete payload.numeroPasseportPrevention;
+    if (!payload.besoinsAdaptation) delete payload.besoinsAdaptation;
+    if (!payload.niveauFormation) delete payload.niveauFormation;
+    // Date naissance
+    if (form.dateNaissance) {
+      payload.dateNaissance = new Date(form.dateNaissance).toISOString();
+    } else {
+      delete payload.dateNaissance;
+    }
+    // N° secu : seulement si modifie (champ editable + rempli)
+    if (!secuEditable || !form.numeroSecuriteSociale) {
+      delete payload.numeroSecuriteSociale;
+    } else {
+      payload.numeroSecuriteSociale = form.numeroSecuriteSociale.replace(/\s/g, "");
+    }
 
     try {
-      const payload: Record<string, unknown> = { ...form };
-      if (!payload.entrepriseId) delete payload.entrepriseId;
-      if (!payload.email) delete payload.email;
-      if (!payload.telephone) delete payload.telephone;
-      if (!payload.poste) delete payload.poste;
-      if (!payload.notes) delete payload.notes;
-      if (!payload.numeroPasseportPrevention) delete payload.numeroPasseportPrevention;
-      if (!payload.besoinsAdaptation) delete payload.besoinsAdaptation;
-      if (!payload.niveauFormation) delete payload.niveauFormation;
-      // Date naissance
-      if (form.dateNaissance) {
-        payload.dateNaissance = new Date(form.dateNaissance).toISOString();
-      } else {
-        delete payload.dateNaissance;
-      }
-      // N° secu : seulement si modifie (champ editable + rempli)
-      if (!secuEditable || !form.numeroSecuriteSociale) {
-        delete payload.numeroSecuriteSociale;
-      } else {
-        payload.numeroSecuriteSociale = form.numeroSecuriteSociale.replace(/\s/g, "");
-      }
-
-      const res = await fetch(`/api/contacts/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la mise à jour");
-      }
-
+      await updateContact(payload);
       router.push(`/contacts/${id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
-      setSaving(false);
+      if (err instanceof ApiError) {
+        setError(err.message || "Erreur lors de la mise à jour");
+      } else {
+        setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      }
     }
   };
 

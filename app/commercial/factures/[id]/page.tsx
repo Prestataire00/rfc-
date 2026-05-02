@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Trash2, CheckCircle, FileText, Eye, Download, Plus, X, Mail } from "lucide-react";
@@ -11,6 +11,8 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type LigneDevis = {
   id: string;
@@ -57,76 +59,58 @@ const MODES_LABELS: Record<string, string> = {
 export default function FactureDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [facture, setFacture] = useState<Facture | null>(null);
-  const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [updatingStatut, setUpdatingStatut] = useState(false);
-  const [markingPaid, setMarkingPaid] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
-  const [sending, setSending] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
   const [paiements, setPaiements] = useState<PaiementLigne[]>([{ mode: "", montant: 0 }]);
 
-  const fetchFacture = useCallback(async () => {
-    const res = await fetch(`/api/factures/${id}`);
-    if (res.ok) setFacture(await res.json());
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => { fetchFacture(); }, [fetchFacture]);
+  const { data: facture, isLoading: loading, mutate } = useApi<Facture>(`/api/factures/${id}`);
+  const { trigger: deleteFacture, isMutating: deleting } = useApiMutation(`/api/factures/${id}`, "DELETE");
+  const { trigger: updateFacture, isMutating: updatingStatut } = useApiMutation<Partial<Facture>>(`/api/factures/${id}`, "PUT");
+  const { trigger: markPaid, isMutating: markingPaid } = useApiMutation<Partial<Facture>>(`/api/factures/${id}`, "PUT");
+  const { trigger: sendEmail, isMutating: sending } = useApiMutation<{ factureId: string }, { skipped?: boolean }>("/api/email/facture", "POST");
 
   const handleDelete = async () => {
-    setDeleting(true);
-    await fetch(`/api/factures/${id}`, { method: "DELETE" });
+    await deleteFacture();
     notify.success("Facture supprimee");
     router.push("/commercial");
   };
 
   const handleStatutChange = async (newStatut: string) => {
-    setUpdatingStatut(true);
-    const res = await fetch(`/api/factures/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ statut: newStatut }),
-    });
-    if (res.ok) { notify.success("Statut mis a jour", newStatut); await fetchFacture(); }
-    else notify.error("Erreur", "Impossible de changer le statut");
-    setUpdatingStatut(false);
+    try {
+      await updateFacture({ statut: newStatut });
+      notify.success("Statut mis a jour", newStatut);
+      await mutate();
+    } catch {
+      notify.error("Erreur", "Impossible de changer le statut");
+    }
   };
 
   const handleMarkAsPaid = async () => {
     const validPaiements = paiements.filter((p) => p.mode && p.montant > 0);
     if (validPaiements.length === 0) return;
-    setMarkingPaid(true);
     const today = new Date().toISOString().split("T")[0];
-    const res = await fetch(`/api/factures/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ statut: "payee", datePaiement: today, paiements: validPaiements }),
-    });
-    if (res.ok) { notify.success("Facture marquee payee"); await fetchFacture(); }
-    else notify.error("Erreur", "Impossible de marquer comme payee");
-    setMarkingPaid(false);
+    try {
+      await markPaid({ statut: "payee", datePaiement: today, paiements: validPaiements });
+      notify.success("Facture marquee payee");
+      await mutate();
+    } catch {
+      notify.error("Erreur", "Impossible de marquer comme payee");
+    }
   };
 
   const handleSendEmail = async () => {
-    setSending(true);
-    const res = await fetch("/api/email/facture", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ factureId: id }),
-    });
-    const data = await res.json();
-    setEmailOpen(false);
-    setSending(false);
-    if (res.ok) {
-      if (data.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
+    try {
+      const data = await sendEmail({ factureId: id });
+      setEmailOpen(false);
+      if (data?.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
       else { setEmailMsg("Email envoye !"); notify.success("Facture envoyee par email"); }
-      fetchFacture();
-    } else {
-      setEmailMsg(data.error || "Erreur envoi");
-      notify.error("Erreur envoi", data.error);
+      await mutate();
+    } catch (err) {
+      setEmailOpen(false);
+      const msg = err instanceof ApiError ? err.message : "Erreur envoi";
+      setEmailMsg(msg);
+      notify.error("Erreur envoi", msg);
     }
     setTimeout(() => setEmailMsg(""), 4000);
   };

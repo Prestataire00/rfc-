@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NIVEAUX_FORMATION, SESSION_STATUTS, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
 import { formatDate, formatCurrency, formatDuree } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 interface Formateur {
   id: string;
@@ -77,32 +78,17 @@ export default function FormationDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [formation, setFormation] = useState<Formation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("description");
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/formations/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Formation introuvable");
-        return res.json();
-      })
-      .then((data) => setFormation(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const { data: formation, error, isLoading: loading } = useApi<Formation>(`/api/formations/${id}`);
+  const { trigger: deleteFormation, isMutating: deleting } = useApiMutation(`/api/formations/${id}`, "DELETE");
 
   const handleDelete = async () => {
-    setDeleting(true);
     try {
-      const res = await fetch(`/api/formations/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      await deleteFormation();
       router.push("/formations");
     } catch {
-      setDeleting(false);
       setDeleteOpen(false);
     }
   };
@@ -118,7 +104,7 @@ export default function FormationDetailPage() {
   if (error || !formation) {
     return (
       <div className="p-6">
-        <p className="text-red-600">{error || "Formation introuvable"}</p>
+        <p className="text-red-600">{error?.message || "Formation introuvable"}</p>
         <Link href="/formations" className="text-red-600 hover:underline text-sm mt-2 inline-block">
           Retour aux formations
         </Link>

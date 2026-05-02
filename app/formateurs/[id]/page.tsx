@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, parseSpecialites } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 interface Formation {
   id: string;
@@ -57,32 +58,17 @@ export default function FormateurDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [formateur, setFormateur] = useState<Formateur | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("informations");
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/formateurs/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Formateur introuvable");
-        return res.json();
-      })
-      .then((data) => setFormateur(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const { data: formateur, error, isLoading: loading } = useApi<Formateur>(`/api/formateurs/${id}`);
+  const { trigger: deleteFormateur, isMutating: deleting } = useApiMutation(`/api/formateurs/${id}`, "DELETE");
 
   const handleDelete = async () => {
-    setDeleting(true);
     try {
-      const res = await fetch(`/api/formateurs/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Erreur lors de la suppression");
+      await deleteFormateur();
       router.push("/formateurs");
     } catch {
-      setDeleting(false);
       setDeleteOpen(false);
     }
   };
@@ -98,7 +84,7 @@ export default function FormateurDetailPage() {
   if (error || !formateur) {
     return (
       <div className="p-6">
-        <p className="text-red-600">{error || "Formateur introuvable"}</p>
+        <p className="text-red-600">{error?.message || "Formateur introuvable"}</p>
         <Link href="/formateurs" className="text-red-600 hover:underline text-sm mt-2 inline-block">
           Retour aux formateurs
         </Link>

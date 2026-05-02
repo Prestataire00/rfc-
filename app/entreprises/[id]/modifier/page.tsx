@@ -10,14 +10,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
+
+type EntrepriseData = {
+  nom?: string;
+  secteur?: string | null;
+  adresse?: string | null;
+  ville?: string | null;
+  codePostal?: string | null;
+  siret?: string | null;
+  email?: string | null;
+  telephone?: string | null;
+  site?: string | null;
+  notes?: string | null;
+};
 
 export default function ModifierEntreprisePage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -33,29 +46,28 @@ export default function ModifierEntreprisePage() {
     notes: "",
   });
 
+  const { data, error: fetchError, isLoading: loading } = useApi<EntrepriseData>(`/api/entreprises/${id}`);
+  const { trigger: updateEntreprise, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/entreprises/${id}`, "PUT");
+
   useEffect(() => {
-    fetch(`/api/entreprises/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Entreprise introuvable");
-        return res.json();
-      })
-      .then((data) => {
-        setForm({
-          nom: data.nom ?? "",
-          secteur: data.secteur ?? "",
-          adresse: data.adresse ?? "",
-          ville: data.ville ?? "",
-          codePostal: data.codePostal ?? "",
-          siret: data.siret ?? "",
-          email: data.email ?? "",
-          telephone: data.telephone ?? "",
-          site: data.site ?? "",
-          notes: data.notes ?? "",
-        });
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!data) return;
+    setForm({
+      nom: data.nom ?? "",
+      secteur: data.secteur ?? "",
+      adresse: data.adresse ?? "",
+      ville: data.ville ?? "",
+      codePostal: data.codePostal ?? "",
+      siret: data.siret ?? "",
+      email: data.email ?? "",
+      telephone: data.telephone ?? "",
+      site: data.site ?? "",
+      notes: data.notes ?? "",
+    });
+  }, [data]);
+
+  useEffect(() => {
+    if (fetchError) setError(fetchError.message || "Entreprise introuvable");
+  }, [fetchError]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -66,29 +78,21 @@ export default function ModifierEntreprisePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
+
+    const payload: Record<string, unknown> = { ...form };
+    Object.keys(payload).forEach((key) => {
+      if (key !== "nom" && !payload[key]) delete payload[key];
+    });
 
     try {
-      const payload: Record<string, unknown> = { ...form };
-      Object.keys(payload).forEach((key) => {
-        if (key !== "nom" && !payload[key]) delete payload[key];
-      });
-
-      const res = await fetch(`/api/entreprises/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la mise à jour");
-      }
-
+      await updateEntreprise(payload);
       router.push(`/entreprises/${id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
-      setSaving(false);
+      if (err instanceof ApiError) {
+        setError(err.message || "Erreur lors de la mise à jour");
+      } else {
+        setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      }
     }
   };
 

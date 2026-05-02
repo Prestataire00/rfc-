@@ -6,16 +6,28 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type Option = { id: string; nom: string; titre?: string };
+
+type BesoinData = {
+  titre?: string;
+  description?: string | null;
+  origine?: string;
+  priorite?: string;
+  statut?: string;
+  nbStagiaires?: number | null;
+  datesSouhaitees?: string | null;
+  budget?: number | null;
+  notes?: string | null;
+  entrepriseId?: string | null;
+  formationId?: string | null;
+};
 
 export default function ModifierBesoinPage() {
   const router = useRouter();
   const { id } = useParams();
-  const [entreprises, setEntreprises] = useState<Option[]>([]);
-  const [formations, setFormations] = useState<Option[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     titre: "",
@@ -31,58 +43,56 @@ export default function ModifierBesoinPage() {
     formationId: "",
   });
 
+  const { data: besoin, isLoading: besoinLoading } = useApi<BesoinData>(`/api/besoins/${id}`);
+  const { data: entRaw, isLoading: entLoading } = useApi<Option[] | { entreprises: Option[] }>("/api/entreprises");
+  const { data: formRaw, isLoading: formLoading } = useApi<Option[] | { formations: Option[] }>("/api/formations");
+  const { trigger: updateBesoin, isMutating: saving } = useApiMutation<typeof form>(`/api/besoins/${id}`, "PUT");
+
+  const entreprises: Option[] = Array.isArray(entRaw) ? entRaw : entRaw?.entreprises ?? [];
+  const formations: Option[] = Array.isArray(formRaw) ? formRaw : formRaw?.formations ?? [];
+  const loading = besoinLoading || entLoading || formLoading;
+
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/besoins/${id}`).then((r) => r.ok ? r.json() : null),
-      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
-      fetch("/api/formations").then((r) => r.ok ? r.json() : []),
-    ]).then(([besoin, ent, form]) => {
-      if (besoin) {
-        setForm({
-          titre: besoin.titre || "",
-          description: besoin.description || "",
-          origine: besoin.origine || "client",
-          priorite: besoin.priorite || "normale",
-          statut: besoin.statut || "nouveau",
-          nbStagiaires: besoin.nbStagiaires?.toString() || "",
-          datesSouhaitees: besoin.datesSouhaitees || "",
-          budget: besoin.budget?.toString() || "",
-          notes: besoin.notes || "",
-          entrepriseId: besoin.entrepriseId || "",
-          formationId: besoin.formationId || "",
-        });
-      }
-      setEntreprises(Array.isArray(ent) ? ent : ent.entreprises || []);
-      setFormations(Array.isArray(form) ? form : form.formations || []);
-      setLoading(false);
+    if (!besoin) return;
+    setForm({
+      titre: besoin.titre || "",
+      description: besoin.description || "",
+      origine: besoin.origine || "client",
+      priorite: besoin.priorite || "normale",
+      statut: besoin.statut || "nouveau",
+      nbStagiaires: besoin.nbStagiaires?.toString() || "",
+      datesSouhaitees: besoin.datesSouhaitees || "",
+      budget: besoin.budget?.toString() || "",
+      notes: besoin.notes || "",
+      entrepriseId: besoin.entrepriseId || "",
+      formationId: besoin.formationId || "",
     });
-  }, [id]);
+  }, [besoin]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setSaving(true);
     try {
-      const res = await fetch(`/api/besoins/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (res.ok) {
-        router.push(`/besoins/${id}`);
-      } else {
-        const data = await res.json();
-        const fieldErrors = data.error?.fieldErrors;
-        if (fieldErrors) {
-          setError(Object.values(fieldErrors).flat().join(", ") || "Erreur de validation");
+      await updateBesoin(form);
+      router.push(`/besoins/${id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const fe = (errBody as { fieldErrors: Record<string, string[]> }).fieldErrors;
+          setError(Object.values(fe).flat().join(", ") || "Erreur de validation");
+        } else if (typeof errBody === "string") {
+          setError(errBody);
+        } else if (errBody && typeof errBody === "object" && "message" in errBody) {
+          setError(String((errBody as { message: unknown }).message) || err.message);
         } else {
-          setError(data.error?.message || data.error || "Erreur lors de la mise a jour");
+          setError(err.message || "Erreur lors de la mise a jour");
         }
+      } else {
+        setError("Erreur de connexion au serveur");
       }
-    } catch {
-      setError("Erreur de connexion au serveur");
     }
-    setSaving(false);
   }
 
   if (loading) {
@@ -212,7 +222,7 @@ export default function ModifierBesoinPage() {
                 className="w-full h-10 rounded-md border border-gray-600 bg-gray-900 px-3 text-sm text-gray-100"
               >
                 <option value="">-- Aucune --</option>
-                {formations.map((f: any) => (
+                {formations.map((f) => (
                   <option key={f.id} value={f.id}>{f.titre}</option>
                 ))}
               </select>

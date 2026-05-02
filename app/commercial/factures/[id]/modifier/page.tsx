@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { FACTURE_STATUTS } from "@/lib/constants";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type Facture = {
   id: string;
@@ -23,72 +25,42 @@ type Facture = {
 export default function FactureModifierPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [facture, setFacture] = useState<Facture | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const [statut, setStatut] = useState("");
   const [datePaiement, setDatePaiement] = useState("");
   const [notes, setNotes] = useState("");
 
-  const fetchFacture = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/factures/${id}`);
-      if (!res.ok) {
-        setLoading(false);
-        return;
-      }
-      const data = await res.json();
-      setFacture(data);
-      setStatut(data.statut);
-      setDatePaiement(
-        data.datePaiement
-          ? new Date(data.datePaiement).toISOString().split("T")[0]
-          : ""
-      );
-      setNotes(data.notes || "");
-    } catch {
-      setError("Erreur lors du chargement de la facture.");
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+  const { data: facture, isLoading: loading } = useApi<Facture>(`/api/factures/${id}`);
+  const { trigger: updateFacture, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/factures/${id}`, "PUT");
 
   useEffect(() => {
-    fetchFacture();
-  }, [fetchFacture]);
+    if (!facture) return;
+    setStatut(facture.statut);
+    setDatePaiement(
+      facture.datePaiement
+        ? new Date(facture.datePaiement).toISOString().split("T")[0]
+        : ""
+    );
+    setNotes(facture.notes || "");
+  }, [facture]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError("");
 
+    const body: Record<string, unknown> = { statut, notes: notes || null };
+    body.datePaiement = datePaiement || null;
+
     try {
-      const body: Record<string, unknown> = { statut, notes: notes || null };
-      if (datePaiement) {
-        body.datePaiement = datePaiement;
-      } else {
-        body.datePaiement = null;
-      }
-
-      const res = await fetch(`/api/factures/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Erreur lors de la mise à jour.");
-        setSaving(false);
-        return;
-      }
-
+      await updateFacture(body);
       router.push(`/commercial/factures/${id}`);
-    } catch {
-      setError("Erreur lors de la mise à jour de la facture.");
-      setSaving(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Erreur lors de la mise à jour.");
+      } else {
+        setError("Erreur lors de la mise à jour de la facture.");
+      }
     }
   };
 

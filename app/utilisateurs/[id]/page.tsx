@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Pencil, KeyRound, UserCheck, UserX, Building2, GraduationCap, Mail, Shield, Calendar } from "lucide-react";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type User = {
   id: string;
@@ -27,56 +29,34 @@ const roleBadge: Record<string, { label: string; class: string }> = {
 
 export default function UtilisateurDetailPage() {
   const { id } = useParams() as { id: string };
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const { data: user, error, isLoading: loading } = useApi<User>(`/api/utilisateurs/${id}`);
+  const { trigger: resetPasswordTrigger, isMutating: resetting } = useApiMutation<{ password: string }>(
+    `/api/utilisateurs/${id}/reset-password`,
+    "POST"
+  );
 
   const [showResetModal, setShowResetModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [resetMsg, setResetMsg] = useState("");
-  const [resetting, setResetting] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/utilisateurs/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Utilisateur non trouvé");
-        return r.json();
-      })
-      .then((data) => {
-        setUser(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || "Erreur de chargement");
-        setLoading(false);
-      });
-  }, [id]);
 
   const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 6) return;
-    setResetting(true);
     setResetMsg("");
     try {
-      const res = await fetch(`/api/utilisateurs/${id}/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: newPassword }),
-      });
-      if (res.ok) {
-        setResetMsg("Mot de passe modifié avec succès");
-        setNewPassword("");
-        setTimeout(() => {
-          setShowResetModal(false);
-          setResetMsg("");
-        }, 2000);
+      await resetPasswordTrigger({ password: newPassword });
+      setResetMsg("Mot de passe modifié avec succès");
+      setNewPassword("");
+      setTimeout(() => {
+        setShowResetModal(false);
+        setResetMsg("");
+      }, 2000);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setResetMsg(err.message || "Erreur lors de la réinitialisation");
       } else {
-        const data = await res.json();
-        setResetMsg(data.error || "Erreur lors de la réinitialisation");
+        setResetMsg("Erreur réseau");
       }
-    } catch {
-      setResetMsg("Erreur réseau");
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -98,7 +78,7 @@ export default function UtilisateurDetailPage() {
           <h1 className="text-2xl font-bold text-gray-100">Utilisateur</h1>
         </div>
         <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-lg text-sm">
-          {error || "Utilisateur non trouvé"}
+          {error?.message || "Utilisateur non trouvé"}
         </div>
       </div>
     );

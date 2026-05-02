@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 interface LieuFormation {
   id: string;
@@ -50,31 +51,20 @@ export default function LieuDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [lieu, setLieu] = useState<LieuFormation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/lieux-formation/${id}`)
-      .then((res) => { if (!res.ok) throw new Error("Lieu introuvable"); return res.json(); })
-      .then(setLieu)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+  const { data: lieu, error, isLoading: loading } = useApi<LieuFormation>(`/api/lieux-formation/${id}`);
+  const { trigger: deleteLieu, isMutating: deleting } = useApiMutation(`/api/lieux-formation/${id}`, "DELETE");
 
   const handleDelete = async () => {
-    setDeleting(true);
     try {
-      const res = await fetch(`/api/lieux-formation/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
+      await deleteLieu();
       router.push("/lieux-formation");
-    } catch { setDeleting(false); setDeleteOpen(false); }
+    } catch { setDeleteOpen(false); }
   };
 
   if (loading) return <div className="p-6 flex items-center justify-center py-24"><div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" /></div>;
-  if (error || !lieu) return <div className="p-6"><p className="text-red-600">{error || "Lieu introuvable"}</p><Link href="/lieux-formation" className="text-red-600 hover:underline text-sm mt-2 inline-block">Retour</Link></div>;
+  if (error || !lieu) return <div className="p-6"><p className="text-red-600">{error?.message || "Lieu introuvable"}</p><Link href="/lieux-formation" className="text-red-600 hover:underline text-sm mt-2 inline-block">Retour</Link></div>;
 
   const adresseFull = [lieu.adresse, lieu.codePostal, lieu.ville].filter(Boolean).join(", ");
 

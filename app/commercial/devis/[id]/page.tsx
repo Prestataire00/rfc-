@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus } from "lucide-react";
@@ -11,6 +11,8 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { DEVIS_STATUTS, FACTURE_STATUTS, SESSION_STATUTS, TVA_RATE } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type LigneDevis = {
   id: string;
@@ -56,96 +58,70 @@ type Devis = {
 export default function DevisDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [devis, setDevis] = useState<Devis | null>(null);
-  const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [generatingFacture, setGeneratingFacture] = useState(false);
   const [genError, setGenError] = useState("");
-  const [updatingStatut, setUpdatingStatut] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
-  const [sending, setSending] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
-  const [duplicating, setDuplicating] = useState(false);
 
-  const fetchDevis = useCallback(async () => {
-    const res = await fetch(`/api/devis/${id}`);
-    if (res.ok) setDevis(await res.json());
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => {
-    fetchDevis();
-  }, [fetchDevis]);
+  const { data: devis, isLoading: loading, mutate } = useApi<Devis>(`/api/devis/${id}`);
+  const { trigger: deleteDevis, isMutating: deleting } = useApiMutation(`/api/devis/${id}`, "DELETE");
+  const { trigger: updateDevis, isMutating: updatingStatut } = useApiMutation<{ statut: string }>(`/api/devis/${id}`, "PUT");
+  const { trigger: dupliquerDevis, isMutating: duplicating } = useApiMutation<undefined, { id: string; numero: string }>(`/api/devis/${id}/dupliquer`, "POST");
+  const { trigger: sendEmail, isMutating: sending } = useApiMutation<{ devisId: string }, { skipped?: boolean }>("/api/email/devis", "POST");
+  const { trigger: genererFacture, isMutating: generatingFacture } = useApiMutation<undefined, { id: string }>(`/api/devis/${id}/generer-facture`, "POST");
 
   const handleDelete = async () => {
-    setDeleting(true);
-    await fetch(`/api/devis/${id}`, { method: "DELETE" });
+    await deleteDevis();
     notify.success("Devis supprime");
     router.push("/commercial");
   };
 
   const handleStatutChange = async (newStatut: string) => {
-    setUpdatingStatut(true);
-    const res = await fetch(`/api/devis/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ statut: newStatut }),
-    });
-    if (res.ok) {
+    try {
+      await updateDevis({ statut: newStatut });
       notify.success("Statut mis a jour", newStatut);
-      await fetchDevis();
-    } else {
+      await mutate();
+    } catch {
       notify.error("Erreur", "Impossible de changer le statut");
     }
-    setUpdatingStatut(false);
   };
 
   const handleDupliquer = async () => {
-    setDuplicating(true);
-    const res = await fetch(`/api/devis/${id}/dupliquer`, { method: "POST" });
-    if (res.ok) {
-      const copie = await res.json();
-      notify.success("Devis duplique", copie.numero);
-      router.push(`/commercial/devis/${copie.id}`);
-    } else {
+    try {
+      const copie = await dupliquerDevis();
+      if (copie) {
+        notify.success("Devis duplique", copie.numero);
+        router.push(`/commercial/devis/${copie.id}`);
+      }
+    } catch {
       notify.error("Erreur", "Duplication impossible");
-      setDuplicating(false);
     }
   };
 
   const handleSendEmail = async () => {
-    setSending(true);
-    const res = await fetch("/api/email/devis", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ devisId: id }),
-    });
-    const data = await res.json();
-    setEmailOpen(false);
-    setSending(false);
-    if (res.ok) {
-      if (data.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
+    try {
+      const data = await sendEmail({ devisId: id });
+      setEmailOpen(false);
+      if (data?.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
       else { setEmailMsg("Email envoye !"); notify.success("Devis envoye par email"); }
-      fetchDevis();
-    } else {
-      setEmailMsg(data.error || "Erreur envoi");
-      notify.error("Erreur envoi", data.error);
+      await mutate();
+    } catch (err) {
+      setEmailOpen(false);
+      const msg = err instanceof ApiError ? err.message : "Erreur envoi";
+      setEmailMsg(msg);
+      notify.error("Erreur envoi", msg);
     }
     setTimeout(() => setEmailMsg(""), 4000);
   };
 
   const handleGenererFacture = async () => {
-    setGeneratingFacture(true);
     setGenError("");
-    const res = await fetch(`/api/devis/${id}/generer-facture`, { method: "POST" });
-    if (res.ok) {
-      const facture = await res.json();
-      router.push(`/commercial/factures/${facture.id}`);
-    } else {
-      const data = await res.json();
-      setGenError(data.error || "Erreur lors de la génération de la facture");
-      setGeneratingFacture(false);
+    try {
+      const facture = await genererFacture();
+      if (facture) router.push(`/commercial/factures/${facture.id}`);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Erreur lors de la génération de la facture";
+      setGenError(msg);
     }
   };
 

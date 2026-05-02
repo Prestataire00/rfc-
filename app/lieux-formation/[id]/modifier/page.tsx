@@ -9,14 +9,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
+
+type LieuData = {
+  nom?: string;
+  adresse?: string | null;
+  codePostal?: string | null;
+  ville?: string | null;
+  pays?: string;
+  capacite?: number | null;
+  equipements?: string | null;
+  tarifJournee?: number | null;
+  tarifDemiJournee?: number | null;
+  contactNom?: string | null;
+  contactTelephone?: string | null;
+  contactEmail?: string | null;
+  accessibilitePMR?: boolean;
+  consignesAcces?: string | null;
+  infoParking?: string | null;
+  infoTransport?: string | null;
+  notes?: string | null;
+};
 
 export default function ModifierLieuPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -39,33 +59,35 @@ export default function ModifierLieuPage() {
     notes: "",
   });
 
+  const { data, error: fetchError, isLoading: loading } = useApi<LieuData>(`/api/lieux-formation/${id}`);
+  const { trigger: updateLieu, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/lieux-formation/${id}`, "PUT");
+
   useEffect(() => {
-    fetch(`/api/lieux-formation/${id}`)
-      .then((res) => { if (!res.ok) throw new Error("Lieu introuvable"); return res.json(); })
-      .then((data) => {
-        setForm({
-          nom: data.nom ?? "",
-          adresse: data.adresse ?? "",
-          codePostal: data.codePostal ?? "",
-          ville: data.ville ?? "",
-          pays: data.pays ?? "France",
-          capacite: data.capacite != null ? String(data.capacite) : "",
-          equipements: data.equipements ?? "",
-          tarifJournee: data.tarifJournee != null ? String(data.tarifJournee) : "",
-          tarifDemiJournee: data.tarifDemiJournee != null ? String(data.tarifDemiJournee) : "",
-          contactNom: data.contactNom ?? "",
-          contactTelephone: data.contactTelephone ?? "",
-          contactEmail: data.contactEmail ?? "",
-          accessibilitePMR: data.accessibilitePMR ?? false,
-          consignesAcces: data.consignesAcces ?? "",
-          infoParking: data.infoParking ?? "",
-          infoTransport: data.infoTransport ?? "",
-          notes: data.notes ?? "",
-        });
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+    if (!data) return;
+    setForm({
+      nom: data.nom ?? "",
+      adresse: data.adresse ?? "",
+      codePostal: data.codePostal ?? "",
+      ville: data.ville ?? "",
+      pays: data.pays ?? "France",
+      capacite: data.capacite != null ? String(data.capacite) : "",
+      equipements: data.equipements ?? "",
+      tarifJournee: data.tarifJournee != null ? String(data.tarifJournee) : "",
+      tarifDemiJournee: data.tarifDemiJournee != null ? String(data.tarifDemiJournee) : "",
+      contactNom: data.contactNom ?? "",
+      contactTelephone: data.contactTelephone ?? "",
+      contactEmail: data.contactEmail ?? "",
+      accessibilitePMR: data.accessibilitePMR ?? false,
+      consignesAcces: data.consignesAcces ?? "",
+      infoParking: data.infoParking ?? "",
+      infoTransport: data.infoTransport ?? "",
+      notes: data.notes ?? "",
+    });
+  }, [data]);
+
+  useEffect(() => {
+    if (fetchError) setError(fetchError.message || "Lieu introuvable");
+  }, [fetchError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -79,44 +101,36 @@ export default function ModifierLieuPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
+
+    const payload: Record<string, unknown> = {
+      nom: form.nom,
+      accessibilitePMR: form.accessibilitePMR,
+      pays: form.pays,
+      adresse: form.adresse || undefined,
+      codePostal: form.codePostal || undefined,
+      ville: form.ville || undefined,
+      capacite: form.capacite ? Number(form.capacite) : null,
+      equipements: form.equipements || undefined,
+      tarifJournee: form.tarifJournee ? Number(form.tarifJournee) : null,
+      tarifDemiJournee: form.tarifDemiJournee ? Number(form.tarifDemiJournee) : null,
+      contactNom: form.contactNom || undefined,
+      contactTelephone: form.contactTelephone || undefined,
+      contactEmail: form.contactEmail || undefined,
+      consignesAcces: form.consignesAcces || undefined,
+      infoParking: form.infoParking || undefined,
+      infoTransport: form.infoTransport || undefined,
+      notes: form.notes || undefined,
+    };
 
     try {
-      const payload: Record<string, unknown> = {
-        nom: form.nom,
-        accessibilitePMR: form.accessibilitePMR,
-        pays: form.pays,
-        adresse: form.adresse || undefined,
-        codePostal: form.codePostal || undefined,
-        ville: form.ville || undefined,
-        capacite: form.capacite ? Number(form.capacite) : null,
-        equipements: form.equipements || undefined,
-        tarifJournee: form.tarifJournee ? Number(form.tarifJournee) : null,
-        tarifDemiJournee: form.tarifDemiJournee ? Number(form.tarifDemiJournee) : null,
-        contactNom: form.contactNom || undefined,
-        contactTelephone: form.contactTelephone || undefined,
-        contactEmail: form.contactEmail || undefined,
-        consignesAcces: form.consignesAcces || undefined,
-        infoParking: form.infoParking || undefined,
-        infoTransport: form.infoTransport || undefined,
-        notes: form.notes || undefined,
-      };
-
-      const res = await fetch(`/api/lieux-formation/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la mise à jour");
-      }
-
+      await updateLieu(payload);
       router.push(`/lieux-formation/${id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
-      setSaving(false);
+      if (err instanceof ApiError) {
+        setError(err.message || "Erreur lors de la mise à jour");
+      } else {
+        setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      }
     }
   };
 

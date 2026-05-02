@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CalendarDays, BookOpen, Clock, CheckCircle } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Session = {
   id: string;
@@ -19,14 +19,9 @@ type Session = {
 };
 
 export default function EspaceFormateurPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/formateur/mes-sessions")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { setSessions(Array.isArray(d) ? d : []); setLoading(false); });
-  }, []);
+  const { data, isLoading } = useApi<Session[]>("/api/formateur/mes-sessions");
+  const sessions: Session[] = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   const now = new Date();
   const aVenir = sessions.filter((s) => new Date(s.dateDebut) > now && s.statut !== "annulee");

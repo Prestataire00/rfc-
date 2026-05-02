@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { MessageSquare, Star } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Evaluation = {
   id: string;
@@ -17,15 +17,9 @@ type Evaluation = {
 };
 
 export default function ClientEvaluationsPage() {
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/client/evaluations")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setEvaluations(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data, isLoading } = useApi<Evaluation[]>("/api/client/evaluations");
+  const evaluations: Evaluation[] = data ?? [];
+  const loading = isLoading;
 
   return (
     <div>

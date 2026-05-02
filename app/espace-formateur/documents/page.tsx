@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { FileText, Download, Upload, Plus, X } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Document = {
   id: string;
@@ -27,23 +28,14 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function FormateurDocumentsPage() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadType, setUploadType] = useState("autre");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchDocuments = () => {
-    fetch("/api/formateur/documents")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => { setDocuments(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  const { data, isLoading, mutate } = useApi<Document[]>("/api/formateur/documents");
+  const documents: Document[] = data ?? [];
+  const loading = isLoading;
 
   const handleUpload = async () => {
     const file = fileInputRef.current?.files?.[0];
@@ -61,7 +53,7 @@ export default function FormateurDocumentsPage() {
       setShowUpload(false);
       setUploadType("autre");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      fetchDocuments();
+      await mutate();
     }
   };
 

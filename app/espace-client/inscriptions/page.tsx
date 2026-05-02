@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { UserPlus, Clock, CheckCircle2, XCircle, AlertCircle, CalendarDays } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api, ApiError } from "@/lib/fetcher";
 
 type Contact = {
   id: string;
@@ -41,26 +43,17 @@ const STATUT_CONFIG: Record<string, { label: string; icon: React.ElementType; cl
 };
 
 export default function ClientInscriptionsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [sessions, setSessions] = useState<SessionDisponible[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState("");
   const [selectedSession, setSelectedSession] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const fetchData = useCallback(async () => {
-    const [contactsRes, sessionsRes] = await Promise.all([
-      fetch("/api/client/stagiaires").then((r) => r.ok ? r.json() : []),
-      fetch("/api/client/inscriptions").then((r) => r.ok ? r.json() : []),
-    ]);
-    setContacts(Array.isArray(contactsRes) ? contactsRes : []);
-    setSessions(Array.isArray(sessionsRes) ? sessionsRes : []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data: contactsData, isLoading: contactsLoading, mutate: mutateContacts } = useApi<Contact[]>("/api/client/stagiaires");
+  const { data: sessionsData, isLoading: sessionsLoading } = useApi<SessionDisponible[]>("/api/client/inscriptions");
+  const contacts: Contact[] = Array.isArray(contactsData) ? contactsData : [];
+  const sessions: SessionDisponible[] = Array.isArray(sessionsData) ? sessionsData : [];
+  const loading = contactsLoading || sessionsLoading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,20 +66,15 @@ export default function ClientInscriptionsPage() {
     }
 
     setSubmitting(true);
-    const res = await fetch("/api/client/inscriptions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId: selectedSession, contactId: selectedContact }),
-    });
-    const data = await res.json();
-
-    if (res.ok) {
+    try {
+      await api.post("/api/client/inscriptions", { sessionId: selectedSession, contactId: selectedContact });
       setSuccessMsg("Demande d'inscription envoyée. L'administrateur va la traiter.");
       setSelectedContact("");
       setSelectedSession("");
-      fetchData(); // refresh inscriptions list
-    } else {
-      setErrorMsg(data.error || "Erreur lors de la demande.");
+      await mutateContacts(); // refresh inscriptions list (nested under each contact)
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Erreur lors de la demande.";
+      setErrorMsg(message);
     }
     setSubmitting(false);
   };

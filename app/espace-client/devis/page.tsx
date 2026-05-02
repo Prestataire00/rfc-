@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { FileText, PenTool, X, Check } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { DEVIS_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Devis = {
   id: string;
@@ -21,18 +23,14 @@ type Devis = {
 };
 
 export default function ClientDevisPage() {
-  const [devisList, setDevisList] = useState<Devis[]>([]);
-  const [loading, setLoading] = useState(true);
   const [signingId, setSigningId] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
 
-  useEffect(() => {
-    fetch("/api/client/devis")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setDevisList(d); setLoading(false); });
-  }, []);
+  const { data, isLoading, mutate } = useApi<Devis[]>("/api/client/devis");
+  const devisList: Devis[] = data ?? [];
+  const loading = isLoading;
 
   // Canvas drawing handlers
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -88,18 +86,17 @@ export default function ClientDevisPage() {
     const canvas = canvasRef.current!;
     const signatureDataUrl = canvas.toDataURL("image/png");
 
-    await fetch(`/api/devis/${signingId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await api.put(`/api/devis/${signingId}`, {
         statut: "signe",
         dateSigne: new Date().toISOString(),
         signatureUrl: signatureDataUrl,
-      }),
-    });
+      });
+      await mutate();
+    } catch {
+      // ignore
+    }
 
-    const res = await fetch("/api/client/devis");
-    if (res.ok) setDevisList(await res.json());
     setSigningId(null);
     setSigning(false);
   };

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Session = {
   id: string;
@@ -21,15 +22,10 @@ type Session = {
 };
 
 export default function FormateurSessionsPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-
-  useEffect(() => {
-    fetch("/api/formateur/mes-sessions")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setSessions(d); setLoading(false); });
-  }, []);
+  const { data, isLoading } = useApi<Session[]>("/api/formateur/mes-sessions");
+  const sessions: Session[] = data ?? [];
+  const loading = isLoading;
 
   const filtered = filter === "all" ? sessions : sessions.filter((s) => s.statut === filter);
 

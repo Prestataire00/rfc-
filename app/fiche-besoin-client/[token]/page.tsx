@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { CheckCircle2, AlertCircle, Loader2, Building2, Users, BookOpen, Accessibility } from "lucide-react";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Fiche = {
   id: string;
@@ -51,77 +52,73 @@ const OBJECTIFS = [
 
 export default function FicheBesoinClientPage() {
   const { token } = useParams<{ token: string }>();
-  const [fiche, setFiche] = useState<Fiche | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
+    token ? `/api/besoin-client/public/${token}` : null
+  );
+  const submitMutation = useApiMutation<Record<string, unknown>>(
+    `/api/besoin-client/public/${token}`,
+    "POST"
+  );
+  const [submitError, setSubmitError] = useState("");
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
 
+  const loading = isLoading;
+  const saving = submitMutation.isMutating;
+  const loadError = fetchError ? "Lien invalide ou expire" : "";
+  const error = submitError || loadError;
+
+  // Hydrate form when fiche is loaded
   useEffect(() => {
-    fetch(`/api/besoin-client/public/${token}`)
-      .then((r) => r.ok ? r.json() : Promise.reject(r))
-      .then((d: Fiche) => {
-        setFiche(d);
-        setForm({
-          secteurActivite: d.secteurActivite ?? d.entreprise?.secteur ?? "",
-          effectifTotal: d.effectifTotal ?? d.entreprise?.effectif ?? "",
-          effectifConcerne: d.effectifConcerne ?? "",
-          metiersStagiaires: d.metiersStagiaires ?? "",
-          contexteTravail: d.contexteTravail ?? "",
-          contraintesSpecifiques: d.contraintesSpecifiques ?? "",
-          objectifPrincipal: d.objectifPrincipal ?? "",
-          objectifsClient: d.objectifsClient ?? "",
-          casAccidentsRecents: d.casAccidentsRecents ?? false,
-          detailsCasAccidents: d.detailsCasAccidents ?? "",
-          contraintesHoraires: d.contraintesHoraires ?? "",
-          aStagiairesHandicap: d.aStagiairesHandicap ?? false,
-          detailsHandicap: d.detailsHandicap ?? "",
-        });
-      })
-      .catch(() => setError("Lien invalide ou expire"))
-      .finally(() => setLoading(false));
-  }, [token]);
+    if (!fiche) return;
+    setForm({
+      secteurActivite: fiche.secteurActivite ?? fiche.entreprise?.secteur ?? "",
+      effectifTotal: fiche.effectifTotal ?? fiche.entreprise?.effectif ?? "",
+      effectifConcerne: fiche.effectifConcerne ?? "",
+      metiersStagiaires: fiche.metiersStagiaires ?? "",
+      contexteTravail: fiche.contexteTravail ?? "",
+      contraintesSpecifiques: fiche.contraintesSpecifiques ?? "",
+      objectifPrincipal: fiche.objectifPrincipal ?? "",
+      objectifsClient: fiche.objectifsClient ?? "",
+      casAccidentsRecents: fiche.casAccidentsRecents ?? false,
+      detailsCasAccidents: fiche.detailsCasAccidents ?? "",
+      contraintesHoraires: fiche.contraintesHoraires ?? "",
+      aStagiairesHandicap: fiche.aStagiairesHandicap ?? false,
+      detailsHandicap: fiche.detailsHandicap ?? "",
+    });
+  }, [fiche]);
 
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setError("");
+    setSubmitError("");
     const payload = {
       ...form,
       effectifTotal: form.effectifTotal ? Number(form.effectifTotal) : null,
       effectifConcerne: form.effectifConcerne ? Number(form.effectifConcerne) : null,
     };
     try {
-      const res = await fetch(`/api/besoin-client/public/${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setError(typeof d.error === "string" ? d.error : "Erreur lors de l'envoi");
-        setSaving(false);
-        return;
-      }
+      await submitMutation.trigger(payload);
       setSuccess(true);
-    } catch {
-      setError("Erreur reseau");
-      setSaving(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSubmitError(err.message || "Erreur lors de l'envoi");
+      } else {
+        setSubmitError("Erreur reseau");
+      }
     }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-100"><Loader2 className="h-8 w-8 animate-spin text-red-600" /></div>;
 
-  if (error && !fiche) {
+  if (loadError && !fiche) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="max-w-md bg-white rounded-xl shadow p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">Lien invalide</h1>
-          <p className="text-sm text-gray-600">{error}</p>
+          <p className="text-sm text-gray-600">{loadError}</p>
         </div>
       </div>
     );

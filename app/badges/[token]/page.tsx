@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Award, CheckCircle2, XCircle, Calendar, BookOpen, Shield } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
 
 type BadgeData = {
   badge: { nom: string; description: string | null; niveau: string; couleur: string; icone: string | null };
@@ -17,22 +17,9 @@ const NIVEAU_LABELS: Record<string, string> = { bronze: "Bronze", argent: "Argen
 
 export default function BadgeVerifyPage() {
   const { token } = useParams<{ token: string }>();
-  const [data, setData] = useState<BadgeData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data, error, isLoading } = useApi<BadgeData>(token ? `/api/badges/verify/${token}` : null);
 
-  useEffect(() => {
-    fetch(`/api/badges/verify/${token}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Badge introuvable");
-        return r.json();
-      })
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [token]);
-
-  if (loading) {
+  if (isLoading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 

@@ -1,65 +1,69 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle, AlertCircle, CalendarDays, Clock, MapPin } from "lucide-react";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
+
+type SessionInfo = {
+  formation: string;
+  duree: number;
+  description: string | null;
+  dateDebut: string;
+  dateFin: string;
+  lieu: string | null;
+  placesRestantes: number;
+};
 
 export default function InscriptionStagiairePage() {
   const { token } = useParams() as { token: string };
-  const [info, setInfo] = useState<{
-    formation: string;
-    duree: number;
-    description: string | null;
-    dateDebut: string;
-    dateFin: string;
-    lieu: string | null;
-    placesRestantes: number;
-  } | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { data: info, error: fetchError, isLoading } = useApi<SessionInfo>(
+    token ? `/api/inscription-publique/${token}` : null
+  );
+  const submitMutation = useApiMutation<Record<string, unknown>>(
+    `/api/inscription-publique/${token}`,
+    "POST"
+  );
+  const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     nom: "", prenom: "", email: "", telephone: "", entreprise: "",
     dateNaissance: "", numeroSecuriteSociale: "", besoinsAdaptation: "",
     consentementRGPD: false,
   });
-  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/inscription-publique/${token}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (!data) setError("Impossible de charger les données");
-        else if (data.error) setError(data.error);
-        else setInfo(data);
-        setLoading(false);
-      });
-  }, [token]);
+  const loading = isLoading;
+  const submitting = submitMutation.isMutating;
+  // Preserve original semantics: API errors surface via body.error,
+  // network/parse failures fall back to "Impossible de charger les données"
+  const loadError = fetchError
+    ? (typeof fetchError.body === "object" && fetchError.body && "error" in fetchError.body && typeof (fetchError.body as { error: unknown }).error === "string"
+        ? (fetchError.body as { error: string }).error
+        : "Impossible de charger les données")
+    : "";
+  const error = submitError || loadError;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.consentementRGPD) {
-      setError("Le consentement RGPD est obligatoire");
+      setSubmitError("Le consentement RGPD est obligatoire");
       return;
     }
-    setSubmitting(true);
-    setError("");
+    setSubmitError("");
     const payload = {
       ...form,
       numeroSecuriteSociale: form.numeroSecuriteSociale ? form.numeroSecuriteSociale.replace(/\s/g, "") : undefined,
     };
-    const res = await fetch(`/api/inscription-publique/${token}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (res.ok) {
+    try {
+      await submitMutation.trigger(payload);
       setSubmitted(true);
-    } else {
-      setError(data.error || "Erreur");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSubmitError(err.message || "Erreur");
+      } else {
+        setSubmitError("Erreur");
+      }
     }
-    setSubmitting(false);
   };
 
   if (loading) {
@@ -70,12 +74,12 @@ export default function InscriptionStagiairePage() {
     );
   }
 
-  if (error && !info) {
+  if (loadError && !info) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-400">{error}</p>
+          <p className="text-gray-400">{loadError}</p>
         </div>
       </div>
     );

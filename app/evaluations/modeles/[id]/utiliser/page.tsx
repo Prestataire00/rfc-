@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Send, Users, BookOpen } from "lucide-react";
 import { Question } from "../../TemplateBuilder";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Template = {
   id: string;
@@ -32,13 +34,18 @@ export default function UtiliserModelePage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [template, setTemplate] = useState<Template | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const { data: template, isLoading: templateLoading } = useApi<Template>(
+    id ? `/api/evaluation-templates/${id}` : null
+  );
+  const { data: sessionsRaw, isLoading: sessionsLoading } = useApi<Session[] | { sessions: Session[] }>("/api/sessions?limit=50");
+  const { data: contactsRaw, isLoading: contactsLoading } = useApi<Contact[] | { contacts: Contact[] }>("/api/contacts?limit=100");
+  const sessions: Session[] = Array.isArray(sessionsRaw) ? sessionsRaw : (sessionsRaw?.sessions ?? []);
+  const contacts: Contact[] = Array.isArray(contactsRaw) ? contactsRaw : (contactsRaw?.contacts ?? []);
+  const loading = templateLoading || sessionsLoading || contactsLoading;
+
   const [selectedSession, setSelectedSession] = useState("");
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [cible, setCible] = useState("stagiaire");
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<{ id: string; token: string }[]>([]);
   const [error, setError] = useState("");
@@ -46,17 +53,7 @@ export default function UtiliserModelePage() {
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
-    Promise.all([
-      fetch(`/api/evaluation-templates/${id}`).then((r) => r.json()),
-      fetch("/api/sessions?limit=50").then((r) => r.json()),
-      fetch("/api/contacts?limit=100").then((r) => r.json()),
-    ]).then(([t, s, c]) => {
-      setTemplate(t);
-      setSessions(Array.isArray(s) ? s : s.sessions || []);
-      setContacts(Array.isArray(c) ? c : c.contacts || []);
-      setLoading(false);
-    });
-  }, [id]);
+  }, []);
 
   const toggleContact = (cid: string) => {
     setSelectedContacts((prev) =>
@@ -86,20 +83,17 @@ export default function UtiliserModelePage() {
     const results: { id: string; token: string }[] = [];
 
     for (const contactId of selectedContacts) {
-      const res = await fetch("/api/evaluations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      try {
+        const data = await api.post<{ id: string; tokenAcces: string }>("/api/evaluations", {
           type: template!.type,
           cible,
           sessionId: selectedSession,
           contactId,
           reponses: JSON.stringify(reponsesInitiales),
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
+        });
         results.push({ id: data.id, token: data.tokenAcces });
+      } catch {
+        // Skip failures (preserves prior behavior: only push successful results)
       }
     }
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { CalendarDays, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Dispo = {
   id: string;
@@ -14,39 +16,31 @@ type Dispo = {
 };
 
 export default function DisponibilitesPage() {
-  const [dispos, setDispos] = useState<Dispo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ dateDebut: "", dateFin: "", type: "disponible", notes: "" });
   const [saving, setSaving] = useState(false);
 
-  const fetchDispos = useCallback(async () => {
-    const res = await fetch("/api/formateur/disponibilites");
-    if (res.ok) setDispos(await res.json());
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchDispos(); }, [fetchDispos]);
+  const { data, isLoading, mutate } = useApi<Dispo[]>("/api/formateur/disponibilites");
+  const dispos: Dispo[] = data ?? [];
+  const loading = isLoading;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch("/api/formateur/disponibilites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
+    try {
+      await api.post("/api/formateur/disponibilites", form);
       setShowForm(false);
       setForm({ dateDebut: "", dateFin: "", type: "disponible", notes: "" });
-      fetchDispos();
+      await mutate();
+    } catch {
+      // ignore
     }
     setSaving(false);
   }
 
   async function handleDelete(id: string) {
-    await fetch(`/api/formateur/disponibilites/${id}`, { method: "DELETE" });
-    fetchDispos();
+    await api.delete(`/api/formateur/disponibilites/${id}`);
+    await mutate();
   }
 
   return (

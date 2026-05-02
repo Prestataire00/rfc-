@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Users, CalendarDays, FolderOpen, FileText, CheckCircle, ShieldAlert } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
 
 type ClientStats = {
   nbStagiaires: number;
@@ -14,14 +14,8 @@ type ClientStats = {
 };
 
 export default function EspaceClientPage() {
-  const [stats, setStats] = useState<ClientStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/client/stats")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { setStats(d); setLoading(false); });
-  }, []);
+  const { data: stats, isLoading } = useApi<ClientStats>("/api/client/stats");
+  const loading = isLoading;
 
   if (loading) {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;

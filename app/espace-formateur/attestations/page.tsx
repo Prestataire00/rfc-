@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Award, CheckCircle, Clock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Session = {
   id: string;
@@ -16,39 +17,22 @@ type Session = {
 };
 
 export default function AttestationsPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/formateur/mes-sessions")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => {
-        setSessions(d.filter((s: any) => s.statut === "terminee"));
-        setLoading(false);
-      });
-  }, []);
+  const { data, isLoading, mutate } = useApi<Session[]>("/api/formateur/mes-sessions");
+  const sessions: Session[] = (data ?? []).filter((s) => s.statut === "terminee");
+  const loading = isLoading;
 
   async function generateAttestation(sessionId: string, contactId: string) {
-    const res = await fetch("/api/attestations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, contactId, type: "fin_formation" }),
-    });
-    if (res.ok) {
-      // Refresh
-      const updated = await fetch("/api/formateur/mes-sessions").then((r) => r.ok ? r.json() : []);
-      setSessions(updated.filter((s: any) => s.statut === "terminee"));
+    try {
+      await api.post("/api/attestations", { sessionId, contactId, type: "fin_formation" });
+      await mutate();
+    } catch {
+      // ignore
     }
   }
 
   async function validateAttestation(attestationId: string) {
-    await fetch(`/api/attestations/${attestationId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ statut: "validee" }),
-    });
-    const updated = await fetch("/api/formateur/mes-sessions").then((r) => r.ok ? r.json() : []);
-    setSessions(updated.filter((s: any) => s.statut === "terminee"));
+    await api.put(`/api/attestations/${attestationId}`, { statut: "validee" });
+    await mutate();
   }
 
   if (loading) {

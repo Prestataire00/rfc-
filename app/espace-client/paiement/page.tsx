@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { CreditCard, Building2, FileCheck, AlertCircle, CheckCircle, Copy, X, ExternalLink, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Facture = {
   id: string;
@@ -84,16 +85,11 @@ function Modal({ content, onClose }: { content: ModalContent; onClose: () => voi
 }
 
 export default function PaiementPage() {
-  const [data, setData] = useState<Data | null>(null);
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalContent | null>(null);
   const ribRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetch("/api/client/paiement")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { setData(d); setLoading(false); });
-  }, []);
+  const { data, isLoading } = useApi<Data>("/api/client/paiement");
+  const loading = isLoading;
 
   if (loading) {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;

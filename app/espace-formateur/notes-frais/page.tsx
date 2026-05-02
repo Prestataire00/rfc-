@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Receipt, Plus, CheckCircle2, Clock, XCircle, CreditCard, Upload } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type NoteFrais = {
   id: string;
@@ -33,8 +35,6 @@ const STATUT_STYLES: Record<string, { icon: React.ElementType; color: string; la
 };
 
 export default function NotesFraisPage() {
-  const [notes, setNotes] = useState<NoteFrais[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -45,29 +45,22 @@ export default function NotesFraisPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [lieu, setLieu] = useState("");
 
-  const load = () => {
-    fetch("/api/notes-frais").then((r) => r.ok ? r.json() : []).then((d) => {
-      setNotes(Array.isArray(d) ? d : []);
-      setLoading(false);
-    });
-  };
-
-  useEffect(load, []);
+  const { data, isLoading, mutate } = useApi<NoteFrais[]>("/api/notes-frais");
+  const notes: NoteFrais[] = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch("/api/notes-frais", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categorie, description, montant: parseFloat(montant), date, lieu: lieu || null }),
-    });
-    if (res.ok) {
+    try {
+      await api.post("/api/notes-frais", { categorie, description, montant: parseFloat(montant), date, lieu: lieu || null });
       setShowForm(false);
       setDescription("");
       setMontant("");
       setLieu("");
-      load();
+      await mutate();
+    } catch {
+      // ignore
     }
     setSaving(false);
   };

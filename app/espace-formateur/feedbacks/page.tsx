@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { MessageSquare, Plus, Star } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Feedback = {
   id: string;
@@ -24,9 +26,6 @@ type Session = {
 };
 
 export default function FeedbacksPage() {
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -38,17 +37,11 @@ export default function FeedbacksPage() {
     suggestions: "",
   });
 
-  const fetchData = useCallback(async () => {
-    const [fb, sess] = await Promise.all([
-      fetch("/api/formateur/feedbacks").then((r) => r.ok ? r.json() : []),
-      fetch("/api/formateur/mes-sessions").then((r) => r.ok ? r.json() : []),
-    ]);
-    setFeedbacks(fb);
-    setSessions(sess.filter((s: Session) => s.statut === "terminee"));
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data: fbData, isLoading: fbLoading, mutate: mutateFeedbacks } = useApi<Feedback[]>("/api/formateur/feedbacks");
+  const { data: sessData, isLoading: sessLoading } = useApi<Session[]>("/api/formateur/mes-sessions");
+  const feedbacks: Feedback[] = fbData ?? [];
+  const sessions: Session[] = (sessData ?? []).filter((s) => s.statut === "terminee");
+  const loading = fbLoading || sessLoading;
 
   const sessionsWithoutFeedback = sessions.filter(
     (s) => !feedbacks.some((f) => f.session.id === s.id)
@@ -57,15 +50,13 @@ export default function FeedbacksPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch("/api/formateur/feedbacks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
+    try {
+      await api.post("/api/formateur/feedbacks", form);
       setShowForm(false);
       setForm({ sessionId: "", noteGlobale: "4", commentaire: "", conditionsMat: "", dynamiqueGroupe: "", suggestions: "" });
-      fetchData();
+      await mutateFeedbacks();
+    } catch {
+      // ignore
     }
     setSaving(false);
   }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Session = {
   id: string;
@@ -41,18 +42,12 @@ function isInRange(date: Date, start: string, end: string) {
 }
 
 export default function PlanningPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { data } = useApi<Session[]>("/api/formateur/mes-sessions");
+  const sessions: Session[] = data ?? [];
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
-  useEffect(() => {
-    fetch("/api/formateur/mes-sessions")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setSessions(d); setLoading(false); });
-  }, []);
 
   const days = getMonthDays(year, month);
   const today = new Date();

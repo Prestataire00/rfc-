@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { FileText, Download, FolderOpen, BookOpen, Receipt, FileCheck, Award } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type SessionDoc = {
   id: string;
@@ -69,14 +69,8 @@ function DownloadBtn({ href, label }: { href: string; label: string }) {
 }
 
 export default function ClientDocumentsPage() {
-  const [data, setData] = useState<Data | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/client/documents")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { setData(d); setLoading(false); });
-  }, []);
+  const { data, isLoading } = useApi<Data>("/api/client/documents");
+  const loading = isLoading;
 
   if (loading) {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;

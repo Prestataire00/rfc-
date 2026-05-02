@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { BookOpen } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Session = {
   id: string;
@@ -20,14 +20,9 @@ type Session = {
 };
 
 export default function ClientFormationsPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/client/formations")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setSessions(d); setLoading(false); });
-  }, []);
+  const { data, isLoading } = useApi<Session[]>("/api/client/formations");
+  const sessions: Session[] = data ?? [];
+  const loading = isLoading;
 
   return (
     <div>

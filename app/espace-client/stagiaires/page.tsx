@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Users } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useApi } from "@/hooks/useApi";
 
 type Contact = {
   id: string;
@@ -15,15 +15,9 @@ type Contact = {
 };
 
 export default function ClientStagiairesPage() {
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/client/stagiaires")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setContacts(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data, isLoading } = useApi<Contact[]>("/api/client/stagiaires");
+  const contacts: Contact[] = data ?? [];
+  const loading = isLoading;
 
   return (
     <div>

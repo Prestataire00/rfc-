@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AlertTriangle, Clock, CheckCircle2, ShieldAlert, RefreshCw } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
 
 type Recyclage = {
   id: string;
@@ -21,16 +22,10 @@ const STATUT_STYLES: Record<string, { icon: React.ElementType; color: string; bg
 };
 
 export default function RecyclagesPage() {
-  const [recyclages, setRecyclages] = useState<Recyclage[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "expire" | "a_recycler" | "valide">("all");
-
-  useEffect(() => {
-    fetch("/api/client/recyclages").then((r) => r.ok ? r.json() : []).then((d) => {
-      setRecyclages(Array.isArray(d) ? d : []);
-      setLoading(false);
-    });
-  }, []);
+  const { data, isLoading } = useApi<Recyclage[]>("/api/client/recyclages");
+  const recyclages: Recyclage[] = Array.isArray(data) ? data : [];
+  const loading = isLoading;
 
   const filtered = filter === "all" ? recyclages : recyclages.filter((r) => r.statut === filter);
   const expireCount = recyclages.filter((r) => r.statut === "expire").length;

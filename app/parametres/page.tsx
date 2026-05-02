@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +61,6 @@ const defaultParams: Parametres = {
 
 export default function ParametresPage() {
   const [params, setParams] = useState<Parametres>(defaultParams);
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testEmail, setTestEmail] = useState("");
   const [testing, setTesting] = useState(false);
@@ -67,26 +68,25 @@ export default function ParametresPage() {
   const [smtpStatus, setSmtpStatus] = useState<{ configured: boolean; host?: string } | null>(null);
   const [checking, setChecking] = useState(false);
 
+  const { data: paramsData } = useApi<Partial<Parametres>>("/api/parametres/entreprise");
+  const { trigger: saveParams, isMutating: saving } = useApiMutation<Parametres>(
+    "/api/parametres/entreprise",
+    "PUT"
+  );
+
   useEffect(() => {
-    fetch("/api/parametres/entreprise")
-      .then((r) => (r.ok ? r.json() : defaultParams))
-      .then((data) => setParams({ ...defaultParams, ...data }));
-  }, []);
+    if (!paramsData) return;
+    setParams({ ...defaultParams, ...paramsData });
+  }, [paramsData]);
 
   const handleSave = async () => {
-    setSaving(true);
     setSaved(false);
-    const res = await fetch("/api/parametres/entreprise", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-    setSaving(false);
-    if (res.ok) {
+    try {
+      await saveParams(params);
       setSaved(true);
       notify.success("Parametres enregistres");
       setTimeout(() => setSaved(false), 3000);
-    } else {
+    } catch {
       notify.error("Erreur", "Impossible d'enregistrer les parametres");
     }
   };
@@ -98,8 +98,7 @@ export default function ParametresPage() {
   const checkSmtp = async () => {
     setChecking(true);
     try {
-      const res = await fetch("/api/parametres/smtp-status");
-      const data = await res.json();
+      const data = await api.get<{ configured: boolean; host?: string }>("/api/parametres/smtp-status");
       setSmtpStatus(data);
     } catch {
       setSmtpStatus({ configured: false });
@@ -112,12 +111,10 @@ export default function ParametresPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch("/api/parametres/test-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: testEmail }),
-      });
-      const data = await res.json();
+      const data = await api.post<{ success: boolean; message: string }>(
+        "/api/parametres/test-email",
+        { to: testEmail }
+      );
       setTestResult(data);
     } catch {
       setTestResult({ success: false, message: "Erreur de connexion" });

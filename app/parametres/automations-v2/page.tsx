@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Zap, ToggleLeft, ToggleRight, Pencil, Clock, Mail, MessageSquare, FileText, ListChecks } from "lucide-react";
 import { TRIGGER_LABELS, ACTION_TYPE_LABELS } from "@/lib/automations-v2-constants";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Rule = {
   id: string;
@@ -34,21 +35,12 @@ function formatDelay(type: string, value: number): string {
 }
 
 export default function AutomationsV2Page() {
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = () => {
-    fetch("/api/automations-v2").then((r) => r.ok ? r.json() : []).then((d) => {
-      setRules(Array.isArray(d) ? d : []);
-      setLoading(false);
-    });
-  };
-
-  useEffect(load, []);
+  const { data: rulesData, isLoading: loading, mutate } = useApi<Rule[]>("/api/automations-v2");
+  const rules: Rule[] = Array.isArray(rulesData) ? rulesData : [];
 
   const handleToggle = async (id: string) => {
-    await fetch(`/api/automations-v2/${id}/toggle`, { method: "PATCH" });
-    load();
+    await api.patch(`/api/automations-v2/${id}/toggle`);
+    await mutate();
   };
 
   if (loading) {

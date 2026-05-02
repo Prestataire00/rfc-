@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Save, Plus, Trash2, GripVertical, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 type Question = { key: string; label: string };
 type Section = { id: string; titre: string; questions: Question[] };
@@ -133,36 +134,36 @@ function QuestionnairEditor({
   );
 }
 
+type QuestionnaireData = { chaud?: Section[]; froid?: Section[] };
+
 export default function QuestionnaireConfigPage() {
   const [chaud, setChaud] = useState<Section[]>([]);
   const [froid, setFroid] = useState<Section[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<"chaud" | "froid">("chaud");
 
+  const { data: questionnaireData, isLoading: loading } = useApi<QuestionnaireData>(
+    "/api/parametres/questionnaire"
+  );
+  const { trigger: saveQuestionnaire, isMutating: saving } = useApiMutation<{ chaud: Section[]; froid: Section[] }>(
+    "/api/parametres/questionnaire",
+    "PUT"
+  );
+
   useEffect(() => {
-    fetch("/api/parametres/questionnaire")
-      .then((r) => r.json())
-      .then((d) => {
-        setChaud(d.chaud || []);
-        setFroid(d.froid || []);
-        setLoading(false);
-      });
-  }, []);
+    if (!questionnaireData) return;
+    setChaud(questionnaireData.chaud || []);
+    setFroid(questionnaireData.froid || []);
+  }, [questionnaireData]);
 
   const handleSave = async () => {
-    setSaving(true);
     setSaved(false);
-    const res = await fetch("/api/parametres/questionnaire", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chaud, froid }),
-    });
-    setSaving(false);
-    if (res.ok) {
+    try {
+      await saveQuestionnaire({ chaud, froid });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } catch {
+      // ignore
     }
   };
 

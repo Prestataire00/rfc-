@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
 import { notify } from "@/lib/toast";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Option = {
   id: string;
@@ -41,22 +42,28 @@ const ORIGINES = [
   },
 ];
 
+type LockedContact = {
+  id: string;
+  prenom?: string;
+  nom?: string;
+  type?: string;
+  entrepriseId?: string | null;
+  entreprise?: { nom?: string } | null;
+};
+
+type BesoinCreated = { id: string; titre: string };
+
 export default function NouveauBesoinPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramContactId = searchParams.get("contactId") ?? "";
   const paramEntrepriseId = searchParams.get("entrepriseId") ?? "";
 
-  const [entreprises, setEntreprises] = useState<Option[]>([]);
-  const [contacts, setContacts] = useState<Option[]>([]);
-  const [formations, setFormations] = useState<Option[]>([]);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   // Contact verrouille (venu de l'URL) — ne peut pas etre perdu par accident
   const [lockedContactId, setLockedContactId] = useState<string>(paramContactId);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [lockedContact, setLockedContact] = useState<any>(null);
+  const [lockedContact, setLockedContact] = useState<LockedContact | null>(null);
 
   const [form, setForm] = useState({
     titre: "",
@@ -74,30 +81,33 @@ export default function NouveauBesoinPage() {
 
   const { hasDraft, clearDraft } = useAutoSave("besoin_draft", form, (f) => setForm(f));
 
-  // Charger les options
-  useEffect(() => {
-    fetch("/api/entreprises").then((r) => r.ok ? r.json() : []).then((d) => setEntreprises(Array.isArray(d) ? d : d.entreprises || []));
-    fetch("/api/contacts").then((r) => r.ok ? r.json() : []).then((d) => setContacts(Array.isArray(d) ? d : d.contacts || []));
-    fetch("/api/formations").then((r) => r.ok ? r.json() : []).then((d) => setFormations(Array.isArray(d) ? d : d.formations || []));
-  }, []);
+  const { data: entreprisesRaw } = useApi<Option[] | { entreprises: Option[] }>("/api/entreprises");
+  const { data: contactsRaw } = useApi<Option[] | { contacts: Option[] }>("/api/contacts");
+  const { data: formationsRaw } = useApi<Option[] | { formations: Option[] }>("/api/formations");
+  const { data: contactDetail } = useApi<LockedContact>(
+    paramContactId ? `/api/contacts/${paramContactId}` : null
+  );
+  const { trigger: createBesoin, isMutating: saving } = useApiMutation<typeof form, BesoinCreated>(
+    "/api/besoins",
+    "POST"
+  );
+
+  const entreprises: Option[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : entreprisesRaw?.entreprises ?? [];
+  const contacts: Option[] = Array.isArray(contactsRaw) ? contactsRaw : contactsRaw?.contacts ?? [];
+  const formations: Option[] = Array.isArray(formationsRaw) ? formationsRaw : formationsRaw?.formations ?? [];
 
   // Charger le contact verrouille et pre-remplir l'origine + entreprise
   useEffect(() => {
-    if (!paramContactId) return;
-    fetch(`/api/contacts/${paramContactId}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((contact) => {
-        if (!contact) return;
-        setLockedContact(contact);
-        const newOrigine = contact.type === "stagiaire" ? "stagiaire" : "client";
-        setForm((f) => ({
-          ...f,
-          origine: newOrigine,
-          entrepriseId: f.entrepriseId || contact.entrepriseId || "",
-          contactId: paramContactId,
-        }));
-      });
-  }, [paramContactId]);
+    if (!contactDetail) return;
+    setLockedContact(contactDetail);
+    const newOrigine = contactDetail.type === "stagiaire" ? "stagiaire" : "client";
+    setForm((f) => ({
+      ...f,
+      origine: newOrigine,
+      entrepriseId: f.entrepriseId || contactDetail.entrepriseId || "",
+      contactId: paramContactId,
+    }));
+  }, [contactDetail, paramContactId]);
 
   const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 
@@ -131,7 +141,6 @@ export default function NouveauBesoinPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setSaving(true);
 
     const payload = {
       ...form,
@@ -139,27 +148,27 @@ export default function NouveauBesoinPage() {
     };
 
     try {
-      const res = await fetch("/api/besoins", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const besoin = await res.json();
-        clearDraft();
-        notify.success("Besoin cree", besoin.titre);
-        router.push(`/besoins/${besoin.id}`);
-      } else {
-        const data = await res.json();
-        const msg = data.error?.message || data.error || "Erreur lors de la creation";
+      const besoin = await createBesoin(payload);
+      clearDraft();
+      notify.success("Besoin cree", besoin.titre);
+      router.push(`/besoins/${besoin.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        let msg = err.message || "Erreur lors de la creation";
+        if (typeof errBody === "string") {
+          msg = errBody;
+        } else if (errBody && typeof errBody === "object" && "message" in errBody) {
+          msg = String((errBody as { message: unknown }).message) || msg;
+        }
         setError(msg);
         notify.error("Erreur", msg);
+      } else {
+        setError("Erreur de connexion au serveur");
+        notify.error("Erreur", "Connexion au serveur impossible");
       }
-    } catch {
-      setError("Erreur de connexion au serveur");
-      notify.error("Erreur", "Connexion au serveur impossible");
     }
-    setSaving(false);
   }
 
   return (

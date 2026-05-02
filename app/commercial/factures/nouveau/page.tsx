@@ -11,9 +11,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TVA_RATE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Entreprise = { id: string; nom: string };
 type Devis = { id: string; numero: string; objet: string; montantHT: number };
+type DevisDetail = {
+  entrepriseId?: string | null;
+  tauxTVA?: number;
+  notes?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  lignes?: any[];
+};
+type FactureCreated = { id: string };
 
 type Ligne = {
   designation: string;
@@ -30,9 +39,6 @@ export default function NouvelleFacturePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramDevisId = searchParams.get("devisId") ?? "";
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [devisList, setDevisList] = useState<Devis[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const [entrepriseId, setEntrepriseId] = useState("");
@@ -46,36 +52,37 @@ export default function NouvelleFacturePage() {
   const [notes, setNotes] = useState("");
   const [avecTVA, setAvecTVA] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/entreprises").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/devis?statut=signe&limit=100").then((r) => (r.ok ? r.json() : { data: [] })),
-    ]).then(([e, d]) => {
-      setEntreprises(Array.isArray(e) ? e : []);
-      const devisArr = Array.isArray(d?.data) ? d.data : Array.isArray(d) ? d : [];
-      setDevisList(devisArr);
+  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
+  const { data: devisRaw } = useApi<{ data: Devis[] } | Devis[]>("/api/devis?statut=signe&limit=100");
+  const { data: devisDetail } = useApi<DevisDetail>(paramDevisId ? `/api/devis/${paramDevisId}` : null);
+  const { trigger: createFacture, isMutating: loading } = useApiMutation<Record<string, unknown>, FactureCreated>(
+    "/api/factures",
+    "POST"
+  );
 
-      // Pre-fill from devisId URL param
-      if (paramDevisId) {
-        fetch(`/api/devis/${paramDevisId}`)
-          .then((r) => r.ok ? r.json() : null)
-          .then((devis) => {
-            if (!devis) return;
-            if (devis.entrepriseId) setEntrepriseId(devis.entrepriseId);
-            if (devis.tauxTVA === 0) setAvecTVA(false);
-            if (devis.notes) setNotes(devis.notes);
-            if (devis.lignes && devis.lignes.length > 0) {
-              setLignes(devis.lignes.map((l: any) => ({
-                designation: l.designation,
-                quantite: l.quantite,
-                prixUnitaire: l.prixUnitaire,
-                montant: l.montant,
-              })));
-            }
-          });
-      }
-    });
-  }, [paramDevisId]);
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  const devisList: Devis[] = Array.isArray(devisRaw)
+    ? devisRaw
+    : Array.isArray(devisRaw?.data)
+      ? devisRaw.data
+      : [];
+
+  useEffect(() => {
+    if (!devisDetail) return;
+    if (devisDetail.entrepriseId) setEntrepriseId(devisDetail.entrepriseId);
+    if (devisDetail.tauxTVA === 0) setAvecTVA(false);
+    if (devisDetail.notes) setNotes(devisDetail.notes);
+    if (devisDetail.lignes && devisDetail.lignes.length > 0) {
+      setLignes(
+        devisDetail.lignes.map((l: { designation: string; quantite: number; prixUnitaire: number; montant: number }) => ({
+          designation: l.designation,
+          quantite: l.quantite,
+          prixUnitaire: l.prixUnitaire,
+          montant: l.montant,
+        }))
+      );
+    }
+  }, [devisDetail]);
 
   const updateLigne = (index: number, field: keyof Ligne, value: string | number) => {
     setLignes((prev) => {
@@ -120,8 +127,6 @@ export default function NouvelleFacturePage() {
       return;
     }
 
-    setLoading(true);
-
     const payload: Record<string, unknown> = {
       entrepriseId,
       dateEcheance,
@@ -142,23 +147,16 @@ export default function NouvelleFacturePage() {
     }
 
     try {
-      const res = await fetch("/api/factures", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        router.push(`/commercial/factures/${data.id}`);
+      const data = await createFacture(payload);
+      router.push(`/commercial/factures/${data.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        setError(typeof errBody === "string" ? errBody : err.message || "Une erreur est survenue.");
       } else {
-        const data = await res.json();
-        setError(typeof data.error === "string" ? data.error : "Une erreur est survenue.");
-        setLoading(false);
+        setError("Une erreur est survenue lors de la création.");
       }
-    } catch {
-      setError("Une erreur est survenue lors de la création.");
-      setLoading(false);
     }
   };
 

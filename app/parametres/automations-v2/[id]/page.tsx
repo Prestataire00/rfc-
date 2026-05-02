@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Zap, CheckCircle2, XCircle, Clock, AlertTriangle, Play } from "lucide-react";
 import { RuleForm } from "@/components/automations/RuleForm";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Execution = {
   id: string;
@@ -39,46 +41,39 @@ export default function AutomationV2DetailPage() {
   const isNew = id === "nouveau";
 
   const [rule, setRule] = useState<Rule | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [dryRunning, setDryRunning] = useState(false);
   const [dryResults, setDryResults] = useState<{ sessionId: string; contactId?: string; status: string; detail: string }[] | null>(null);
 
+  const { data: templatesData } = useApi<Template[]>("/api/message-templates");
+  const { data: ruleData, isLoading: ruleLoading, mutate: mutateRule } = useApi<Rule>(
+    isNew ? null : `/api/automations-v2/${id}`
+  );
+  const templates: Template[] = Array.isArray(templatesData) ? templatesData : [];
+  const loading = !isNew && ruleLoading;
+
   useEffect(() => {
-    fetch("/api/message-templates").then((r) => r.ok ? r.json() : []).then((d) => {
-      setTemplates(Array.isArray(d) ? d : []);
-    });
-    if (!isNew) {
-      fetch(`/api/automations-v2/${id}`).then((r) => r.ok ? r.json() : null).then((d) => {
-        setRule(d);
-        setLoading(false);
-      });
-    }
-  }, [id, isNew]);
+    if (ruleData) setRule(ruleData);
+  }, [ruleData]);
 
   const handleSave = async (data: Record<string, unknown>) => {
     setSaving(true);
     setSaveMsg("");
-    const url = isNew ? "/api/automations-v2" : `/api/automations-v2/${id}`;
-    const method = isNew ? "POST" : "PUT";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) {
-      setSaveMsg("Enregistre");
-      setTimeout(() => setSaveMsg(""), 2500);
+    try {
       if (isNew) {
-        const created = await res.json();
+        const created = await api.post<{ id: string }>("/api/automations-v2", data);
+        setSaveMsg("Enregistre");
+        setTimeout(() => setSaveMsg(""), 2500);
         router.push(`/parametres/automations-v2/${created.id}`);
       } else {
-        const updated = await res.json();
+        const updated = await api.put<Rule>(`/api/automations-v2/${id}`, data);
+        setSaveMsg("Enregistre");
+        setTimeout(() => setSaveMsg(""), 2500);
         setRule((prev) => prev ? { ...prev, ...updated } : updated);
+        await mutateRule();
       }
-    } else {
+    } catch {
       setSaveMsg("Erreur");
     }
     setSaving(false);
@@ -86,7 +81,7 @@ export default function AutomationV2DetailPage() {
 
   const handleDelete = async () => {
     if (!window.confirm("Supprimer cette regle et son historique ?")) return;
-    await fetch(`/api/automations-v2/${id}`, { method: "DELETE" });
+    await api.delete(`/api/automations-v2/${id}`);
     router.push("/parametres/automations-v2");
   };
 

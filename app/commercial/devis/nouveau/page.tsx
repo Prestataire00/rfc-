@@ -13,9 +13,18 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TVA_RATE } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils";
 import { AIButton } from "@/components/shared/AIButton";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Entreprise = { id: string; nom: string };
 type Contact = { id: string; nom: string; prenom: string; email: string; entrepriseId?: string | null };
+type BesoinDetail = {
+  titre?: string;
+  formation?: { titre: string; tarif: number } | null;
+  entrepriseId?: string | null;
+  nbStagiaires?: number | null;
+};
+type DevisCreated = { id: string; numero: string };
 
 type Ligne = {
   designation: string;
@@ -38,9 +47,6 @@ function NouveauDevisForm() {
   const besoinId = searchParams.get("besoinId");
   const paramEntrepriseId = searchParams.get("entrepriseId");
   const paramContactId = searchParams.get("contactId");
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [besoinTitre, setBesoinTitre] = useState<string | null>(null);
 
@@ -57,51 +63,54 @@ function NouveauDevisForm() {
   const [notes, setNotes] = useState("");
   const [avecTVA, setAvecTVA] = useState(true);
 
+  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
+  const { data: contactsRaw } = useApi<{ data: Contact[] } | Contact[]>("/api/contacts?limit=100");
+  const { data: besoin } = useApi<BesoinDetail>(besoinId ? `/api/besoins/${besoinId}` : null);
+  const { trigger: createDevis, isMutating: loading } = useApiMutation<Record<string, unknown>, DevisCreated>(
+    "/api/devis",
+    "POST"
+  );
+
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  const contacts: Contact[] = Array.isArray(contactsRaw)
+    ? contactsRaw
+    : Array.isArray(contactsRaw?.data)
+      ? contactsRaw.data
+      : [];
+
+  // Pre-fill from URL params (once)
   useEffect(() => {
-    Promise.all([
-      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
-      fetch("/api/contacts?limit=100").then((r) => r.ok ? r.json() : { data: [] }),
-    ]).then(([e, c]) => {
-      setEntreprises(Array.isArray(e) ? e : []);
-      setContacts(Array.isArray(c?.data) ? c.data : Array.isArray(c) ? c : []);
-      // Pre-fill from URL params
-      if (paramEntrepriseId) {
-        setClientType("entreprise");
-        setEntrepriseId(paramEntrepriseId);
-      }
-      if (paramContactId) {
-        setContactId(paramContactId);
-      }
-    });
+    if (paramEntrepriseId) {
+      setClientType("entreprise");
+      setEntrepriseId(paramEntrepriseId);
+    }
+    if (paramContactId) {
+      setContactId(paramContactId);
+    }
   }, [paramEntrepriseId, paramContactId]);
 
   useEffect(() => {
-    if (!besoinId) return;
-    fetch(`/api/besoins/${besoinId}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((besoin) => {
-        if (!besoin) return;
-        setBesoinTitre(besoin.titre);
-        // Pré-remplir l'objet
-        setObjet(besoin.formation?.titre ? `Formation ${besoin.formation.titre}` : besoin.titre);
-        // Pré-remplir l'entreprise
-        if (besoin.entrepriseId) {
-          setClientType("entreprise");
-          setEntrepriseId(besoin.entrepriseId);
-        }
-        // Pré-remplir une ligne si une formation est liée
-        if (besoin.formation) {
-          const qty = besoin.nbStagiaires || 1;
-          const prix = besoin.formation.tarif;
-          setLignes([{
-            designation: besoin.formation.titre,
-            quantite: qty,
-            prixUnitaire: prix,
-            montant: Math.round(qty * prix * 100) / 100,
-          }]);
-        }
-      });
-  }, [besoinId]);
+    if (!besoin) return;
+    setBesoinTitre(besoin.titre || null);
+    // Pré-remplir l'objet
+    setObjet(besoin.formation?.titre ? `Formation ${besoin.formation.titre}` : besoin.titre || "");
+    // Pré-remplir l'entreprise
+    if (besoin.entrepriseId) {
+      setClientType("entreprise");
+      setEntrepriseId(besoin.entrepriseId);
+    }
+    // Pré-remplir une ligne si une formation est liée
+    if (besoin.formation) {
+      const qty = besoin.nbStagiaires || 1;
+      const prix = besoin.formation.tarif;
+      setLignes([{
+        designation: besoin.formation.titre,
+        quantite: qty,
+        prixUnitaire: prix,
+        montant: Math.round(qty * prix * 100) / 100,
+      }]);
+    }
+  }, [besoin]);
 
   const updateLigne = (index: number, field: keyof Ligne, value: string | number) => {
     setLignes((prev) => {
@@ -154,8 +163,6 @@ function NouveauDevisForm() {
       return;
     }
 
-    setLoading(true);
-
     const payload = {
       objet,
       entrepriseId: clientType === "entreprise" ? entrepriseId : null,
@@ -171,37 +178,38 @@ function NouveauDevisForm() {
       })),
     };
 
-    const res = await fetch("/api/devis", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await createDevis(payload);
       // Lier le devis au besoin et passer le statut à "devis_envoye"
       if (besoinId) {
-        await fetch(`/api/besoins/${besoinId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ devisId: data.id, statut: "devis_envoye" }),
-        });
+        try {
+          await api.patch(`/api/besoins/${besoinId}`, { devisId: data.id, statut: "devis_envoye" });
+        } catch {
+          // non-bloquant
+        }
       }
       notify.success("Devis cree", data.numero);
       router.push(`/commercial/devis/${data.id}`);
-    } else {
-      const data = await res.json();
-      const fieldErrors = data.error?.fieldErrors;
-      const formErrors = data.error?.formErrors;
-      if (fieldErrors) {
-        const msgs = Object.values(fieldErrors).flat().join(", ");
-        setError(msgs || "Erreur de validation");
-      } else if (formErrors && formErrors.length > 0) {
-        setError(formErrors.join(", "));
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const msgs = Object.values((errBody as { fieldErrors: Record<string, string[]> }).fieldErrors)
+            .flat()
+            .join(", ");
+          setError(msgs || "Erreur de validation");
+        } else if (errBody && typeof errBody === "object" && "formErrors" in errBody) {
+          const fe = (errBody as { formErrors: string[] }).formErrors;
+          setError(fe?.length ? fe.join(", ") : err.message || "Une erreur est survenue.");
+        } else if (typeof errBody === "string") {
+          setError(errBody);
+        } else {
+          setError(err.message || "Une erreur est survenue.");
+        }
       } else {
-        setError(typeof data.error === "string" ? data.error : "Une erreur est survenue.");
+        setError("Une erreur est survenue.");
       }
-      setLoading(false);
     }
   };
 

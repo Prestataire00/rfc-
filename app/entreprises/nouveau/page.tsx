@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useApiMutation, ApiError } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type PappersResult = {
   nom: string;
@@ -22,10 +24,15 @@ type PappersResult = {
   formeJuridique?: string;
 };
 
+type EntrepriseCreated = { id: string; nom: string };
+
 export default function NouvelleEntreprisePage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { trigger: createEntreprise, isMutating: saving } = useApiMutation<Record<string, unknown>, EntrepriseCreated>(
+    "/api/entreprises",
+    "POST"
+  );
 
   // Pappers search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,8 +79,7 @@ export default function NouvelleEntreprisePage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/pappers/search?q=${encodeURIComponent(searchQuery)}`);
-        const data = await res.json();
+        const data = await api.get<PappersResult[]>(`/api/pappers/search?q=${encodeURIComponent(searchQuery)}`);
         if (Array.isArray(data)) {
           setSuggestions(data);
           setShowDropdown(data.length > 0);
@@ -118,7 +124,6 @@ export default function NouvelleEntreprisePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
 
     try {
       const payload: Record<string, unknown> = { ...form };
@@ -126,30 +131,29 @@ export default function NouvelleEntreprisePage() {
         if (key !== "nom" && !payload[key]) delete payload[key];
       });
 
-      const res = await fetch("/api/entreprises", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        const fieldErrors = data.error?.fieldErrors;
-        if (fieldErrors) {
-          const msgs = Object.values(fieldErrors).flat().join(", ");
-          throw new Error(msgs || "Erreur de validation");
-        }
-        throw new Error(data?.error?.message || data?.error || "Erreur lors de la création");
-      }
-
-      const entreprise = await res.json();
+      const entreprise = await createEntreprise(payload);
       notify.success("Entreprise creee", entreprise.nom);
       router.push(`/entreprises/${entreprise.id}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      let msg = "Erreur lors de la création";
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const fe = (errBody as { fieldErrors: Record<string, string[]> }).fieldErrors;
+          msg = Object.values(fe).flat().join(", ") || "Erreur de validation";
+        } else if (typeof errBody === "string") {
+          msg = errBody;
+        } else if (errBody && typeof errBody === "object" && "message" in errBody) {
+          msg = String((errBody as { message: unknown }).message) || err.message;
+        } else {
+          msg = err.message || msg;
+        }
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
       notify.error("Erreur", msg);
-      setSaving(false);
     }
   };
 

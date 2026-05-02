@@ -14,15 +14,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
 import { AIButton } from "@/components/shared/AIButton";
 import { ImageUpload } from "@/components/shared/ImageUpload";
+import { useApiMutation, ApiError } from "@/hooks/useApi";
 
 const niveauOptions = NIVEAUX_FORMATION.map((n) => ({ value: n.value, label: n.label }));
 const modaliteOptions = Object.entries(MODALITES_FORMATION).map(([value, { label }]) => ({ value, label }));
 const statutOptions = Object.entries(STATUTS_FORMATION).map(([value, { label }]) => ({ value, label }));
 
+type FormationCreated = { id: string; titre: string };
+
 export default function NouvelleFormationPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { trigger: createFormation, isMutating: saving } = useApiMutation<Record<string, unknown>, FormationCreated>(
+    "/api/formations",
+    "POST"
+  );
 
   const [form, setForm] = useState({
     titre: "",
@@ -74,7 +80,6 @@ export default function NouvelleFormationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
 
     try {
       const payload: Record<string, unknown> = {
@@ -104,38 +109,32 @@ export default function NouvelleFormationPage() {
       if (form.dureeRecyclage) payload.dureeRecyclage = Number(form.dureeRecyclage);
       if (form.image) payload.image = form.image;
 
-      const res = await fetch("/api/formations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        let msg = "Erreur lors de la création";
-        if (data?.error) {
-          if (typeof data.error === "string") {
-            msg = data.error;
-          } else if (data.error.fieldErrors) {
-            const fields = Object.entries(data.error.fieldErrors)
-              .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
-              .join(" | ");
-            if (fields) msg = fields;
-          } else if (data.error.formErrors?.length) {
-            msg = data.error.formErrors[0];
-          }
-        }
-        throw new Error(msg);
-      }
-
-      const formation = await res.json();
+      const formation = await createFormation(payload);
       notify.success("Formation creee", formation.titre);
       router.push(`/formations/${formation.id}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      let msg = "Erreur lors de la création";
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (typeof errBody === "string") {
+          msg = errBody;
+        } else if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const fields = Object.entries((errBody as { fieldErrors: Record<string, string[]> }).fieldErrors)
+            .map(([k, v]) => `${k}: ${v.join(", ")}`)
+            .join(" | ");
+          if (fields) msg = fields;
+        } else if (errBody && typeof errBody === "object" && "formErrors" in errBody) {
+          const fe = (errBody as { formErrors: string[] }).formErrors;
+          if (fe?.length) msg = fe[0];
+        } else {
+          msg = err.message || msg;
+        }
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
       notify.error("Erreur", msg);
-      setSaving(false);
     }
   };
 

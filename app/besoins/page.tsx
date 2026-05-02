@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,6 +11,7 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type Besoin = {
   id: string;
@@ -52,24 +53,14 @@ const PRIORITE_STYLE: Record<string, string> = {
 
 export default function BesoinsPage() {
   const router = useRouter();
-  const [besoins, setBesoins] = useState<Besoin[]>([]);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [search, setSearch] = useState("");
   const [statutFilter, setStatutFilter] = useState("");
   const [origineFilter, setOrigineFilter] = useState("");
   const [prioriteFilter, setPrioriteFilter] = useState("");
 
-  const fetchBesoins = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/besoins");
-    if (res.ok) setBesoins(await res.json());
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchBesoins();
-  }, [fetchBesoins]);
+  const { data: besoinsData, isLoading: loading } = useApi<Besoin[]>("/api/besoins");
+  const besoins: Besoin[] = Array.isArray(besoinsData) ? besoinsData : [];
 
   const filtered = useMemo(() => {
     return besoins.filter((b) => {

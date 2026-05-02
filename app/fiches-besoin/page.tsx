@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ClipboardList, Building2, User, Send, CheckCircle2, Clock, Accessibility,
   Search, ExternalLink, Copy, Calendar,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type FicheClient = {
   id: string;
@@ -52,32 +54,27 @@ export default function FichesBesoinPage() {
   const [tab, setTab] = useState<"client" | "stagiaire">("client");
   const [statutFilter, setStatutFilter] = useState("");
   const [search, setSearch] = useState("");
-  const [fichesClient, setFichesClient] = useState<FicheClient[]>([]);
-  const [fichesStagiaire, setFichesStagiaire] = useState<FicheStagiaire[]>([]);
-  const [loading, setLoading] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  const loadData = () => {
-    setLoading(true);
-    Promise.all([
-      fetch("/api/besoin-client").then((r) => r.ok ? r.json() : []),
-      fetch("/api/besoin-stagiaire").then((r) => r.ok ? r.json() : []),
-    ]).then(([c, s]) => {
-      setFichesClient(Array.isArray(c) ? c : []);
-      setFichesStagiaire(Array.isArray(s) ? s : []);
-      setLoading(false);
-    });
-  };
+  const { data: clientData, isLoading: clientLoading, mutate: mutateClient } = useApi<FicheClient[]>(
+    "/api/besoin-client"
+  );
+  const { data: stagiaireData, isLoading: stagiaireLoading, mutate: mutateStagiaire } = useApi<FicheStagiaire[]>(
+    "/api/besoin-stagiaire"
+  );
 
-  useEffect(() => { loadData(); }, []);
+  const fichesClient: FicheClient[] = Array.isArray(clientData) ? clientData : [];
+  const fichesStagiaire: FicheStagiaire[] = Array.isArray(stagiaireData) ? stagiaireData : [];
+  const loading = clientLoading || stagiaireLoading;
 
   const handleResend = async (type: "client" | "stagiaire", id: string) => {
-    await fetch(`/api/besoin-${type}/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "envoyer" }),
-    });
-    loadData();
+    try {
+      await api.patch(`/api/besoin-${type}/${id}`, { action: "envoyer" });
+      if (type === "client") await mutateClient();
+      else await mutateStagiaire();
+    } catch {
+      // ignore
+    }
   };
 
   const handleCopyLink = (type: "client" | "stagiaire", token: string) => {

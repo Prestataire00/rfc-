@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useMemo } from "react";
 import { ArrowLeft, BarChart3, TrendingUp, Users, CheckCircle2, Clock, Star, BookOpen, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useApi } from "@/hooks/useApi";
 
 interface KPI {
   label: string;
@@ -14,39 +15,42 @@ interface KPI {
   icon: React.ElementType;
 }
 
+type EvalRow = { estComplete?: boolean; noteGlobale?: number | null };
+type SessionRow = { statut?: string; _count?: { inscriptions?: number } };
+
 export default function IndicateursPage() {
-  const [loading, setLoading] = useState(true);
-  const [kpis, setKpis] = useState<KPI[]>([]);
+  const { data: evaluationsData, isLoading: evalLoading } = useApi<EvalRow[]>("/api/evaluations");
+  const { data: sessionsRaw, isLoading: sessionsLoading } = useApi<SessionRow[] | { sessions: SessionRow[] }>(
+    "/api/sessions"
+  );
+  // Note: l'ancienne version fetchait /api/formations sans utiliser le résultat. Supprimé.
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/evaluations").then((r) => r.ok ? r.json() : []),
-      fetch("/api/sessions").then((r) => r.ok ? r.json() : []),
-      fetch("/api/formations").then((r) => r.ok ? r.json() : { total: 0 }),
-    ])
-      .then(([evaluations, sessions, formations]) => {
-        const evalsArr = Array.isArray(evaluations) ? evaluations : [];
-        const sessionsArr = Array.isArray(sessions) ? sessions : sessions.sessions || [];
-        const completed = evalsArr.filter((e: any) => e.estComplete);
-        const notes = completed.filter((e: any) => e.noteGlobale).map((e: any) => e.noteGlobale);
-        const avgNote = notes.length > 0 ? (notes.reduce((a: number, b: number) => a + b, 0) / notes.length) : 0;
-        const tauxCompletion = evalsArr.length > 0 ? Math.round((completed.length / evalsArr.length) * 100) : 0;
-        const tauxSatisfaction = Math.round(avgNote * 20);
-        const totalInscrits = sessionsArr.reduce((acc: number, s: any) => acc + (s._count?.inscriptions || 0), 0);
-        const sessionsTerminees = sessionsArr.filter((s: any) => s.statut === "terminee").length;
+  const loading = evalLoading || sessionsLoading;
 
-        setKpis([
-          { label: "Taux de satisfaction globale", value: `${tauxSatisfaction}%`, target: "90%", progress: tauxSatisfaction, status: tauxSatisfaction >= 90 ? "ok" : tauxSatisfaction >= 70 ? "warning" : "danger", icon: Star },
-          { label: "Taux de completion des evaluations", value: `${tauxCompletion}%`, target: "80%", progress: tauxCompletion, status: tauxCompletion >= 80 ? "ok" : tauxCompletion >= 60 ? "warning" : "danger", icon: CheckCircle2 },
-          { label: "Nombre de stagiaires formes", value: String(totalInscrits), target: "100+", progress: Math.min(100, totalInscrits), status: totalInscrits >= 100 ? "ok" : totalInscrits >= 50 ? "warning" : "danger", icon: Users },
-          { label: "Sessions realisees", value: String(sessionsTerminees), target: "20+", progress: Math.min(100, sessionsTerminees * 5), status: sessionsTerminees >= 20 ? "ok" : sessionsTerminees >= 10 ? "warning" : "danger", icon: BookOpen },
-          { label: "Evaluations collectees", value: String(evalsArr.length), target: "50+", progress: Math.min(100, evalsArr.length * 2), status: evalsArr.length >= 50 ? "ok" : evalsArr.length >= 20 ? "warning" : "danger", icon: MessageSquare },
-          { label: "Note moyenne (/5)", value: avgNote > 0 ? avgNote.toFixed(1) : "N/A", target: "4.5/5", progress: Math.round(avgNote * 20), status: avgNote >= 4.5 ? "ok" : avgNote >= 3.5 ? "warning" : "danger", icon: TrendingUp },
-        ]);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const kpis: KPI[] = useMemo(() => {
+    const evalsArr: EvalRow[] = Array.isArray(evaluationsData) ? evaluationsData : [];
+    const sessionsArr: SessionRow[] = Array.isArray(sessionsRaw)
+      ? sessionsRaw
+      : Array.isArray(sessionsRaw?.sessions)
+        ? sessionsRaw.sessions
+        : [];
+    const completed = evalsArr.filter((e) => e.estComplete);
+    const notes = completed.filter((e) => e.noteGlobale).map((e) => e.noteGlobale as number);
+    const avgNote = notes.length > 0 ? notes.reduce((a, b) => a + b, 0) / notes.length : 0;
+    const tauxCompletion = evalsArr.length > 0 ? Math.round((completed.length / evalsArr.length) * 100) : 0;
+    const tauxSatisfaction = Math.round(avgNote * 20);
+    const totalInscrits = sessionsArr.reduce((acc, s) => acc + (s._count?.inscriptions || 0), 0);
+    const sessionsTerminees = sessionsArr.filter((s) => s.statut === "terminee").length;
+
+    return [
+      { label: "Taux de satisfaction globale", value: `${tauxSatisfaction}%`, target: "90%", progress: tauxSatisfaction, status: tauxSatisfaction >= 90 ? "ok" : tauxSatisfaction >= 70 ? "warning" : "danger", icon: Star },
+      { label: "Taux de completion des evaluations", value: `${tauxCompletion}%`, target: "80%", progress: tauxCompletion, status: tauxCompletion >= 80 ? "ok" : tauxCompletion >= 60 ? "warning" : "danger", icon: CheckCircle2 },
+      { label: "Nombre de stagiaires formes", value: String(totalInscrits), target: "100+", progress: Math.min(100, totalInscrits), status: totalInscrits >= 100 ? "ok" : totalInscrits >= 50 ? "warning" : "danger", icon: Users },
+      { label: "Sessions realisees", value: String(sessionsTerminees), target: "20+", progress: Math.min(100, sessionsTerminees * 5), status: sessionsTerminees >= 20 ? "ok" : sessionsTerminees >= 10 ? "warning" : "danger", icon: BookOpen },
+      { label: "Evaluations collectees", value: String(evalsArr.length), target: "50+", progress: Math.min(100, evalsArr.length * 2), status: evalsArr.length >= 50 ? "ok" : evalsArr.length >= 20 ? "warning" : "danger", icon: MessageSquare },
+      { label: "Note moyenne (/5)", value: avgNote > 0 ? avgNote.toFixed(1) : "N/A", target: "4.5/5", progress: Math.round(avgNote * 20), status: avgNote >= 4.5 ? "ok" : avgNote >= 3.5 ? "warning" : "danger", icon: TrendingUp },
+    ];
+  }, [evaluationsData, sessionsRaw]);
 
   const statusColors = { ok: "text-emerald-400", warning: "text-amber-400", danger: "text-red-400" };
   const progressColors = { ok: "bg-emerald-500", warning: "bg-amber-500", danger: "bg-red-500" };

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { BookOpen, Clock, Users, MapPin, Award, Filter, Calendar } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
 
 type Session = {
   id: string;
@@ -35,25 +36,22 @@ const MODALITE_LABELS: Record<string, string> = {
   mixte: "Mixte",
 };
 
+type CatalogueResponse = { formations: Formation[]; categories?: string[] };
+
 export default function CataloguePage() {
-  const [formations, setFormations] = useState<Formation[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterCat, setFilterCat] = useState("");
   const [filterModalite, setFilterModalite] = useState("");
 
-  useEffect(() => {
+  const url = useMemo(() => {
     const params = new URLSearchParams();
     if (filterCat) params.set("categorie", filterCat);
     if (filterModalite) params.set("modalite", filterModalite);
-    fetch(`/api/catalogue?${params}`)
-      .then((r) => r.ok ? r.json() : { formations: [], categories: [] })
-      .then((d) => {
-        setFormations(d.formations || []);
-        if (d.categories) setCategories(d.categories);
-        setLoading(false);
-      });
+    return `/api/catalogue?${params.toString()}`;
   }, [filterCat, filterModalite]);
+
+  const { data, isLoading: loading } = useApi<CatalogueResponse>(url);
+  const formations: Formation[] = data?.formations || [];
+  const categories: string[] = data?.categories || [];
 
   return (
     <div className="min-h-screen bg-gray-950">

@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Save, FileText, RotateCcw, Eye, Pencil, CheckCircle2, RefreshCw } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Variable = { nom: string; description: string };
 type DocTemplate = {
@@ -20,8 +22,6 @@ type DocTemplate = {
 };
 
 export default function TemplatesDocumentsPage() {
-  const [templates, setTemplates] = useState<DocTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -35,19 +35,17 @@ export default function TemplatesDocumentsPage() {
   const [corps, setCorps] = useState("");
   const [mentions, setMentions] = useState("");
 
-  const load = () => {
-    fetch("/api/document-templates")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => {
-        setTemplates(Array.isArray(d) ? d : []);
-        setLoading(false);
-        if (!selectedId && Array.isArray(d) && d.length > 0) {
-          setSelectedId(d[0].id);
-        }
-      });
-  };
+  const { data: templatesData, isLoading: loading, mutate: mutateTemplates } = useApi<DocTemplate[]>(
+    "/api/document-templates"
+  );
+  const templates: DocTemplate[] = Array.isArray(templatesData) ? templatesData : [];
 
-  useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-select first template
+  useEffect(() => {
+    if (!selectedId && templates.length > 0) {
+      setSelectedId(templates[0].id);
+    }
+  }, [selectedId, templates]);
 
   const selected = templates.find((t) => t.id === selectedId);
   const variables: Variable[] = useMemo(() => {
@@ -68,10 +66,8 @@ export default function TemplatesDocumentsPage() {
     if (!selected) return;
     setSaving(true);
     setSaveMsg("");
-    const res = await fetch(`/api/document-templates/${selected.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await api.put(`/api/document-templates/${selected.id}`, {
         nom: selected.nom,
         description: selected.description,
         titre,
@@ -79,14 +75,12 @@ export default function TemplatesDocumentsPage() {
         corps,
         mentions,
         actif: selected.actif,
-      }),
-    });
-    if (res.ok) {
+      });
       setSaveMsg("Enregistre");
-      load();
+      await mutateTemplates();
       setPreviewVersion((v) => v + 1);
       setTimeout(() => setSaveMsg(""), 2500);
-    } else {
+    } catch {
       setSaveMsg("Erreur");
     }
     setSaving(false);
@@ -95,21 +89,18 @@ export default function TemplatesDocumentsPage() {
   const handleReset = async () => {
     if (!selected || !window.confirm("Reinitialiser ce template au defaut ? Vos modifications seront perdues.")) return;
     setSaving(true);
-    const res = await fetch(`/api/document-templates/${selected.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "reset" }),
-    });
-    if (res.ok) {
-      const tpl = await res.json();
+    try {
+      const tpl = await api.post<DocTemplate>(`/api/document-templates/${selected.id}`, { action: "reset" });
       setTitre(tpl.titre);
       setIntroduction(tpl.introduction || "");
       setCorps(tpl.corps);
       setMentions(tpl.mentions || "");
       setSaveMsg("Reinitialise");
-      load();
+      await mutateTemplates();
       setPreviewVersion((v) => v + 1);
       setTimeout(() => setSaveMsg(""), 2500);
+    } catch {
+      setSaveMsg("Erreur");
     }
     setSaving(false);
   };

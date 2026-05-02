@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileText, Plus, Receipt, Download, ArrowRight } from "lucide-react";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { SkeletonCard, SkeletonTable } from "@/components/shared/Skeleton";
 import { DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
 
 type TunnelStats = {
   caPrevisionnel: number;
@@ -54,71 +55,53 @@ const PIPELINE_COLUMNS = [
   { key: "expire", label: "Expiré", color: "bg-orange-900/20 border-orange-700" },
 ] as const;
 
+type DevisResponse = { data: Devis[] } | Devis[];
+type FacturesResponse = { data: Facture[]; total?: number; totalPages?: number } | Facture[];
+type DashboardStats = {
+  stats: {
+    caPrevisionnel: number;
+    nbDevisEnCours: number;
+    caAEncaisser: number;
+    nbFacturesAEncaisser: number;
+    caFactureMois: number;
+  };
+};
+
 export default function CommercialPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"devis" | "factures">("devis");
-  const [devis, setDevis] = useState<Devis[]>([]);
-  const [factures, setFactures] = useState<Facture[]>([]);
-  const [loadingDevis, setLoadingDevis] = useState(true);
-  const [loadingFactures, setLoadingFactures] = useState(true);
   const [facturePage, setFacturePage] = useState(1);
-  const [factureTotalPages, setFactureTotalPages] = useState(1);
-  const [factureTotal, setFactureTotal] = useState(0);
-  const [tunnelStats, setTunnelStats] = useState<TunnelStats | null>(null);
   const [filtreStatutFacture, setFiltreStatutFacture] = useState("");
-
-  const fetchDevis = useCallback(async () => {
-    setLoadingDevis(true);
-    const res = await fetch("/api/devis?limit=100");
-    if (res.ok) {
-      const json = await res.json();
-      setDevis(json.data ?? json);
-    }
-    setLoadingDevis(false);
-  }, []);
 
   useEffect(() => {
     setFacturePage(1);
   }, [filtreStatutFacture]);
 
-  const fetchFactures = useCallback(async () => {
-    setLoadingFactures(true);
+  const facturesUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (filtreStatutFacture) params.set("statut", filtreStatutFacture);
     params.set("page", String(facturePage));
     params.set("limit", "25");
-    const res = await fetch(`/api/factures?${params}`);
-    if (res.ok) {
-      const json = await res.json();
-      setFactures(json.data ?? json);
-      setFactureTotal(json.total ?? 0);
-      setFactureTotalPages(json.totalPages ?? 1);
-    }
-    setLoadingFactures(false);
+    return `/api/factures?${params.toString()}`;
   }, [filtreStatutFacture, facturePage]);
 
-  const fetchTunnelStats = useCallback(async () => {
-    const res = await fetch("/api/dashboard/stats?period=mois");
-    if (res.ok) {
-      const data = await res.json();
-      setTunnelStats({
-        caPrevisionnel: data.stats.caPrevisionnel,
-        nbDevisEnCours: data.stats.nbDevisEnCours,
-        caAEncaisser: data.stats.caAEncaisser,
-        nbFacturesAEncaisser: data.stats.nbFacturesAEncaisser,
-        caFactureMois: data.stats.caFactureMois,
-      });
-    }
-  }, []);
+  const { data: devisRaw, isLoading: loadingDevis } = useApi<DevisResponse>("/api/devis?limit=100");
+  const { data: facturesRaw, isLoading: loadingFactures } = useApi<FacturesResponse>(facturesUrl);
+  const { data: dashboardStats } = useApi<DashboardStats>("/api/dashboard/stats?period=mois");
 
-  useEffect(() => {
-    fetchDevis();
-    fetchTunnelStats();
-  }, [fetchDevis, fetchTunnelStats]);
-
-  useEffect(() => {
-    fetchFactures();
-  }, [fetchFactures]);
+  const devis: Devis[] = Array.isArray(devisRaw) ? devisRaw : devisRaw?.data ?? [];
+  const factures: Facture[] = Array.isArray(facturesRaw) ? facturesRaw : facturesRaw?.data ?? [];
+  const factureTotal = Array.isArray(facturesRaw) ? facturesRaw.length : facturesRaw?.total ?? 0;
+  const factureTotalPages = Array.isArray(facturesRaw) ? 1 : facturesRaw?.totalPages ?? 1;
+  const tunnelStats: TunnelStats | null = dashboardStats
+    ? {
+        caPrevisionnel: dashboardStats.stats.caPrevisionnel,
+        nbDevisEnCours: dashboardStats.stats.nbDevisEnCours,
+        caAEncaisser: dashboardStats.stats.caAEncaisser,
+        nbFacturesAEncaisser: dashboardStats.stats.nbFacturesAEncaisser,
+        caFactureMois: dashboardStats.stats.caFactureMois,
+      }
+    : null;
 
   const devisByStatut = PIPELINE_COLUMNS.reduce((acc, col) => {
     acc[col.key] = devis.filter((d) => d.statut === col.key);

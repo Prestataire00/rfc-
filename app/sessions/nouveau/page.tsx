@@ -11,18 +11,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { SESSION_STATUTS } from "@/lib/constants";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Formation = { id: string; titre: string };
 type Formateur = { id: string; nom: string; prenom: string };
+type DevisData = {
+  objet?: string | null;
+  notes?: string | null;
+  lignes?: { quantite: number }[];
+};
+type SessionCreated = { id: string };
 
 function NouvelleSessionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const devisId = searchParams.get("devisId");
 
-  const [formations, setFormations] = useState<Formation[]>([]);
-  const [formateurs, setFormateurs] = useState<Formateur[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [devisTitre, setDevisTitre] = useState("");
 
@@ -38,44 +42,41 @@ function NouvelleSessionForm() {
     modeExpress: false,
   });
 
+  const { data: formationsRaw } = useApi<Formation[] | { formations: Formation[] }>("/api/formations");
+  const { data: formateursRaw } = useApi<Formateur[] | { formateurs: Formateur[] }>("/api/formateurs");
+  const { data: devis } = useApi<DevisData>(devisId ? `/api/devis/${devisId}` : null);
+  const { trigger: createSession, isMutating: loading } = useApiMutation<Record<string, unknown>, SessionCreated>(
+    "/api/sessions",
+    "POST"
+  );
+
+  const formations: Formation[] = Array.isArray(formationsRaw) ? formationsRaw : formationsRaw?.formations ?? [];
+  const formateurs: Formateur[] = Array.isArray(formateursRaw) ? formateursRaw : formateursRaw?.formateurs ?? [];
+
   useEffect(() => {
-    Promise.all([
-      fetch("/api/formations").then((r) => r.ok ? r.json() : []),
-      fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
-    ]).then(([f, fo]) => {
-      const formationList: Formation[] = Array.isArray(f) ? f : f.formations || [];
-      setFormations(formationList);
-      setFormateurs(Array.isArray(fo) ? fo : fo.formateurs || []);
+    if (!devis) return;
+    setDevisTitre(devis.objet || "");
 
-      // Pre-fill from devis after formations are loaded
-      if (devisId) {
-        fetch(`/api/devis/${devisId}`)
-          .then((r) => r.ok ? r.json() : null)
-          .then((devis) => {
-            if (!devis) return;
-            setDevisTitre(devis.objet || "");
+    // Try to match a formation by titre contained in the devis objet
+    const matched = formations.find((f) =>
+      devis.objet?.toLowerCase().includes(f.titre.toLowerCase())
+    );
 
-            // Try to match a formation by titre contained in the devis objet
-            const matched = formationList.find((f) =>
-              devis.objet?.toLowerCase().includes(f.titre.toLowerCase())
-            );
+    // Capacité = sum of quantites in lignes
+    const totalQte = (devis.lignes || []).reduce(
+      (sum: number, l: { quantite: number }) => sum + (l.quantite || 0),
+      0
+    );
 
-            // Capacité = sum of quantites in lignes
-            const totalQte = (devis.lignes || []).reduce(
-              (sum: number, l: { quantite: number }) => sum + (l.quantite || 0),
-              0
-            );
-
-            setFormData((prev) => ({
-              ...prev,
-              ...(matched ? { formationId: matched.id } : {}),
-              capaciteMax: totalQte > 0 ? totalQte : prev.capaciteMax,
-              notes: devis.notes || prev.notes,
-            }));
-          });
-      }
-    });
-  }, [devisId]);
+    setFormData((prev) => ({
+      ...prev,
+      ...(matched ? { formationId: matched.id } : {}),
+      capaciteMax: totalQte > 0 ? totalQte : prev.capaciteMax,
+      notes: devis.notes || prev.notes,
+    }));
+    // formations is intentionally a dep so matching happens once both are loaded
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devis, formations.length]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -104,8 +105,6 @@ function NouvelleSessionForm() {
       return;
     }
 
-    setLoading(true);
-
     const payload: Record<string, unknown> = {
       formationId: formData.formationId,
       dateDebut: formData.dateDebut,
@@ -119,29 +118,37 @@ function NouvelleSessionForm() {
     if (devisId) payload.devisId = devisId;
     if (formData.modeExpress) payload.modeExpress = true;
 
-    const res = await fetch("/api/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await createSession(payload);
       notify.success("Session creee");
       router.push(`/sessions/${data.id}`);
-    } else {
-      const data = await res.json();
-      const fieldErrors = data.error?.fieldErrors;
-      if (fieldErrors) {
-        const msgs = Object.values(fieldErrors).flat().join(", ");
-        setError(msgs || "Une erreur est survenue.");
-        notify.error("Erreur", msgs);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const msgs = Object.values((errBody as { fieldErrors: Record<string, string[]> }).fieldErrors)
+            .flat()
+            .join(", ");
+          setError(msgs || "Une erreur est survenue.");
+          notify.error("Erreur", msgs);
+        } else if (typeof errBody === "string") {
+          setError(errBody);
+          notify.error("Erreur", errBody);
+        } else if (errBody && typeof errBody === "object" && "message" in errBody) {
+          const msg = String((errBody as { message: unknown }).message) || err.message;
+          setError(msg);
+          notify.error("Erreur", msg);
+        } else {
+          const msg = err.message || "Une erreur est survenue.";
+          setError(msg);
+          notify.error("Erreur", msg);
+        }
       } else {
-        const msg = data.error?.message || data.error || "Une erreur est survenue.";
+        const msg = err instanceof Error ? err.message : "Une erreur est survenue.";
         setError(msg);
-        notify.error("Erreur", typeof msg === "string" ? msg : "Erreur de creation");
+        notify.error("Erreur", "Erreur de creation");
       }
-      setLoading(false);
     }
   };
 

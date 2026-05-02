@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
+
+type Formateur = { id: string; nom: string; prenom: string };
+type Entreprise = { id: string; nom: string };
 
 export default function NouvelUtilisateurPage() {
   const router = useRouter();
@@ -16,38 +20,39 @@ export default function NouvelUtilisateurPage() {
     formateurId: "",
     entrepriseId: "",
   });
-  const [formateurs, setFormateurs] = useState<{ id: string; nom: string; prenom: string }[]>([]);
-  const [entreprises, setEntreprises] = useState<{ id: string; nom: string }[]>([]);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
-      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
-    ]).then(([f, e]) => {
-      setFormateurs(f);
-      setEntreprises(e);
-    });
-  }, []);
+  const { data: formateursRaw } = useApi<Formateur[] | { formateurs: Formateur[] }>("/api/formateurs");
+  const { data: entreprisesRaw } = useApi<Entreprise[] | { entreprises: Entreprise[] }>("/api/entreprises");
+  const formateurs: Formateur[] = Array.isArray(formateursRaw) ? formateursRaw : formateursRaw?.formateurs ?? [];
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : entreprisesRaw?.entreprises ?? [];
+
+  const { trigger: createUtilisateur, isMutating: saving } = useApiMutation<typeof form>(
+    "/api/utilisateurs",
+    "POST"
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSaving(true);
 
-    const res = await fetch("/api/utilisateurs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    if (res.ok) {
+    try {
+      await createUtilisateur(form);
       router.push("/utilisateurs");
-    } else {
-      const data = await res.json();
-      setError(data.error || "Erreur lors de la création");
-      setSaving(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (typeof errBody === "string") {
+          setError(errBody);
+        } else if (errBody && typeof errBody === "object" && "message" in errBody) {
+          setError(String((errBody as { message: unknown }).message) || err.message);
+        } else {
+          setError(err.message || "Erreur lors de la création");
+        }
+      } else {
+        setError("Erreur lors de la création");
+      }
     }
   };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { FolderOpen, FileText, Plus, Download, Trash2, Pencil, X, Check, Upload, Mail, Eye, LayoutTemplate } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/utils";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type MessageTemplate = {
   id: string;
@@ -57,14 +59,8 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function DocumentsPage() {
   const [tab, setTab] = useState<"uploads" | "modeles">("uploads");
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("");
 
-  // Modeles state
-  const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>([]);
-  const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
-  const [modelesLoading, setModelesLoading] = useState(false);
   const [preview, setPreview] = useState<
     | { kind: "email"; template: MessageTemplate }
     | { kind: "pdf"; type: string; nom: string }
@@ -85,51 +81,36 @@ export default function DocumentsPage() {
   const [editNom, setEditNom] = useState("");
   const [editType, setEditType] = useState("");
 
-  // Linked data
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [formateurs, setFormateurs] = useState<Formateur[]>([]);
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-
-  const fetchDocuments = () => {
+  const docsUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (filterType) params.set("type", filterType);
-    fetch(`/api/documents?${params}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => {
-        setDocuments(d);
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchDocuments();
+    return `/api/documents?${params.toString()}`;
   }, [filterType]);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/sessions").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/formateurs").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/entreprises").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([s, f, e]) => {
-      setSessions(Array.isArray(s) ? s : s.sessions || []);
-      setFormateurs(Array.isArray(f) ? f : []);
-      setEntreprises(Array.isArray(e) ? e : []);
-    });
-  }, []);
+  const { data: documentsData, isLoading: loading, mutate: mutateDocuments } = useApi<Document[]>(docsUrl);
+  const { data: sessionsRaw } = useApi<Session[] | { sessions: Session[] }>("/api/sessions");
+  const { data: formateursRaw } = useApi<Formateur[]>("/api/formateurs");
+  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
 
-  // Charger les modeles quand on passe sur l'onglet
-  useEffect(() => {
-    if (tab !== "modeles" || messageTemplates.length > 0 || documentTemplates.length > 0) return;
-    setModelesLoading(true);
-    Promise.all([
-      fetch("/api/message-templates").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/document-templates").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([m, d]) => {
-      setMessageTemplates(Array.isArray(m) ? m : []);
-      setDocumentTemplates(Array.isArray(d) ? d : []);
-      setModelesLoading(false);
-    });
-  }, [tab, messageTemplates.length, documentTemplates.length]);
+  // Charger les modeles uniquement quand on est sur l'onglet
+  const { data: messageTemplatesData, isLoading: messagesLoading } = useApi<MessageTemplate[]>(
+    tab === "modeles" ? "/api/message-templates" : null
+  );
+  const { data: documentTemplatesData, isLoading: documentsLoading } = useApi<DocumentTemplate[]>(
+    tab === "modeles" ? "/api/document-templates" : null
+  );
+
+  const documents: Document[] = Array.isArray(documentsData) ? documentsData : [];
+  const sessions: Session[] = Array.isArray(sessionsRaw)
+    ? sessionsRaw
+    : Array.isArray(sessionsRaw?.sessions)
+      ? sessionsRaw.sessions
+      : [];
+  const formateurs: Formateur[] = Array.isArray(formateursRaw) ? formateursRaw : [];
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  const messageTemplates: MessageTemplate[] = Array.isArray(messageTemplatesData) ? messageTemplatesData : [];
+  const documentTemplates: DocumentTemplate[] = Array.isArray(documentTemplatesData) ? documentTemplatesData : [];
+  const modelesLoading = messagesLoading || documentsLoading;
 
   const handleUpload = async () => {
     const file = fileInputRef.current?.files?.[0];
@@ -143,6 +124,7 @@ export default function DocumentsPage() {
     if (uploadFormateurId) formData.append("formateurId", uploadFormateurId);
     if (uploadEntrepriseId) formData.append("entrepriseId", uploadEntrepriseId);
 
+    // multipart/form-data: keep raw fetch (le helper api force application/json)
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     setUploading(false);
 
@@ -153,15 +135,17 @@ export default function DocumentsPage() {
       setUploadFormateurId("");
       setUploadEntrepriseId("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      fetchDocuments();
+      await mutateDocuments();
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer ce document ?")) return;
-    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    try {
+      await api.delete(`/api/documents/${id}`);
+      await mutateDocuments();
+    } catch {
+      // ignore
     }
   };
 
@@ -178,14 +162,12 @@ export default function DocumentsPage() {
   };
 
   const saveEdit = async (id: string) => {
-    const res = await fetch(`/api/documents/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nom: editNom, type: editType }),
-    });
-    if (res.ok) {
+    try {
+      await api.put(`/api/documents/${id}`, { nom: editNom, type: editType });
       setEditingId(null);
-      fetchDocuments();
+      await mutateDocuments();
+    } catch {
+      // ignore
     }
   };
 

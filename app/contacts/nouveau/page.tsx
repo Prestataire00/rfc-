@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -12,11 +12,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CONTACT_TYPES } from "@/lib/constants";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 interface Entreprise {
   id: string;
   nom: string;
 }
+
+type ContactCreated = { id: string; prenom: string; nom: string };
 
 const typeOptions = Object.entries(CONTACT_TYPES).map(([key, val]) => ({
   value: key,
@@ -26,8 +30,6 @@ const typeOptions = Object.entries(CONTACT_TYPES).map(([key, val]) => ({
 export default function NouveauContactPage() {
   const router = useRouter();
 
-  const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -41,12 +43,12 @@ export default function NouveauContactPage() {
     notes: "",
   });
 
-  useEffect(() => {
-    fetch("/api/entreprises")
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => setEntreprises(Array.isArray(data) ? data : []))
-      .catch(() => setEntreprises([]));
-  }, []);
+  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  const { trigger: createContact, isMutating: saving } = useApiMutation<Record<string, unknown>, ContactCreated>(
+    "/api/contacts",
+    "POST"
+  );
 
   const entrepriseOptions = [
     { value: "", label: "Aucune entreprise" },
@@ -62,7 +64,6 @@ export default function NouveauContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
 
     try {
       const payload: Record<string, unknown> = { ...form };
@@ -71,36 +72,29 @@ export default function NouveauContactPage() {
       if (!payload.poste) delete payload.poste;
       if (!payload.notes) delete payload.notes;
 
-      const res = await fetch("/api/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        let msg = "Erreur lors de la creation du contact";
-        if (data?.error) {
-          if (typeof data.error === "string") {
-            msg = data.error;
-          } else if (data.error.fieldErrors) {
-            const fields = Object.entries(data.error.fieldErrors)
-              .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
-              .join(" | ");
-            if (fields) msg = fields;
-          }
-        }
-        throw new Error(msg);
-      }
-
-      const contact = await res.json();
+      const contact = await createContact(payload);
       notify.success("Contact cree", `${contact.prenom} ${contact.nom}`);
       router.push(`/contacts/${contact.id}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      let msg = "Erreur lors de la creation du contact";
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        const errBody = body?.error;
+        if (typeof errBody === "string") {
+          msg = errBody;
+        } else if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const fields = Object.entries((errBody as { fieldErrors: Record<string, string[]> }).fieldErrors)
+            .map(([k, v]) => `${k}: ${v.join(", ")}`)
+            .join(" | ");
+          if (fields) msg = fields;
+        } else {
+          msg = err.message || msg;
+        }
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
       setError(msg);
       notify.error("Erreur", msg);
-      setSaving(false);
     }
   };
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, Users, MapPin, Award, Calendar, CheckCircle2, BookOpen, FileText } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
 
 type Session = {
   id: string;
@@ -36,20 +36,12 @@ type Formation = {
   sessions: Session[];
 };
 
+type CatalogueResponse = { formations: Formation[] };
+
 export default function FormationDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [formation, setFormation] = useState<Formation | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/catalogue`)
-      .then((r) => r.ok ? r.json() : { formations: [] })
-      .then((d) => {
-        const f = (d.formations || []).find((f: Formation) => f.id === slug);
-        setFormation(f || null);
-        setLoading(false);
-      });
-  }, [slug]);
+  const { data, isLoading: loading } = useApi<CatalogueResponse>("/api/catalogue");
+  const formation: Formation | null = (data?.formations || []).find((f) => f.id === slug) || null;
 
   if (loading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;

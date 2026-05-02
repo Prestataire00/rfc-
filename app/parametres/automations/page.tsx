@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Save, Zap, Clock, CheckCircle2, Info, Calendar, UserPlus } from "lucide-react";
+import { useApi, useApiMutation } from "@/hooks/useApi";
 
 type Rule = {
   id: string;
@@ -44,36 +45,32 @@ function formatOffset(r: Rule): string {
 
 export default function AutomationsSettingsPage() {
   const [rules, setRules] = useState<Rule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
+  const { data: rulesData, isLoading: loading } = useApi<Rule[]>("/api/automations");
+  const { trigger: saveRules, isMutating: saving } = useApiMutation<{ rules: Rule[] }>(
+    "/api/automations",
+    "PUT"
+  );
+
   useEffect(() => {
-    fetch("/api/automations").then((r) => r.ok ? r.json() : []).then((d) => {
-      setRules(Array.isArray(d) ? d : []);
-      setLoading(false);
-    });
-  }, []);
+    if (!rulesData) return;
+    setRules(Array.isArray(rulesData) ? rulesData : []);
+  }, [rulesData]);
 
   const updateRule = (id: string, patch: Partial<Rule>) => {
     setRules((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
 
   const handleSave = async () => {
-    setSaving(true);
     setSaveMsg("");
-    const res = await fetch("/api/automations", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rules }),
-    });
-    if (res.ok) {
+    try {
+      await saveRules({ rules });
       setSaveMsg("Automatisations enregistrees");
       setTimeout(() => setSaveMsg(""), 3000);
-    } else {
+    } catch {
       setSaveMsg("Erreur");
     }
-    setSaving(false);
   };
 
   if (loading) {

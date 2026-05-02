@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { BarChart3, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatCurrency } from "@/lib/utils";
 import { FINANCEMENT_TYPES } from "@/lib/constants";
+import { useApi } from "@/hooks/useApi";
 
 const MOIS_LABELS = ["Jan", "Fev", "Mar", "Avr", "Mai", "Jun", "Jul", "Aou", "Sep", "Oct", "Nov", "Dec"];
 
@@ -36,15 +37,8 @@ type BPFData = {
 
 export default function BPFPage() {
   const [annee, setAnnee] = useState(new Date().getFullYear());
-  const [data, setData] = useState<BPFData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/bpf?annee=${annee}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { setData(d); setLoading(false); });
-  }, [annee]);
+  const url = useMemo(() => `/api/bpf?annee=${annee}`, [annee]);
+  const { data, isLoading: loading } = useApi<BPFData>(url);
 
   if (loading) {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;

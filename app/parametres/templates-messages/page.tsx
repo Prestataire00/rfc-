@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Save, Mail, RotateCcw, Eye, Pencil, CheckCircle2 } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Variable = { nom: string; description: string };
 type Template = {
@@ -18,8 +20,6 @@ type Template = {
 };
 
 export default function TemplatesMessagesPage() {
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -29,19 +29,16 @@ export default function TemplatesMessagesPage() {
   const [objet, setObjet] = useState("");
   const [contenu, setContenu] = useState("");
 
-  const load = () => {
-    fetch("/api/message-templates")
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => {
-        setTemplates(Array.isArray(d) ? d : []);
-        setLoading(false);
-        if (!selectedId && Array.isArray(d) && d.length > 0) {
-          setSelectedId(d[0].id);
-        }
-      });
-  };
+  const { data: templatesData, isLoading: loading, mutate: mutateTemplates } = useApi<Template[]>(
+    "/api/message-templates"
+  );
+  const templates: Template[] = Array.isArray(templatesData) ? templatesData : [];
 
-  useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!selectedId && templates.length > 0) {
+      setSelectedId(templates[0].id);
+    }
+  }, [selectedId, templates]);
 
   const selected = templates.find((t) => t.id === selectedId);
   const variables: Variable[] = useMemo(() => {
@@ -60,16 +57,18 @@ export default function TemplatesMessagesPage() {
     if (!selected) return;
     setSaving(true);
     setSaveMsg("");
-    const res = await fetch(`/api/message-templates/${selected.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nom: selected.nom, description: selected.description, objet, contenu, actif: selected.actif }),
-    });
-    if (res.ok) {
+    try {
+      await api.put(`/api/message-templates/${selected.id}`, {
+        nom: selected.nom,
+        description: selected.description,
+        objet,
+        contenu,
+        actif: selected.actif,
+      });
       setSaveMsg("Enregistre");
-      load();
+      await mutateTemplates();
       setTimeout(() => setSaveMsg(""), 2500);
-    } else {
+    } catch {
       setSaveMsg("Erreur");
     }
     setSaving(false);
@@ -78,18 +77,15 @@ export default function TemplatesMessagesPage() {
   const handleReset = async () => {
     if (!selected || !window.confirm("Reinitialiser ce template au defaut ? Vos modifications seront perdues.")) return;
     setSaving(true);
-    const res = await fetch(`/api/message-templates/${selected.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "reset" }),
-    });
-    if (res.ok) {
-      const tpl = await res.json();
+    try {
+      const tpl = await api.post<Template>(`/api/message-templates/${selected.id}`, { action: "reset" });
       setObjet(tpl.objet);
       setContenu(tpl.contenu);
       setSaveMsg("Reinitialise");
-      load();
+      await mutateTemplates();
       setTimeout(() => setSaveMsg(""), 2500);
+    } catch {
+      setSaveMsg("Erreur");
     }
     setSaving(false);
   };

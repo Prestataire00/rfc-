@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { CheckCircle2, AlertCircle, Loader2, Save } from "lucide-react";
 import { QuestionRenderer, QuestionItem } from "@/components/shared/QuestionRenderer";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type LegacyQuestion = { key: string; label: string };
@@ -40,37 +41,37 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function EvaluationPublicPage() {
   const { token } = useParams<{ token: string }>();
-  const [data, setData] = useState<ApiResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, error: fetchError, isLoading } = useApi<ApiResponse>(
+    token ? `/api/evaluations/public/${token}` : null
+  );
+  const submitMutation = useApiMutation<{ reponses: Record<string, string | number | boolean>; commentaire: string; isCustom: true }, unknown>(
+    `/api/evaluations/public/${token}`,
+    "POST"
+  );
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [reponses, setReponses] = useState<Record<string, string | number | boolean>>({});
   const [commentaire, setCommentaire] = useState("");
   const [autosaveStatus, setAutosaveStatus] = useState<"" | "saved">("");
 
   const storageKey = `eval_draft_${token}`;
+  const loading = isLoading;
+  const submitting = submitMutation.isMutating;
+  const loadError = fetchError ? "Lien invalide ou expire" : "";
 
+  // Restore draft once data loads
   useEffect(() => {
-    fetch(`/api/evaluations/public/${token}`)
-      .then((r) => r.ok ? r.json() : Promise.reject(r))
-      .then((d: ApiResponse) => {
-        setData(d);
-        // Restore draft
-        if (typeof window !== "undefined") {
-          try {
-            const raw = localStorage.getItem(storageKey);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              if (parsed.reponses) setReponses(parsed.reponses);
-              if (parsed.commentaire) setCommentaire(parsed.commentaire);
-            }
-          } catch { /* empty */ }
-        }
-      })
-      .catch(() => setError("Lien invalide ou expire"))
-      .finally(() => setLoading(false));
-  }, [token, storageKey]);
+    if (!data) return;
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.reponses) setReponses(parsed.reponses);
+        if (parsed.commentaire) setCommentaire(parsed.commentaire);
+      }
+    } catch { /* empty */ }
+  }, [data, storageKey]);
 
   // Autosave local storage
   useEffect(() => {
@@ -121,30 +122,18 @@ export default function EvaluationPublicPage() {
   // ── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!data || !canSubmit) return;
-    setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`/api/evaluations/public/${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reponses,
-          commentaire,
-          isCustom: true,
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setError(d.error || "Erreur lors de l'envoi");
-        setSubmitting(false);
-        return;
-      }
+      await submitMutation.trigger({ reponses, commentaire, isCustom: true });
       // Nettoyer le draft
       if (typeof window !== "undefined") localStorage.removeItem(storageKey);
       setSubmitted(true);
-    } catch {
-      setError("Erreur reseau");
-      setSubmitting(false);
+    } catch (e) {
+      if (e instanceof ApiError) {
+        setError(e.message || "Erreur lors de l'envoi");
+      } else {
+        setError("Erreur reseau");
+      }
     }
   };
 
@@ -153,13 +142,13 @@ export default function EvaluationPublicPage() {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="h-8 w-8 animate-spin text-red-600" /></div>;
   }
 
-  if (error && !data) {
+  if (loadError && !data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="max-w-md bg-white rounded-xl shadow p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">Lien invalide</h1>
-          <p className="text-sm text-gray-600">{error}</p>
+          <p className="text-sm text-gray-600">{loadError}</p>
         </div>
       </div>
     );

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { CheckCircle2, AlertCircle, Loader2, User, BookOpen, Accessibility, Shield } from "lucide-react";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Fiche = {
   id: string;
@@ -62,80 +63,74 @@ function formatSecuDisplay(v: string): string {
 
 export default function FicheBesoinStagiairePage() {
   const { token } = useParams<{ token: string }>();
-  const [fiche, setFiche] = useState<Fiche | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
+    token ? `/api/besoin-stagiaire/public/${token}` : null
+  );
+  const submitMutation = useApiMutation<Record<string, unknown>>(
+    `/api/besoin-stagiaire/public/${token}`,
+    "POST"
+  );
+  const [submitError, setSubmitError] = useState("");
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
 
+  const loading = isLoading;
+  const saving = submitMutation.isMutating;
+  const loadError = fetchError ? "Lien invalide ou expire" : "";
+  const error = submitError || loadError;
+
   useEffect(() => {
-    fetch(`/api/besoin-stagiaire/public/${token}`)
-      .then((r) => r.ok ? r.json() : Promise.reject(r))
-      .then((d: Fiche) => {
-        setFiche(d);
-        setForm({
-          dateNaissance: d.contact?.dateNaissance ? d.contact.dateNaissance.slice(0, 10) : "",
-          numeroSecuriteSociale: d.contact?.numeroSecuriteSociale?.startsWith("•") ? "" : (d.contact?.numeroSecuriteSociale ?? ""),
-          numeroPasseportPrevention: d.contact?.numeroPasseportPrevention ?? "",
-          dejaSuivi: d.dejaSuivi ?? false,
-          dateDerniereFormation: d.dateDerniereFormation ? d.dateDerniereFormation.slice(0, 10) : "",
-          niveauFormation: d.niveauFormation ?? d.contact?.niveauFormation ?? "",
-          niveauPrerequis: (d as Record<string, unknown>).niveauPrerequis as string ?? "",
-          estRQTH: d.estRQTH ?? false,
-          detailsRQTH: d.detailsRQTH ?? "",
-          contraintesPhysiques: d.contraintesPhysiques ?? "",
-          contraintesLangue: d.contraintesLangue ?? "",
-          contraintesAlimentaires: d.contraintesAlimentaires ?? "",
-          consentementRGPD: d.consentementRGPD ?? false,
-          consentementBPF: d.consentementBPF ?? false,
-        });
-      })
-      .catch(() => setError("Lien invalide ou expire"))
-      .finally(() => setLoading(false));
-  }, [token]);
+    if (!fiche) return;
+    setForm({
+      dateNaissance: fiche.contact?.dateNaissance ? fiche.contact.dateNaissance.slice(0, 10) : "",
+      numeroSecuriteSociale: fiche.contact?.numeroSecuriteSociale?.startsWith("•") ? "" : (fiche.contact?.numeroSecuriteSociale ?? ""),
+      numeroPasseportPrevention: fiche.contact?.numeroPasseportPrevention ?? "",
+      dejaSuivi: fiche.dejaSuivi ?? false,
+      dateDerniereFormation: fiche.dateDerniereFormation ? fiche.dateDerniereFormation.slice(0, 10) : "",
+      niveauFormation: fiche.niveauFormation ?? fiche.contact?.niveauFormation ?? "",
+      niveauPrerequis: (fiche as Record<string, unknown>).niveauPrerequis as string ?? "",
+      estRQTH: fiche.estRQTH ?? false,
+      detailsRQTH: fiche.detailsRQTH ?? "",
+      contraintesPhysiques: fiche.contraintesPhysiques ?? "",
+      contraintesLangue: fiche.contraintesLangue ?? "",
+      contraintesAlimentaires: fiche.contraintesAlimentaires ?? "",
+      consentementRGPD: fiche.consentementRGPD ?? false,
+      consentementBPF: fiche.consentementBPF ?? false,
+    });
+  }, [fiche]);
 
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setError("");
+    setSubmitError("");
 
     if (!form.consentementRGPD) {
-      setError("Le consentement RGPD est obligatoire");
-      setSaving(false);
+      setSubmitError("Le consentement RGPD est obligatoire");
       return;
     }
 
     try {
-      const res = await fetch(`/api/besoin-stagiaire/public/${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setError(typeof d.error === "string" ? d.error : "Erreur lors de l'envoi");
-        setSaving(false);
-        return;
-      }
+      await submitMutation.trigger(form);
       setSuccess(true);
-    } catch {
-      setError("Erreur reseau");
-      setSaving(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSubmitError(err.message || "Erreur lors de l'envoi");
+      } else {
+        setSubmitError("Erreur reseau");
+      }
     }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-100"><Loader2 className="h-8 w-8 animate-spin text-red-600" /></div>;
 
-  if (error && !fiche) {
+  if (loadError && !fiche) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="max-w-md bg-white rounded-xl shadow p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
           <h1 className="text-xl font-bold text-gray-900 mb-2">Lien invalide</h1>
-          <p className="text-sm text-gray-600">{error}</p>
+          <p className="text-sm text-gray-600">{loadError}</p>
         </div>
       </div>
     );

@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Send, Mail, Users, CheckCircle2, Tag, Plus, X } from "lucide-react";
 import { notify } from "@/lib/toast";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Campaign = {
   id: string;
@@ -28,9 +30,13 @@ type TagOption = { id: string; nom: string; couleur: string; _count: { contacts:
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [tags, setTags] = useState<TagOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: campaign, isLoading: campaignLoading, mutate: mutateCampaign } = useApi<Campaign | null>(
+    id ? `/api/campaigns/${id}` : null
+  );
+  const { data: tagsData, isLoading: tagsLoading } = useApi<TagOption[]>("/api/tags");
+  const tags: TagOption[] = Array.isArray(tagsData) ? tagsData : [];
+  const loading = campaignLoading || tagsLoading;
+
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState("");
@@ -44,43 +50,31 @@ export default function CampaignDetailPage() {
   const [segmentType, setSegmentType] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/campaigns/${id}`).then((r) => r.ok ? r.json() : null),
-      fetch("/api/tags").then((r) => r.ok ? r.json() : []),
-    ]).then(([c, t]) => {
-      if (c) {
-        setCampaign(c);
-        setNom(c.nom);
-        setDescription(c.description || "");
-        setObjet(c.objet || "");
-        setContenu(c.contenu || "");
-        try {
-          const seg = JSON.parse(c.segmentConfig);
-          setSegmentTags(seg.tags || []);
-          setSegmentType(seg.type || "");
-        } catch { /* keep defaults */ }
-      }
-      setTags(Array.isArray(t) ? t : []);
-      setLoading(false);
-    });
-  }, [id]);
+    if (!campaign) return;
+    setNom(campaign.nom);
+    setDescription(campaign.description || "");
+    setObjet(campaign.objet || "");
+    setContenu(campaign.contenu || "");
+    try {
+      const seg = JSON.parse(campaign.segmentConfig);
+      setSegmentTags(seg.tags || []);
+      setSegmentType(seg.type || "");
+    } catch { /* keep defaults */ }
+  }, [campaign]);
 
   const handleSave = async () => {
     setSaving(true);
     setMsg("");
-    const res = await fetch(`/api/campaigns/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await api.put(`/api/campaigns/${id}`, {
         nom, description, objet, contenu,
         segmentConfig: { tags: segmentTags, type: segmentType || undefined },
-      }),
-    });
-    if (res.ok) {
+      });
       setMsg("Enregistre");
       notify.success("Campagne enregistree");
       setTimeout(() => setMsg(""), 2500);
-    } else {
+      await mutateCampaign();
+    } catch {
       notify.error("Erreur", "Impossible d'enregistrer");
     }
     setSaving(false);
@@ -89,14 +83,12 @@ export default function CampaignDetailPage() {
   const handleSend = async () => {
     if (!confirm("Envoyer cette campagne maintenant ? Les emails seront envoyes immediatement.")) return;
     setSending(true);
-    const res = await fetch(`/api/campaigns/${id}/send`, { method: "POST" });
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await api.post<{ sent: number; total: number }>(`/api/campaigns/${id}/send`);
       setMsg(`${data.sent} emails envoyes sur ${data.total}`);
       notify.success("Campagne envoyee", `${data.sent} emails envoyes`);
-      const updated = await fetch(`/api/campaigns/${id}`).then((r) => r.json());
-      setCampaign(updated);
-    } else {
+      await mutateCampaign();
+    } catch {
       setMsg("Erreur envoi");
       notify.error("Erreur", "Envoi de la campagne echoue");
     }

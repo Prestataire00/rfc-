@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { CheckCircle2, AlertTriangle, Clock, MapPin, User, FileText } from "lucide-react";
 import { SignaturePad } from "@/components/shared/SignaturePad";
 import { StatutSelector, type PresenceStatut } from "@/components/emargement/StatutSelector";
+import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Stagiaire = {
   id: string;
@@ -24,9 +25,17 @@ type SessionInfo = {
 };
 
 export default function EmargementPublicPage({ params }: { params: { token: string } }) {
-  const [data, setData] = useState<SessionInfo | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { data, error: fetchError, isLoading } = useApi<SessionInfo>(
+    params.token ? `/api/emargement/public/${params.token}` : null
+  );
+  const submitMutation = useApiMutation<{
+    contactId: string;
+    statut: PresenceStatut;
+    signature: string | null;
+    retardMinutes?: number;
+    departMinutes?: number;
+  }>(`/api/emargement/public/${params.token}`, "POST");
+  const [submitError, setSubmitError] = useState("");
 
   // Signing state
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
@@ -34,53 +43,44 @@ export default function EmargementPublicPage({ params }: { params: { token: stri
   const [retardMinutes, setRetardMinutes] = useState(0);
   const [departMinutes, setDepartMinutes] = useState(0);
   const [signature, setSignature] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  const loading = isLoading;
+  const submitting = submitMutation.isMutating;
+
+  // Compute load error (preserve 410 vs invalid distinction)
+  const loadError = fetchError
+    ? (fetchError.status === 410 ? "Ce lien a expire." : "Lien invalide.")
+    : "";
+  const error = submitError || loadError;
+
+  // OTP pre-selection (preserve original useEffect behaviour at first data arrival)
   useEffect(() => {
-    fetch(`/api/emargement/public/${params.token}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(r.status === 410 ? "Ce lien a expire." : "Lien invalide.");
-        return r.json();
-      })
-      .then((d) => {
-        setData(d);
-        // Si OTP (1 seul stagiaire), pre-selectionner
-        if (d.isOtp && d.stagiaires.length === 1) {
-          setSelectedContact(d.stagiaires[0].id);
-        }
-        setLoading(false);
-      })
-      .catch((e) => {
-        setError(e.message);
-        setLoading(false);
-      });
-  }, [params.token]);
+    if (!data) return;
+    if (data.isOtp && data.stagiaires.length === 1) {
+      setSelectedContact((prev) => prev ?? data.stagiaires[0].id);
+    }
+  }, [data]);
 
   const handleSubmit = async () => {
     if (!selectedContact || !statut || !data) return;
-    setSubmitting(true);
+    setSubmitError("");
     try {
-      const res = await fetch(`/api/emargement/public/${params.token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contactId: selectedContact,
-          statut,
-          signature,
-          retardMinutes: statut === "en_retard" ? retardMinutes : undefined,
-          departMinutes: statut === "depart_anticipe" ? departMinutes : undefined,
-        }),
+      await submitMutation.trigger({
+        contactId: selectedContact,
+        statut,
+        signature,
+        retardMinutes: statut === "en_retard" ? retardMinutes : undefined,
+        departMinutes: statut === "depart_anticipe" ? departMinutes : undefined,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Erreur");
-      }
       setSubmitted(true);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Erreur lors de la signature");
+      if (e instanceof ApiError) {
+        setSubmitError(e.message || "Erreur");
+      } else {
+        setSubmitError(e instanceof Error ? e.message : "Erreur lors de la signature");
+      }
     }
-    setSubmitting(false);
   };
 
   if (loading) {

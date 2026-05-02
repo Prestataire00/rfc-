@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,6 +8,8 @@ import {
   ThumbsUp, Clock, Target, GraduationCap, UserCheck, Briefcase, Landmark,
   CheckCircle2, Flame, Snowflake,
 } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Template = {
   id: string;
@@ -46,54 +48,58 @@ function getIcon(name: string | null) {
 
 export default function ModelesPage() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, mutate } = useApi<Template[]>("/api/evaluation-templates");
+  const templates: Template[] = Array.isArray(data) ? data : [];
+  const loading = isLoading;
   const [deleting, setDeleting] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [seedMsg, setSeedMsg] = useState("");
+  const [seeded, setSeeded] = useState(false);
 
-  const load = useCallback(async () => {
-    const r = await fetch("/api/evaluation-templates");
-    if (r.ok) setTemplates(await r.json());
-    setLoading(false);
-  }, []);
-
+  // Auto-seed presets if none exist (one-shot per mount)
   useEffect(() => {
-    fetch("/api/evaluation-templates")
-      .then((r) => r.ok ? r.json() : [])
-      .then(async (d) => {
-        const arr: Template[] = Array.isArray(d) ? d : [];
-        if (!arr.some((t) => t.preset)) {
-          await fetch("/api/evaluation-templates/seed", { method: "POST" });
-        }
-        await load();
-      });
-  }, [load]);
+    if (!data || seeded) return;
+    if (!data.some((t) => t.preset)) {
+      setSeeded(true);
+      api.post("/api/evaluation-templates/seed").then(() => mutate()).catch(() => { /* ignore */ });
+    } else {
+      setSeeded(true);
+    }
+  }, [data, seeded, mutate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer ce modele ?")) return;
     setDeleting(id);
-    const res = await fetch(`/api/evaluation-templates/${id}`, { method: "DELETE" });
-    if (res.ok) setTemplates((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await api.delete(`/api/evaluation-templates/${id}`);
+      await mutate(templates.filter((t) => t.id !== id), false);
+    } catch {
+      // ignore
+    }
     setDeleting(null);
   };
 
   const handleDuplicate = async (id: string) => {
     setDuplicating(id);
-    const res = await fetch(`/api/evaluation-templates/${id}/dupliquer`, { method: "POST" });
-    if (res.ok) {
-      const copy = await res.json();
-      router.push(`/evaluations/modeles/${copy.id}`);
+    try {
+      const copy = await api.post<{ id: string }>(`/api/evaluation-templates/${id}/dupliquer`);
+      if (copy?.id) router.push(`/evaluations/modeles/${copy.id}`);
+    } catch {
+      // ignore
     }
     setDuplicating(null);
   };
 
   const handleReseed = async () => {
     setSeedMsg("...");
-    await fetch("/api/evaluation-templates/seed", { method: "POST" });
-    await load();
+    try {
+      await api.post("/api/evaluation-templates/seed");
+    } catch {
+      // ignore
+    }
+    await mutate();
     setSeedMsg("OK");
     setTimeout(() => setSeedMsg(""), 2000);
   };

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Copy, Send, Eye, Pencil, Info } from "lucide-react";
 import TemplateBuilder, { Question } from "../TemplateBuilder";
 import { QuestionRenderer, QuestionItem } from "@/components/shared/QuestionRenderer";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Template = {
   id: string;
@@ -29,29 +31,28 @@ export default function TemplatePage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [template, setTemplate] = useState<Template | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: template, isLoading } = useApi<Template>(
+    id ? `/api/evaluation-templates/${id}` : null
+  );
+  const loading = isLoading;
   const [duplicating, setDuplicating] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/evaluation-templates/${id}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((d: Template | null) => {
-        if (!d) { setLoading(false); return; }
-        setTemplate(d);
-        try { setQuestions(JSON.parse(d.questions)); } catch { setQuestions([]); }
-        setLoading(false);
-      });
-  }, [id]);
+  const questions = useMemo<Question[]>(() => {
+    if (!template) return [];
+    try { return JSON.parse(template.questions); } catch { return []; }
+  }, [template]);
 
   const handleDuplicate = async () => {
     setDuplicating(true);
-    const res = await fetch(`/api/evaluation-templates/${id}/dupliquer`, { method: "POST" });
-    if (res.ok) {
-      const copy = await res.json();
-      router.push(`/evaluations/modeles/${copy.id}`);
-    } else {
+    try {
+      const copy = await api.post<{ id: string }>(`/api/evaluation-templates/${id}/dupliquer`);
+      if (copy?.id) {
+        router.push(`/evaluations/modeles/${copy.id}`);
+      } else {
+        alert("Erreur lors de la duplication");
+        setDuplicating(false);
+      }
+    } catch {
       alert("Erreur lors de la duplication");
       setDuplicating(false);
     }

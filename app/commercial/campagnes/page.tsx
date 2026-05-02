@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Plus, Mail, Send, Clock, CheckCircle2, XCircle, Users, Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
 
 type Campaign = {
   id: string;
@@ -30,37 +32,32 @@ const STATUT_STYLES: Record<string, { icon: React.ElementType; color: string; la
 };
 
 export default function CampagnesPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, mutate } = useApi<Campaign[]>("/api/campaigns");
+  const campaigns: Campaign[] = Array.isArray(data) ? data : [];
+  const loading = isLoading;
   const [creating, setCreating] = useState(false);
-
-  const load = () => {
-    fetch("/api/campaigns").then((r) => r.ok ? r.json() : []).then((d) => {
-      setCampaigns(Array.isArray(d) ? d : []);
-      setLoading(false);
-    });
-  };
-
-  useEffect(load, []);
 
   const handleCreate = async () => {
     setCreating(true);
-    const res = await fetch("/api/campaigns", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nom: "Nouvelle campagne", type: "email" }),
-    });
-    if (res.ok) {
-      const c = await res.json();
-      window.location.href = `/commercial/campagnes/${c.id}`;
+    try {
+      const c = await api.post<{ id: string }>("/api/campaigns", { nom: "Nouvelle campagne", type: "email" });
+      if (c?.id) {
+        window.location.href = `/commercial/campagnes/${c.id}`;
+      }
+    } catch {
+      // ignore
     }
     setCreating(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer cette campagne ?")) return;
-    await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
-    load();
+    try {
+      await api.delete(`/api/campaigns/${id}`);
+    } catch {
+      // ignore
+    }
+    await mutate();
   };
 
   if (loading) {

@@ -14,6 +14,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
 import { AIButton } from "@/components/shared/AIButton";
 import { ImageUpload } from "@/components/shared/ImageUpload";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
+
+type FormationData = {
+  titre?: string;
+  description?: string | null;
+  duree?: number | null;
+  tarif?: number | null;
+  niveau?: string;
+  prerequis?: string | null;
+  objectifs?: string | null;
+  categorie?: string | null;
+  actif?: boolean;
+  modalite?: string;
+  statut?: string;
+  publicCible?: string | null;
+  contenuProgramme?: string | null;
+  methodesPedagogiques?: string | null;
+  methodesEvaluation?: string | null;
+  moyensTechniques?: string | null;
+  accessibilite?: string | null;
+  indicateursResultats?: string | null;
+  typesFinancement?: string;
+  certifiante?: boolean;
+  codeRNCP?: string | null;
+  dureeRecyclage?: number | null;
+  misEnAvant?: boolean;
+  image?: string | null;
+};
 
 const niveauOptions = NIVEAUX_FORMATION.map((n) => ({ value: n.value, label: n.label }));
 const modaliteOptions = Object.entries(MODALITES_FORMATION).map(([value, { label }]) => ({ value, label }));
@@ -24,8 +53,6 @@ export default function ModifierFormationPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -55,48 +82,47 @@ export default function ModifierFormationPage() {
     image: "",
   });
 
-  useEffect(() => {
-    fetch(`/api/formations/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Formation introuvable");
-        return res.json();
-      })
-      .then((data) => {
-        let financements: string[] = [];
-        try {
-          financements = data.typesFinancement ? JSON.parse(data.typesFinancement) : [];
-        } catch { financements = []; }
+  const { data, error: fetchError, isLoading: loading } = useApi<FormationData>(`/api/formations/${id}`);
+  const { trigger: updateFormation, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/formations/${id}`, "PUT");
 
-        setForm({
-          titre: data.titre ?? "",
-          description: data.description ?? "",
-          duree: data.duree != null ? String(data.duree) : "",
-          tarif: data.tarif != null ? String(data.tarif) : "",
-          niveau: data.niveau ?? "tous",
-          prerequis: data.prerequis ?? "",
-          objectifs: data.objectifs ?? "",
-          categorie: data.categorie ?? "",
-          actif: data.actif ?? true,
-          modalite: data.modalite ?? "presentiel",
-          statut: data.statut ?? "brouillon",
-          publicCible: data.publicCible ?? "",
-          contenuProgramme: data.contenuProgramme ?? "",
-          methodesPedagogiques: data.methodesPedagogiques ?? "",
-          methodesEvaluation: data.methodesEvaluation ?? "",
-          moyensTechniques: data.moyensTechniques ?? "",
-          accessibilite: data.accessibilite ?? "",
-          indicateursResultats: data.indicateursResultats ?? "",
-          typesFinancement: financements,
-          certifiante: data.certifiante ?? false,
-          codeRNCP: data.codeRNCP ?? "",
-          dureeRecyclage: data.dureeRecyclage != null ? String(data.dureeRecyclage) : "",
-          misEnAvant: data.misEnAvant ?? false,
-          image: data.image ?? "",
-        });
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+  useEffect(() => {
+    if (!data) return;
+    let financements: string[] = [];
+    try {
+      financements = data.typesFinancement ? JSON.parse(data.typesFinancement) : [];
+    } catch { financements = []; }
+
+    setForm({
+      titre: data.titre ?? "",
+      description: data.description ?? "",
+      duree: data.duree != null ? String(data.duree) : "",
+      tarif: data.tarif != null ? String(data.tarif) : "",
+      niveau: data.niveau ?? "tous",
+      prerequis: data.prerequis ?? "",
+      objectifs: data.objectifs ?? "",
+      categorie: data.categorie ?? "",
+      actif: data.actif ?? true,
+      modalite: data.modalite ?? "presentiel",
+      statut: data.statut ?? "brouillon",
+      publicCible: data.publicCible ?? "",
+      contenuProgramme: data.contenuProgramme ?? "",
+      methodesPedagogiques: data.methodesPedagogiques ?? "",
+      methodesEvaluation: data.methodesEvaluation ?? "",
+      moyensTechniques: data.moyensTechniques ?? "",
+      accessibilite: data.accessibilite ?? "",
+      indicateursResultats: data.indicateursResultats ?? "",
+      typesFinancement: financements,
+      certifiante: data.certifiante ?? false,
+      codeRNCP: data.codeRNCP ?? "",
+      dureeRecyclage: data.dureeRecyclage != null ? String(data.dureeRecyclage) : "",
+      misEnAvant: data.misEnAvant ?? false,
+      image: data.image ?? "",
+    });
+  }, [data]);
+
+  useEffect(() => {
+    if (fetchError) setError(fetchError.message || "Formation introuvable");
+  }, [fetchError]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -121,64 +147,62 @@ export default function ModifierFormationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
+
+    const payload: Record<string, unknown> = {
+      titre: form.titre,
+      niveau: form.niveau,
+      actif: form.actif,
+      modalite: form.modalite,
+      statut: form.statut,
+      certifiante: form.certifiante,
+      misEnAvant: form.misEnAvant,
+      duree: form.duree ? Number(form.duree) : undefined,
+      tarif: form.tarif ? Number(form.tarif) : undefined,
+      typesFinancement: JSON.stringify(form.typesFinancement),
+      description: form.description || undefined,
+      prerequis: form.prerequis || undefined,
+      objectifs: form.objectifs || undefined,
+      categorie: form.categorie || undefined,
+      publicCible: form.publicCible || undefined,
+      contenuProgramme: form.contenuProgramme || undefined,
+      methodesPedagogiques: form.methodesPedagogiques || undefined,
+      methodesEvaluation: form.methodesEvaluation || undefined,
+      moyensTechniques: form.moyensTechniques || undefined,
+      accessibilite: form.accessibilite || undefined,
+      indicateursResultats: form.indicateursResultats || undefined,
+      codeRNCP: form.codeRNCP || undefined,
+      dureeRecyclage: form.dureeRecyclage ? Number(form.dureeRecyclage) : null,
+      image: form.image || null,
+    };
 
     try {
-      const payload: Record<string, unknown> = {
-        titre: form.titre,
-        niveau: form.niveau,
-        actif: form.actif,
-        modalite: form.modalite,
-        statut: form.statut,
-        certifiante: form.certifiante,
-        misEnAvant: form.misEnAvant,
-        duree: form.duree ? Number(form.duree) : undefined,
-        tarif: form.tarif ? Number(form.tarif) : undefined,
-        typesFinancement: JSON.stringify(form.typesFinancement),
-        description: form.description || undefined,
-        prerequis: form.prerequis || undefined,
-        objectifs: form.objectifs || undefined,
-        categorie: form.categorie || undefined,
-        publicCible: form.publicCible || undefined,
-        contenuProgramme: form.contenuProgramme || undefined,
-        methodesPedagogiques: form.methodesPedagogiques || undefined,
-        methodesEvaluation: form.methodesEvaluation || undefined,
-        moyensTechniques: form.moyensTechniques || undefined,
-        accessibilite: form.accessibilite || undefined,
-        indicateursResultats: form.indicateursResultats || undefined,
-        codeRNCP: form.codeRNCP || undefined,
-        dureeRecyclage: form.dureeRecyclage ? Number(form.dureeRecyclage) : null,
-        image: form.image || null,
-      };
-
-      const res = await fetch(`/api/formations/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        let msg = "Erreur lors de la mise à jour";
-        if (data?.error) {
-          if (typeof data.error === "string") {
-            msg = data.error;
-          } else if (data.error.fieldErrors) {
-            const fields = Object.entries(data.error.fieldErrors)
-              .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
-              .join(" | ");
-            if (fields) msg = fields;
-          } else if (data.error.formErrors?.length) {
-            msg = data.error.formErrors[0];
-          }
-        }
-        throw new Error(msg);
-      }
-
+      await updateFormation(payload);
       router.push(`/formations/${id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
-      setSaving(false);
+      let msg = "Erreur lors de la mise à jour";
+      if (err instanceof ApiError) {
+        const body = err.body as { error?: unknown } | null;
+        if (body?.error) {
+          if (typeof body.error === "string") {
+            msg = body.error;
+          } else if (typeof body.error === "object" && body.error !== null) {
+            const errObj = body.error as { fieldErrors?: Record<string, string[]>; formErrors?: string[] };
+            if (errObj.fieldErrors) {
+              const fields = Object.entries(errObj.fieldErrors)
+                .map(([k, v]) => `${k}: ${v.join(", ")}`)
+                .join(" | ");
+              if (fields) msg = fields;
+            } else if (errObj.formErrors?.length) {
+              msg = errObj.formErrors[0];
+            }
+          }
+        } else {
+          msg = err.message || msg;
+        }
+      } else if (err instanceof Error) {
+        msg = err.message;
+      }
+      setError(msg);
     }
   };
 

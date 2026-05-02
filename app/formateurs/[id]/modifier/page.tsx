@@ -12,16 +12,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseSpecialites } from "@/lib/utils";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError, api } from "@/lib/fetcher";
+
+type FormateurData = {
+  nom?: string;
+  prenom?: string;
+  email?: string | null;
+  telephone?: string | null;
+  specialites?: string;
+  tarifJournalier?: number | null;
+  notes?: string | null;
+  photo?: string | null;
+};
+
+type DocumentItem = { id: string; nom: string; type: string; chemin: string; createdAt: string };
 
 export default function ModifierFormateurPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<{ id: string; nom: string; type: string; chemin: string; createdAt: string }[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
@@ -35,34 +48,33 @@ export default function ModifierFormateurPage() {
     photo: "",
   });
 
-  useEffect(() => {
-    fetch(`/api/formateurs/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Formateur introuvable");
-        return res.json();
-      })
-      .then((data) => {
-        const specialitesArray = parseSpecialites(data.specialites ?? "[]");
-        setForm({
-          nom: data.nom ?? "",
-          prenom: data.prenom ?? "",
-          email: data.email ?? "",
-          telephone: data.telephone ?? "",
-          specialites: specialitesArray.join(", "),
-          tarifJournalier: data.tarifJournalier != null ? String(data.tarifJournalier) : "",
-          notes: data.notes ?? "",
-          photo: data.photo ?? "",
-        });
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+  const { data, error: fetchError, isLoading: loading } = useApi<FormateurData>(`/api/formateurs/${id}`);
+  const { data: docsData } = useApi<DocumentItem[] | { documents: DocumentItem[] }>(`/api/documents?formateurId=${id}`);
+  const { trigger: updateFormateur, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/formateurs/${id}`, "PUT");
 
-    // Load existing documents
-    fetch(`/api/documents?formateurId=${id}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => setDocuments(Array.isArray(d) ? d : d.documents || []))
-      .catch(() => {});
-  }, [id]);
+  useEffect(() => {
+    if (!data) return;
+    const specialitesArray = parseSpecialites(data.specialites ?? "[]");
+    setForm({
+      nom: data.nom ?? "",
+      prenom: data.prenom ?? "",
+      email: data.email ?? "",
+      telephone: data.telephone ?? "",
+      specialites: specialitesArray.join(", "),
+      tarifJournalier: data.tarifJournalier != null ? String(data.tarifJournalier) : "",
+      notes: data.notes ?? "",
+      photo: data.photo ?? "",
+    });
+  }, [data]);
+
+  useEffect(() => {
+    if (fetchError) setError(fetchError.message || "Formateur introuvable");
+  }, [fetchError]);
+
+  useEffect(() => {
+    if (!docsData) return;
+    setDocuments(Array.isArray(docsData) ? docsData : docsData.documents || []);
+  }, [docsData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -70,6 +82,7 @@ export default function ModifierFormateurPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // SWR: skipped, FormData mutation
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -91,49 +104,41 @@ export default function ModifierFormateurPage() {
 
   const handleDeleteDoc = async (docId: string) => {
     try {
-      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
-      if (res.ok) setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      await api.delete(`/api/documents/${docId}`);
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
     } catch { /* silent */ }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSaving(true);
+
+    // Convert comma-separated specialites string to array
+    const specialitesArray = form.specialites
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    const payload: Record<string, unknown> = {
+      nom: form.nom,
+      prenom: form.prenom,
+      specialites: specialitesArray,
+    };
+    if (form.email) payload.email = form.email;
+    if (form.telephone) payload.telephone = form.telephone;
+    if (form.tarifJournalier) payload.tarifJournalier = Number(form.tarifJournalier);
+    if (form.notes) payload.notes = form.notes;
+    payload.photo = form.photo || null;
 
     try {
-      // Convert comma-separated specialites string to array
-      const specialitesArray = form.specialites
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-
-      const payload: Record<string, unknown> = {
-        nom: form.nom,
-        prenom: form.prenom,
-        specialites: specialitesArray,
-      };
-      if (form.email) payload.email = form.email;
-      if (form.telephone) payload.telephone = form.telephone;
-      if (form.tarifJournalier) payload.tarifJournalier = Number(form.tarifJournalier);
-      if (form.notes) payload.notes = form.notes;
-      payload.photo = form.photo || null;
-
-      const res = await fetch(`/api/formateurs/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data?.error?.message || "Erreur lors de la mise à jour");
-      }
-
+      await updateFormateur(payload);
       router.push(`/formateurs/${id}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
-      setSaving(false);
+      if (err instanceof ApiError) {
+        setError(err.message || "Erreur lors de la mise à jour");
+      } else {
+        setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      }
     }
   };
 

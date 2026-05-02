@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -11,9 +11,24 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { SESSION_STATUTS } from "@/lib/constants";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
 
 type Formation = { id: string; titre: string };
 type Formateur = { id: string; nom: string; prenom: string };
+
+type SessionData = {
+  formationId?: string;
+  formateurId?: string | null;
+  formation?: { id: string };
+  formateur?: { id: string };
+  dateDebut: string;
+  dateFin: string;
+  lieu?: string | null;
+  capaciteMax: number;
+  statut: string;
+  notes?: string | null;
+};
 
 function toDatetimeLocal(dateStr: string): string {
   if (!dateStr) return "";
@@ -25,10 +40,6 @@ function toDatetimeLocal(dateStr: string): string {
 export default function ModifierSessionPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [formations, setFormations] = useState<Formation[]>([]);
-  const [formateurs, setFormateurs] = useState<Formateur[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -42,38 +53,28 @@ export default function ModifierSessionPage() {
     notes: "",
   });
 
-  const fetchData = useCallback(async () => {
-    const [sessionRes, formationsRes, formateursRes] = await Promise.all([
-      fetch(`/api/sessions/${id}`),
-      fetch("/api/formations"),
-      fetch("/api/formateurs"),
-    ]);
+  const { data: session, isLoading: sessionLoading } = useApi<SessionData>(`/api/sessions/${id}`);
+  const { data: formationsRaw, isLoading: formationsLoading } = useApi<Formation[] | { formations: Formation[] }>("/api/formations");
+  const { data: formateursRaw, isLoading: formateursLoading } = useApi<Formateur[]>("/api/formateurs");
+  const { trigger: updateSession, isMutating: loading } = useApiMutation<Record<string, unknown>>(`/api/sessions/${id}`, "PUT");
 
-    if (sessionRes.ok) {
-      const session = await sessionRes.json();
-      setFormData({
-        formationId: session.formationId || session.formation?.id || "",
-        formateurId: session.formateurId || session.formateur?.id || "",
-        dateDebut: toDatetimeLocal(session.dateDebut),
-        dateFin: toDatetimeLocal(session.dateFin),
-        lieu: session.lieu || "",
-        capaciteMax: session.capaciteMax,
-        statut: session.statut,
-        notes: session.notes || "",
-      });
-    }
-
-    if (formationsRes.ok) {
-      const fData = await formationsRes.json();
-      setFormations(Array.isArray(fData) ? fData : fData.formations || []);
-    }
-    if (formateursRes.ok) setFormateurs(await formateursRes.json());
-    setPageLoading(false);
-  }, [id]);
+  const formations: Formation[] = Array.isArray(formationsRaw) ? formationsRaw : formationsRaw?.formations ?? [];
+  const formateurs: Formateur[] = formateursRaw ?? [];
+  const pageLoading = sessionLoading || formationsLoading || formateursLoading;
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!session) return;
+    setFormData({
+      formationId: session.formationId || session.formation?.id || "",
+      formateurId: session.formateurId || session.formateur?.id || "",
+      dateDebut: toDatetimeLocal(session.dateDebut),
+      dateFin: toDatetimeLocal(session.dateFin),
+      lieu: session.lieu || "",
+      capaciteMax: session.capaciteMax,
+      statut: session.statut,
+      notes: session.notes || "",
+    });
+  }, [session]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -102,8 +103,6 @@ export default function ModifierSessionPage() {
       return;
     }
 
-    setLoading(true);
-
     const payload = {
       formationId: formData.formationId,
       formateurId: formData.formateurId || null,
@@ -115,18 +114,15 @@ export default function ModifierSessionPage() {
       notes: formData.notes || null,
     };
 
-    const res = await fetch(`/api/sessions/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok) {
+    try {
+      await updateSession(payload);
       router.push(`/sessions/${id}`);
-    } else {
-      const data = await res.json();
-      setError(data.error?.message || "Une erreur est survenue.");
-      setLoading(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Une erreur est survenue.");
+      } else {
+        setError("Une erreur est survenue.");
+      }
     }
   };
 

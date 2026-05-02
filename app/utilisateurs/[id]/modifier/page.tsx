@@ -4,6 +4,18 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useApi, useApiMutation } from "@/hooks/useApi";
+import { ApiError } from "@/lib/fetcher";
+
+type UserData = {
+  email: string;
+  nom: string;
+  prenom: string;
+  role: string;
+  actif: boolean;
+  formateurId?: string | null;
+  entrepriseId?: string | null;
+};
 
 export default function ModifierUtilisateurPage() {
   const { id } = useParams() as { id: string };
@@ -17,57 +29,54 @@ export default function ModifierUtilisateurPage() {
     formateurId: "",
     entrepriseId: "",
   });
-  const [formateurs, setFormateurs] = useState<{ id: string; nom: string; prenom: string }[]>([]);
-  const [entreprises, setEntreprises] = useState<{ id: string; nom: string }[]>([]);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  const { data: user, error: userError, isLoading: userLoading } = useApi<UserData>(`/api/utilisateurs/${id}`);
+  const { data: formateursData, isLoading: formateursLoading } = useApi<{ id: string; nom: string; prenom: string }[]>("/api/formateurs");
+  const { data: entreprisesData, isLoading: entreprisesLoading } = useApi<{ id: string; nom: string }[]>("/api/entreprises");
+  const { trigger: updateUser, isMutating: saving } = useApiMutation<typeof form>(`/api/utilisateurs/${id}`, "PUT");
+  const { trigger: deleteUser } = useApiMutation(`/api/utilisateurs/${id}`, "DELETE");
+
+  const formateurs = Array.isArray(formateursData) ? formateursData : [];
+  const entreprises = Array.isArray(entreprisesData) ? entreprisesData : [];
+  const loading = userLoading || formateursLoading || entreprisesLoading;
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/utilisateurs/${id}`).then((r) => r.ok ? r.json() : null),
-      fetch("/api/formateurs").then((r) => r.ok ? r.json() : []),
-      fetch("/api/entreprises").then((r) => r.ok ? r.json() : []),
-    ]).then(([user, f, e]) => {
-      if (!user) { setError("Utilisateur non trouvé"); setLoading(false); return; }
-      setForm({
-        email: user.email,
-        nom: user.nom,
-        prenom: user.prenom,
-        role: user.role,
-        actif: user.actif,
-        formateurId: user.formateurId || "",
-        entrepriseId: user.entrepriseId || "",
-      });
-      setFormateurs(Array.isArray(f) ? f : []);
-      setEntreprises(Array.isArray(e) ? e : []);
-      setLoading(false);
-    }).catch(() => { setError("Erreur de chargement"); setLoading(false); });
-  }, [id]);
+    if (!user) return;
+    setForm({
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      role: user.role,
+      actif: user.actif,
+      formateurId: user.formateurId || "",
+      entrepriseId: user.entrepriseId || "",
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (userError) setError("Utilisateur non trouvé");
+  }, [userError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSaving(true);
 
-    const res = await fetch(`/api/utilisateurs/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    if (res.ok) {
+    try {
+      await updateUser(form);
       router.push("/utilisateurs");
-    } else {
-      const data = await res.json();
-      setError(data.error || "Erreur lors de la modification");
-      setSaving(false);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Erreur lors de la modification");
+      } else {
+        setError("Erreur lors de la modification");
+      }
     }
   };
 
   const handleDelete = async () => {
     if (!confirm("Supprimer ce compte utilisateur ? Cette action est irréversible.")) return;
-    await fetch(`/api/utilisateurs/${id}`, { method: "DELETE" });
+    await deleteUser();
     router.push("/utilisateurs");
   };
 

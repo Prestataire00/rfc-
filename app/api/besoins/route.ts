@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { triggerAutomation } from "@/lib/automations-trigger";
 import { notifyAdmins } from "@/lib/notifications";
+import { withErrorHandler } from "@/lib/api-wrapper";
+import { logger } from "@/lib/logger";
 
 const besoinSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
@@ -20,89 +22,75 @@ const besoinSchema = z.object({
   formationId: z.string().cuid().optional().nullable(),
 });
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const statut = searchParams.get("statut");
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const statut = searchParams.get("statut");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
-    if (statut) where.statut = statut;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
+  if (statut) where.statut = statut;
 
-    const besoins = await prisma.besoinFormation.findMany({
-      where,
-      include: {
-        entreprise: { select: { id: true, nom: true } },
-        contact: { select: { id: true, prenom: true, nom: true } },
-        formation: { select: { id: true, titre: true } },
-        devis: { select: { id: true, numero: true, statut: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  const besoins = await prisma.besoinFormation.findMany({
+    where,
+    include: {
+      entreprise: { select: { id: true, nom: true } },
+      contact: { select: { id: true, prenom: true, nom: true } },
+      formation: { select: { id: true, titre: true } },
+      devis: { select: { id: true, numero: true, statut: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-    return NextResponse.json(besoins);
-  } catch (err: unknown) {
-    console.error("Erreur lors de la recuperation des besoins:", err);
-    return NextResponse.json({ error: "Erreur lors de la recuperation des besoins" }, { status: 500 });
-  }
-}
+  return NextResponse.json(besoins);
+});
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-
-  const cleaned = { ...body };
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  // Pre-clean : convert "" -> null on optional fields before zod parse.
+  const raw = await req.json();
+  const cleaned = { ...raw };
   for (const key of ["nbStagiaires", "budget", "entrepriseId", "contactId", "formationId", "description", "datesSouhaitees", "notes"]) {
     if (cleaned[key] === "") cleaned[key] = null;
   }
+  const data = besoinSchema.parse(cleaned);
 
-  const parsed = besoinSchema.safeParse(cleaned);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
+  const besoin = await prisma.besoinFormation.create({
+    data: {
+      titre: data.titre,
+      description: data.description || null,
+      origine: data.origine,
+      statut: data.statut,
+      priorite: data.priorite,
+      nbStagiaires: data.nbStagiaires || null,
+      datesSouhaitees: data.datesSouhaitees || null,
+      budget: data.budget || null,
+      notes: data.notes || null,
+      entrepriseId: data.entrepriseId || null,
+      contactId: data.contactId || null,
+      formationId: data.formationId || null,
+    },
+    include: {
+      entreprise: { select: { nom: true } },
+      contact: { select: { prenom: true, nom: true } },
+    },
+  });
 
-  try {
-    const besoin = await prisma.besoinFormation.create({
-      data: {
-        titre: parsed.data.titre,
-        description: parsed.data.description || null,
-        origine: parsed.data.origine,
-        statut: parsed.data.statut,
-        priorite: parsed.data.priorite,
-        nbStagiaires: parsed.data.nbStagiaires || null,
-        datesSouhaitees: parsed.data.datesSouhaitees || null,
-        budget: parsed.data.budget || null,
-        notes: parsed.data.notes || null,
-        entrepriseId: parsed.data.entrepriseId || null,
-        contactId: parsed.data.contactId || null,
-        formationId: parsed.data.formationId || null,
-      },
-      include: {
-        entreprise: { select: { nom: true } },
-        contact: { select: { prenom: true, nom: true } },
-      },
-    });
+  // Fire-and-forget : automations + notifications (hors tx, side-effects volontairement non-rollback).
+  triggerAutomation("besoin_created", {
+    besoinId: besoin.id,
+    entrepriseId: besoin.entrepriseId ?? undefined,
+    contactId: besoin.contactId ?? undefined,
+    formationId: besoin.formationId ?? undefined,
+  }).catch((err) => logger.warn("automation.besoin_created_failed", { error: String(err) }));
 
-    // Fire-and-forget : automations + notifications
-    triggerAutomation("besoin_created", {
-      besoinId: besoin.id,
-      entrepriseId: besoin.entrepriseId ?? undefined,
-      contactId: besoin.contactId ?? undefined,
-      formationId: besoin.formationId ?? undefined,
-    }).catch((err) => console.error("[automation] besoin_created:", err));
+  const origineName = besoin.entreprise?.nom
+    || (besoin.contact ? `${besoin.contact.prenom} ${besoin.contact.nom}` : "origine non renseignee");
 
-    const origineName = besoin.entreprise?.nom
-      || (besoin.contact ? `${besoin.contact.prenom} ${besoin.contact.nom}` : "origine non renseignee");
+  notifyAdmins({
+    titre: "Nouveau besoin de formation",
+    message: `${besoin.titre} — ${origineName}`,
+    type: "info",
+    lien: `/besoins/${besoin.id}`,
+  }).catch(() => {});
 
-    notifyAdmins({
-      titre: "Nouveau besoin de formation",
-      message: `${besoin.titre} — ${origineName}`,
-      type: "info",
-      lien: `/besoins/${besoin.id}`,
-    }).catch(() => {});
-
-    return NextResponse.json(besoin, { status: 201 });
-  } catch (err: unknown) {
-    console.error("Besoin creation error:", err);
-    return NextResponse.json({ error: "Erreur lors de la creation du besoin" }, { status: 500 });
-  }
-}
+  return NextResponse.json(besoin, { status: 201 });
+});

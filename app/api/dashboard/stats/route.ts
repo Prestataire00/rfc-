@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const period = searchParams.get("period") || "mois";
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const period = searchParams.get("period") || "mois";
 
-    const now = new Date();
+  const now = new Date();
   const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
   const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const debutAnnee = new Date(now.getFullYear(), 0, 1);
@@ -214,8 +214,4 @@ export async function GET(req: NextRequest) {
     sessionsSemaine,
     sessionsAujourdhui,
   });
-  } catch (err: unknown) {
-    console.error("Erreur lors de la récupération des statistiques du tableau de bord:", err);
-    return NextResponse.json({ error: "Erreur lors de la récupération des statistiques" }, { status: 500 });
-  }
-}
+});

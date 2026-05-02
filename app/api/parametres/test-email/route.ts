@@ -1,8 +1,12 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
-export async function POST(req: NextRequest) {
+// Note : le inner try/catch a un sens metier — sur erreur d'envoi SMTP on retourne
+// { success: false, message } en 200, pas un 500. Le wrapper ne capture donc que les
+// erreurs imprevisibles (parse JSON, etc.).
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const { to } = await req.json();
 
   if (!to) {
@@ -44,4 +48,4 @@ export async function POST(req: NextRequest) {
       message: error.message || "Erreur lors de l'envoi",
     });
   }
-}
+});

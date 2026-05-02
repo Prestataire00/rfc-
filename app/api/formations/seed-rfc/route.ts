@@ -1,15 +1,20 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
 // POST /api/formations/seed-rfc — seed le catalogue officiel RFC (23 formations).
 // Idempotent : ne re-cree pas une formation deja existante (matching par titre).
-export async function POST(req: NextRequest) {
-  try {
-    const url = new URL(req.url);
-    const force = url.searchParams.get("force") === "true";
+//
+// Atomique : 23 ecritures dans un seul prisma.$transaction. Si une formation
+// echoue (par ex. contrainte unique non respectee, donnee mal formee), aucune
+// n'est inseree -> pas de catalogue partiel a moitie peuple.
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "true";
 
-    const existing = await prisma.formation.findMany({ select: { titre: true } });
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.formation.findMany({ select: { titre: true } });
     const existingTitres = new Set(existing.map((f) => f.titre));
 
     let created = 0;
@@ -19,7 +24,7 @@ export async function POST(req: NextRequest) {
     for (const f of CATALOGUE_RFC) {
       if (existingTitres.has(f.titre)) {
         if (force) {
-          await prisma.formation.updateMany({
+          await tx.formation.updateMany({
             where: { titre: f.titre },
             data: f,
           });
@@ -29,16 +34,15 @@ export async function POST(req: NextRequest) {
         }
         continue;
       }
-      await prisma.formation.create({ data: f });
+      await tx.formation.create({ data: f });
       created++;
     }
 
-    return NextResponse.json({ created, skipped, updated, total: CATALOGUE_RFC.length });
-  } catch (err) {
-    console.error("Seed catalogue RFC:", err);
-    return NextResponse.json({ error: "Erreur seed catalogue" }, { status: 500 });
-  }
-}
+    return { created, skipped, updated };
+  });
+
+  return NextResponse.json({ ...result, total: CATALOGUE_RFC.length });
+});
 
 // Images Pexels thematiques (libres de droits, URLs stables)
 // Photos selectionnees pour leur pertinence directe au metier RFC

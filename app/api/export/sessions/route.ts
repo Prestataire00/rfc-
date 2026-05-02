@@ -1,46 +1,41 @@
 export const dynamic = "force-dynamic";
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
-export async function GET() {
-  try {
-    const sessions = await prisma.session.findMany({
-      include: {
-        formation: { select: { titre: true } },
-        formateur: { select: { nom: true, prenom: true } },
-        _count: { select: { inscriptions: true } },
-      },
-      orderBy: { dateDebut: "desc" },
-    });
+export const GET = withErrorHandler(async () => {
+  const sessions = await prisma.session.findMany({
+    include: {
+      formation: { select: { titre: true } },
+      formateur: { select: { nom: true, prenom: true } },
+      _count: { select: { inscriptions: true } },
+    },
+    orderBy: { dateDebut: "desc" },
+  });
 
-    const header = "Formation;Formateur;Date début;Date fin;Lieu;Inscrits;Capacité;Statut";
-    const rows = sessions.map((s) => {
-      const formation = escapeCsv(s.formation.titre);
-      const formateur = s.formateur
-        ? escapeCsv(`${s.formateur.prenom} ${s.formateur.nom}`)
-        : "Non assigné";
-      const dateDebut = formatDate(s.dateDebut);
-      const dateFin = formatDate(s.dateFin);
-      const lieu = escapeCsv(s.lieu || "");
-      const inscrits = s._count.inscriptions;
-      const capacite = s.capaciteMax;
-      const statut = formatStatut(s.statut);
-      return `${formation};${formateur};${dateDebut};${dateFin};${lieu};${inscrits};${capacite};${statut}`;
-    });
+  const header = "Formation;Formateur;Date début;Date fin;Lieu;Inscrits;Capacité;Statut";
+  const rows = sessions.map((s) => {
+    const formation = escapeCsv(s.formation.titre);
+    const formateur = s.formateur
+      ? escapeCsv(`${s.formateur.prenom} ${s.formateur.nom}`)
+      : "Non assigné";
+    const dateDebut = formatDate(s.dateDebut);
+    const dateFin = formatDate(s.dateFin);
+    const lieu = escapeCsv(s.lieu || "");
+    const inscrits = s._count.inscriptions;
+    const capacite = s.capaciteMax;
+    const statut = formatStatut(s.statut);
+    return `${formation};${formateur};${dateDebut};${dateFin};${lieu};${inscrits};${capacite};${statut}`;
+  });
 
-    const csv = "\uFEFF" + [header, ...rows].join("\r\n");
+  const csv = "﻿" + [header, ...rows].join("\r\n");
 
-    return new Response(csv, {
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="sessions.csv"',
-      },
-    });
-  } catch (error) {
-    console.error("Export sessions error:", error);
-    return NextResponse.json({ error: "Erreur export" }, { status: 500 });
-  }
-}
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="sessions.csv"',
+    },
+  });
+});
 
 function escapeCsv(value: string): string {
   if (value.includes(";") || value.includes('"') || value.includes("\n")) {

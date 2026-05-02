@@ -7,74 +7,71 @@ import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { convocationPdf } from "@/lib/pdf/templates";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { withErrorHandler } from "@/lib/api-wrapper";
+import { logger } from "@/lib/logger";
 
-export async function POST(req: NextRequest) {
-  try {
-    const { sessionId, contactId } = await req.json();
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const { sessionId, contactId } = await req.json();
 
-    const [session, contact] = await Promise.all([
-      prisma.session.findUnique({
-        where: { id: sessionId },
-        include: { formation: true, formateur: true },
-      }),
-      prisma.contact.findUnique({ where: { id: contactId } }),
-    ]);
+  const [session, contact] = await Promise.all([
+    prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { formation: true, formateur: true },
+    }),
+    prisma.contact.findUnique({ where: { id: contactId } }),
+  ]);
 
-    if (!session || !contact) {
-      return NextResponse.json({ error: "Session ou contact introuvable" }, { status: 404 });
-    }
-
-    if (!contact.email) {
-      return NextResponse.json({ error: "Le contact n'a pas d'email" }, { status: 400 });
-    }
-
-    const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
-    const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
-
-    // Generate PDF
-    const pdfBuffer = await generatePdfBuffer(
-      convocationPdf({
-        stagiaire: { nom: contact.nom, prenom: contact.prenom, email: contact.email },
-        formation: { titre: session.formation.titre, duree: session.formation.duree },
-        session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-        formateur: session.formateur
-          ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
-          : undefined,
-      })
-    );
-
-    // Send email
-    const emailContent = convocationEmail({
-      stagiaire: { prenom: contact.prenom, nom: contact.nom },
-      formation: { titre: session.formation.titre },
-      session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-    });
-
-    const result = await sendEmail({
-      to: contact.email,
-      ...emailContent,
-      attachments: [
-        {
-          filename: `convocation-${contact.prenom}-${contact.nom}.pdf`,
-          content: pdfBuffer,
-        },
-      ],
-    });
-
-    try {
-      await logAction({
-        action: "convocation_envoyee",
-        label: "Convocation envoyée à " + contact.prenom + " " + contact.nom,
-        lien: "/sessions/" + sessionId,
-        contactId: contactId,
-      });
-    } catch (logErr) {
-      console.warn("logAction convocation_envoyee échoué:", logErr);
-    }
-
-    return NextResponse.json({ success: true, skipped: result.skipped });
-  } catch (err: unknown) {
-    console.error("Erreur lors de l'envoi de la convocation:", err);
-    return NextResponse.json({ error: "Erreur lors de l'envoi de la convocation" }, { status: 500 });
+  if (!session || !contact) {
+    return NextResponse.json({ error: "Session ou contact introuvable" }, { status: 404 });
   }
-}
+
+  if (!contact.email) {
+    return NextResponse.json({ error: "Le contact n'a pas d'email" }, { status: 400 });
+  }
+
+  const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
+  const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
+
+  // Generate PDF
+  const pdfBuffer = await generatePdfBuffer(
+    convocationPdf({
+      stagiaire: { nom: contact.nom, prenom: contact.prenom, email: contact.email },
+      formation: { titre: session.formation.titre, duree: session.formation.duree },
+      session: { dateDebut, dateFin, lieu: session.lieu || undefined },
+      formateur: session.formateur
+        ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
+        : undefined,
+    })
+  );
+
+  // Send email
+  const emailContent = convocationEmail({
+    stagiaire: { prenom: contact.prenom, nom: contact.nom },
+    formation: { titre: session.formation.titre },
+    session: { dateDebut, dateFin, lieu: session.lieu || undefined },
+  });
+
+  const result = await sendEmail({
+    to: contact.email,
+    ...emailContent,
+    attachments: [
+      {
+        filename: `convocation-${contact.prenom}-${contact.nom}.pdf`,
+        content: pdfBuffer,
+      },
+    ],
+  });
+
+  try {
+    await logAction({
+      action: "convocation_envoyee",
+      label: "Convocation envoyée à " + contact.prenom + " " + contact.nom,
+      lien: "/sessions/" + sessionId,
+      contactId: contactId,
+    });
+  } catch (logErr) {
+    logger.warn("historique.convocation_envoyee_failed", { error: String(logErr) });
+  }
+
+  return NextResponse.json({ success: true, skipped: result.skipped });
+});

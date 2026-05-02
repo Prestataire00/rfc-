@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
 const DEFAULT_CHAUD = [
   {
@@ -48,35 +49,25 @@ const DEFAULT_FROID = [
   },
 ];
 
-export async function GET() {
-  try {
-    let config = await prisma.questionnaireConfig.findUnique({ where: { id: "default" } });
-    if (!config) {
-      config = await prisma.questionnaireConfig.create({
-        data: { id: "default", chaud: DEFAULT_CHAUD, froid: DEFAULT_FROID },
-      });
-    }
-    // If empty, return defaults
-    const chaud = Array.isArray(config.chaud) && config.chaud.length > 0 ? config.chaud : DEFAULT_CHAUD;
-    const froid = Array.isArray(config.froid) && config.froid.length > 0 ? config.froid : DEFAULT_FROID;
-    return NextResponse.json({ chaud, froid });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    const { chaud, froid } = await req.json();
-    const config = await prisma.questionnaireConfig.upsert({
-      where: { id: "default" },
-      create: { id: "default", chaud, froid },
-      update: { chaud, froid },
+export const GET = withErrorHandler(async () => {
+  let config = await prisma.questionnaireConfig.findUnique({ where: { id: "default" } });
+  if (!config) {
+    config = await prisma.questionnaireConfig.create({
+      data: { id: "default", chaud: DEFAULT_CHAUD, froid: DEFAULT_FROID },
     });
-    return NextResponse.json(config);
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
-}
+  // If empty, return defaults
+  const chaud = Array.isArray(config.chaud) && config.chaud.length > 0 ? config.chaud : DEFAULT_CHAUD;
+  const froid = Array.isArray(config.froid) && config.froid.length > 0 ? config.froid : DEFAULT_FROID;
+  return NextResponse.json({ chaud, froid });
+});
+
+export const PUT = withErrorHandler(async (req: NextRequest) => {
+  const { chaud, froid } = await req.json();
+  const config = await prisma.questionnaireConfig.upsert({
+    where: { id: "default" },
+    create: { id: "default", chaud, froid },
+    update: { chaud, froid },
+  });
+  return NextResponse.json(config);
+});

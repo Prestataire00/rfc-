@@ -11,7 +11,6 @@ import {
   Globe,
   Hash,
   Users,
-  ArrowLeft,
   Pencil,
   Trash2,
   Calendar,
@@ -19,12 +18,7 @@ import {
   Eye,
   Download,
   Send,
-  FileText,
-  Receipt,
-  UserPlus,
-  Clock,
   Landmark,
-  X,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -33,121 +27,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CONTACT_TYPES, DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
-
-interface Contact {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string | null;
-  type: keyof typeof CONTACT_TYPES;
-  poste: string | null;
-}
-
-interface Devis {
-  id: string;
-  numero: string;
-  statut: keyof typeof DEVIS_STATUTS;
-  montantHT: number;
-  montantTTC: number;
-  createdAt: string;
-  sessions: { id: string }[];
-  contact: { email: string } | null;
-}
-
-interface Facture {
-  id: string;
-  numero: string;
-  statut: keyof typeof FACTURE_STATUTS;
-  montantTTC: number;
-  dateEcheance: string | null;
-  createdAt: string;
-  devisId: string | null;
-}
-
-interface Entreprise {
-  id: string;
-  nom: string;
-  secteur: string | null;
-  adresse: string | null;
-  ville: string | null;
-  codePostal: string | null;
-  siret: string | null;
-  email: string | null;
-  telephone: string | null;
-  site: string | null;
-  notes: string | null;
-  contacts: Contact[];
-  devis: Devis[];
-  factures: Facture[];
-  createdAt: string;
-}
-
-interface Financement {
-  id: string;
-  type: string;
-  montant: number;
-  organisme: string | null;
-  reference: string | null;
-  statut: string;
-  notes: string | null;
-  createdAt: string;
-}
-
-const FINANCEMENT_TYPES: Record<string, { label: string; color: string }> = {
-  opco: { label: "OPCO", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  cpf: { label: "CPF", color: "bg-violet-500/20 text-violet-400 border-violet-500/30" },
-  personnel: { label: "Personnel", color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
-  pole_emploi: { label: "Pôle Emploi", color: "bg-teal-500/20 text-teal-400 border-teal-500/30" },
-  entreprise: { label: "Entreprise", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-  autre: { label: "Autre", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
-};
-
-const FINANCEMENT_STATUTS: Record<string, { label: string; color: string }> = {
-  en_cours: { label: "En attente", color: "bg-sky-500/20 text-sky-400 border-sky-500/30" },
-  accorde: { label: "Accordé", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-  refuse: { label: "Refusé", color: "bg-red-500/20 text-red-400 border-red-500/30" },
-};
-
-interface HistoriqueAction {
-  id: string;
-  createdAt: string;
-  action: string;
-  label: string;
-  detail: string | null;
-  lien: string | null;
-}
-
-type TabKey = "informations" | "contacts" | "devis" | "factures" | "financement" | "historique";
-
-function formatRelative(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return `Il y a ${diffDays} jours`;
-  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaine${Math.floor(diffDays / 7) > 1 ? "s" : ""}`;
-  if (diffDays < 365) return `Il y a ${Math.floor(diffDays / 30)} mois`;
-  return `Il y a ${Math.floor(diffDays / 365)} an${Math.floor(diffDays / 365) > 1 ? "s" : ""}`;
-}
-
-function actionIcon(action: string) {
-  if (action.startsWith("devis")) return FileText;
-  if (action.startsWith("facture")) return Receipt;
-  if (action === "inscription_creee") return UserPlus;
-  if (action === "convocation_envoyee") return Send;
-  if (action.includes("email") || action.includes("envoye")) return Send;
-  return Clock;
-}
-
-function actionColor(action: string): string {
-  if (action.startsWith("devis")) return "bg-blue-900/30 text-blue-400 border-blue-700";
-  if (action.startsWith("facture")) return "bg-orange-900/30 text-orange-400 border-orange-700";
-  if (action === "inscription_creee") return "bg-violet-900/30 text-violet-400 border-violet-700";
-  if (action === "convocation_envoyee" || action.includes("envoye")) return "bg-green-900/30 text-green-400 border-green-700";
-  return "bg-gray-700 text-gray-400 border-gray-600";
-}
+import {
+  type Devis,
+  type Entreprise,
+  type Financement,
+  type HistoriqueAction,
+  type TabKey,
+  FINANCEMENT_TYPES,
+  FINANCEMENT_STATUTS,
+  actionIcon,
+  actionColor,
+  formatRelative,
+} from "./types";
+import { FinancementDialog } from "./FinancementDialog";
+import { HistoriqueTimeline } from "./HistoriqueTimeline";
 
 export default function EntrepriseDetailPage() {
   const params = useParams();
@@ -829,163 +722,20 @@ export default function EntrepriseDetailPage() {
           )}
 
           {/* Modal ajout financement */}
-          {showFinancementModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl w-full max-w-md mx-4">
-                <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-100">Ajouter un financement</h3>
-                  <button
-                    onClick={() => setShowFinancementModal(false)}
-                    className="p-1 rounded hover:bg-gray-700 text-gray-400"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                <div className="p-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Type *</label>
-                    <select
-                      value={financementForm.type}
-                      onChange={(e) => setFinancementForm((f) => ({ ...f, type: e.target.value }))}
-                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
-                    >
-                      {Object.entries(FINANCEMENT_TYPES).map(([val, info]) => (
-                        <option key={val} value={val}>{info.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Montant (€) *</label>
-                    <input
-                      type="number"
-                      value={financementForm.montant}
-                      onChange={(e) => setFinancementForm((f) => ({ ...f, montant: e.target.value }))}
-                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Organisme payeur</label>
-                    <input
-                      type="text"
-                      value={financementForm.organisme}
-                      onChange={(e) => setFinancementForm((f) => ({ ...f, organisme: e.target.value }))}
-                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
-                      placeholder="Ex: OPCO Atlas, France Travail…"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Référence OPCO</label>
-                    <input
-                      type="text"
-                      value={financementForm.reference}
-                      onChange={(e) => setFinancementForm((f) => ({ ...f, reference: e.target.value }))}
-                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
-                      placeholder="Optionnel"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Statut</label>
-                    <select
-                      value={financementForm.statut}
-                      onChange={(e) => setFinancementForm((f) => ({ ...f, statut: e.target.value }))}
-                      className="w-full h-10 rounded-md border border-gray-700 bg-gray-900 px-3 text-sm text-gray-100"
-                    >
-                      {Object.entries(FINANCEMENT_STATUTS).map(([val, info]) => (
-                        <option key={val} value={val}>{info.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
-                    <textarea
-                      value={financementForm.notes}
-                      onChange={(e) => setFinancementForm((f) => ({ ...f, notes: e.target.value }))}
-                      className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100"
-                      rows={2}
-                      placeholder="Optionnel"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 p-4 border-t border-gray-700">
-                  <button
-                    onClick={() => setShowFinancementModal(false)}
-                    className="rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleCreateFinancement}
-                    disabled={savingFinancement || !financementForm.montant}
-                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                  >
-                    {savingFinancement ? "Enregistrement…" : "Ajouter"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <FinancementDialog
+            open={showFinancementModal}
+            onClose={() => setShowFinancementModal(false)}
+            financementForm={financementForm}
+            setFinancementForm={setFinancementForm}
+            savingFinancement={savingFinancement}
+            onSubmit={handleCreateFinancement}
+          />
         </div>
       )}
 
       {/* Historique */}
       {activeTab === "historique" && (
-        <div>
-          {historiqueLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-            </div>
-          ) : historique.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Clock className="h-8 w-8 text-gray-500 mb-3" />
-              <p className="text-sm text-gray-400">Aucune activité enregistrée</p>
-            </div>
-          ) : (
-            <div className="relative">
-              <div className="absolute left-5 top-0 bottom-0 w-px border-l-2 border-dashed border-gray-700" />
-              <div className="space-y-4 pl-14">
-                {historique.map((h) => {
-                  const Icon = actionIcon(h.action);
-                  const colorClass = actionColor(h.action);
-                  return (
-                    <div key={h.id} className="relative">
-                      <div className={`absolute -left-9 h-8 w-8 rounded-full border flex items-center justify-center ${colorClass}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            {h.lien ? (
-                              <Link href={h.lien} className="font-medium text-gray-100 hover:text-red-400 text-sm">
-                                {h.label}
-                              </Link>
-                            ) : (
-                              <p className="font-medium text-gray-100 text-sm">{h.label}</p>
-                            )}
-                            {h.detail && (
-                              <p className="text-xs text-gray-400 mt-0.5">{h.detail}</p>
-                            )}
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <span
-                              className="text-xs text-gray-400 cursor-default"
-                              title={new Date(h.createdAt).toLocaleString("fr-FR")}
-                            >
-                              {formatRelative(h.createdAt)}
-                            </span>
-                            <p className="text-xs text-gray-500">{formatDate(h.createdAt)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        <HistoriqueTimeline historique={historique} historiqueLoading={historiqueLoading} />
       )}
 
       {/* Email confirm dialog */}

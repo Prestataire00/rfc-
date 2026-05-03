@@ -11,7 +11,16 @@ import { CommandPalette } from "@/components/shared/CommandPalette";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Chatbot } from "@/components/shared/Chatbot";
 
-const PUBLIC_PATHS = ["/login", "/evaluation/", "/inscription-stagiaire", "/fiche-besoin-client", "/fiche-besoin-stagiaire"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/evaluation/",
+  "/inscription-stagiaire",
+  "/fiche-besoin-client",
+  "/fiche-besoin-stagiaire",
+  "/legal/",
+  "/rgpd/demande",
+  "/qualite/share/",
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();

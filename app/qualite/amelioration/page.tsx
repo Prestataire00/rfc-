@@ -224,7 +224,7 @@ export default function QualiteAmeliorationPage() {
       notify.success("Partage cree");
       setOpenPartage(false);
       setPartageForm({ nom: "", expireAt: "" });
-      const url = `${window.location.origin}/qualite/public/${created.token}`;
+      const url = `${window.location.origin}/qualite/share/${created.token}`;
       try {
         await navigator.clipboard.writeText(url);
         notify.info("Lien copie");
@@ -521,8 +521,8 @@ export default function QualiteAmeliorationPage() {
             <div className="space-y-2">
               {(partages ?? []).map((p) => {
                 const url = typeof window !== "undefined"
-                  ? `${window.location.origin}/qualite/public/${p.token}`
-                  : `/qualite/public/${p.token}`;
+                  ? `${window.location.origin}/qualite/share/${p.token}`
+                  : `/qualite/share/${p.token}`;
                 return (
                   <div
                     key={p.id}

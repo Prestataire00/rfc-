@@ -46,6 +46,10 @@ interface SessionItem {
   formation?: { titre: string };
 }
 
+interface SessionsResponse {
+  data: SessionItem[];
+}
+
 const STATUTS = [
   { value: "", label: "Tous les statuts" },
   { value: "a_payer", label: "A payer" },
@@ -74,7 +78,8 @@ export default function FacturesFormateurPage() {
 
   const { data: factures } = useApi<Facture[]>(url);
   const { data: formateurs } = useApi<Formateur[]>("/api/formateurs");
-  const { data: sessions } = useApi<SessionItem[]>("/api/sessions?limit=200");
+  const { data: sessionsData } = useApi<SessionsResponse>("/api/sessions?limit=200");
+  const sessions = sessionsData?.data;
 
   const filtered = useMemo(() => {
     let list = factures ?? [];

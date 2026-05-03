@@ -52,19 +52,25 @@ interface ConversationDetail extends Conversation {
   messages: Message[];
 }
 
-interface Session {
+interface SessionItem {
   id: string;
   formation?: { titre: string };
   dateDebut: string;
+}
+
+interface SessionsResponse {
+  data: SessionItem[];
 }
 
 export default function MessageriePage() {
   const { data: authSession } = useSession();
   const myUserId = authSession?.user?.id;
 
-  const { data: conversations, mutate: mutateConvList } = useApi<Conversation[]>("/api/conversations");
+  const { data: conversations, error: conversationsError, isLoading: loadingConvs, mutate: mutateConvList } =
+    useApi<Conversation[]>("/api/conversations");
   const { data: users } = useApi<ConvUser[]>("/api/utilisateurs");
-  const { data: sessions } = useApi<Session[]>("/api/sessions?limit=50");
+  const { data: sessionsData } = useApi<SessionsResponse>("/api/sessions?limit=50");
+  const sessions = sessionsData?.data;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -190,7 +196,13 @@ export default function MessageriePage() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {sortedConvs.length === 0 ? (
+            {loadingConvs ? (
+              <p className="text-xs text-gray-500 text-center py-8">Chargement...</p>
+            ) : conversationsError ? (
+              <p className="text-xs text-red-400 text-center py-8 px-3">
+                Impossible de charger les conversations.
+              </p>
+            ) : sortedConvs.length === 0 ? (
               <p className="text-xs text-gray-500 text-center py-8">Aucune conversation</p>
             ) : (
               sortedConvs.map((c) => {

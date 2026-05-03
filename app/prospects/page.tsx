@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Plus, Star, Building2, Calendar } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SkeletonTable } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -164,7 +165,7 @@ export default function ProspectsKanbanPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-gray-400">Chargement...</div>
+        <SkeletonTable rows={4} cols={5} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {COLUMNS.map((col) => {

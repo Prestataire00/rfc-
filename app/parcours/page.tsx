@@ -43,7 +43,7 @@ export default function ParcoursListPage() {
   });
 
   const url = showActifOnly ? "/api/parcours?actif=true" : "/api/parcours";
-  const { data, isLoading } = useApi<Parcours[]>(url);
+  const { data, isLoading, error } = useApi<Parcours[]>(url);
   const items = useMemo(() => {
     const list = data ?? [];
     if (!search) return list;
@@ -135,6 +135,12 @@ export default function ParcoursListPage() {
 
       {isLoading ? (
         <SkeletonTable rows={6} cols={5} />
+      ) : error ? (
+        <EmptyState
+          icon={Route}
+          title="Erreur de chargement"
+          description={error.message}
+        />
       ) : items.length === 0 ? (
         <EmptyState
           icon={Route}

@@ -30,6 +30,7 @@ model User {
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id])
 
   notifications Notification[]
+  conversationParticipations ConversationParticipant[]
 }
 
 // ==================== CORE MODELS ====================
@@ -103,6 +104,7 @@ model Contact {
   certifications     CertificationStagiaire[]
   badges             BadgeAward[]
   aiDocuments        AiDocumentAnalysis[]
+  prospects          Prospect[]
 }
 
 model Formateur {
@@ -128,6 +130,8 @@ model Formateur {
   user           User?
   notesFrais     NoteFrais[]
   competences    FormateurCompetence[]
+  factures       FactureFormateur[]
+  evaluations    EvaluationFormateur[]
 }
 
 model Formation {
@@ -166,6 +170,7 @@ model Formation {
   besoins        BesoinFormation[]
   certifications CertificationStagiaire[]
   badgeTemplates DigitalBadge[] @relation("BadgeFormation")
+  parcoursModules ParcoursModule[]
 
   @@index([statut])
   @@index([categorie])
@@ -247,6 +252,11 @@ model Session {
   emargementTokens   EmargementToken[]
   forumTopics        ForumTopic[]
   classeVirtuelle    ClasseVirtuelle?
+  sessionParcours    SessionParcours[]
+  taskLists          TaskList[]
+  conversations      Conversation[]
+  facturesFormateur  FactureFormateur[]
+  evaluationsFormateur EvaluationFormateur[]
 }
 
 model Inscription {
@@ -366,6 +376,10 @@ model Facture {
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  paiementsRecus       Paiement[]
+  echeances            EcheancierPaiement[]
+  transactionsBancaires TransactionBancaire[]
 }
 
 // ==================== FORMATEUR ====================
@@ -1020,6 +1034,8 @@ model DocumentTemplate {
   variables    String  @default("[]")
   actif        Boolean @default(true)
   modifie      Boolean @default(false)
+
+  generatedDocuments GeneratedDocument[]
 }
 
 // ==================== MODELES DE MESSAGES ====================
@@ -1040,6 +1056,8 @@ model MessageTemplate {
   variables   String   @default("[]") // JSON array documentant les variables dispo
   actif       Boolean  @default(true)
   modifie     Boolean  @default(false) // true si l'admin a modifie le defaut
+
+  logEmails   LogEmail[]
 }
 
 // ==================== AUTOMATISATIONS ====================
@@ -1246,4 +1264,614 @@ model BesoinStagiaire {
   @@index([sessionId])
   @@index([contactId])
   @@index([statut])
+}
+
+// ============================================================
+// ============== EXTENSIONS V2 — INSPIRE DE SO SAFE ===========
+// ============================================================
+// Modeles ajoutes pour atteindre la parite fonctionnelle avec
+// SO SAFE (hors e-learning et quiz live). Aucun modele existant
+// n'est touche dans ce fichier.
+
+// ==================== PARCOURS DE FORMATION ====================
+
+// Parcours = enchainement de plusieurs formations (ex : SSIAP1 -> SSIAP2 -> recyclage)
+model Parcours {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  description String?
+  duree       Int      // total en heures
+  tarif       Float?
+  actif       Boolean  @default(true)
+  categorie   String?
+  niveau      String?
+
+  modules  ParcoursModule[]
+  sessions SessionParcours[]
+
+  @@index([actif])
+  @@index([categorie])
+}
+
+// Formations qui composent un parcours (avec ordre)
+model ParcoursModule {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  parcoursId  String
+  parcours    Parcours  @relation(fields: [parcoursId], references: [id], onDelete: Cascade)
+
+  formationId String
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  ordre       Int     @default(0)
+  obligatoire Boolean @default(true)
+
+  @@unique([parcoursId, formationId])
+  @@index([parcoursId])
+  @@index([formationId])
+}
+
+// Pivot session <-> parcours : une session peut etre rattachee a un parcours
+model SessionParcours {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  parcoursId String
+  parcours   Parcours @relation(fields: [parcoursId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, parcoursId])
+  @@index([sessionId])
+  @@index([parcoursId])
+}
+
+// ==================== PROSPECTS CRM ====================
+
+// Pipeline commercial (different de Contact.type=prospect : avec scoring/source/conversion)
+model Prospect {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom        String
+  prenom     String
+  email      String?
+  telephone  String?
+  entreprise String?  // nom libre (pas de FK : prospect pas encore qualifie)
+  source     String?  // web, salon, recommandation, autre
+  statut     String   @default("nouveau") // nouveau, qualifie, proposition, gagne, perdu
+  score      Int?     // 0-100
+  notes      String?
+  attribueA  String?  // userId
+  dateProchaineAction DateTime?
+  dateConversion      DateTime?
+
+  contactId  String?
+  contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  activities ProspectActivity[]
+
+  @@index([statut])
+  @@index([attribueA])
+  @@index([contactId])
+  @@index([createdAt])
+}
+
+// Historique d'actions sur un prospect
+model ProspectActivity {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  prospectId  String
+  prospect    Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  type        String   // call, email, meeting, note
+  titre       String
+  description String?
+  date        DateTime
+  userId      String?
+
+  @@index([prospectId])
+  @@index([date])
+}
+
+// ==================== TASK MANAGEMENT ====================
+
+// Liste de taches (peut etre liee a une session ou globale)
+model TaskList {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  description String?
+  sessionId   String?
+  session     Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  userId      String?  // utilisateur assigne
+  couleur     String   @default("#dc2626")
+
+  items TaskItem[]
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+// Tache individuelle dans une liste
+model TaskItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listId      String
+  list        TaskList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  titre       String
+  description String?
+  completed   Boolean   @default(false)
+  dueDate     DateTime?
+  priorite    String?   // basse, moyenne, haute, urgente
+  ordre       Int       @default(0)
+  userId      String?   // utilisateur assigne
+  completedAt DateTime?
+
+  @@index([listId])
+  @@index([userId])
+  @@index([completed])
+}
+
+// ==================== CONVERSATIONS GROUPE ====================
+
+// Fil de discussion multi-participants (DirectMessage = 1:1, Conversation = N:N)
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sujet            String?
+  dernierMessageAt DateTime?
+
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  participants ConversationParticipant[]
+  messages     ConversationMessage[]
+
+  @@index([sessionId])
+  @@index([dernierMessageAt])
+}
+
+// Participant a une conversation
+model ConversationParticipant {
+  id        String   @id @default(cuid())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+// Message dans une conversation
+model ConversationMessage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  userId  String   // auteur
+  contenu String
+  lu      Json     @default("{}") // map { userId: timestamp }
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+// ==================== PAIEMENTS ====================
+
+// Paiement effectivement recu sur une facture (multi-paiements possibles)
+model Paiement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  factureId    String
+  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  montant      Float
+  datePaiement DateTime
+  mode         String   // virement, cpf, opco, carte, especes, cheque
+  reference    String?
+  notes        String?
+
+  @@index([factureId])
+  @@index([datePaiement])
+}
+
+// Echeancier : echeances prevues sur une facture
+model EcheancierPaiement {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  factureId    String
+  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+
+  montant       Float
+  dateEcheance  DateTime
+  statut        String    @default("en_attente") // en_attente, paye, en_retard
+  datePaiement  DateTime?
+
+  @@index([factureId])
+  @@index([dateEcheance])
+  @@index([statut])
+}
+
+// Transaction bancaire (Qonto / autre) pour reconciliation auto
+model TransactionBancaire {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  montant   Float
+  date      DateTime
+  libelle   String
+  reference String?
+  sens      String   // credit, debit
+  categorie String?
+
+  factureId String?
+  facture   Facture? @relation(fields: [factureId], references: [id], onDelete: SetNull)
+
+  @@index([factureId])
+  @@index([date])
+  @@index([sens])
+}
+
+// ==================== FORMATEUR FACTURATION ====================
+
+// Factures emises par les formateurs a destination de RFC
+model FactureFormateur {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  numero       String   @unique
+
+  formateurId  String
+  formateur    Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  sessionId    String?
+  session      Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  montantHT      Float
+  tauxTVA        Float    @default(20)
+  montantTTC     Float
+  datePrestation DateTime
+  dateEmission   DateTime @default(now())
+  datePaiement   DateTime?
+  statut         String   @default("a_payer") // a_payer, paye, refuse
+  fichierUrl     String?
+  notes          String?
+
+  @@index([formateurId])
+  @@index([sessionId])
+  @@index([statut])
+}
+
+// Evaluation du formateur (par admin ou apprenants — separe de FeedbackFormateur)
+model EvaluationFormateur {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  formateurId      String
+  formateur        Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  sessionId        String
+  session          Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  evaluatorUserId  String?  // null = anonyme
+  noteGlobale      Int      // 1-5
+  pointsForts      String?
+  pointsAmelioration String?
+  pedagogie        Int?     // 1-5
+  maitriseTechnique Int?    // 1-5
+  animation        Int?     // 1-5
+  commentaire      String?
+
+  @@index([formateurId])
+  @@index([sessionId])
+}
+
+// ==================== QUALIOPI AVANCE ====================
+
+// Actions correctives Qualiopi (suite a audit, eval, incident...)
+model ActionQualite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  description    String
+  actionMenee    String
+  resultat       String?
+  responsable    String?
+  statut         String    @default("ouverte") // ouverte, en_cours, cloturee
+  dateOuverture  DateTime  @default(now())
+  dateCloture    DateTime?
+  source         String?   // audit, eval_chaud, eval_froid, incident, autre
+
+  @@index([statut])
+  @@index([source])
+}
+
+// Incidents qualite traces (pedagogique, administratif, technique)
+model IncidentQualite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom          String
+  description  String
+  source       String   // Entreprise, Apprenant, Formateur
+  sujet        String   // Pedagogique, Administratif, Technique
+  gravite      String   // Faible, Modere, Grave
+  dateIncident DateTime
+  actionMenee  String?
+  statut       String   @default("ouvert") // ouvert, traite, cloture
+
+  @@index([statut])
+  @@index([gravite])
+  @@index([dateIncident])
+}
+
+// Token public pour partager le dashboard Qualiopi (lecture seule)
+model PartageQualiopi {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  token            String    @unique
+  nom              String    // libelle du share
+  expireAt         DateTime?
+  actif            Boolean   @default(true)
+  createdByUserId  String?
+
+  @@index([token])
+  @@index([actif])
+}
+
+// ==================== EMAIL OBSERVABILITY ====================
+
+// Historique des emails envoyes (pour audit + reconciliation Resend)
+model LogEmail {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  destinataire String
+  sujet        String
+  templateId   String?
+  template     MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  statut       String  @default("envoye") // envoye, livre, ouvert, clique, bounce, plainte
+  messageId    String? // Resend ID
+  erreur       String?
+  sessionId    String?
+  contactId    String?
+
+  events EmailTrackingEvent[]
+
+  @@index([destinataire])
+  @@index([statut])
+  @@index([templateId])
+  @@index([createdAt])
+}
+
+// Evenements granulaires email (open / click / bounce / complaint)
+model EmailTrackingEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  logEmailId String
+  logEmail   LogEmail @relation(fields: [logEmailId], references: [id], onDelete: Cascade)
+
+  type      String  // open, click, bounce, complaint, delivered
+  payload   Json    @default("{}")
+  userAgent String?
+  ipAddress String?
+
+  @@index([logEmailId])
+  @@index([type])
+}
+
+// ==================== SMS ====================
+
+// Templates SMS parametrables
+model SmsTemplate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  description String?
+  contenu     String   // max 160 chars conventionally
+  variables   String   @default("[]")
+  actif       Boolean  @default(true)
+
+  logs LogSms[]
+}
+
+// Historique SMS envoyes
+model LogSms {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  destinataire String
+  contenu      String
+  statut       String  @default("envoye") // envoye, livre, echec
+  templateId   String?
+  template     SmsTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  contactId    String?
+  sessionId    String?
+  providerId   String?
+  erreur       String?
+
+  @@index([destinataire])
+  @@index([statut])
+  @@index([templateId])
+  @@index([createdAt])
+}
+
+// ==================== DOCUMENTS AVANCE ====================
+
+// Categorisation des documents
+model DocumentCategory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  nom         String  @unique
+  couleur     String  @default("#dc2626")
+  description String?
+}
+
+// Signatures electroniques sur documents
+model SignatureDocument {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  documentId      String?
+  userId          String?
+  contactId       String?
+  signatureBase64 String   // base64 PNG data URL
+  dateSignature   DateTime @default(now())
+  ipAddress       String?
+  userAgent       String?
+  valide          Boolean  @default(true)
+
+  @@index([documentId])
+  @@index([userId])
+  @@index([contactId])
+}
+
+// Historique de PDFs generes (audit + retelechargement)
+model GeneratedDocument {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  type              String  // convocation, convention, attestation, facture, devis, feuille_presence, ...
+  templateUsed      String?
+  template          DocumentTemplate? @relation(fields: [templateUsed], references: [id], onDelete: SetNull)
+  sessionId         String?
+  contactId         String?
+  factureId         String?
+  devisId           String?
+  fichierUrl        String?
+  generatedByUserId String?
+
+  @@index([type])
+  @@index([sessionId])
+  @@index([contactId])
+  @@index([factureId])
+  @@index([devisId])
+  @@index([createdAt])
+}
+
+// ==================== CHAMPS PERSONNALISES ====================
+
+// Definition d'un champ personnalise applicable a une entite
+model ChampPersonnalise {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  label       String
+  type        String  // text, number, date, select, boolean, textarea
+  entiteCible String  // Contact, Entreprise, Formation, Session, Inscription
+  options     Json?   // pour les selects : [{ value, label }]
+  obligatoire Boolean @default(false)
+  ordre       Int     @default(0)
+  actif       Boolean @default(true)
+
+  valeurs ValeurChampPersonnalise[]
+
+  @@index([entiteCible])
+  @@index([actif])
+}
+
+// Valeur stockee pour un champ personnalise sur une entite donnee
+model ValeurChampPersonnalise {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  champId  String
+  champ    ChampPersonnalise @relation(fields: [champId], references: [id], onDelete: Cascade)
+
+  entiteId String   // UUID de l'entite cible (Contact, Entreprise, ...)
+  valeur   String
+
+  @@index([champId, entiteId])
+  @@index([entiteId])
+}
+
+// ==================== ADMIN / SYSTEME ====================
+
+// Cles API pour integrations externes (n8n, Make, scripts...)
+model ApiKey {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  nom              String
+  hashKey          String   @unique // hash SHA-256 de la cle
+  prefix           String   // premiers chars de la cle pour affichage UI
+  permissions      String   @default("[]") // JSON array de scopes
+  lastUsedAt       DateTime?
+  expireAt         DateTime?
+  revokedAt        DateTime?
+  createdByUserId  String?
+
+  @@index([hashKey])
+  @@index([revokedAt])
+}
+
+// Demandes RGPD (acces, rectification, effacement, portabilite, opposition)
+model DemandeRgpd {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  type             String   // acces, rectification, effacement, portabilite, opposition
+  demandeurEmail   String
+  demandeurNom     String?
+  statut           String   @default("recue") // recue, en_traitement, traitee, rejetee
+  description      String?
+  traiteParUserId  String?
+  dateTraitement   DateTime?
+  justificatif     String?
+
+  @@index([statut])
+  @@index([demandeurEmail])
+  @@index([type])
+}
+
+// Snapshots quotidiens d'indicateurs cles (pour graphes historiques)
+model KpiHistory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  dateSnapshot DateTime  // precision jour
+  kpis         Json      // { totalContacts, totalSessions, ... }
+  source       String    @default("cron")
+
+  @@index([dateSnapshot])
+  @@index([source])
 }

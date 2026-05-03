@@ -37,10 +37,14 @@ interface TaskListDetail extends TaskList {
   items: TaskItem[];
 }
 
-interface Session {
+interface SessionItem {
   id: string;
   formation?: { titre: string };
   dateDebut: string;
+}
+
+interface SessionsResponse {
+  data: SessionItem[];
 }
 
 interface User {
@@ -66,7 +70,8 @@ const PRIORITE_COLORS: Record<string, string> = {
 
 export default function TasksPage() {
   const { data: lists, mutate: mutateLists, isLoading: loadingLists } = useApi<TaskList[]>("/api/task-lists");
-  const { data: sessions } = useApi<Session[]>("/api/sessions?limit=100");
+  const { data: sessionsData } = useApi<SessionsResponse>("/api/sessions?limit=100");
+  const sessions = sessionsData?.data;
   const { data: users } = useApi<User[]>("/api/utilisateurs");
 
   const [selectedListId, setSelectedListId] = useState<string | null>(null);

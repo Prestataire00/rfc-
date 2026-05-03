@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import Image from "next/image";
 import {
   BadgeCheck, TrendingUp, Smile, AlertTriangle, CheckCircle2, Lock, ShieldCheck,
@@ -48,9 +47,9 @@ function KpiCard({ icon: Icon, label, value, unit, accent = "text-red-600" }: Kp
 export default function PublicQualiteSharePage({
   params,
 }: {
-  params: Promise<{ token: string }>;
+  params: { token: string };
 }) {
-  const { token } = use(params);
+  const { token } = params;
   const { data, error, isLoading } = useApi<PublicQualitePayload>(
     `/api/qualite/public/${token}`
   );

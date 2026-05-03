@@ -70,7 +70,7 @@ export default function RgpdAdminPage() {
     ? `/api/rgpd/demandes?statut=${encodeURIComponent(filterStatut)}`
     : "/api/rgpd/demandes";
 
-  const { data, isLoading } = useApi<DemandeRgpd[]>(url);
+  const { data, isLoading, error } = useApi<DemandeRgpd[]>(url);
   const items = data ?? [];
 
   const sorted = useMemo(
@@ -133,6 +133,12 @@ export default function RgpdAdminPage() {
 
       {isLoading ? (
         <SkeletonTable rows={5} cols={5} />
+      ) : error ? (
+        <EmptyState
+          icon={Shield}
+          title="Erreur de chargement"
+          description={error.message}
+        />
       ) : sorted.length === 0 ? (
         <EmptyState
           icon={Shield}

@@ -154,12 +154,12 @@ export default function ParcoursDetailPage() {
 
   const handleDeleteModule = async (moduleId: string) => {
     try {
-      // Pas d'endpoint DELETE module dedie : utilise l'API raw via fetch
-      await fetch(`/api/parcours/${id}/modules/${moduleId}`, { method: "DELETE" });
+      await api.delete(`/api/parcours/${id}/modules/${moduleId}`);
       notify.success("Module supprime");
       await mutate();
-    } catch {
-      notify.error("Erreur lors de la suppression");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Erreur lors de la suppression";
+      notify.error("Erreur", msg);
     }
   };
 

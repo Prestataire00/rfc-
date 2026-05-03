@@ -59,6 +59,10 @@ interface SessionRow {
   entreprise?: { id: string; nom: string } | null;
 }
 
+interface SessionsResponse {
+  data: SessionRow[];
+}
+
 interface FactureRow {
   id: string;
   montantTTC: number;
@@ -125,7 +129,7 @@ export default function ReportingPage() {
   const { data: kpiHistory } = useApi<KpiSnapshot[]>(`/api/kpi/history?dateFrom=${dateFrom30}`);
 
   // Top sessions par formation (calcul cote client)
-  const { data: sessionsData } = useApi<SessionRow[]>("/api/sessions?limit=200");
+  const { data: sessionsData } = useApi<SessionsResponse>("/api/sessions?limit=200");
   const { data: facturesData } = useApi<{ data: FactureRow[] }>("/api/factures?limit=200");
   const { data: evalsData } = useApi<EvalFormateur[]>("/api/evaluations-formateur");
   const { data: formateursData } = useApi<FormateurMin[]>("/api/formateurs");
@@ -133,9 +137,10 @@ export default function ReportingPage() {
   const stats = dashData?.stats;
 
   const topFormations: FormationStat[] = useMemo(() => {
-    if (!sessionsData) return [];
+    const list = sessionsData?.data ?? [];
+    if (list.length === 0) return [];
     const counts: Record<string, FormationStat> = {};
-    for (const s of sessionsData) {
+    for (const s of list) {
       const f = s.formation;
       if (!f) continue;
       if (!counts[f.id]) counts[f.id] = { id: f.id, titre: f.titre, count: 0 };

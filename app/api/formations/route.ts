@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formationSchema } from "@/lib/validations/formation";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
+import { pickImageForFormation } from "@/lib/formation-images";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -72,6 +73,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const cleanData = Object.fromEntries(
     Object.entries(parsed).filter(([, v]) => v !== undefined)
   );
+
+  // Auto-attribue une image Pexels du pool de la categorie si aucune n'a ete fournie.
+  // Hash deterministe sur le titre -> meme formation = meme image entre deux runs.
+  if (!cleanData.image) {
+    cleanData.image = pickImageForFormation(parsed.titre, parsed.categorie);
+  }
+
   const formation = await prisma.formation.create({ data: cleanData as typeof parsed });
   return NextResponse.json(formation, { status: 201 });
 });

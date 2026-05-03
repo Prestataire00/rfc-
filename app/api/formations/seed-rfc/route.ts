@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { pickImageForFormation } from "@/lib/formation-images";
 
 // POST /api/formations/seed-rfc — seed le catalogue officiel RFC (23 formations).
 // Idempotent : ne re-cree pas une formation deja existante (matching par titre).
@@ -9,6 +10,10 @@ import { withErrorHandler } from "@/lib/api-wrapper";
 // Atomique : 23 ecritures dans un seul prisma.$transaction. Si une formation
 // echoue (par ex. contrainte unique non respectee, donnee mal formee), aucune
 // n'est inseree -> pas de catalogue partiel a moitie peuple.
+//
+// L'image est auto-attribuee via pickImageForFormation (pool Pexels par categorie,
+// hash du titre pour rotation deterministe). Une formation seedee garde sa meme
+// image entre deux runs.
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const url = new URL(req.url);
   const force = url.searchParams.get("force") === "true";
@@ -22,11 +27,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     let updated = 0;
 
     for (const f of CATALOGUE_RFC) {
+      const data = { ...f, image: pickImageForFormation(f.titre, f.categorie) };
       if (existingTitres.has(f.titre)) {
         if (force) {
           await tx.formation.updateMany({
             where: { titre: f.titre },
-            data: f,
+            data,
           });
           updated++;
         } else {
@@ -34,7 +40,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         }
         continue;
       }
-      await tx.formation.create({ data: f });
+      await tx.formation.create({ data });
       created++;
     }
 

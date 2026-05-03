@@ -10,6 +10,7 @@ import {
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle, Zap, Mail, Receipt,
+  Route, ListChecks, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,8 @@ const adminNavGroups: NavGroup[] = [
           { href: "/entreprises", label: "Entreprises", icon: Building2 },
         ],
       },
+      { href: "/prospects", label: "Prospects (pipeline)", icon: UserSearch },
+      { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
       {
         href: "/besoins", label: "Besoins", icon: ClipboardList,
         children: [
@@ -52,8 +55,15 @@ const adminNavGroups: NavGroup[] = [
           { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
         ],
       },
+      { href: "/parcours", label: "Parcours", icon: Route },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
-      { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
+      {
+        href: "/formateurs", label: "Formateurs", icon: GraduationCap,
+        children: [
+          { href: "/formateurs", label: "Liste", icon: GraduationCap },
+          { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
+        ],
+      },
     ],
   },
   {
@@ -62,6 +72,13 @@ const adminNavGroups: NavGroup[] = [
       { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
       { href: "/bpf", label: "BPF", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Gestion",
+    items: [
+      { href: "/tasks", label: "Taches", icon: ListChecks },
+      { href: "/finance/paiements", label: "Paiements", icon: CreditCard },
     ],
   },
   {
@@ -76,6 +93,7 @@ const adminNavGroups: NavGroup[] = [
           { href: "/qualiopi/amelioration", label: "Amelioration", icon: ClipboardList },
           { href: "/qualiopi/incidents", label: "Incidents", icon: AlertTriangle },
           { href: "/qualiopi/audits", label: "Audits", icon: Shield },
+          { href: "/qualite/amelioration", label: "Amelioration continue (V2)", icon: Sparkles },
         ],
       },
       { href: "/documents", label: "Documents", icon: FolderOpen },
@@ -88,6 +106,7 @@ const adminNavGroups: NavGroup[] = [
       { href: "/parametres", label: "Parametres", icon: Settings },
       { href: "/parametres/automations-v2", label: "Automations V2", icon: Zap },
       { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/reporting", label: "Reporting", icon: TrendingUp },
     ],
   },
 ];

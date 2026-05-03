@@ -57,15 +57,15 @@ const TABS = [
 ] as const;
 
 const ACTION_STATUTS = [
-  { value: "ouverte", label: "Ouverte", color: "bg-amber-500/20 text-amber-300" },
-  { value: "en_cours", label: "En cours", color: "bg-blue-500/20 text-blue-300" },
-  { value: "cloturee", label: "Cloturee", color: "bg-emerald-500/20 text-emerald-300" },
+  { value: "ouverte", label: "Ouverte", color: "bg-amber-500/20 text-amber-700 dark:text-amber-300" },
+  { value: "en_cours", label: "En cours", color: "bg-blue-500/20 text-blue-700 dark:text-blue-300" },
+  { value: "cloturee", label: "Cloturee", color: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" },
 ];
 
 const INCIDENT_GRAVITES = [
-  { value: "Faible", label: "Faible", color: "bg-gray-700 text-gray-300" },
-  { value: "Modere", label: "Modere", color: "bg-amber-500/20 text-amber-300" },
-  { value: "Grave", label: "Grave", color: "bg-red-600/30 text-red-300" },
+  { value: "Faible", label: "Faible", color: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300" },
+  { value: "Modere", label: "Modere", color: "bg-amber-500/20 text-amber-700 dark:text-amber-300" },
+  { value: "Grave", label: "Grave", color: "bg-red-600/30 text-red-700 dark:text-red-300" },
 ];
 
 const SOURCES = [
@@ -328,7 +328,7 @@ export default function QualiteAmeliorationPage() {
         description="Suivi des actions, incidents et partages publics (Qualiopi critere 32)"
       />
 
-      <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-700 mb-5 w-fit">
+      <div className="flex gap-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-1 border border-gray-200 dark:border-gray-700 mb-5 w-fit">
         {TABS.map((t) => (
           <button
             key={t.value}
@@ -338,7 +338,7 @@ export default function QualiteAmeliorationPage() {
               setFilterGravite("");
             }}
             className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
-              tab === t.value ? "bg-red-600 text-white" : "text-gray-400 hover:text-gray-200"
+              tab === t.value ? "bg-red-600 text-white" : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             }`}
           >
             {t.label}
@@ -355,13 +355,13 @@ export default function QualiteAmeliorationPage() {
                 value={filterStatut}
                 onChange={(e) => setFilterStatut(e.target.value)}
                 options={[{ value: "", label: "Tous statuts" }, ...ACTION_STATUTS.map((s) => ({ value: s.value, label: s.label }))]}
-                className="bg-gray-800 border-gray-700 h-9 text-xs"
+                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
               />
               <Select
                 value={filterSource}
                 onChange={(e) => setFilterSource(e.target.value)}
                 options={SOURCES}
-                className="bg-gray-800 border-gray-700 h-9 text-xs"
+                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -384,17 +384,17 @@ export default function QualiteAmeliorationPage() {
             {ACTION_STATUTS.map((statut) => {
               const items = (actions ?? []).filter((a) => a.statut === statut.value);
               return (
-                <div key={statut.value} className="rounded-xl border border-gray-700 bg-gray-800 p-3 min-h-[200px]">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 flex items-center justify-between">
+                <div key={statut.value} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 min-h-[200px]">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 flex items-center justify-between">
                     {statut.label}
                     <span className={`px-2 py-0.5 rounded-full text-[10px] ${statut.color}`}>{items.length}</span>
                   </h3>
                   <div className="space-y-2">
                     {items.length === 0 && <p className="text-[11px] text-gray-500 text-center py-4">Vide</p>}
                     {items.map((a) => (
-                      <div key={a.id} className="rounded-lg border border-gray-700 bg-gray-900 p-3 group">
+                      <div key={a.id} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 group">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs font-medium text-gray-100 flex-1">{a.description}</p>
+                          <p className="text-xs font-medium text-gray-900 dark:text-gray-100 flex-1">{a.description}</p>
                           <button
                             onClick={() => handleDeleteAction(a.id)}
                             className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 shrink-0"
@@ -402,7 +402,7 @@ export default function QualiteAmeliorationPage() {
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">{a.actionMenee}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{a.actionMenee}</p>
                         {a.responsable && (
                           <p className="text-[10px] text-gray-500 mt-1">Responsable : {a.responsable}</p>
                         )}
@@ -433,13 +433,13 @@ export default function QualiteAmeliorationPage() {
                   { value: "traite", label: "Traite" },
                   { value: "cloture", label: "Cloture" },
                 ]}
-                className="bg-gray-800 border-gray-700 h-9 text-xs"
+                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
               />
               <Select
                 value={filterGravite}
                 onChange={(e) => setFilterGravite(e.target.value)}
                 options={[{ value: "", label: "Toutes gravites" }, ...INCIDENT_GRAVITES.map((g) => ({ value: g.value, label: g.label }))]}
-                className="bg-gray-800 border-gray-700 h-9 text-xs"
+                className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -458,29 +458,29 @@ export default function QualiteAmeliorationPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-900 border-b border-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Nom</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Source</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Sujet</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Gravite</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Statut</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Nom</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Source</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Sujet</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Gravite</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Statut</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {(incidents ?? []).length === 0 ? (
                   <tr><td colSpan={7} className="text-center text-gray-500 py-12">Aucun incident</td></tr>
                 ) : (
                   (incidents ?? []).map((i) => (
                     <tr key={i.id} className="hover:bg-gray-750 group">
-                      <td className="px-4 py-3 text-gray-300 text-xs">{formatDate(i.dateIncident)}</td>
-                      <td className="px-4 py-3 text-gray-100 text-sm">{i.nom}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{i.source}</td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{i.sujet}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">{formatDate(i.dateIncident)}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-100 text-sm">{i.nom}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{i.source}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{i.sujet}</td>
                       <td className="px-4 py-3">
                         <span className={`text-[10px] font-bold rounded px-2 py-0.5 ${
                           INCIDENT_GRAVITES.find((g) => g.value === i.gravite)?.color ?? ""
@@ -488,7 +488,7 @@ export default function QualiteAmeliorationPage() {
                           {i.gravite}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-400">{i.statut}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{i.statut}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => handleDeleteIncident(i.id)}
@@ -526,17 +526,17 @@ export default function QualiteAmeliorationPage() {
                 return (
                   <div
                     key={p.id}
-                    className="rounded-xl border border-gray-700 bg-gray-800 p-4 flex items-center gap-3"
+                    className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 flex items-center gap-3"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-100">{p.nom}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.nom}</p>
                         {p.actif ? (
-                          <span className="text-[10px] font-bold uppercase rounded px-2 py-0.5 bg-emerald-500/20 text-emerald-300">
+                          <span className="text-[10px] font-bold uppercase rounded px-2 py-0.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
                             Actif
                           </span>
                         ) : (
-                          <span className="text-[10px] font-bold uppercase rounded px-2 py-0.5 bg-gray-700 text-gray-400">
+                          <span className="text-[10px] font-bold uppercase rounded px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                             Inactif
                           </span>
                         )}
@@ -550,7 +550,7 @@ export default function QualiteAmeliorationPage() {
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => navigator.clipboard.writeText(url).then(() => notify.info("Lien copie"))}
-                        className="p-2 rounded hover:bg-gray-700 text-gray-400"
+                        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                         title="Copier le lien"
                       >
                         <Copy className="h-3.5 w-3.5" />
@@ -559,14 +559,14 @@ export default function QualiteAmeliorationPage() {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded hover:bg-gray-700 text-gray-400"
+                        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                         title="Ouvrir"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                       <button
                         onClick={() => handleTogglePartage(p)}
-                        className="p-2 rounded hover:bg-gray-700 text-gray-400"
+                        className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                         title={p.actif ? "Desactiver" : "Activer"}
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
@@ -591,7 +591,7 @@ export default function QualiteAmeliorationPage() {
       <Dialog open={openAction} onOpenChange={setOpenAction}>
         <DialogContent
           onClose={() => setOpenAction(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Nouvelle action corrective</DialogTitle>
@@ -603,7 +603,7 @@ export default function QualiteAmeliorationPage() {
                 value={actionForm.description}
                 onChange={(e) => setActionForm({ ...actionForm, description: e.target.value })}
                 rows={2}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -612,7 +612,7 @@ export default function QualiteAmeliorationPage() {
                 value={actionForm.actionMenee}
                 onChange={(e) => setActionForm({ ...actionForm, actionMenee: e.target.value })}
                 rows={2}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -622,7 +622,7 @@ export default function QualiteAmeliorationPage() {
                   value={actionForm.source}
                   onChange={(e) => setActionForm({ ...actionForm, source: e.target.value })}
                   options={SOURCES}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -631,7 +631,7 @@ export default function QualiteAmeliorationPage() {
                   value={actionForm.statut}
                   onChange={(e) => setActionForm({ ...actionForm, statut: e.target.value })}
                   options={ACTION_STATUTS.map((s) => ({ value: s.value, label: s.label }))}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -640,7 +640,7 @@ export default function QualiteAmeliorationPage() {
               <Input
                 value={actionForm.responsable}
                 onChange={(e) => setActionForm({ ...actionForm, responsable: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
@@ -657,7 +657,7 @@ export default function QualiteAmeliorationPage() {
       <Dialog open={openIncident} onOpenChange={setOpenIncident}>
         <DialogContent
           onClose={() => setOpenIncident(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Nouvel incident</DialogTitle>
@@ -668,7 +668,7 @@ export default function QualiteAmeliorationPage() {
               <Input
                 value={incidentForm.nom}
                 onChange={(e) => setIncidentForm({ ...incidentForm, nom: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -677,7 +677,7 @@ export default function QualiteAmeliorationPage() {
                 value={incidentForm.description}
                 onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })}
                 rows={3}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -691,7 +691,7 @@ export default function QualiteAmeliorationPage() {
                     { value: "Entreprise", label: "Entreprise" },
                     { value: "Formateur", label: "Formateur" },
                   ]}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -704,7 +704,7 @@ export default function QualiteAmeliorationPage() {
                     { value: "Administratif", label: "Administratif" },
                     { value: "Technique", label: "Technique" },
                   ]}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -713,7 +713,7 @@ export default function QualiteAmeliorationPage() {
                   value={incidentForm.gravite}
                   onChange={(e) => setIncidentForm({ ...incidentForm, gravite: e.target.value })}
                   options={INCIDENT_GRAVITES.map((g) => ({ value: g.value, label: g.label }))}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -723,7 +723,7 @@ export default function QualiteAmeliorationPage() {
                 type="date"
                 value={incidentForm.dateIncident}
                 onChange={(e) => setIncidentForm({ ...incidentForm, dateIncident: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -732,7 +732,7 @@ export default function QualiteAmeliorationPage() {
                 value={incidentForm.actionMenee}
                 onChange={(e) => setIncidentForm({ ...incidentForm, actionMenee: e.target.value })}
                 rows={2}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
@@ -749,7 +749,7 @@ export default function QualiteAmeliorationPage() {
       <Dialog open={openPartage} onOpenChange={setOpenPartage}>
         <DialogContent
           onClose={() => setOpenPartage(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Nouveau partage public</DialogTitle>
@@ -761,7 +761,7 @@ export default function QualiteAmeliorationPage() {
                 value={partageForm.nom}
                 onChange={(e) => setPartageForm({ ...partageForm, nom: e.target.value })}
                 placeholder="ex: Audit OPCO 2026"
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -770,7 +770,7 @@ export default function QualiteAmeliorationPage() {
                 type="date"
                 value={partageForm.expireAt}
                 onChange={(e) => setPartageForm({ ...partageForm, expireAt: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
@@ -787,7 +787,7 @@ export default function QualiteAmeliorationPage() {
       <Dialog open={iaOpen} onOpenChange={setIaOpen}>
         <DialogContent
           onClose={() => setIaOpen(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100 max-w-2xl"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 max-w-2xl"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -796,7 +796,7 @@ export default function QualiteAmeliorationPage() {
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             {iaLoading ? (
-              <div className="flex items-center justify-center py-12 text-gray-400">
+              <div className="flex items-center justify-center py-12 text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" /> Generation en cours...
               </div>
             ) : iaItems.length === 0 ? (
@@ -808,7 +808,7 @@ export default function QualiteAmeliorationPage() {
                 {iaItems.map((item, i) => (
                   <label
                     key={i}
-                    className="flex gap-3 p-3 rounded-lg border border-gray-700 bg-gray-900 cursor-pointer hover:border-red-700/40"
+                    className="flex gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer hover:border-red-700/40"
                   >
                     <input
                       type="checkbox"
@@ -816,13 +816,13 @@ export default function QualiteAmeliorationPage() {
                       onChange={() =>
                         setIaSelected((prev) => prev.map((v, idx) => (idx === i ? !v : v)))
                       }
-                      className="mt-1 rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-600"
+                      className="mt-1 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-red-600 focus:ring-red-600"
                     />
                     <div className="text-xs space-y-1 flex-1">
                       {Object.entries(item).map(([k, v]) => (
                         <p key={k}>
-                          <span className="text-gray-400 font-semibold">{k} :</span>{" "}
-                          <span className="text-gray-200">{String(v)}</span>
+                          <span className="text-gray-500 dark:text-gray-400 font-semibold">{k} :</span>{" "}
+                          <span className="text-gray-800 dark:text-gray-200">{String(v)}</span>
                         </p>
                       ))}
                     </div>

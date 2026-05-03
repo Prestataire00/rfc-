@@ -138,15 +138,15 @@ export default function FactureFormateurDetailPage() {
     <div>
       <Link
         href="/formateurs/factures"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Retour aux factures formateur
       </Link>
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">{facture.numero}</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{facture.numero}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {facture.formateur ? `${facture.formateur.prenom} ${facture.formateur.nom}` : "Formateur inconnu"}
             {facture.session && ` - Session du ${formatDate(facture.session.dateDebut)}`}
           </p>
@@ -169,9 +169,9 @@ export default function FactureFormateurDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 bg-gray-800 border-gray-700">
+        <Card className="lg:col-span-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-base text-gray-100">Details de la facture</CardTitle>
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">Details de la facture</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
@@ -182,7 +182,7 @@ export default function FactureFormateurDetailPage() {
                   step="0.01"
                   value={form.montantHT}
                   onChange={(e) => setForm({ ...form, montantHT: Number(e.target.value) })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -191,7 +191,7 @@ export default function FactureFormateurDetailPage() {
                   type="number"
                   value={form.tauxTVA}
                   onChange={(e) => setForm({ ...form, tauxTVA: Number(e.target.value) })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -201,7 +201,7 @@ export default function FactureFormateurDetailPage() {
                   step="0.01"
                   value={form.montantTTC}
                   onChange={(e) => setForm({ ...form, montantTTC: Number(e.target.value) })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -212,7 +212,7 @@ export default function FactureFormateurDetailPage() {
                   type="date"
                   value={form.datePrestation}
                   onChange={(e) => setForm({ ...form, datePrestation: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -221,7 +221,7 @@ export default function FactureFormateurDetailPage() {
                   type="date"
                   value={form.datePaiement}
                   onChange={(e) => setForm({ ...form, datePaiement: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function FactureFormateurDetailPage() {
                   value={form.statut}
                   onChange={(e) => setForm({ ...form, statut: e.target.value })}
                   options={STATUTS}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -241,7 +241,7 @@ export default function FactureFormateurDetailPage() {
                   value={form.fichierUrl}
                   onChange={(e) => setForm({ ...form, fichierUrl: e.target.value })}
                   placeholder="https://..."
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function FactureFormateurDetailPage() {
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={4}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="flex justify-end">
@@ -262,22 +262,22 @@ export default function FactureFormateurDetailPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-base text-gray-100">Recapitulatif</CardTitle>
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">Recapitulatif</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div>
-              <p className="text-xs text-gray-400">Date d'emission</p>
-              <p className="text-gray-100">{formatDate(facture.dateEmission)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Date d'emission</p>
+              <p className="text-gray-900 dark:text-gray-100">{formatDate(facture.dateEmission)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400">Montant TTC</p>
-              <p className="text-2xl font-bold text-gray-100">{formatCurrency(facture.montantTTC)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Montant TTC</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(facture.montantTTC)}</p>
             </div>
             {facture.fichierUrl && (
-              <div className="pt-3 border-t border-gray-700">
-                <p className="text-xs text-gray-400 mb-1">Piece jointe</p>
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Piece jointe</p>
                 <a
                   href={facture.fichierUrl}
                   target="_blank"

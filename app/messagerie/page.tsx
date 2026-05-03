@@ -184,9 +184,9 @@ export default function MessageriePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 h-[calc(100vh-220px)] min-h-[500px]">
         {/* Sidebar conversations */}
-        <aside className="rounded-xl border border-gray-700 bg-gray-800 flex flex-col">
-          <div className="flex items-center justify-between p-3 border-b border-gray-700">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Conversations</h2>
+        <aside className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Conversations</h2>
             <button
               onClick={() => setOpenNew(true)}
               className="rounded-md bg-red-600 hover:bg-red-700 p-1.5 text-white"
@@ -211,14 +211,14 @@ export default function MessageriePage() {
                   <button
                     key={c.id}
                     onClick={() => setSelectedId(c.id)}
-                    className={`w-full text-left px-3 py-2.5 border-b border-gray-700/40 transition-colors ${
+                    className={`w-full text-left px-3 py-2.5 border-b border-gray-200 dark:border-gray-700/40 transition-colors ${
                       selectedId === c.id
                         ? "bg-red-600/10"
-                        : "hover:bg-gray-700/40"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-700/40"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm truncate ${unread ? "font-bold text-gray-50" : "font-medium text-gray-200"}`}>
+                      <p className={`text-sm truncate ${unread ? "font-bold text-gray-50" : "font-medium text-gray-800 dark:text-gray-200"}`}>
                         {convLabel(c)}
                       </p>
                       {unread && <span className="h-2 w-2 rounded-full bg-red-500 shrink-0" />}
@@ -236,16 +236,16 @@ export default function MessageriePage() {
         </aside>
 
         {/* Main thread */}
-        <div className="rounded-xl border border-gray-700 bg-gray-800 flex flex-col">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
           {!selected ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
               <MessageSquare className="h-10 w-10 mb-3 text-gray-500" />
               <p className="text-sm">Selectionnez une conversation</p>
             </div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b border-gray-700">
-                <h3 className="text-sm font-semibold text-gray-100">{convLabel(selected)}</h3>
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{convLabel(selected)}</h3>
                 <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
                   <Users className="h-3 w-3" />
                   {selected.participants.length} participant{selected.participants.length > 1 ? "s" : ""}
@@ -264,7 +264,7 @@ export default function MessageriePage() {
                         className={`max-w-[70%] rounded-lg px-3 py-2 ${
                           isMe
                             ? "bg-red-600 text-white"
-                            : "bg-gray-900 text-gray-100 border border-gray-700"
+                            : "bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
                         }`}
                       >
                         {!isMe && author && (
@@ -284,7 +284,7 @@ export default function MessageriePage() {
                   <p className="text-xs text-gray-500 text-center py-4">Pas encore de message.</p>
                 )}
               </div>
-              <div className="border-t border-gray-700 p-3 flex items-end gap-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 p-3 flex items-end gap-2">
                 <Textarea
                   placeholder="Votre message..."
                   value={draft}
@@ -296,7 +296,7 @@ export default function MessageriePage() {
                     }
                   }}
                   rows={2}
-                  className="bg-gray-900 border-gray-700 resize-none"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 resize-none"
                 />
                 <Button
                   onClick={handleSend}
@@ -315,7 +315,7 @@ export default function MessageriePage() {
       <Dialog open={openNew} onOpenChange={setOpenNew}>
         <DialogContent
           onClose={() => setOpenNew(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Nouvelle conversation</DialogTitle>
@@ -326,7 +326,7 @@ export default function MessageriePage() {
               <Input
                 value={newConv.sujet}
                 onChange={(e) => setNewConv({ ...newConv, sujet: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -335,12 +335,12 @@ export default function MessageriePage() {
                 value={newConv.sessionId}
                 onChange={(e) => setNewConv({ ...newConv, sessionId: e.target.value })}
                 options={sessionOptions}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Participants *</Label>
-              <div className="max-h-48 overflow-y-auto rounded-md border border-gray-700 bg-gray-900 p-2 space-y-1">
+              <div className="max-h-48 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2 space-y-1">
                 {otherUserOptions.length === 0 ? (
                   <p className="text-xs text-gray-500 text-center py-2">Aucun utilisateur</p>
                 ) : (
@@ -349,7 +349,7 @@ export default function MessageriePage() {
                     return (
                       <label
                         key={u.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-800 cursor-pointer text-sm text-gray-200"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-white dark:hover:bg-gray-800 cursor-pointer text-sm text-gray-800 dark:text-gray-200"
                       >
                         <input
                           type="checkbox"
@@ -362,7 +362,7 @@ export default function MessageriePage() {
                                 : [...prev.participantIds, u.id],
                             }));
                           }}
-                          className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-600"
+                          className="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-red-600 focus:ring-red-600"
                         />
                         <span>{u.prenom} {u.nom}</span>
                         <span className="text-[11px] text-gray-500 ml-auto">{u.email}</span>

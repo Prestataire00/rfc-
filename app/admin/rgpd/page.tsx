@@ -34,18 +34,18 @@ interface DemandeRgpd {
 
 const STATUTS = [
   { value: "", label: "Tous" },
-  { value: "recue", label: "Recue", color: "bg-blue-500/20 text-blue-300", Icon: Mail },
-  { value: "en_traitement", label: "En traitement", color: "bg-amber-500/20 text-amber-300", Icon: Clock },
-  { value: "traitee", label: "Traitee", color: "bg-emerald-500/20 text-emerald-300", Icon: CheckCircle2 },
-  { value: "rejetee", label: "Rejetee", color: "bg-red-600/30 text-red-300", Icon: XCircle },
+  { value: "recue", label: "Recue", color: "bg-blue-500/20 text-blue-700 dark:text-blue-300", Icon: Mail },
+  { value: "en_traitement", label: "En traitement", color: "bg-amber-500/20 text-amber-700 dark:text-amber-300", Icon: Clock },
+  { value: "traitee", label: "Traitee", color: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300", Icon: CheckCircle2 },
+  { value: "rejetee", label: "Rejetee", color: "bg-red-600/30 text-red-700 dark:text-red-300", Icon: XCircle },
 ];
 
 const TYPE_BADGE: Record<string, string> = {
-  acces: "bg-blue-500/20 text-blue-300",
-  rectification: "bg-amber-500/20 text-amber-300",
-  effacement: "bg-red-600/30 text-red-300",
-  portabilite: "bg-purple-500/20 text-purple-300",
-  opposition: "bg-pink-500/20 text-pink-300",
+  acces: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  rectification: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+  effacement: "bg-red-600/30 text-red-700 dark:text-red-300",
+  portabilite: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
+  opposition: "bg-pink-500/20 text-pink-700 dark:text-pink-300",
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -123,7 +123,7 @@ export default function RgpdAdminPage() {
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
               filterStatut === s.value
                 ? "bg-red-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700"
+                : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700"
             }`}
           >
             {s.label}
@@ -146,9 +146,9 @@ export default function RgpdAdminPage() {
           description="Aucune demande RGPD ne correspond a ce filtre."
         />
       ) : (
-        <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-900 border-b border-gray-700 text-xs uppercase text-gray-400">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="px-3 py-3 text-left">Type</th>
                 <th className="px-3 py-3 text-left">Demandeur</th>
@@ -158,7 +158,7 @@ export default function RgpdAdminPage() {
                 <th className="px-3 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {sorted.map((d) => {
                 const sm = statutMeta(d.statut);
                 const StIcon = sm?.Icon ?? Mail;
@@ -171,23 +171,23 @@ export default function RgpdAdminPage() {
                     <td className="px-3 py-2.5">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          TYPE_BADGE[d.type] ?? "bg-gray-700 text-gray-300"
+                          TYPE_BADGE[d.type] ?? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {TYPE_LABEL[d.type] ?? d.type}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-gray-100">
+                    <td className="px-3 py-2.5 text-gray-900 dark:text-gray-100">
                       {d.demandeurNom ?? <span className="text-gray-500 italic">Anonyme</span>}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">{d.demandeurEmail}</td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">
+                    <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">{d.demandeurEmail}</td>
+                    <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
                       {formatDatetime(d.createdAt)}
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          sm?.color ?? "bg-gray-700 text-gray-300"
+                          sm?.color ?? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                         }`}
                       >
                         <StIcon className="h-3 w-3" />
@@ -200,7 +200,7 @@ export default function RgpdAdminPage() {
                           e.stopPropagation();
                           openDetail(d);
                         }}
-                        className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                         aria-label="Voir"
                       >
                         <Eye className="h-3.5 w-3.5" />
@@ -217,7 +217,7 @@ export default function RgpdAdminPage() {
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent
           onClose={() => setSelected(null)}
-          className="bg-gray-800 border-gray-700 text-gray-100 max-w-2xl"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 max-w-2xl"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -228,11 +228,11 @@ export default function RgpdAdminPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <Label className="text-xs text-gray-400">Type</Label>
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Type</Label>
                   <div className="mt-1">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        TYPE_BADGE[selected.type] ?? "bg-gray-700 text-gray-300"
+                        TYPE_BADGE[selected.type] ?? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {TYPE_LABEL[selected.type] ?? selected.type}
@@ -240,51 +240,51 @@ export default function RgpdAdminPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">Statut actuel</Label>
-                  <div className="mt-1 text-gray-100">
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Statut actuel</Label>
+                  <div className="mt-1 text-gray-900 dark:text-gray-100">
                     {statutMeta(selected.statut)?.label ?? selected.statut}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">Demandeur</Label>
-                  <div className="mt-1 text-gray-100">
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Demandeur</Label>
+                  <div className="mt-1 text-gray-900 dark:text-gray-100">
                     {selected.demandeurNom ?? <span className="text-gray-500 italic">Non renseigne</span>}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">Email</Label>
-                  <div className="mt-1 text-gray-100">{selected.demandeurEmail}</div>
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Email</Label>
+                  <div className="mt-1 text-gray-900 dark:text-gray-100">{selected.demandeurEmail}</div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">Date demande</Label>
-                  <div className="mt-1 text-gray-100">{formatDatetime(selected.createdAt)}</div>
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Date demande</Label>
+                  <div className="mt-1 text-gray-900 dark:text-gray-100">{formatDatetime(selected.createdAt)}</div>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-400">Date traitement</Label>
-                  <div className="mt-1 text-gray-100">
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Date traitement</Label>
+                  <div className="mt-1 text-gray-900 dark:text-gray-100">
                     {selected.dateTraitement ? formatDatetime(selected.dateTraitement) : "-"}
                   </div>
                 </div>
               </div>
               {selected.description && (
                 <div>
-                  <Label className="text-xs text-gray-400">Description</Label>
-                  <div className="mt-1 rounded-md bg-gray-900 border border-gray-700 p-3 text-sm text-gray-200 whitespace-pre-wrap">
+                  <Label className="text-xs text-gray-500 dark:text-gray-400">Description</Label>
+                  <div className="mt-1 rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                     {selected.description}
                   </div>
                 </div>
               )}
               <div className="space-y-1.5">
-                <Label className="text-xs text-gray-400">Justificatif / commentaire interne</Label>
+                <Label className="text-xs text-gray-500 dark:text-gray-400">Justificatif / commentaire interne</Label>
                 <Textarea
                   value={justificatif}
                   onChange={(e) => setJustificatif(e.target.value)}
                   rows={3}
                   placeholder="Commentaire libre, motif d'acceptation ou de rejet..."
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
-              <div className="rounded-md border border-gray-700 bg-gray-900 p-3 text-xs text-gray-400 flex items-start gap-2">
+              <div className="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 text-xs text-gray-500 dark:text-gray-400 flex items-start gap-2">
                 <FileText className="h-4 w-4 shrink-0 mt-0.5 text-gray-500" />
                 <p>
                   Les transitions vers <strong>Traitee</strong> ou <strong>Rejetee</strong> enregistrent

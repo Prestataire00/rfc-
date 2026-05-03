@@ -62,10 +62,10 @@ const PRIORITES = [
 ];
 
 const PRIORITE_COLORS: Record<string, string> = {
-  basse: "bg-gray-700 text-gray-300",
-  moyenne: "bg-blue-500/20 text-blue-300",
-  haute: "bg-amber-500/20 text-amber-300",
-  urgente: "bg-red-600/30 text-red-300",
+  basse: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
+  moyenne: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  haute: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+  urgente: "bg-red-600/30 text-red-700 dark:text-red-300",
 };
 
 export default function TasksPage() {
@@ -206,9 +206,9 @@ export default function TasksPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
         {/* Sidebar listes */}
-        <aside className="rounded-xl border border-gray-700 bg-gray-800 p-3">
+        <aside className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Listes</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Listes</h2>
             <button
               onClick={() => setOpenCreateList(true)}
               className="rounded-md bg-red-600 hover:bg-red-700 p-1.5 text-white"
@@ -228,8 +228,8 @@ export default function TasksPage() {
                   key={l.id}
                   className={`group flex items-center gap-2 rounded-md px-2 py-2 text-sm cursor-pointer transition-colors ${
                     selectedListId === l.id
-                      ? "bg-red-600/20 text-red-300"
-                      : "text-gray-300 hover:bg-gray-700"
+                      ? "bg-red-600/20 text-red-700 dark:text-red-300"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                   onClick={() => setSelectedListId(l.id)}
                 >
@@ -256,9 +256,9 @@ export default function TasksPage() {
         </aside>
 
         {/* Main items */}
-        <div className="rounded-xl border border-gray-700 bg-gray-800 p-4 min-h-[400px]">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 min-h-[400px]">
           {!selectedListId || !selectedList ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-400">
+            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 dark:text-gray-400">
               <ListChecks className="h-10 w-10 mb-3 text-gray-500" />
               <p className="text-sm">Selectionnez ou creez une liste pour commencer</p>
             </div>
@@ -269,7 +269,7 @@ export default function TasksPage() {
                   className="h-3 w-3 rounded-full"
                   style={{ backgroundColor: selectedList.couleur }}
                 />
-                <h2 className="text-lg font-semibold text-gray-100">{selectedList.nom}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedList.nom}</h2>
                 <span className="text-xs text-gray-500">
                   {selectedList.items.length} tache{selectedList.items.length > 1 ? "s" : ""}
                 </span>
@@ -277,7 +277,7 @@ export default function TasksPage() {
 
               {/* Items */}
               {selectedList.items.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-8">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
                   Aucune tache. Ajoutez-en une ci-dessous.
                 </p>
               ) : (
@@ -287,7 +287,7 @@ export default function TasksPage() {
                     return (
                       <div
                         key={item.id}
-                        className={`group flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 ${
+                        className={`group flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 ${
                           item.completed ? "opacity-60" : ""
                         }`}
                       >
@@ -295,10 +295,10 @@ export default function TasksPage() {
                           type="checkbox"
                           checked={item.completed}
                           onChange={() => handleToggleItem(item)}
-                          className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-600"
+                          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-red-600 focus:ring-red-600"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm text-gray-100 ${item.completed ? "line-through" : ""}`}>
+                          <p className={`text-sm text-gray-900 dark:text-gray-100 ${item.completed ? "line-through" : ""}`}>
                             {item.titre}
                           </p>
                           {(item.dueDate || userMatch) && (
@@ -316,7 +316,7 @@ export default function TasksPage() {
                         {item.priorite && (
                           <span
                             className={`text-[10px] font-bold uppercase rounded px-2 py-0.5 ${
-                              PRIORITE_COLORS[item.priorite] ?? "bg-gray-700 text-gray-300"
+                              PRIORITE_COLORS[item.priorite] ?? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                             }`}
                           >
                             {item.priorite}
@@ -336,7 +336,7 @@ export default function TasksPage() {
               )}
 
               {/* Add item */}
-              <div className="rounded-lg border border-gray-700 bg-gray-900 p-3 space-y-2">
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-2">
                 <Input
                   placeholder="Nouvelle tache..."
                   value={newItem.titre}
@@ -344,26 +344,26 @@ export default function TasksPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleAddItem();
                   }}
-                  className="bg-gray-800 border-gray-700"
+                  className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Select
                     value={newItem.priorite}
                     onChange={(e) => setNewItem({ ...newItem, priorite: e.target.value })}
                     options={PRIORITES}
-                    className="bg-gray-800 border-gray-700 h-9 text-xs"
+                    className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
                   />
                   <Input
                     type="date"
                     value={newItem.dueDate}
                     onChange={(e) => setNewItem({ ...newItem, dueDate: e.target.value })}
-                    className="bg-gray-800 border-gray-700 h-9 text-xs"
+                    className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
                   />
                   <Select
                     value={newItem.userId}
                     onChange={(e) => setNewItem({ ...newItem, userId: e.target.value })}
                     options={userOptions}
-                    className="bg-gray-800 border-gray-700 h-9 text-xs"
+                    className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-xs"
                   />
                 </div>
                 <div className="flex justify-end">
@@ -385,7 +385,7 @@ export default function TasksPage() {
       <Dialog open={openCreateList} onOpenChange={setOpenCreateList}>
         <DialogContent
           onClose={() => setOpenCreateList(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Nouvelle liste</DialogTitle>
@@ -396,7 +396,7 @@ export default function TasksPage() {
               <Input
                 value={listForm.nom}
                 onChange={(e) => setListForm({ ...listForm, nom: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -405,7 +405,7 @@ export default function TasksPage() {
                 value={listForm.sessionId}
                 onChange={(e) => setListForm({ ...listForm, sessionId: e.target.value })}
                 options={sessionOptions}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -414,7 +414,7 @@ export default function TasksPage() {
                 type="color"
                 value={listForm.couleur}
                 onChange={(e) => setListForm({ ...listForm, couleur: e.target.value })}
-                className="h-10 w-20 rounded border border-gray-700 bg-gray-900 cursor-pointer"
+                className="h-10 w-20 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer"
               />
             </div>
           </div>

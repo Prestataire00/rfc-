@@ -147,7 +147,7 @@ export default function ProspectsKanbanPage() {
               placeholder="Rechercher..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-gray-800 border-gray-700 h-9 text-sm"
+              className="pl-9 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-sm"
             />
           </div>
           <div className="w-48">
@@ -155,7 +155,7 @@ export default function ProspectsKanbanPage() {
               value={filterAttribue}
               onChange={(e) => setFilterAttribue(e.target.value)}
               options={userOptions}
-              className="bg-gray-800 border-gray-700 h-9 text-sm"
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-sm"
             />
           </div>
         </div>
@@ -176,10 +176,10 @@ export default function ProspectsKanbanPage() {
                 className={`rounded-xl border ${col.color} p-2 min-h-[300px]`}
               >
                 <div className="flex items-center justify-between px-2 py-1.5 mb-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-200">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-800 dark:text-gray-200">
                     {col.label}
                   </h3>
-                  <span className="text-[10px] font-bold rounded-full bg-gray-900/50 px-2 py-0.5 text-gray-300">
+                  <span className="text-[10px] font-bold rounded-full bg-gray-50 dark:bg-gray-900/50 px-2 py-0.5 text-gray-700 dark:text-gray-300">
                     {items.length}
                   </span>
                 </div>
@@ -191,20 +191,20 @@ export default function ProspectsKanbanPage() {
                     <Link
                       key={p.id}
                       href={`/prospects/${p.id}`}
-                      className="block rounded-lg border border-gray-700 bg-gray-800 hover:border-red-700/40 p-3 transition-all"
+                      className="block rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-700/40 p-3 transition-all"
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-sm font-medium text-gray-100 truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {p.prenom} {p.nom}
                         </p>
                         {typeof p.score === "number" && (
-                          <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-300">
+                          <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">
                             <Star className="h-3 w-3 fill-amber-300" /> {p.score}
                           </span>
                         )}
                       </div>
                       {p.entreprise && (
-                        <p className="text-[11px] text-gray-400 flex items-center gap-1 truncate mb-1">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate mb-1">
                           <Building2 className="h-3 w-3 shrink-0" /> {p.entreprise}
                         </p>
                       )}
@@ -225,7 +225,7 @@ export default function ProspectsKanbanPage() {
       <Dialog open={openCreate} onOpenChange={setOpenCreate}>
         <DialogContent
           onClose={() => setOpenCreate(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100 max-w-xl"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 max-w-xl"
         >
           <DialogHeader>
             <DialogTitle>Nouveau prospect</DialogTitle>
@@ -237,7 +237,7 @@ export default function ProspectsKanbanPage() {
                 <Input
                   value={form.prenom}
                   onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -245,7 +245,7 @@ export default function ProspectsKanbanPage() {
                 <Input
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function ProspectsKanbanPage() {
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -264,7 +264,7 @@ export default function ProspectsKanbanPage() {
                 <Input
                   value={form.telephone}
                   onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function ProspectsKanbanPage() {
               <Input
                 value={form.entreprise}
                 onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -283,7 +283,7 @@ export default function ProspectsKanbanPage() {
                   value={form.statut}
                   onChange={(e) => setForm({ ...form, statut: e.target.value })}
                   options={COLUMNS.map((c) => ({ value: c.value, label: c.label }))}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -304,7 +304,7 @@ export default function ProspectsKanbanPage() {
                 value={form.source}
                 onChange={(e) => setForm({ ...form, source: e.target.value })}
                 placeholder="web, salon, recommandation..."
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -313,7 +313,7 @@ export default function ProspectsKanbanPage() {
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={3}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>

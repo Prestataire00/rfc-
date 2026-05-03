@@ -235,12 +235,12 @@ export default function ReportingPage() {
             <p className="text-xs text-gray-500 text-center py-4">Aucune donnee</p>
           ) : (
             topFormations.map((f, i) => (
-              <div key={f.id} className="flex items-center gap-3 py-2 border-b border-gray-700 last:border-0">
+              <div key={f.id} className="flex items-center gap-3 py-2 border-b border-gray-200 dark:border-gray-700 last:border-0">
                 <span className="h-6 w-6 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center text-xs font-bold shrink-0">
                   {i + 1}
                 </span>
-                <p className="text-sm text-gray-200 flex-1 truncate">{f.titre}</p>
-                <span className="text-xs text-gray-400">{f.count} sessions</span>
+                <p className="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate">{f.titre}</p>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{f.count} sessions</span>
               </div>
             ))
           )}
@@ -250,11 +250,11 @@ export default function ReportingPage() {
             <p className="text-xs text-gray-500 text-center py-4">Aucune donnee</p>
           ) : (
             topEntreprises.map((e, i) => (
-              <div key={e.id} className="flex items-center gap-3 py-2 border-b border-gray-700 last:border-0">
+              <div key={e.id} className="flex items-center gap-3 py-2 border-b border-gray-200 dark:border-gray-700 last:border-0">
                 <span className="h-6 w-6 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center text-xs font-bold shrink-0">
                   {i + 1}
                 </span>
-                <p className="text-sm text-gray-200 flex-1 truncate">{e.nom}</p>
+                <p className="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate">{e.nom}</p>
                 <span className="text-xs text-emerald-400 font-semibold">{formatCurrency(e.ca)}</span>
               </div>
             ))
@@ -265,12 +265,12 @@ export default function ReportingPage() {
             <p className="text-xs text-gray-500 text-center py-4">Aucune donnee</p>
           ) : (
             topFormateurs.map((f, i) => (
-              <div key={f.id} className="flex items-center gap-3 py-2 border-b border-gray-700 last:border-0">
+              <div key={f.id} className="flex items-center gap-3 py-2 border-b border-gray-200 dark:border-gray-700 last:border-0">
                 <span className="h-6 w-6 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center text-xs font-bold shrink-0">
                   {i + 1}
                 </span>
-                <p className="text-sm text-gray-200 flex-1 truncate">{f.prenom} {f.nom}</p>
-                <span className="text-xs text-amber-300 font-semibold flex items-center gap-1">
+                <p className="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate">{f.prenom} {f.nom}</p>
+                <span className="text-xs text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1">
                   <Star className="h-3 w-3 fill-amber-300" /> {f.noteMoyenne.toFixed(2)}
                 </span>
               </div>
@@ -297,15 +297,15 @@ function KpiCard({
     <div
       className={`rounded-xl border p-3 ${
         highlight
-          ? "border-red-700/40 bg-red-600/10"
-          : "border-gray-700 bg-gray-800"
+          ? "border-red-300 dark:border-red-700/40 bg-red-600/10"
+          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
       }`}
     >
       <div className="flex items-center justify-between mb-1">
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">{label}</p>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">{label}</p>
         <Icon className={`h-4 w-4 ${highlight ? "text-red-400" : "text-gray-500"}`} />
       </div>
-      <p className={`text-lg font-bold ${highlight ? "text-red-400" : "text-gray-100"}`}>{value}</p>
+      <p className={`text-lg font-bold ${highlight ? "text-red-400" : "text-gray-900 dark:text-gray-100"}`}>{value}</p>
     </div>
   );
 }
@@ -320,9 +320,9 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
           <TrendingUp className="h-3.5 w-3.5" style={{ color }} /> {title}
         </h3>
       </div>
@@ -341,8 +341,8 @@ function TopCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2 mb-3">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2 mb-3">
         <Icon className="h-3.5 w-3.5" /> {title}
       </h3>
       <div>{children}</div>

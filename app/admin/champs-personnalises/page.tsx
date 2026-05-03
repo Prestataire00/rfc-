@@ -50,12 +50,12 @@ const TYPES = [
 ];
 
 const TYPE_BADGE: Record<string, string> = {
-  text: "bg-blue-500/20 text-blue-300",
-  number: "bg-emerald-500/20 text-emerald-300",
-  date: "bg-amber-500/20 text-amber-300",
-  select: "bg-purple-500/20 text-purple-300",
-  boolean: "bg-pink-500/20 text-pink-300",
-  textarea: "bg-cyan-500/20 text-cyan-300",
+  text: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  number: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+  date: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
+  select: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
+  boolean: "bg-pink-500/20 text-pink-700 dark:text-pink-300",
+  textarea: "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300",
 };
 
 interface FormState {
@@ -244,12 +244,12 @@ export default function ChampsPersonnalisesPage() {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
-          <Label className="text-xs text-gray-400">Entite cible</Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">Entite cible</Label>
           <Select
             value={filterEntite}
             onChange={(e) => setFilterEntite(e.target.value)}
             options={ENTITES}
-            className="bg-gray-900 border-gray-700 text-gray-100 h-9 w-48"
+            className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 h-9 w-48"
           />
         </div>
         <Button onClick={openForCreate} className="bg-red-600 hover:bg-red-700">
@@ -266,9 +266,9 @@ export default function ChampsPersonnalisesPage() {
           description={`Aucun champ defini pour ${filterEntite}.`}
         />
       ) : (
-        <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-900 border-b border-gray-700 text-xs uppercase text-gray-400">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="px-3 py-3 text-left">Ordre</th>
                 <th className="px-3 py-3 text-left">Nom</th>
@@ -279,7 +279,7 @@ export default function ChampsPersonnalisesPage() {
                 <th className="px-3 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {sorted.map((c, i) => (
                 <tr key={c.id} className="hover:bg-gray-750">
                   <td className="px-3 py-2.5">
@@ -287,28 +287,28 @@ export default function ChampsPersonnalisesPage() {
                       <button
                         onClick={() => move(c, -1)}
                         disabled={i === 0 || reorderingId === c.id}
-                        className="p-1 rounded hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Monter"
                       >
-                        <ArrowUp className="h-3.5 w-3.5 text-gray-400" />
+                        <ArrowUp className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                       </button>
                       <button
                         onClick={() => move(c, 1)}
                         disabled={i === sorted.length - 1 || reorderingId === c.id}
-                        className="p-1 rounded hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Descendre"
                       >
-                        <ArrowDown className="h-3.5 w-3.5 text-gray-400" />
+                        <ArrowDown className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                       </button>
                       <span className="text-xs text-gray-500 ml-1">{c.ordre}</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 font-mono text-xs text-gray-300">{c.nom}</td>
-                  <td className="px-3 py-2.5 text-gray-100">{c.label}</td>
+                  <td className="px-3 py-2.5 font-mono text-xs text-gray-700 dark:text-gray-300">{c.nom}</td>
+                  <td className="px-3 py-2.5 text-gray-900 dark:text-gray-100">{c.label}</td>
                   <td className="px-3 py-2.5">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                        TYPE_BADGE[c.type] ?? "bg-gray-700 text-gray-300"
+                        TYPE_BADGE[c.type] ?? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {c.type}
@@ -341,14 +341,14 @@ export default function ChampsPersonnalisesPage() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => openForEdit(c)}
-                        className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                         aria-label="Editer"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => setConfirmDelete(c)}
-                        className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-red-400"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-400"
                         aria-label="Supprimer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -365,7 +365,7 @@ export default function ChampsPersonnalisesPage() {
       <Dialog open={openModal} onOpenChange={setOpenModal}>
         <DialogContent
           onClose={() => setOpenModal(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100 max-w-xl"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 max-w-xl"
         >
           <DialogHeader>
             <DialogTitle>
@@ -380,7 +380,7 @@ export default function ChampsPersonnalisesPage() {
                   value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
                   placeholder="ex: numero_carte_pro"
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -389,7 +389,7 @@ export default function ChampsPersonnalisesPage() {
                   value={form.label}
                   onChange={(e) => setForm({ ...form, label: e.target.value })}
                   placeholder="ex: Numero carte professionnelle"
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -400,7 +400,7 @@ export default function ChampsPersonnalisesPage() {
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
                   options={TYPES}
-                  className="bg-gray-900 border-gray-700 text-gray-100"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div className="space-y-1.5">
@@ -409,7 +409,7 @@ export default function ChampsPersonnalisesPage() {
                   value={form.entiteCible}
                   onChange={(e) => setForm({ ...form, entiteCible: e.target.value })}
                   options={ENTITES}
-                  className="bg-gray-900 border-gray-700 text-gray-100"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
@@ -421,7 +421,7 @@ export default function ChampsPersonnalisesPage() {
                   onChange={(e) => setForm({ ...form, optionsRaw: e.target.value })}
                   rows={4}
                   placeholder={`["Option A", "Option B", "Option C"]`}
-                  className="bg-gray-900 border-gray-700 font-mono text-xs"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 font-mono text-xs"
                 />
                 <p className="text-[10px] text-gray-500">
                   Tableau JSON de chaines de caracteres.

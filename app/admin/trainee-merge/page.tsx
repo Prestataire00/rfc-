@@ -53,61 +53,61 @@ function ContactCard({
       className={`rounded-xl border p-4 transition-all ${
         isPrimary
           ? "border-red-600 bg-red-500/10 ring-2 ring-red-600/40"
-          : "border-gray-700 bg-gray-800 hover:border-gray-600"
+          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
       }`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <h3 className="text-base font-semibold text-gray-100">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             {c.prenom} {c.nom}
           </h3>
-          <p className="text-xs text-gray-400 font-mono mt-0.5">{c.id}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{c.id}</p>
         </div>
         <button
           onClick={onSelect}
           className={`shrink-0 px-3 py-1 rounded-md text-xs font-medium ${
             isPrimary
               ? "bg-red-600 text-white"
-              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-600"
           }`}
         >
           {isPrimary ? "Principal" : "Definir principal"}
         </button>
       </div>
       <div className="space-y-1.5 text-sm">
-        <div className="flex items-center gap-2 text-gray-300">
+        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
           <Mail className="h-3.5 w-3.5 text-gray-500" />
           {c.email}
         </div>
         {c.telephone && (
-          <div className="flex items-center gap-2 text-gray-300">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <Phone className="h-3.5 w-3.5 text-gray-500" />
             {c.telephone}
           </div>
         )}
         {c.entreprise && (
-          <div className="flex items-center gap-2 text-gray-300">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <Building2 className="h-3.5 w-3.5 text-gray-500" />
             {c.entreprise.nom}
           </div>
         )}
         {c.dateNaissance && (
-          <div className="flex items-center gap-2 text-gray-300">
+          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <Calendar className="h-3.5 w-3.5 text-gray-500" />
             {formatDate(c.dateNaissance)}
           </div>
         )}
-        <div className="flex items-center gap-2 text-gray-400 text-xs pt-1">
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs pt-1">
           <Tag className="h-3 w-3" />
           {c.type}
           {c.optOutMarketing && (
-            <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px]">
+            <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px]">
               opt-out
             </span>
           )}
         </div>
       </div>
-      <div className="mt-3 pt-3 border-t border-gray-700/60 grid grid-cols-2 gap-2 text-[11px] text-gray-400">
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/60 grid grid-cols-2 gap-2 text-[11px] text-gray-500 dark:text-gray-400">
         <div>
           <span className="text-gray-500">Cree le :</span>{" "}
           {formatDate(c.createdAt)}
@@ -130,7 +130,7 @@ function ContactCard({
         )}
       </div>
       {c.notes && (
-        <div className="mt-2 rounded bg-gray-900/60 border border-gray-700 p-2 text-[11px] text-gray-400 line-clamp-3 flex gap-1.5">
+        <div className="mt-2 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 p-2 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-3 flex gap-1.5">
           <FileText className="h-3 w-3 shrink-0 mt-0.5" />
           {c.notes}
         </div>
@@ -203,7 +203,7 @@ export default function TraineeMergePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher par nom, email ou prenom..."
-            className="pl-9 bg-gray-800 border-gray-700"
+            className="pl-9 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
           />
         </div>
         <Button type="submit" className="bg-red-600 hover:bg-red-700">
@@ -230,11 +230,11 @@ export default function TraineeMergePage() {
       ) : (
         <>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {matches.length} contact{matches.length > 1 ? "s" : ""} trouve
               {matches.length > 1 ? "s" : ""}.{" "}
               {selectedIds.length > 0 && (
-                <span className="text-gray-300">
+                <span className="text-gray-700 dark:text-gray-300">
                   {selectedIds.length} selectionne{selectedIds.length > 1 ? "s" : ""}.
                 </span>
               )}
@@ -251,7 +251,7 @@ export default function TraineeMergePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {matches.map((c) => (
               <div key={c.id} className="space-y-2">
-                <label className="flex items-center gap-2 px-2 text-xs text-gray-400 cursor-pointer">
+                <label className="flex items-center gap-2 px-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(c.id)}
@@ -270,11 +270,11 @@ export default function TraineeMergePage() {
           </div>
 
           {selected.length > 1 && primaryId && (
-            <div className="mt-8 rounded-xl border border-gray-700 bg-gray-800 p-5">
-              <h3 className="text-sm font-semibold text-gray-100 mb-3 flex items-center gap-2">
+            <div className="mt-8 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                 <GitMerge className="h-4 w-4 text-red-400" /> Apercu de fusion
               </h3>
-              <div className="text-sm text-gray-300 space-y-2">
+              <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
                 <p>
                   Contact <strong>principal</strong> conserve :{" "}
                   <span className="text-red-400">
@@ -286,7 +286,7 @@ export default function TraineeMergePage() {
                   Contacts <strong>fusionnes</strong> (a supprimer apres reaffectation
                   des relations) :
                 </p>
-                <ul className="list-disc list-inside text-xs text-gray-400 ml-2">
+                <ul className="list-disc list-inside text-xs text-gray-500 dark:text-gray-400 ml-2">
                   {selected
                     .filter((s) => s.id !== primaryId)
                     .map((s) => (
@@ -295,7 +295,7 @@ export default function TraineeMergePage() {
                       </li>
                     ))}
                 </ul>
-                <p className="text-xs text-amber-300 mt-3">
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-3">
                   Les inscriptions, devis, attestations, evaluations, badges et
                   certifications seront reaffectees au contact principal lors de
                   l&apos;activation Phase 4.

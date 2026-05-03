@@ -59,7 +59,7 @@ function LineChart({
 }) {
   if (points.length < 2) {
     return (
-      <div className="flex items-center justify-center h-64 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-400">
+      <div className="flex items-center justify-center h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400">
         Au moins 2 snapshots sont necessaires pour tracer une courbe.
       </div>
     );
@@ -92,12 +92,12 @@ function LineChart({
   const areaPath = `${path} L${PAD_X + (sorted.length - 1) * xStep},${H - PAD_Y} L${PAD_X},${H - PAD_Y} Z`;
 
   return (
-    <div className="rounded-lg border border-gray-700 bg-gray-800 p-4 overflow-x-auto">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 overflow-x-auto">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-200">{labelFor}</h3>
-        <div className="text-xs text-gray-400">
-          Min : <span className="text-gray-200 font-mono">{min}</span> · Max :{" "}
-          <span className="text-gray-200 font-mono">{max}</span>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{labelFor}</h3>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          Min : <span className="text-gray-800 dark:text-gray-200 font-mono">{min}</span> · Max :{" "}
+          <span className="text-gray-800 dark:text-gray-200 font-mono">{max}</span>
         </div>
       </div>
       <svg
@@ -209,30 +209,30 @@ export default function KpiHistoryPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-5">
         <div className="space-y-1.5">
-          <Label className="text-xs text-gray-400">Du</Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">Du</Label>
           <Input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="bg-gray-800 border-gray-700 h-9"
+            className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-gray-400">Au</Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">Au</Label>
           <Input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="bg-gray-800 border-gray-700 h-9"
+            className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9"
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-gray-400">Indicateur</Label>
+          <Label className="text-xs text-gray-500 dark:text-gray-400">Indicateur</Label>
           <Select
             value={kpiKey}
             onChange={(e) => setKpiKey(e.target.value)}
             options={KPI_OPTIONS}
-            className="bg-gray-800 border-gray-700 text-gray-100 h-9"
+            className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 h-9"
           />
         </div>
         <div className="flex items-end">
@@ -251,7 +251,7 @@ export default function KpiHistoryPage() {
         <LineChart points={points} labelFor={kpiLabel} />
       </div>
 
-      <h3 className="text-sm font-semibold text-gray-200 mb-3 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
         <BarChart3 className="h-4 w-4 text-red-400" /> Snapshots ({items.length})
       </h3>
 
@@ -264,9 +264,9 @@ export default function KpiHistoryPage() {
           description="Modifiez les dates ou capturez un snapshot maintenant."
         />
       ) : (
-        <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-900 border-b border-gray-700 text-xs uppercase text-gray-400">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="px-3 py-3 text-left">Date snapshot</th>
                 <th className="px-3 py-3 text-left">Source</th>
@@ -274,21 +274,21 @@ export default function KpiHistoryPage() {
                 <th className="px-3 py-3 text-right">{kpiLabel}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {items.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-750">
-                  <td className="px-3 py-2.5 text-gray-100">
+                  <td className="px-3 py-2.5 text-gray-900 dark:text-gray-100">
                     {formatDate(s.dateSnapshot)}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-gray-700 text-gray-300">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                       {s.source}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-gray-400">
+                  <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
                     {formatDatetime(s.createdAt)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-gray-100">
+                  <td className="px-3 py-2.5 text-right font-mono text-gray-900 dark:text-gray-100">
                     {readKpi(s, kpiKey)}
                   </td>
                 </tr>

@@ -209,24 +209,24 @@ export default function ParcoursDetailPage() {
     <div>
       <Link
         href="/parcours"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Retour aux parcours
       </Link>
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">{parcours.nom}</h1>
-          <p className="text-sm text-gray-400 mt-1">Edition du parcours et de ses modules</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{parcours.nom}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Edition du parcours et de ses modules</p>
         </div>
         <Button variant="destructive" onClick={() => setConfirmDelete(true)}>
           <Trash2 className="h-4 w-4" /> Supprimer
         </Button>
       </div>
 
-      <Card className="mb-6 bg-gray-800 border-gray-700">
+      <Card className="mb-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="text-base text-gray-100">Informations</CardTitle>
+          <CardTitle className="text-base text-gray-900 dark:text-gray-100">Informations</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
@@ -234,7 +234,7 @@ export default function ParcoursDetailPage() {
             <Input
               value={form.nom}
               onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              className="bg-gray-900 border-gray-700"
+              className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
             />
           </div>
           <div className="space-y-1.5">
@@ -243,7 +243,7 @@ export default function ParcoursDetailPage() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
-              className="bg-gray-900 border-gray-700"
+              className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
             />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -253,7 +253,7 @@ export default function ParcoursDetailPage() {
                 type="number"
                 value={form.duree}
                 onChange={(e) => setForm({ ...form, duree: Number(e.target.value) })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -263,7 +263,7 @@ export default function ParcoursDetailPage() {
                 value={form.tarif}
                 onChange={(e) => setForm({ ...form, tarif: e.target.value })}
                 step="0.01"
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -271,7 +271,7 @@ export default function ParcoursDetailPage() {
               <Input
                 value={form.categorie}
                 onChange={(e) => setForm({ ...form, categorie: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -279,16 +279,16 @@ export default function ParcoursDetailPage() {
               <Input
                 value={form.niveau}
                 onChange={(e) => setForm({ ...form, niveau: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <input
               type="checkbox"
               checked={form.actif}
               onChange={(e) => setForm({ ...form, actif: e.target.checked })}
-              className="rounded border-gray-600 bg-gray-900 text-red-600 focus:ring-red-600"
+              className="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-red-600 focus:ring-red-600"
             />
             Parcours actif
           </label>
@@ -300,16 +300,16 @@ export default function ParcoursDetailPage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base text-gray-100">Modules ({sortedModules.length})</CardTitle>
+          <CardTitle className="text-base text-gray-900 dark:text-gray-100">Modules ({sortedModules.length})</CardTitle>
           <Button onClick={() => setModuleModalOpen(true)} className="bg-red-600 hover:bg-red-700" size="sm">
             <Plus className="h-4 w-4" /> Ajouter un module
           </Button>
         </CardHeader>
         <CardContent>
           {sortedModules.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
               Aucun module. Ajoutez la premiere formation du parcours.
             </p>
           ) : (
@@ -317,16 +317,16 @@ export default function ParcoursDetailPage() {
               {sortedModules.map((m, i) => (
                 <div
                   key={m.id}
-                  className="flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-3 py-2.5"
                 >
                   <span className="h-7 w-7 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center text-xs font-bold shrink-0">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-100 truncate">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {m.formation?.titre ?? "Formation supprimee"}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {m.obligatoire ? "Obligatoire" : "Optionnel"}
                       {m.formation?.duree ? ` - ${m.formation.duree}h` : ""}
                     </p>
@@ -335,7 +335,7 @@ export default function ParcoursDetailPage() {
                     <button
                       onClick={() => handleMove(m.id, "up")}
                       disabled={i === 0 || reorderingId === m.id}
-                      className="p-1.5 rounded hover:bg-gray-700 text-gray-400 disabled:opacity-30 disabled:pointer-events-none"
+                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:pointer-events-none"
                       aria-label="Monter"
                     >
                       <ArrowUp className="h-4 w-4" />
@@ -343,7 +343,7 @@ export default function ParcoursDetailPage() {
                     <button
                       onClick={() => handleMove(m.id, "down")}
                       disabled={i === sortedModules.length - 1 || reorderingId === m.id}
-                      className="p-1.5 rounded hover:bg-gray-700 text-gray-400 disabled:opacity-30 disabled:pointer-events-none"
+                      className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 disabled:opacity-30 disabled:pointer-events-none"
                       aria-label="Descendre"
                     >
                       <ArrowDown className="h-4 w-4" />
@@ -366,7 +366,7 @@ export default function ParcoursDetailPage() {
       <Dialog open={moduleModalOpen} onOpenChange={setModuleModalOpen}>
         <DialogContent
           onClose={() => setModuleModalOpen(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Ajouter un module</DialogTitle>
@@ -378,15 +378,15 @@ export default function ParcoursDetailPage() {
                 value={newModule.formationId}
                 onChange={(e) => setNewModule({ ...newModule, formationId: e.target.value })}
                 options={formationOptions}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={newModule.obligatoire}
                 onChange={(e) => setNewModule({ ...newModule, obligatoire: e.target.checked })}
-                className="rounded border-gray-600 bg-gray-900 text-red-600 focus:ring-red-600"
+                className="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-red-600 focus:ring-red-600"
               />
               Module obligatoire
             </label>

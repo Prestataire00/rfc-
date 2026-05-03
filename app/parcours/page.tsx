@@ -101,7 +101,7 @@ export default function ParcoursListPage() {
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
               !showActifOnly
                 ? "bg-red-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700"
+                : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700"
             }`}
           >
             Tous
@@ -111,7 +111,7 @@ export default function ParcoursListPage() {
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
               showActifOnly
                 ? "bg-red-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700"
+                : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700"
             }`}
           >
             Actifs uniquement
@@ -124,7 +124,7 @@ export default function ParcoursListPage() {
               placeholder="Rechercher..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-gray-800 border-gray-700 h-9 text-sm"
+              className="pl-9 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-sm"
             />
           </div>
           <Button onClick={() => setOpenCreate(true)} className="bg-red-600 hover:bg-red-700">
@@ -153,24 +153,24 @@ export default function ParcoursListPage() {
             <Link
               key={p.id}
               href={`/parcours/${p.id}`}
-              className="group rounded-xl border border-gray-700 bg-gray-800 hover:border-red-700/40 hover:bg-gray-750 p-4 transition-all"
+              className="group rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-700/40 hover:bg-gray-750 p-4 transition-all"
             >
               <div className="flex items-start justify-between gap-3 mb-2">
-                <h3 className="text-sm font-semibold text-gray-100 group-hover:text-red-400 truncate">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-red-400 truncate">
                   {p.nom}
                 </h3>
                 <span
                   className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                     p.actif
-                      ? "bg-emerald-500/15 text-emerald-300"
-                      : "bg-gray-700 text-gray-400"
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {p.actif ? "Actif" : "Inactif"}
                 </span>
               </div>
               {p.description && (
-                <p className="text-xs text-gray-400 line-clamp-2 mb-3">{p.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{p.description}</p>
               )}
               <div className="flex items-center gap-3 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
@@ -184,12 +184,12 @@ export default function ParcoursListPage() {
                 </span>
               </div>
               {(p.categorie || p.niveau || p.tarif) && (
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-700/60 text-[11px] text-gray-400">
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700/60 text-[11px] text-gray-500 dark:text-gray-400">
                   {p.categorie && (
-                    <span className="px-1.5 py-0.5 rounded bg-gray-700/60">{p.categorie}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700/60">{p.categorie}</span>
                   )}
                   {p.niveau && (
-                    <span className="px-1.5 py-0.5 rounded bg-gray-700/60">{p.niveau}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700/60">{p.niveau}</span>
                   )}
                   {p.tarif !== null && p.tarif !== undefined && (
                     <span className="ml-auto text-red-400 font-medium">{p.tarif} EUR</span>
@@ -202,7 +202,7 @@ export default function ParcoursListPage() {
       )}
 
       <Dialog open={openCreate} onOpenChange={setOpenCreate}>
-        <DialogContent onClose={() => setOpenCreate(false)} className="bg-gray-800 border-gray-700 text-gray-100">
+        <DialogContent onClose={() => setOpenCreate(false)} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
           <DialogHeader>
             <DialogTitle>Nouveau parcours</DialogTitle>
           </DialogHeader>
@@ -213,7 +213,7 @@ export default function ParcoursListPage() {
                 value={form.nom}
                 onChange={(e) => setForm({ ...form, nom: e.target.value })}
                 placeholder="ex: Cycle SSIAP complet"
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -222,7 +222,7 @@ export default function ParcoursListPage() {
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={3}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -233,7 +233,7 @@ export default function ParcoursListPage() {
                   value={form.duree}
                   onChange={(e) => setForm({ ...form, duree: Number(e.target.value) })}
                   min={0}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -244,7 +244,7 @@ export default function ParcoursListPage() {
                   onChange={(e) => setForm({ ...form, tarif: e.target.value })}
                   min={0}
                   step="0.01"
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -255,7 +255,7 @@ export default function ParcoursListPage() {
                   value={form.categorie}
                   onChange={(e) => setForm({ ...form, categorie: e.target.value })}
                   placeholder="SSIAP"
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -264,7 +264,7 @@ export default function ParcoursListPage() {
                   value={form.niveau}
                   onChange={(e) => setForm({ ...form, niveau: e.target.value })}
                   placeholder="Initial / Recyclage"
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>

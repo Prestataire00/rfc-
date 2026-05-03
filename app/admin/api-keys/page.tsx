@@ -60,11 +60,11 @@ function parsePermissions(raw: string): string[] {
 }
 
 function statusOf(k: ApiKey): { label: string; color: string } {
-  if (k.revokedAt) return { label: "Revoquee", color: "bg-red-600/30 text-red-300" };
+  if (k.revokedAt) return { label: "Revoquee", color: "bg-red-600/30 text-red-700 dark:text-red-300" };
   if (k.expireAt && new Date(k.expireAt).getTime() < Date.now()) {
-    return { label: "Expiree", color: "bg-amber-500/20 text-amber-300" };
+    return { label: "Expiree", color: "bg-amber-500/20 text-amber-700 dark:text-amber-300" };
   }
-  return { label: "Active", color: "bg-emerald-500/20 text-emerald-300" };
+  return { label: "Active", color: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" };
 }
 
 export default function ApiKeysPage() {
@@ -165,9 +165,9 @@ export default function ApiKeysPage() {
           description="Creez votre premiere cle pour acceder a l'API."
         />
       ) : (
-        <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-900 border-b border-gray-700 text-xs uppercase text-gray-400">
+            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="px-3 py-3 text-left">Nom</th>
                 <th className="px-3 py-3 text-left">Prefix</th>
@@ -179,14 +179,14 @@ export default function ApiKeysPage() {
                 <th className="px-3 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {items.map((k) => {
                 const status = statusOf(k);
                 const perms = parsePermissions(k.permissions);
                 return (
                   <tr key={k.id} className="hover:bg-gray-750">
-                    <td className="px-3 py-2.5 font-medium text-gray-100">{k.nom}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-gray-400">
+                    <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{k.nom}</td>
+                    <td className="px-3 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400">
                       rfc_{k.prefix}…
                     </td>
                     <td className="px-3 py-2.5">
@@ -197,7 +197,7 @@ export default function ApiKeysPage() {
                           perms.map((p) => (
                             <span
                               key={p}
-                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-700 text-gray-300"
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                             >
                               {p}
                             </span>
@@ -205,13 +205,13 @@ export default function ApiKeysPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">
+                    <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
                       {formatDate(k.createdAt)}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">
+                    <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
                       {k.lastUsedAt ? formatDatetime(k.lastUsedAt) : "-"}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">
+                    <td className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
                       {k.expireAt ? formatDate(k.expireAt) : "Jamais"}
                     </td>
                     <td className="px-3 py-2.5 text-center">
@@ -224,7 +224,7 @@ export default function ApiKeysPage() {
                     <td className="px-3 py-2.5 text-right">
                       <button
                         onClick={() => setConfirmRevoke(k)}
-                        className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-red-400"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-400"
                         aria-label="Revoquer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -242,7 +242,7 @@ export default function ApiKeysPage() {
       <Dialog open={openCreate} onOpenChange={setOpenCreate}>
         <DialogContent
           onClose={() => setOpenCreate(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100 max-w-lg"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 max-w-lg"
         >
           <DialogHeader>
             <DialogTitle>Nouvelle cle API</DialogTitle>
@@ -254,12 +254,12 @@ export default function ApiKeysPage() {
                 value={form.nom}
                 onChange={(e) => setForm({ ...form, nom: e.target.value })}
                 placeholder="ex: Integration Make.com"
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Permissions</Label>
-              <div className="grid grid-cols-2 gap-2 p-3 rounded-md bg-gray-900 border border-gray-700">
+              <div className="grid grid-cols-2 gap-2 p-3 rounded-md bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                 {PERMISSIONS.map((p) => (
                   <label
                     key={p}
@@ -282,7 +282,7 @@ export default function ApiKeysPage() {
                 type="date"
                 value={form.expireAt}
                 onChange={(e) => setForm({ ...form, expireAt: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function ApiKeysPage() {
       <Dialog open={!!createdKey} onOpenChange={(o) => !o && setCreatedKey(null)}>
         <DialogContent
           onClose={() => setCreatedKey(null)}
-          className="bg-gray-800 border-gray-700 text-gray-100 max-w-lg"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 max-w-lg"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -326,7 +326,7 @@ export default function ApiKeysPage() {
                 <Input
                   readOnly
                   value={createdKey?.key ?? ""}
-                  className="bg-gray-900 border-gray-700 font-mono text-xs"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 font-mono text-xs"
                 />
                 <Button
                   type="button"

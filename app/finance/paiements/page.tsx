@@ -202,7 +202,7 @@ export default function FinancePaiementsPage() {
     <div>
       <PageHeader title="Paiements et finance" description="Suivi des encaissements, echeanciers et transactions" />
 
-      <div className="flex gap-1 bg-gray-900 rounded-lg p-1 border border-gray-700 mb-5 w-fit">
+      <div className="flex gap-1 bg-gray-50 dark:bg-gray-900 rounded-lg p-1 border border-gray-200 dark:border-gray-700 mb-5 w-fit">
         {TABS.map((t) => (
           <button
             key={t.value}
@@ -210,7 +210,7 @@ export default function FinancePaiementsPage() {
             className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
               tab === t.value
                 ? "bg-red-600 text-white"
-                : "text-gray-400 hover:text-gray-200"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
             }`}
           >
             {t.label}
@@ -221,36 +221,36 @@ export default function FinancePaiementsPage() {
       {tab === "paiements" && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm text-gray-400">{(paiements ?? []).length} paiement(s)</h2>
+            <h2 className="text-sm text-gray-500 dark:text-gray-400">{(paiements ?? []).length} paiement(s)</h2>
             <Button onClick={() => setOpenPaiement(true)} className="bg-red-600 hover:bg-red-700">
               <Plus className="h-4 w-4" /> Enregistrer un paiement
             </Button>
           </div>
-          <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-900 border-b border-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Facture</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Mode</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">Montant</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Reference</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Facture</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Mode</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">Montant</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Reference</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {(paiements ?? []).length === 0 ? (
                   <tr><td colSpan={5} className="text-center text-gray-500 py-12">Aucun paiement</td></tr>
                 ) : (
                   (paiements ?? []).map((p) => (
                     <tr key={p.id} className="hover:bg-gray-750">
-                      <td className="px-4 py-3 text-gray-300">{formatDate(p.datePaiement)}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(p.datePaiement)}</td>
                       <td className="px-4 py-3">
                         <Link href={`/commercial/factures/${p.factureId}`} className="text-red-400 hover:underline">
                           {factureLink(p.factureId)}
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-300">
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
                           <CreditCard className="h-3 w-3" /> {p.mode}
                         </span>
                       </td>
@@ -269,7 +269,7 @@ export default function FinancePaiementsPage() {
 
       {tab === "echeanciers" && (
         <div>
-          <h2 className="text-sm text-gray-400 mb-4">
+          <h2 className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {Object.keys(echGrouped).length} facture(s) avec echeancier
           </h2>
           {Object.keys(echGrouped).length === 0 ? (
@@ -277,7 +277,7 @@ export default function FinancePaiementsPage() {
           ) : (
             <div className="space-y-3">
               {Object.entries(echGrouped).map(([factureId, items]) => (
-                <div key={factureId} className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+                <div key={factureId} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
                   <div className="flex items-center justify-between mb-3">
                     <Link
                       href={`/commercial/factures/${factureId}`}
@@ -285,7 +285,7 @@ export default function FinancePaiementsPage() {
                     >
                       <Building2 className="h-3 w-3" /> {factureLink(factureId)}
                     </Link>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
                       Total : {formatCurrency(items.reduce((s, e) => s + e.montant, 0))}
                     </span>
                   </div>
@@ -300,23 +300,23 @@ export default function FinancePaiementsPage() {
                     </thead>
                     <tbody>
                       {items.map((e) => (
-                        <tr key={e.id} className="border-t border-gray-700">
-                          <td className="px-2 py-2 text-gray-300">{formatDate(e.dateEcheance)}</td>
-                          <td className="px-2 py-2 text-right text-gray-200">{formatCurrency(e.montant)}</td>
+                        <tr key={e.id} className="border-t border-gray-200 dark:border-gray-700">
+                          <td className="px-2 py-2 text-gray-700 dark:text-gray-300">{formatDate(e.dateEcheance)}</td>
+                          <td className="px-2 py-2 text-right text-gray-800 dark:text-gray-200">{formatCurrency(e.montant)}</td>
                           <td className="px-2 py-2">
                             <span
                               className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 e.statut === "paye"
-                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
                                   : e.statut === "en_retard"
-                                  ? "bg-red-600/30 text-red-300"
-                                  : "bg-amber-500/20 text-amber-300"
+                                  ? "bg-red-600/30 text-red-700 dark:text-red-300"
+                                  : "bg-amber-500/20 text-amber-700 dark:text-amber-300"
                               }`}
                             >
                               {e.statut}
                             </span>
                           </td>
-                          <td className="px-2 py-2 text-gray-400">
+                          <td className="px-2 py-2 text-gray-500 dark:text-gray-400">
                             {e.datePaiement ? formatDate(e.datePaiement) : "-"}
                           </td>
                         </tr>
@@ -338,14 +338,14 @@ export default function FinancePaiementsPage() {
                 type="date"
                 value={txDateFrom}
                 onChange={(e) => setTxDateFrom(e.target.value)}
-                className="w-auto bg-gray-800 border-gray-700 h-9 text-sm"
+                className="w-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-sm"
               />
               <span className="text-xs text-gray-500">a</span>
               <Input
                 type="date"
                 value={txDateTo}
                 onChange={(e) => setTxDateTo(e.target.value)}
-                className="w-auto bg-gray-800 border-gray-700 h-9 text-sm"
+                className="w-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-9 text-sm"
               />
             </div>
             <Button onClick={() => setOpenTx(true)} className="bg-red-600 hover:bg-red-700">
@@ -355,28 +355,28 @@ export default function FinancePaiementsPage() {
           <p className="text-[11px] text-gray-500 mb-3">
             Note : la synchronisation Qonto sera disponible en Phase 4.
           </p>
-          <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-900 border-b border-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Libelle</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Sens</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">Montant</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">Facture liee</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Libelle</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Sens</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400">Montant</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400">Facture liee</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {(transactions ?? []).length === 0 ? (
                   <tr><td colSpan={5} className="text-center text-gray-500 py-12">Aucune transaction</td></tr>
                 ) : (
                   (transactions ?? []).map((t) => (
                     <tr key={t.id} className="hover:bg-gray-750">
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">
                         <Calendar className="h-3 w-3 inline mr-1 text-gray-500" />
                         {formatDate(t.date)}
                       </td>
-                      <td className="px-4 py-3 text-gray-200">{t.libelle}</td>
+                      <td className="px-4 py-3 text-gray-800 dark:text-gray-200">{t.libelle}</td>
                       <td className="px-4 py-3">
                         {t.sens === "credit" ? (
                           <span className="inline-flex items-center gap-1 text-emerald-400 text-xs">
@@ -413,7 +413,7 @@ export default function FinancePaiementsPage() {
       <Dialog open={openPaiement} onOpenChange={setOpenPaiement}>
         <DialogContent
           onClose={() => setOpenPaiement(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Enregistrer un paiement</DialogTitle>
@@ -426,7 +426,7 @@ export default function FinancePaiementsPage() {
                 onChange={(e) => setPaiementForm({ ...paiementForm, factureId: e.target.value })}
                 options={factureOptions}
                 placeholder="-- Selectionner --"
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -437,7 +437,7 @@ export default function FinancePaiementsPage() {
                   step="0.01"
                   value={paiementForm.montant}
                   onChange={(e) => setPaiementForm({ ...paiementForm, montant: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -446,7 +446,7 @@ export default function FinancePaiementsPage() {
                   type="date"
                   value={paiementForm.datePaiement}
                   onChange={(e) => setPaiementForm({ ...paiementForm, datePaiement: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -456,7 +456,7 @@ export default function FinancePaiementsPage() {
                 value={paiementForm.mode}
                 onChange={(e) => setPaiementForm({ ...paiementForm, mode: e.target.value })}
                 options={MODES}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -464,7 +464,7 @@ export default function FinancePaiementsPage() {
               <Input
                 value={paiementForm.reference}
                 onChange={(e) => setPaiementForm({ ...paiementForm, reference: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>
@@ -485,7 +485,7 @@ export default function FinancePaiementsPage() {
       <Dialog open={openTx} onOpenChange={setOpenTx}>
         <DialogContent
           onClose={() => setOpenTx(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Ajouter une transaction</DialogTitle>
@@ -498,7 +498,7 @@ export default function FinancePaiementsPage() {
                   type="date"
                   value={txForm.date}
                   onChange={(e) => setTxForm({ ...txForm, date: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -510,7 +510,7 @@ export default function FinancePaiementsPage() {
                     { value: "credit", label: "Credit (entree)" },
                     { value: "debit", label: "Debit (sortie)" },
                   ]}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -519,7 +519,7 @@ export default function FinancePaiementsPage() {
               <Input
                 value={txForm.libelle}
                 onChange={(e) => setTxForm({ ...txForm, libelle: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -530,7 +530,7 @@ export default function FinancePaiementsPage() {
                   step="0.01"
                   value={txForm.montant}
                   onChange={(e) => setTxForm({ ...txForm, montant: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -538,7 +538,7 @@ export default function FinancePaiementsPage() {
                 <Input
                   value={txForm.reference}
                   onChange={(e) => setTxForm({ ...txForm, reference: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -548,7 +548,7 @@ export default function FinancePaiementsPage() {
                 value={txForm.factureId}
                 onChange={(e) => setTxForm({ ...txForm, factureId: e.target.value })}
                 options={factureOptions}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>

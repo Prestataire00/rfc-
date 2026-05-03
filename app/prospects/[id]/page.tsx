@@ -205,17 +205,17 @@ export default function ProspectDetailPage() {
     <div>
       <Link
         href="/prospects"
-        className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-4"
       >
         <ArrowLeft className="h-4 w-4" /> Retour aux prospects
       </Link>
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {prospect.prenom} {prospect.nom}
           </h1>
-          <p className="text-sm text-gray-400 mt-1 flex items-center gap-3 flex-wrap">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-3 flex-wrap">
             {prospect.entreprise && <span>{prospect.entreprise}</span>}
             {prospect.email && <a href={`mailto:${prospect.email}`} className="hover:text-red-400 flex items-center gap-1"><Mail className="h-3 w-3" /> {prospect.email}</a>}
             {prospect.telephone && <a href={`tel:${prospect.telephone}`} className="hover:text-red-400 flex items-center gap-1"><Phone className="h-3 w-3" /> {prospect.telephone}</a>}
@@ -224,9 +224,9 @@ export default function ProspectDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 bg-gray-800 border-gray-700">
+        <Card className="lg:col-span-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-base text-gray-100">Informations commerciales</CardTitle>
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">Informations commerciales</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -236,7 +236,7 @@ export default function ProspectDetailPage() {
                   value={form.statut}
                   onChange={(e) => setForm({ ...form, statut: e.target.value })}
                   options={STATUTS}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -245,7 +245,7 @@ export default function ProspectDetailPage() {
                   value={form.attribueA}
                   onChange={(e) => setForm({ ...form, attribueA: e.target.value })}
                   options={userOptions}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -269,7 +269,7 @@ export default function ProspectDetailPage() {
                   type="date"
                   value={form.dateProchaineAction}
                   onChange={(e) => setForm({ ...form, dateProchaineAction: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
               <div className="space-y-1.5">
@@ -277,7 +277,7 @@ export default function ProspectDetailPage() {
                 <Input
                   value={form.source}
                   onChange={(e) => setForm({ ...form, source: e.target.value })}
-                  className="bg-gray-900 border-gray-700"
+                  className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 />
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function ProspectDetailPage() {
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={4}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="flex justify-end">
@@ -298,9 +298,9 @@ export default function ProspectDetailPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-base text-gray-100">Conversion</CardTitle>
+            <CardTitle className="text-base text-gray-900 dark:text-gray-100">Conversion</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {prospect.contactId ? (
@@ -317,7 +317,7 @@ export default function ProspectDetailPage() {
               </div>
             ) : (
               <>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Transformer ce prospect en client cree automatiquement une fiche Contact.
                 </p>
                 <Button
@@ -339,9 +339,9 @@ export default function ProspectDetailPage() {
         </Card>
       </div>
 
-      <Card className="mt-6 bg-gray-800 border-gray-700">
+      <Card className="mt-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base text-gray-100">
+          <CardTitle className="text-base text-gray-900 dark:text-gray-100">
             Activites ({prospect.activities.length})
           </CardTitle>
           <Button onClick={() => setActModalOpen(true)} size="sm" className="bg-red-600 hover:bg-red-700">
@@ -350,7 +350,7 @@ export default function ProspectDetailPage() {
         </CardHeader>
         <CardContent>
           {prospect.activities.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
               Aucune activite enregistree.
             </p>
           ) : (
@@ -358,17 +358,17 @@ export default function ProspectDetailPage() {
               {prospect.activities.map((a) => {
                 const Icon = activityIcon(a.type);
                 return (
-                  <div key={a.id} className="flex gap-3 rounded-lg border border-gray-700 bg-gray-900 p-3">
+                  <div key={a.id} className="flex gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
                     <div className="h-8 w-8 rounded-full bg-red-600/20 text-red-400 flex items-center justify-center shrink-0">
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className="text-sm font-medium text-gray-100">{a.titre}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{a.titre}</p>
                         <span className="text-[11px] text-gray-500 shrink-0">{formatDatetime(a.date)}</span>
                       </div>
                       {a.description && (
-                        <p className="text-xs text-gray-400 mt-1">{a.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{a.description}</p>
                       )}
                     </div>
                   </div>
@@ -382,7 +382,7 @@ export default function ProspectDetailPage() {
       <Dialog open={actModalOpen} onOpenChange={setActModalOpen}>
         <DialogContent
           onClose={() => setActModalOpen(false)}
-          className="bg-gray-800 border-gray-700 text-gray-100"
+          className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
         >
           <DialogHeader>
             <DialogTitle>Ajouter une activite</DialogTitle>
@@ -394,7 +394,7 @@ export default function ProspectDetailPage() {
                 value={actForm.type}
                 onChange={(e) => setActForm({ ...actForm, type: e.target.value })}
                 options={ACTIVITY_TYPES.map((t) => ({ value: t.value, label: t.label }))}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -402,7 +402,7 @@ export default function ProspectDetailPage() {
               <Input
                 value={actForm.titre}
                 onChange={(e) => setActForm({ ...actForm, titre: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -411,7 +411,7 @@ export default function ProspectDetailPage() {
                 value={actForm.description}
                 onChange={(e) => setActForm({ ...actForm, description: e.target.value })}
                 rows={3}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
             <div className="space-y-1.5">
@@ -420,7 +420,7 @@ export default function ProspectDetailPage() {
                 type="datetime-local"
                 value={actForm.date}
                 onChange={(e) => setActForm({ ...actForm, date: e.target.value })}
-                className="bg-gray-900 border-gray-700"
+                className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
               />
             </div>
           </div>

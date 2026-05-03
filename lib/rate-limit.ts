@@ -7,9 +7,9 @@ const buckets = new Map<string, Bucket>();
 if (typeof globalThis !== "undefined") {
   setInterval(() => {
     const now = Date.now();
-    for (const [key, b] of buckets.entries()) {
+    buckets.forEach((b, key) => {
       if (b.resetAt < now) buckets.delete(key);
-    }
+    });
   }, 60_000).unref?.();
 }
 

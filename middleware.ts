@@ -27,6 +27,7 @@ const adminPages = [
   "/documents",
   "/utilisateurs",
   "/parametres",
+  "/admin",
 ];
 
 // Admin-only API prefixes
@@ -81,12 +82,15 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/emargement/public")) return true;
   if (pathname.startsWith("/api/campaigns/unsubscribe")) return true;
   if (pathname.startsWith("/api/qualite/public/")) return true;
+  if (pathname.startsWith("/qualite/share/")) return true;
   if (pathname.startsWith("/api/email-tracking/webhook")) return true;
   if (pathname.startsWith("/catalogue")) return true;
   if (pathname.startsWith("/api/catalogue")) return true;
   if (pathname.startsWith("/badges/")) return true;
   if (pathname.startsWith("/api/badges/verify")) return true;
   if (pathname.startsWith("/presentation")) return true;
+  if (pathname.startsWith("/legal/")) return true;
+  if (pathname.startsWith("/rgpd/demande")) return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname === "/favicon.ico") return true;
   if (pathname === "/logo.svg") return true;

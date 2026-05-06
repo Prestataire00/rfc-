@@ -10,7 +10,7 @@ import {
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, ChevronDown, UserCheck, UserSearch, AlertTriangle, Zap, Mail, Receipt,
-  Route, ListChecks, Sparkles, Database, Key, GitMerge, History,
+  ListChecks, Sparkles, Database, Key, GitMerge, History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +54,6 @@ const adminNavGroups: NavGroup[] = [
           { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
         ],
       },
-      { href: "/parcours", label: "Parcours", icon: Route },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
       {
         href: "/formateurs", label: "Formateurs", icon: GraduationCap,

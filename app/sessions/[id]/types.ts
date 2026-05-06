@@ -1,4 +1,10 @@
-export type Contact = { id: string; nom: string; prenom: string; email: string };
+export type Contact = {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  entreprise?: { id: string; nom: string } | null;
+};
 
 export type Inscription = {
   id: string;

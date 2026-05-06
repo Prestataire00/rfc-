@@ -28,7 +28,7 @@ export default function SessionDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedContactId, setSelectedContactId] = useState("");
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
   const [contactSearch, setContactSearch] = useState("");
@@ -130,8 +130,13 @@ export default function SessionDetailPage() {
   useEffect(() => { fetchSession(); fetchPresence(); fetchBesoins(); fetchAutomations(); }, [fetchSession, fetchPresence, fetchBesoins, fetchAutomations]);
 
   const fetchContacts = async () => {
-    const res = await fetch("/api/contacts");
-    if (res.ok) setContacts(await res.json());
+    // /api/contacts retourne { data, total, page, totalPages, ... }. On lit data.
+    // On augmente la limite a 200 pour eviter d'avoir besoin de paginer dans le dialog d'inscription.
+    const res = await fetch("/api/contacts?limit=200");
+    if (res.ok) {
+      const json = await res.json();
+      setContacts(Array.isArray(json) ? json : (json.data ?? []));
+    }
   };
 
   const handleUpdateStatut = (newStatut: string) => {
@@ -223,22 +228,30 @@ export default function SessionDetailPage() {
   };
 
   const handleAddInscription = async () => {
-    if (!selectedContactId) return;
+    if (selectedContactIds.length === 0) return;
     setAdding(true);
     setAddError("");
-    const res = await fetch(`/api/sessions/${id}/inscriptions`, {
+    const res = await fetch(`/api/sessions/${id}/inscriptions/lot`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: selectedContactId }),
+      body: JSON.stringify({ contactIds: selectedContactIds }),
     });
     if (res.ok) {
+      const data = await res.json();
+      const enrolled = data.enrolled as number;
+      const skipped = data.skipped as number;
+      const errors = data.errors as number;
       setAddOpen(false);
-      setSelectedContactId("");
+      setSelectedContactIds([]);
       setContactSearch("");
-      notify.success("Inscription ajoutee");
+      const parts: string[] = [];
+      if (enrolled > 0) parts.push(`${enrolled} inscrit${enrolled > 1 ? "s" : ""}`);
+      if (skipped > 0) parts.push(`${skipped} deja inscrit${skipped > 1 ? "s" : ""}`);
+      if (errors > 0) parts.push(`${errors} erreur${errors > 1 ? "s" : ""}`);
+      notify.success(parts.join(" - "));
       fetchSession();
     } else {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setAddError(data.error || "Erreur lors de l'inscription");
       notify.error("Erreur", data.error || "Inscription impossible");
     }
@@ -375,20 +388,14 @@ export default function SessionDetailPage() {
   const formatJour = (date: Date) =>
     `${JOURS_LABEL[date.getUTCDay()]} ${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 
-  // Filter contacts for the add dialog
+  // Filter contacts for the add dialog (only exclude already-inscribed; the dialog itself
+  // applies the entreprise/text filters).
   const inscribedContactIds = session?.inscriptions.map((i) => i.contact.id) || [];
   const availableContacts = useMemo(() => {
-    const available = contacts.filter((c) => !inscribedContactIds.includes(c.id));
-    if (!contactSearch) return available;
-    const q = contactSearch.toLowerCase();
-    return available.filter(
-      (c) =>
-        c.nom.toLowerCase().includes(q) ||
-        c.prenom.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q)
-    );
+    return contacts.filter((c) => !inscribedContactIds.includes(c.id));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contacts, contactSearch, session?.inscriptions]);
+  }, [contacts, session?.inscriptions]);
+
 
   if (loading) {
     return (
@@ -1066,19 +1073,20 @@ export default function SessionDetailPage() {
         loading={removing}
       />
 
-      {/* Add inscription dialog with search */}
+      {/* Add inscription dialog with multi-select + filtre entreprise */}
       <AddInscriptionDialog
         open={addOpen}
         onOpenChange={setAddOpen}
         availableContacts={availableContacts}
-        selectedContactId={selectedContactId}
-        setSelectedContactId={setSelectedContactId}
+        selectedContactIds={selectedContactIds}
+        setSelectedContactIds={setSelectedContactIds}
         contactSearch={contactSearch}
         setContactSearch={setContactSearch}
         adding={adding}
         addError={addError}
         onSubmit={handleAddInscription}
         contactsCount={contacts.length}
+        capaciteRestante={(session?.capaciteMax ?? 0) - (session?.inscriptions.length ?? 0)}
       />
 
       {/* QR Code modal */}

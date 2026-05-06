@@ -16,6 +16,7 @@ import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 type Formation = { id: string; titre: string };
 type Formateur = { id: string; nom: string; prenom: string };
 type DevisData = {
+  numero?: string | null;
   objet?: string | null;
   notes?: string | null;
   lignes?: { quantite: number }[];
@@ -68,11 +69,16 @@ function NouvelleSessionForm() {
       0
     );
 
+    const devisNote = devis.numero
+      ? `Devis associé : ${devis.numero}`
+      : "";
+    const baseNotes = devis.notes ? `${devis.notes}\n${devisNote}`.trim() : devisNote;
+
     setFormData((prev) => ({
       ...prev,
       ...(matched ? { formationId: matched.id } : {}),
       capaciteMax: totalQte > 0 ? totalQte : prev.capaciteMax,
-      notes: devis.notes || prev.notes,
+      notes: baseNotes || prev.notes,
     }));
     // formations is intentionally a dep so matching happens once both are loaded
     // eslint-disable-next-line react-hooks/exhaustive-deps

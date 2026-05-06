@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   User, Building2, Mail, Phone, Briefcase, FileText, Calendar, Pencil, Trash2,
   BookOpen, ClipboardList, MessageSquare, FolderOpen, Clock,
-  Star, Euro, CheckCircle2, AlertCircle, Plus, UserCheck, Sparkles,
+  Star, Euro, CheckCircle2, AlertCircle, Plus, UserCheck, Sparkles, Download,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -197,6 +197,13 @@ export default function ContactDetailPage() {
             >
               <Plus className="h-4 w-4" /> Besoin
             </Link>
+            <Button
+              size="sm"
+              onClick={() => window.open(`/api/pdf/fiche-inscription/${id}`, "_blank")}
+              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Download className="h-4 w-4" /> Fiche d&apos;inscription
+            </Button>
             <Link
               href={`/contacts/${id}/modifier`}
               className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"

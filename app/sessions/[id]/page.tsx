@@ -66,6 +66,9 @@ export default function SessionDetailPage() {
   }>>([]);
   const [autoSaving, setAutoSaving] = useState<string | null>(null);
   const [declarationChecked, setDeclarationChecked] = useState(false);
+  const [batchConvocOpen, setBatchConvocOpen] = useState(false);
+  const [batchConvocLoading, setBatchConvocLoading] = useState(false);
+  const [batchConvocResult, setBatchConvocResult] = useState<{ sent: number; failed: number; errors: Array<{ nom: string; error: string }> } | null>(null);
 
   const fetchSession = useCallback(async () => {
     const res = await fetch(`/api/sessions/${id}`);
@@ -339,6 +342,37 @@ export default function SessionDetailPage() {
     else { setEmailMsg(data.error || "Erreur d'envoi"); notify.error("Erreur envoi", data.error); }
     setSendingEmail(null);
     setTimeout(() => setEmailMsg(""), 3000);
+  };
+
+  const handleSendConvocationBatch = async () => {
+    setBatchConvocLoading(true);
+    setBatchConvocResult(null);
+    try {
+      const res = await fetch("/api/email/convocation/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        notify.error("Erreur envoi", data.error || "Erreur inconnue");
+        return;
+      }
+      setBatchConvocResult({ sent: data.sent ?? 0, failed: data.failed ?? 0, errors: data.errors ?? [] });
+      if ((data.sent ?? 0) > 0 && (data.failed ?? 0) === 0) {
+        notify.success(`${data.sent} convocation(s) envoyee(s)`);
+      } else if ((data.sent ?? 0) > 0) {
+        notify.info(`${data.sent} envoyee(s), ${data.failed} echec(s)`);
+      } else {
+        notify.error("Aucune convocation envoyee", `${data.failed} echec(s)`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erreur reseau";
+      notify.error("Erreur envoi", msg);
+    } finally {
+      setBatchConvocLoading(false);
+      setBatchConvocOpen(false);
+    }
   };
 
   const handleTogglePresence = async (contactId: string, jour: Date, field: "matin" | "apresMidi", value: boolean) => {
@@ -932,6 +966,42 @@ export default function SessionDetailPage() {
               </div>
             </div>
 
+            {(session.statut === "confirmee" || session.statut === "en_cours") &&
+              session.inscriptions.length > 0 && (
+                <div className="px-4 py-2 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gray-900/40">
+                  <div className="text-sm text-gray-300">
+                    <span className="font-medium">Convocations</span>
+                    <span className="text-gray-400"> — Envoi groupe a tous les inscrits confirmes</span>
+                  </div>
+                  <button
+                    onClick={() => setBatchConvocOpen(true)}
+                    disabled={batchConvocLoading}
+                    className="inline-flex items-center gap-2 rounded-md bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-500 disabled:opacity-50 transition-colors"
+                  >
+                    <Send className="h-4 w-4" />
+                    {batchConvocLoading ? "Envoi..." : "Envoyer toutes les convocations"}
+                  </button>
+                </div>
+              )}
+
+            {batchConvocResult && (
+              <div className="px-4 py-2 border-b bg-blue-900/10 text-sm">
+                <p className="text-blue-300">
+                  {batchConvocResult.sent} convocation(s) envoyee(s)
+                  {batchConvocResult.failed > 0 ? `, ${batchConvocResult.failed} echec(s)` : ""}
+                </p>
+                {batchConvocResult.errors.length > 0 && (
+                  <ul className="mt-1 text-xs text-red-400 space-y-0.5">
+                    {batchConvocResult.errors.map((e, i) => (
+                      <li key={i}>
+                        {e.nom} : {e.error}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             {inscriptionLink && (
               <div className="px-4 py-2 bg-green-900/20 border-b text-sm flex items-center gap-2">
                 <span className="text-green-400">Lien copié !</span>
@@ -1078,6 +1148,16 @@ export default function SessionDetailPage() {
         description="Cette action supprimera la session et toutes les inscriptions associées."
         onConfirm={handleDelete}
         loading={deleting}
+      />
+
+      {/* Batch convocations confirmation */}
+      <ConfirmDialog
+        open={batchConvocOpen}
+        onOpenChange={setBatchConvocOpen}
+        title="Envoyer toutes les convocations ?"
+        description={`Une convocation par email (avec PDF) sera envoyee a chaque inscrit confirme ayant un email. Les envois sont sequentiels.`}
+        onConfirm={handleSendConvocationBatch}
+        loading={batchConvocLoading}
       />
 
       {/* Remove inscription confirmation */}

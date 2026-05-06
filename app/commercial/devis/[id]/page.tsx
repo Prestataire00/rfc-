@@ -149,7 +149,8 @@ export default function DevisDetailPage() {
   const hasFacture = devis.factures.length > 0;
   const canGenererFacture = !hasFacture;
   const hasSession = devis.sessions && devis.sessions.length > 0;
-  const canPlanifierSession = devis.statut === "signe" && !hasSession;
+  const canPlanifierSession =
+    (devis.statut === "signe" || devis.statut === "accepte") && !hasSession;
 
   const nextStatuts = Object.keys(DEVIS_STATUTS).filter((k) => k !== devis.statut);
 

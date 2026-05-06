@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Trash2, FileText, FilePlus, Building2, User, Phone, Mail,
   MapPin, Hash, ExternalLink, FolderOpen, Clock, Send, Receipt, UserPlus,
-  Calendar, CheckCircle2, XCircle, AlertCircle, Sparkles, Copy,
+  Calendar, CheckCircle2, XCircle, AlertCircle, Sparkles, Copy, Download,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
@@ -217,6 +217,12 @@ export default function BesoinDetailPage() {
               <FilePlus className="h-4 w-4" /> Générer un devis
             </Link>
           )}
+          <button
+            onClick={() => window.open(`/api/pdf/analyse-besoins/${besoin.id}`, "_blank")}
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+          >
+            <Download className="h-4 w-4" /> Analyse besoins
+          </button>
           <button onClick={() => setShowDelete(true)} className="rounded-md border border-red-700 px-3 py-2 text-sm text-red-600 hover:bg-red-900/20">
             <Trash2 className="h-4 w-4" />
           </button>

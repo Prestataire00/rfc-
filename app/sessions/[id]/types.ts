@@ -11,6 +11,10 @@ export type Inscription = {
   statut: string;
   contact: Contact & { entreprise?: { id: string; nom: string } | null };
   dateInscription: string;
+  // Checklist documents remis (JSON-stringified array de strings).
+  // Cles: piece_identite, casier_b3, test_b1, diplome_ssiap, diplome,
+  // photos, cnaps_preal, cnaps_car, cv, titre_sejour, justif_domicile.
+  documentsRemis?: string | null;
 };
 
 export type Session = {

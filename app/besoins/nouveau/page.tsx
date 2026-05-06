@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Building2, User, GraduationCap, X, Lock } from "lucide-react";
+import { Building2, User, GraduationCap, X, Lock, Phone, Mail, MapPin, Globe } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
 import { notify } from "@/lib/toast";
@@ -16,6 +16,8 @@ type Option = {
   prenom?: string;
   entrepriseId?: string | null;
   type?: string;
+  secteur?: string | null;
+  effectif?: number | null;
 };
 
 const ORIGINES = [
@@ -42,6 +44,19 @@ const ORIGINES = [
   },
 ];
 
+const SOURCE_CONTACT = [
+  { value: "telephone", label: "Telephone", icon: Phone },
+  { value: "mail", label: "Mail", icon: Mail },
+  { value: "agence", label: "Agence", icon: MapPin },
+  { value: "site_internet", label: "Site internet", icon: Globe },
+];
+
+const MATERIEL = [
+  { key: "salles", label: "Salles" },
+  { key: "videoprojecteur", label: "Videoprojecteur" },
+  { key: "paperboard", label: "Paperboard" },
+];
+
 type LockedContact = {
   id: string;
   prenom?: string;
@@ -50,6 +65,8 @@ type LockedContact = {
   entrepriseId?: string | null;
   entreprise?: { nom?: string } | null;
 };
+
+type EntrepriseDetail = { id: string; nom: string; secteur?: string | null; effectif?: number | null };
 
 type BesoinCreated = { id: string; titre: string };
 
@@ -77,6 +94,13 @@ export default function NouveauBesoinPage() {
     entrepriseId: paramEntrepriseId,
     contactId: paramContactId,
     formationId: "",
+    // Champs RFC paper - Analyse besoins client
+    sourceContact: "",
+    nature: "", // Affichage seul, depuis entreprise.secteur
+    nbSalaries: "", // Affichage seul, depuis entreprise.effectif
+    lieu: "",
+    observation: "",
+    materielSurPlace: [] as string[],
   });
 
   const { hasDraft, clearDraft } = useAutoSave("besoin_draft", form, (f) => setForm(f));
@@ -87,7 +111,10 @@ export default function NouveauBesoinPage() {
   const { data: contactDetail } = useApi<LockedContact>(
     paramContactId ? `/api/contacts/${paramContactId}` : null
   );
-  const { trigger: createBesoin, isMutating: saving } = useApiMutation<typeof form, BesoinCreated>(
+  const { data: entrepriseDetail } = useApi<EntrepriseDetail>(
+    form.entrepriseId ? `/api/entreprises/${form.entrepriseId}` : null
+  );
+  const { trigger: createBesoin, isMutating: saving } = useApiMutation<Record<string, unknown>, BesoinCreated>(
     "/api/besoins",
     "POST"
   );
@@ -109,7 +136,26 @@ export default function NouveauBesoinPage() {
     }));
   }, [contactDetail, paramContactId]);
 
+  // Auto-remplir nature + nbSalaries depuis l'entreprise
+  useEffect(() => {
+    if (!entrepriseDetail) return;
+    setForm((f) => ({
+      ...f,
+      nature: f.nature || entrepriseDetail.secteur || "",
+      nbSalaries: f.nbSalaries || (entrepriseDetail.effectif != null ? String(entrepriseDetail.effectif) : ""),
+    }));
+  }, [entrepriseDetail]);
+
   const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
+
+  const toggleMateriel = (key: string) => {
+    setForm((f) => ({
+      ...f,
+      materielSurPlace: f.materielSurPlace.includes(key)
+        ? f.materielSurPlace.filter((k) => k !== key)
+        : [...f.materielSurPlace, key],
+    }));
+  };
 
   // Filtrage contacts : le contact verrouille reste TOUJOURS visible
   const contactsVisibles = useMemo(() => {
@@ -127,6 +173,9 @@ export default function NouveauBesoinPage() {
       ...f,
       entrepriseId: newEntrepriseId,
       contactId: lockedContactId || f.contactId,
+      // Reset auto-rempli quand on change d'entreprise
+      nature: "",
+      nbSalaries: "",
     }));
   }
 
@@ -142,10 +191,31 @@ export default function NouveauBesoinPage() {
     e.preventDefault();
     setError("");
 
-    const payload = {
-      ...form,
+    const payload: Record<string, unknown> = {
+      titre: form.titre,
+      description: form.description,
+      origine: form.origine,
+      priorite: form.priorite,
+      nbStagiaires: form.nbStagiaires,
+      datesSouhaitees: form.datesSouhaitees,
+      budget: form.budget,
+      notes: form.notes,
+      entrepriseId: form.entrepriseId,
       contactId: lockedContactId || form.contactId,
+      formationId: form.formationId,
+      sourceContact: form.sourceContact || null,
+      materielSurPlace: JSON.stringify(form.materielSurPlace),
+      observation: form.observation || null,
     };
+
+    // Append "lieu" et "nature/nbSalaries" en notes si remplis (pas de colonnes dediees)
+    const extra: string[] = [];
+    if (form.lieu) extra.push(`Lieu : ${form.lieu}`);
+    if (form.nature) extra.push(`Nature de l'entreprise : ${form.nature}`);
+    if (form.nbSalaries) extra.push(`Nb de salaries : ${form.nbSalaries}`);
+    if (extra.length) {
+      payload.notes = [form.notes, ...extra].filter(Boolean).join("\n");
+    }
 
     try {
       const besoin = await createBesoin(payload);
@@ -161,6 +231,9 @@ export default function NouveauBesoinPage() {
           msg = errBody;
         } else if (errBody && typeof errBody === "object" && "message" in errBody) {
           msg = String((errBody as { message: unknown }).message) || msg;
+        } else if (errBody && typeof errBody === "object" && "fieldErrors" in errBody) {
+          const fe = (errBody as { fieldErrors: Record<string, string[]> }).fieldErrors;
+          msg = Object.entries(fe).map(([k, v]) => `${k}: ${v.join(", ")}`).join(" | ") || msg;
         }
         setError(msg);
         notify.error("Erreur", msg);
@@ -173,47 +246,57 @@ export default function NouveauBesoinPage() {
 
   return (
     <div>
-      <PageHeader title="Nouveau besoin de formation" description="Qualifiez une demande de formation" />
+      <PageHeader title="Nouveau besoin de formation" description="Analyse des besoins clients (RFC)" />
 
       {error && (
-        <div className="max-w-2xl mb-4 rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
+        <div className="max-w-2xl mb-4 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
 
       {/* Bandeau : brouillon restaure */}
       {hasDraft && (
-        <div className="max-w-2xl mb-4 rounded-md bg-blue-950/30 border border-blue-700/50 px-4 py-2 flex items-center justify-between">
-          <p className="text-sm text-blue-300">Un brouillon a ete restaure depuis votre derniere visite</p>
-          <button onClick={() => { clearDraft(); setForm({ titre: "", description: "", origine: "client", priorite: "normale", nbStagiaires: "", datesSouhaitees: "", budget: "", notes: "", entrepriseId: paramEntrepriseId, contactId: paramContactId, formationId: "" }); }} className="text-xs text-blue-400 hover:underline">Repartir de zero</button>
+        <div className="max-w-2xl mb-4 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-300 dark:border-blue-700/50 px-4 py-2 flex items-center justify-between">
+          <p className="text-sm text-blue-800 dark:text-blue-300">Un brouillon a ete restaure depuis votre derniere visite</p>
+          <button
+            onClick={() => {
+              clearDraft();
+              setForm({
+                titre: "", description: "", origine: "client", priorite: "normale", nbStagiaires: "", datesSouhaitees: "", budget: "", notes: "", entrepriseId: paramEntrepriseId, contactId: paramContactId, formationId: "", sourceContact: "", nature: "", nbSalaries: "", lieu: "", observation: "", materielSurPlace: [],
+              });
+            }}
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Repartir de zero
+          </button>
         </div>
       )}
 
       {/* Bandeau : contact verrouille */}
       {lockedContact && (
-        <div className="max-w-2xl mb-4 rounded-md bg-red-950/30 border border-red-700/50 px-4 py-3 flex items-center justify-between">
+        <div className="max-w-2xl mb-4 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-700/50 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Lock className="h-4 w-4 text-red-400" />
+            <Lock className="h-4 w-4 text-red-600 dark:text-red-400" />
             <div>
-              <p className="text-sm text-gray-200">
-                Besoin associe a : <span className="font-semibold text-red-400">{lockedContact.prenom} {lockedContact.nom}</span>
-                {lockedContact.type && <span className="ml-2 text-xs text-gray-400">({lockedContact.type})</span>}
+              <p className="text-sm text-gray-800 dark:text-gray-200">
+                Besoin associe a : <span className="font-semibold text-red-600 dark:text-red-400">{lockedContact.prenom} {lockedContact.nom}</span>
+                {lockedContact.type && <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">({lockedContact.type})</span>}
               </p>
               {lockedContact.entreprise?.nom && (
-                <p className="text-xs text-gray-400 mt-0.5">Entreprise : {lockedContact.entreprise.nom}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Entreprise : {lockedContact.entreprise.nom}</p>
               )}
             </div>
           </div>
-          <button type="button" onClick={unlockContact} className="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1">
+          <button type="button" onClick={unlockContact} className="text-xs text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 flex items-center gap-1">
             <X className="h-3 w-3" /> Changer
           </button>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-        {/* Origine */}
-        <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 space-y-3">
-          <label className="block text-sm font-semibold text-gray-200">Origine de la demande *</label>
+        {/* SECTION : Origine de la demande (radio carte) */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Origine de la demande *</h2>
           <div className="grid grid-cols-3 gap-3">
             {ORIGINES.map((o) => {
               const Icon = o.icon;
@@ -224,31 +307,59 @@ export default function NouveauBesoinPage() {
                   type="button"
                   onClick={() => set("origine", o.value)}
                   className={`rounded-lg border-2 p-4 text-left transition-all ${
-                    selected ? o.color : "border-gray-700 bg-gray-700/30 hover:border-gray-500"
+                    selected ? o.color : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:border-gray-400 dark:hover:border-gray-500"
                   }`}
                 >
-                  <Icon className={`h-5 w-5 mb-2 ${selected ? "text-gray-100" : "text-gray-400"}`} />
-                  <p className={`text-sm font-semibold ${selected ? "text-gray-100" : "text-gray-300"}`}>{o.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{o.description}</p>
+                  <Icon className={`h-5 w-5 mb-2 ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`} />
+                  <p className={`text-sm font-semibold ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}>{o.label}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{o.description}</p>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Champs dynamiques */}
-        <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 space-y-4">
-          {/* Client */}
+        {/* SECTION : Prise de contact (source) */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Prise de contact</h2>
+          <div className="grid grid-cols-4 gap-3">
+            {SOURCE_CONTACT.map((s) => {
+              const Icon = s.icon;
+              const selected = form.sourceContact === s.value;
+              return (
+                <label key={s.value} className={`cursor-pointer rounded-md border-2 p-3 text-center transition-all ${
+                  selected ? "border-red-600 bg-red-50 dark:bg-red-900/10" : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:border-gray-400 dark:hover:border-gray-500"
+                }`}>
+                  <input
+                    type="radio"
+                    name="sourceContact"
+                    value={s.value}
+                    checked={selected}
+                    onChange={(e) => set("sourceContact", e.target.value)}
+                    className="sr-only"
+                  />
+                  <Icon className={`h-5 w-5 mx-auto mb-1 ${selected ? "text-red-600 dark:text-red-500" : "text-gray-500 dark:text-gray-400"}`} />
+                  <p className={`text-xs font-medium ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}>{s.label}</p>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* SECTION : Entreprise */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Entreprise</h2>
+
           {form.origine === "client" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Entreprise {!lockedContactId && "*"}
                 </label>
                 <select
                   value={form.entrepriseId}
                   onChange={(e) => handleEntrepriseChange(e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
+                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
                 >
                   <option value="">-- Selectionner une entreprise --</option>
                   {entreprises.map((e) => (
@@ -256,41 +367,76 @@ export default function NouveauBesoinPage() {
                   ))}
                 </select>
                 {lockedContactId && !form.entrepriseId && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                     Ce prospect n&apos;a pas d&apos;entreprise rattachee. Tu peux en selectionner une ou laisser vide.
                   </p>
                 )}
               </div>
+
               {/* Contact referent : masque si verrouille */}
               {!lockedContactId && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Contact referent</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact referent</label>
                   <select
                     value={form.contactId}
                     onChange={(e) => set("contactId", e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
                   >
                     <option value="">-- Selectionner un contact --</option>
                     {contactsVisibles.map((c) => (
                       <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
                     ))}
                   </select>
-                  {form.entrepriseId && contactsVisibles.length === 0 && (
-                    <p className="text-xs text-amber-400 mt-1">Aucun contact rattache a cette entreprise.</p>
-                  )}
                 </div>
               )}
+
+              {/* Nature + Nb salaries (auto depuis entreprise) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nature (secteur)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.nature}
+                    onChange={(e) => set("nature", e.target.value)}
+                    placeholder="Auto-rempli depuis l'entreprise"
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nb de salaries
+                  </label>
+                  <input
+                    type="number"
+                    value={form.nbSalaries}
+                    onChange={(e) => set("nbSalaries", e.target.value)}
+                    placeholder="Auto depuis effectif"
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nb de stagiaires (a former)</label>
+                <input
+                  type="number"
+                  value={form.nbStagiaires}
+                  onChange={(e) => set("nbStagiaires", e.target.value)}
+                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                />
+              </div>
             </>
           )}
 
-          {/* Stagiaire */}
           {form.origine === "stagiaire" && !lockedContactId && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Stagiaire / Individu *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stagiaire / Individu *</label>
               <select
                 value={form.contactId}
                 onChange={(e) => set("contactId", e.target.value)}
-                className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
               >
                 <option value="">-- Selectionner un stagiaire --</option>
                 {contacts.map((c) => (
@@ -302,32 +448,101 @@ export default function NouveauBesoinPage() {
             </div>
           )}
 
-          {/* Centre */}
           {form.origine === "centre" && (
-            <div className="rounded-md bg-gray-700 px-4 py-3 text-sm text-gray-300">
+            <div className="rounded-md bg-gray-100 dark:bg-gray-700 px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
               Cette demande est une initiative interne du centre. Elle ne sera pas liee a un client ou stagiaire specifique.
             </div>
           )}
+        </div>
 
-          {/* Titre */}
+        {/* SECTION : Formation souhaitee */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Formation souhaitee</h2>
+
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Titre de la demande *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre de la demande *</label>
             <input
               type="text"
               required
               value={form.titre}
               onChange={(e) => set("titre", e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
+              className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
               placeholder="Ex: Formation Securite Incendie pour 10 salaries"
             />
           </div>
 
-          {/* Description */}
-          <div className="rounded-lg border border-red-700/30 bg-red-900/5 p-4 space-y-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Formation</label>
+            <select
+              value={form.formationId}
+              onChange={(e) => set("formationId", e.target.value)}
+              className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+            >
+              <option value="">-- Pas encore definie --</option>
+              {formations.map((f) => (
+                <option key={f.id} value={f.id}>{f.titre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dates souhaitees</label>
+              <input
+                type="text"
+                value={form.datesSouhaitees}
+                onChange={(e) => set("datesSouhaitees", e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                placeholder="Ex: semaine du 15 mai"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lieu</label>
+              <input
+                type="text"
+                value={form.lieu}
+                onChange={(e) => set("lieu", e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                placeholder="Sur site / Centre RFC / Autre"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priorite</label>
+              <select
+                value={form.priorite}
+                onChange={(e) => set("priorite", e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+              >
+                <option value="basse">Basse</option>
+                <option value="normale">Normale</option>
+                <option value="haute">Haute</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Budget indicatif (EUR)</label>
+              <input
+                type="number"
+                value={form.budget}
+                onChange={(e) => set("budget", e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION : Besoins particuliers */}
+        <div className="rounded-lg border border-red-300 dark:border-red-700/30 bg-red-50/50 dark:bg-red-900/5 p-6 space-y-4">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Besoins particuliers</h2>
+
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-semibold text-gray-100">Descriptif de la demande *</label>
-                <p className="text-xs text-gray-400 mt-0.5">Contexte, objectifs, contraintes, delais, public cible...</p>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">Descriptif de la demande *</label>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Contexte, objectifs, contraintes, delais, public cible...</p>
               </div>
               <AIButton
                 endpoint="/api/ai/besoin"
@@ -339,65 +554,64 @@ export default function NouveauBesoinPage() {
             <textarea
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
-              className="w-full rounded-md border border-gray-600 bg-gray-900 text-gray-100 px-3 py-2.5 text-sm resize-y min-h-[140px]"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm resize-y min-h-[140px]"
               rows={6}
               placeholder="Contexte, objectifs, contraintes, delais..."
             />
             <p className="text-xs text-gray-500 text-right">{form.description.length} caracteres</p>
           </div>
 
-          {/* Formation souhaitee */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Formation souhaitee</label>
-            <select
-              value={form.formationId}
-              onChange={(e) => set("formationId", e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-            >
-              <option value="">-- Pas encore definie --</option>
-              {formations.map((f) => (
-                <option key={f.id} value={f.id}>{f.titre}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Priorite + Nb stagiaires + Budget + Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Priorite</label>
-              <select
-                value={form.priorite}
-                onChange={(e) => set("priorite", e.target.value)}
-                className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm"
-              >
-                <option value="basse">Basse</option>
-                <option value="normale">Normale</option>
-                <option value="haute">Haute</option>
-                <option value="urgente">Urgente</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Nb stagiaires</label>
-              <input type="number" value={form.nbStagiaires} onChange={(e) => set("nbStagiaires", e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Budget indicatif (EUR)</label>
-              <input type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Dates souhaitees</label>
-              <input type="text" value={form.datesSouhaitees} onChange={(e) => set("datesSouhaitees", e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 text-sm" placeholder="Ex: semaine du 15 mai" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Notes internes</label>
-            <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} className="w-full rounded-md border border-gray-600 bg-gray-700 text-gray-100 px-3 py-2 text-sm" rows={3} />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observation</label>
+            <textarea
+              value={form.observation}
+              onChange={(e) => set("observation", e.target.value)}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+              rows={3}
+              placeholder="Remarques particulieres, points de vigilance..."
+            />
           </div>
         </div>
 
+        {/* SECTION : Materiel sur place */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Materiel sur place</h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Cocher le materiel disponible chez le client.</p>
+          <div className="grid grid-cols-3 gap-3">
+            {MATERIEL.map((m) => {
+              const checked = form.materielSurPlace.includes(m.key);
+              return (
+                <label key={m.key} className={`cursor-pointer rounded-md border-2 px-4 py-3 text-sm flex items-center gap-2 transition-all ${
+                  checked ? "border-red-600 bg-red-50 dark:bg-red-900/10 text-gray-900 dark:text-gray-100" : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleMateriel(m.key)}
+                    className="text-red-600 focus:ring-red-500"
+                  />
+                  {m.label}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Notes internes */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes internes</label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => set("notes", e.target.value)}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm"
+            rows={3}
+          />
+        </div>
+
         <div className="flex items-center justify-end gap-3">
-          <button type="button" onClick={() => router.back()} className="px-4 py-2 rounded-md border border-gray-600 bg-gray-800 text-sm text-gray-300 hover:bg-gray-700">Annuler</button>
+          <button type="button" onClick={() => router.back()} className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            Annuler
+          </button>
           <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-sm text-white font-medium disabled:opacity-50">
             {saving ? "Creation..." : "Creer le besoin"}
           </button>

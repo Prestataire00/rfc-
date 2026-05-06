@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +33,33 @@ interface ContactData {
   numeroPasseportPrevention?: string | null;
   besoinsAdaptation?: string | null;
   niveauFormation?: string | null;
+  // Champs RFC paper
+  sexe?: string | null;
+  lieuNaissance?: string | null;
+  pays?: string | null;
+  adressePerso?: string | null;
+  codePostalPerso?: string | null;
+  villePerso?: string | null;
+  numeroCartePro?: string | null;
+  numeroFranceTravail?: string | null;
+  diplomeObtenu?: string | null;
 }
 
 const typeOptions = Object.entries(CONTACT_TYPES).map(([key, val]) => ({
   value: key,
   label: val.label,
 }));
+
+const niveauFormationOptions = [
+  { value: "", label: "Non precise" },
+  { value: "sans_diplome", label: "Sans diplome" },
+  { value: "cap", label: "CAP / BEP" },
+  { value: "bac", label: "BAC" },
+  { value: "bac+2", label: "BAC+2" },
+  { value: "bac+3", label: "BAC+3" },
+  { value: "bac+5", label: "BAC+5 ou plus" },
+  { value: "autre", label: "Autre" },
+];
 
 export default function ModifierContactPage() {
   const params = useParams();
@@ -49,19 +69,32 @@ export default function ModifierContactPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
+    // Renseignements personnels
     nom: "",
     prenom: "",
-    email: "",
+    sexe: "",
+    dateNaissance: "",
+    lieuNaissance: "",
+    pays: "France",
+    numeroSecuriteSociale: "",
+    adressePerso: "",
+    codePostalPerso: "",
+    villePerso: "",
     telephone: "",
-    poste: "",
+    email: "",
+    numeroCartePro: "",
+    numeroFranceTravail: "",
+    // Diplome / Experience
+    niveauFormation: "",
+    diplomeObtenu: "",
+    // Type & rattachement
     type: "prospect",
     entrepriseId: "",
+    poste: "",
     notes: "",
-    dateNaissance: "",
-    numeroSecuriteSociale: "",
+    // Stagiaire-only legacy
     numeroPasseportPrevention: "",
     besoinsAdaptation: "",
-    niveauFormation: "",
   });
   const [secuEditable, setSecuEditable] = useState(false);
   const [secuMasked, setSecuMasked] = useState("");
@@ -79,17 +112,26 @@ export default function ModifierContactPage() {
     setForm({
       nom: contact.nom ?? "",
       prenom: contact.prenom ?? "",
-      email: contact.email ?? "",
+      sexe: contact.sexe ?? "",
+      dateNaissance: contact.dateNaissance ? contact.dateNaissance.slice(0, 10) : "",
+      lieuNaissance: contact.lieuNaissance ?? "",
+      pays: contact.pays ?? "France",
+      numeroSecuriteSociale: "",
+      adressePerso: contact.adressePerso ?? "",
+      codePostalPerso: contact.codePostalPerso ?? "",
+      villePerso: contact.villePerso ?? "",
       telephone: contact.telephone ?? "",
-      poste: contact.poste ?? "",
+      email: contact.email ?? "",
+      numeroCartePro: contact.numeroCartePro ?? "",
+      numeroFranceTravail: contact.numeroFranceTravail ?? "",
+      niveauFormation: contact.niveauFormation ?? "",
+      diplomeObtenu: contact.diplomeObtenu ?? "",
       type: contact.type ?? "prospect",
       entrepriseId: contact.entrepriseId ?? "",
+      poste: contact.poste ?? "",
       notes: contact.notes ?? "",
-      dateNaissance: contact.dateNaissance ? contact.dateNaissance.slice(0, 10) : "",
-      numeroSecuriteSociale: "",
       numeroPasseportPrevention: contact.numeroPasseportPrevention ?? "",
       besoinsAdaptation: contact.besoinsAdaptation ?? "",
-      niveauFormation: contact.niveauFormation ?? "",
     });
   }, [contact]);
 
@@ -113,14 +155,15 @@ export default function ModifierContactPage() {
     setError(null);
 
     const payload: Record<string, unknown> = { ...form };
-    if (!payload.entrepriseId) delete payload.entrepriseId;
-    if (!payload.email) delete payload.email;
-    if (!payload.telephone) delete payload.telephone;
-    if (!payload.poste) delete payload.poste;
-    if (!payload.notes) delete payload.notes;
-    if (!payload.numeroPasseportPrevention) delete payload.numeroPasseportPrevention;
-    if (!payload.besoinsAdaptation) delete payload.besoinsAdaptation;
-    if (!payload.niveauFormation) delete payload.niveauFormation;
+    const optionalKeys = [
+      "entrepriseId", "email", "telephone", "poste", "notes", "sexe", "lieuNaissance",
+      "adressePerso", "codePostalPerso", "villePerso", "numeroCartePro",
+      "numeroFranceTravail", "niveauFormation", "diplomeObtenu",
+      "numeroPasseportPrevention", "besoinsAdaptation",
+    ];
+    for (const k of optionalKeys) {
+      if (!payload[k]) delete payload[k];
+    }
     // Date naissance
     if (form.dateNaissance) {
       payload.dateNaissance = new Date(form.dateNaissance).toISOString();
@@ -162,168 +205,73 @@ export default function ModifierContactPage() {
           { label: "Contact", href: `/contacts/${id}` },
           { label: "Modifier" },
         ]} />
-        <h1 className="text-2xl font-bold text-gray-100">Modifier le contact</h1>
-        <p className="text-sm text-gray-400 mt-1">Mettez à jour les informations du contact</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Modifier le contact</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Mettez à jour les informations issues de la fiche d&apos;inscription individuelle
+        </p>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
+        <div className="mb-4 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
+        {/* SECTION 1 : Renseignements personnels */}
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle className="text-base">Identité</CardTitle>
+            <CardTitle className="text-base text-red-600 dark:text-red-500">
+              <h2>1. Renseignements personnels</h2>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="prenom">Prénom <span className="text-red-500">*</span></Label>
-                <Input
-                  id="prenom"
-                  name="prenom"
-                  value={form.prenom}
-                  onChange={handleChange}
-                  placeholder="Jean"
-                  required
-                />
+                <Input id="prenom" name="prenom" value={form.prenom} onChange={handleChange} placeholder="Jean" required />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="nom">Nom <span className="text-red-500">*</span></Label>
-                <Input
-                  id="nom"
-                  name="nom"
-                  value={form.nom}
-                  onChange={handleChange}
-                  placeholder="Dupont"
-                  required
-                />
+                <Input id="nom" name="nom" value={form.nom} onChange={handleChange} placeholder="Dupont" required />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="type">Type <span className="text-red-500">*</span></Label>
-              <Select
-                id="type"
-                name="type"
-                value={form.type}
-                onChange={handleChange}
-                options={typeOptions}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="poste">Poste</Label>
-              <Input
-                id="poste"
-                name="poste"
-                value={form.poste}
-                onChange={handleChange}
-                placeholder="Responsable formation"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-base">Coordonnées</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="jean.dupont@exemple.fr"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="telephone">Téléphone</Label>
-              <Input
-                id="telephone"
-                name="telephone"
-                type="tel"
-                value={form.telephone}
-                onChange={handleChange}
-                placeholder="06 12 34 56 78"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-base">Entreprise & Notes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="entrepriseId">Entreprise</Label>
-              <Select
-                id="entrepriseId"
-                name="entrepriseId"
-                value={form.entrepriseId}
-                onChange={handleChange}
-                options={entrepriseOptions}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                value={form.notes}
-                onChange={handleChange}
-                placeholder="Informations complémentaires..."
-                rows={4}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Donnees stagiaire (Qualiopi / BPF / Passeport Prevention) */}
-        {form.type === "stagiaire" && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-base">Donnees stagiaire (Qualiopi)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="dateNaissance">Date de naissance</Label>
-                  <Input id="dateNaissance" name="dateNaissance" type="date" value={form.dateNaissance} onChange={handleChange} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="niveauFormation">Niveau de formation</Label>
-                  <select
-                    id="niveauFormation"
-                    name="niveauFormation"
-                    value={form.niveauFormation}
-                    onChange={handleChange}
-                    className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="">Non precise</option>
-                    <option value="sans_diplome">Sans diplome</option>
-                    <option value="cap">CAP / BEP</option>
-                    <option value="bac">BAC</option>
-                    <option value="bac+2">BAC+2</option>
-                    <option value="bac+3">BAC+3</option>
-                    <option value="bac+5">BAC+5 ou plus</option>
-                    <option value="autre">Autre</option>
-                  </select>
-                </div>
+              <Label>Sexe</Label>
+              <div className="flex gap-4">
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input type="radio" name="sexe" value="M" checked={form.sexe === "M"} onChange={handleChange} className="text-red-600 focus:ring-red-500" />
+                  Masculin
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input type="radio" name="sexe" value="F" checked={form.sexe === "F"} onChange={handleChange} className="text-red-600 focus:ring-red-500" />
+                  Feminin
+                </label>
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="dateNaissance">Date de naissance</Label>
+                <Input id="dateNaissance" name="dateNaissance" type="date" value={form.dateNaissance} onChange={handleChange} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lieuNaissance">Lieu de naissance</Label>
+                <Input id="lieuNaissance" name="lieuNaissance" value={form.lieuNaissance} onChange={handleChange} placeholder="Toulon" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="pays">Pays</Label>
+                <Input id="pays" name="pays" value={form.pays} onChange={handleChange} placeholder="France" />
+              </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="numeroSecuriteSociale">Numero de securite sociale</Label>
+                  <Label htmlFor="numeroSecuriteSociale">N° de securite sociale</Label>
                   {!secuEditable && secuMasked && (
-                    <button type="button" onClick={() => setSecuEditable(true)} className="text-xs text-red-500 hover:underline">Modifier</button>
+                    <button type="button" onClick={() => setSecuEditable(true)} className="text-xs text-red-600 hover:underline">Modifier</button>
                   )}
                 </div>
                 {secuEditable || !secuMasked ? (
@@ -337,32 +285,124 @@ export default function ModifierContactPage() {
                     className="font-mono"
                   />
                 ) : (
-                  <Input value={secuMasked} disabled className="font-mono bg-gray-900" />
+                  <Input value={secuMasked} disabled className="font-mono bg-gray-100 dark:bg-gray-900" />
                 )}
-                <p className="text-xs text-gray-500">Donnee sensible. Accessible uniquement en lecture pour audit Qualiopi.</p>
               </div>
+            </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="adressePerso">Adresse personnelle</Label>
+              <Input id="adressePerso" name="adressePerso" value={form.adressePerso} onChange={handleChange} placeholder="12 rue des Lilas" />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="codePostalPerso">Code postal</Label>
+                <Input id="codePostalPerso" name="codePostalPerso" value={form.codePostalPerso} onChange={handleChange} placeholder="83000" />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label htmlFor="villePerso">Ville</Label>
+                <Input id="villePerso" name="villePerso" value={form.villePerso} onChange={handleChange} placeholder="Toulon" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="telephone">Téléphone</Label>
+                <Input id="telephone" name="telephone" type="tel" value={form.telephone} onChange={handleChange} placeholder="06 12 34 56 78" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="jean.dupont@exemple.fr" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="numeroCartePro">N° carte pro CNAPS / autorisation prealable</Label>
+                <Input id="numeroCartePro" name="numeroCartePro" value={form.numeroCartePro} onChange={handleChange} placeholder="CAR-XXX..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="numeroFranceTravail">N° allocataire France Travail</Label>
+                <Input id="numeroFranceTravail" name="numeroFranceTravail" value={form.numeroFranceTravail} onChange={handleChange} placeholder="Identifiant France Travail" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 2 : Diplome / Experience */}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-base text-red-600 dark:text-red-500">
+              <h2>2. Diplome / Experience</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="niveauFormation">Niveau de formation</Label>
+                <Select id="niveauFormation" name="niveauFormation" value={form.niveauFormation} onChange={handleChange} options={niveauFormationOptions} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="diplomeObtenu">Diplome obtenu (le plus eleve)</Label>
+                <Input id="diplomeObtenu" name="diplomeObtenu" value={form.diplomeObtenu} onChange={handleChange} placeholder="Ex: BAC Pro Securite" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SECTION 3 : Type & rattachement */}
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="text-base text-red-600 dark:text-red-500">
+              <h2>3. Type &amp; rattachement</h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Type <span className="text-red-500">*</span></Label>
+              <div className="flex gap-4 flex-wrap">
+                {typeOptions.map((opt) => (
+                  <label key={opt.value} className="inline-flex items-center gap-2 text-sm">
+                    <input type="radio" name="type" value={opt.value} checked={form.type === opt.value} onChange={handleChange} className="text-red-600 focus:ring-red-500" />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="entrepriseId">Entreprise</Label>
+              <Select id="entrepriseId" name="entrepriseId" value={form.entrepriseId} onChange={handleChange} options={entrepriseOptions} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="poste">Poste</Label>
+              <Input id="poste" name="poste" value={form.poste} onChange={handleChange} placeholder="Responsable formation" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" name="notes" value={form.notes} onChange={handleChange} placeholder="Informations complémentaires..." rows={3} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Donnees stagiaire (Qualiopi / BPF / Passeport Prevention) */}
+        {form.type === "stagiaire" && (
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">Donnees stagiaire (Qualiopi)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="numeroPasseportPrevention">Numero Passeport Prevention</Label>
-                <Input
-                  id="numeroPasseportPrevention"
-                  name="numeroPasseportPrevention"
-                  value={form.numeroPasseportPrevention}
-                  onChange={handleChange}
-                  placeholder="Obligation ministerielle (decret 2022-1434)"
-                />
+                <Input id="numeroPasseportPrevention" name="numeroPasseportPrevention" value={form.numeroPasseportPrevention} onChange={handleChange} placeholder="Obligation ministerielle (decret 2022-1434)" />
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="besoinsAdaptation">Besoins d&apos;adaptation / RQTH</Label>
-                <Textarea
-                  id="besoinsAdaptation"
-                  name="besoinsAdaptation"
-                  value={form.besoinsAdaptation}
-                  onChange={handleChange}
-                  placeholder="Contraintes, amenagements souhaites, RQTH..."
-                  rows={3}
-                />
+                <Textarea id="besoinsAdaptation" name="besoinsAdaptation" value={form.besoinsAdaptation} onChange={handleChange} placeholder="Contraintes, amenagements souhaites, RQTH..." rows={3} />
               </div>
             </CardContent>
           </Card>
@@ -371,7 +411,7 @@ export default function ModifierContactPage() {
         <div className="flex justify-end gap-3">
           <Link
             href={`/contacts/${id}`}
-            className="inline-flex items-center rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Annuler
           </Link>

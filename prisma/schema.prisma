@@ -88,6 +88,17 @@ model Contact {
   niveauFormation            String?  // sans_diplome | cap | bac | bac+2 | autre
   optOutMarketing            Boolean  @default(false) // RGPD : opt-out campagnes marketing
 
+  // Champs ajoutes pour la fiche d'inscription individuelle papier
+  sexe                String?  // "M" | "F"
+  lieuNaissance       String?
+  pays                String?  @default("France")
+  adressePerso        String?  // distincte de l'entreprise
+  codePostalPerso     String?
+  villePerso          String?
+  numeroCartePro      String?  // N° carte pro CNAPS / autorisation prealable
+  numeroFranceTravail String?  // N° allocataire France Travail (ex Pole Emploi)
+  diplomeObtenu       String?  // diplome le plus eleve obtenu (libre)
+
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
@@ -274,6 +285,11 @@ model Inscription {
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  // Checklist "Documents remis" issue de la fiche d'inscription papier
+  // JSON array of strings: ["piece_identite", "casier_b3", "test_b1", "diplome_ssiap",
+  //   "diplome", "photos", "cnaps_preal", "cnaps_car", "cv", "titre_sejour", "justif_domicile"]
+  documentsRemis    String   @default("[]")
+
   @@unique([contactId, sessionId])
 }
 
@@ -305,6 +321,11 @@ model BesoinFormation {
 
   devisId      String?
   devis        Devis?      @relation(fields: [devisId], references: [id], onDelete: SetNull)
+
+  // Champs ajoutes pour l'analyse des besoins client papier
+  sourceContact     String?  // "telephone" | "mail" | "agence" | "site_internet"
+  materielSurPlace  String   @default("[]") // JSON array: ["salles", "videoprojecteur", "paperboard"]
+  observation       String?
 
   @@index([statut])
   @@index([entrepriseId])

@@ -15,6 +15,16 @@ export const contactSchema = z.object({
   numeroPasseportPrevention: z.string().optional().nullable(),
   besoinsAdaptation: z.string().optional().nullable(),
   niveauFormation: z.string().optional().nullable(),
+  // Champs ajoutes pour la fiche d'inscription individuelle papier
+  sexe: z.enum(["M", "F"]).optional().nullable(),
+  lieuNaissance: z.string().optional().nullable(),
+  pays: z.string().optional().nullable(),
+  adressePerso: z.string().optional().nullable(),
+  codePostalPerso: z.string().optional().nullable(),
+  villePerso: z.string().optional().nullable(),
+  numeroCartePro: z.string().optional().nullable(),
+  numeroFranceTravail: z.string().optional().nullable(),
+  diplomeObtenu: z.string().optional().nullable(),
 });
 
 export type ContactFormData = z.infer<typeof contactSchema>;

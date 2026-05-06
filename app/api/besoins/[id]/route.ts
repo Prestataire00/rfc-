@@ -37,6 +37,9 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
       contactId: body.contactId || null,
       formationId: body.formationId || null,
       devisId: body.devisId || null,
+      sourceContact: body.sourceContact || null,
+      materielSurPlace: body.materielSurPlace ?? "[]",
+      observation: body.observation || null,
     },
   });
 

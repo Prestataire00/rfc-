@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2, Star, BarChart3, ArrowRight } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -70,6 +70,17 @@ export default function SessionDetailPage() {
   const [batchConvocLoading, setBatchConvocLoading] = useState(false);
   const [batchConvocResult, setBatchConvocResult] = useState<{ sent: number; failed: number; errors: Array<{ nom: string; error: string }> } | null>(null);
 
+  // Synthese evaluations (visible si session terminee)
+  type SyntheseBlock = {
+    total: number;
+    completes: number;
+    tauxReponse: number;
+    noteMoyenne: number;
+    repartition: [number, number, number, number, number];
+    commentaires: Array<{ id: string; commentaire: string; noteGlobale: number | null; createdAt: string }>;
+  };
+  const [synthese, setSynthese] = useState<{ chaud: SyntheseBlock; froid: SyntheseBlock } | null>(null);
+
   const fetchSession = useCallback(async () => {
     const res = await fetch(`/api/sessions/${id}`);
     if (res.ok) setSession(await res.json());
@@ -131,7 +142,13 @@ export default function SessionDetailPage() {
     setAutoSaving(null);
   };
 
-  useEffect(() => { fetchSession(); fetchPresence(); fetchBesoins(); fetchAutomations(); }, [fetchSession, fetchPresence, fetchBesoins, fetchAutomations]);
+  const fetchSynthese = useCallback(async () => {
+    const r = await fetch(`/api/sessions/${id}/evaluations-synthese`);
+    if (!r.ok) return;
+    setSynthese(await r.json());
+  }, [id]);
+
+  useEffect(() => { fetchSession(); fetchPresence(); fetchBesoins(); fetchAutomations(); fetchSynthese(); }, [fetchSession, fetchPresence, fetchBesoins, fetchAutomations, fetchSynthese]);
 
   const fetchContacts = async () => {
     // /api/contacts retourne { data, total, page, totalPages, ... }. On lit data.
@@ -1095,6 +1112,97 @@ export default function SessionDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Resultats evaluations (session terminee) ─────────────────────── */}
+      {session.statut === "terminee" && synthese && (
+        <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-purple-500" />
+              Resultats evaluations
+            </h2>
+            <Link
+              href={`/evaluations?sessionId=${session.id}`}
+              className="inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-400"
+            >
+              Voir toutes les evaluations <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(["chaud", "froid"] as const).map((kind) => {
+              const block = synthese[kind];
+              const label = kind === "chaud" ? "Satisfaction a chaud" : "Satisfaction a froid";
+              return (
+                <div key={kind} className="rounded-lg border border-gray-700 bg-gray-900/50 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-200 text-sm">{label}</h3>
+                    <span className="text-xs text-gray-400">
+                      {block.completes}/{block.total || session.inscriptions.length} reponse{block.completes > 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {/* Taux de reponse */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                      <span>Taux de reponse</span>
+                      <span className="font-semibold text-gray-200">{block.tauxReponse}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, block.tauxReponse)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Note moyenne */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                      <span>Note moyenne</span>
+                      <span className="font-semibold text-gray-200">
+                        {block.noteMoyenne > 0 ? `${block.noteMoyenne.toFixed(1)} / 5` : "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < Math.round(block.noteMoyenne)
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-gray-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Derniers commentaires */}
+                  {block.commentaires.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-400 mb-1.5">Derniers commentaires</p>
+                      <ul className="space-y-1.5">
+                        {block.commentaires.slice(0, 3).map((c) => (
+                          <li
+                            key={c.id}
+                            className="rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1.5 text-xs text-gray-300"
+                          >
+                            <span className="line-clamp-3">{c.commentaire}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {block.completes === 0 && (
+                    <p className="text-xs text-gray-500 italic">Aucune reponse pour le moment.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Feuille de présence / Emargement V2 ─────────────────────────── */}
       {["confirmee", "en_cours", "terminee"].includes(session.statut) &&

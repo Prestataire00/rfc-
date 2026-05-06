@@ -1,6 +1,15 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
+import { escapeCsv, formatDateCsv, csvResponse } from "@/lib/export-utils";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const STATUTS: Record<string, string> = {
+  en_attente: "En attente",
+  envoyee: "Envoyée",
+  payee: "Payée",
+  en_retard: "En retard",
+  annulee: "Annulée",
+};
 
 export const GET = withErrorHandler(async () => {
   const factures = await prisma.facture.findMany({
@@ -12,48 +21,16 @@ export const GET = withErrorHandler(async () => {
 
   const header = "Numéro;Client;Montant HT;Montant TTC;Statut;Date émission;Date échéance";
   const rows = factures.map((f) => {
-    const numero = escapeCsv(f.numero);
-    const client = escapeCsv(f.entreprise?.nom || "");
-    const montantHT = f.montantHT.toFixed(2).replace(".", ",");
-    const montantTTC = f.montantTTC.toFixed(2).replace(".", ",");
-    const statut = formatStatut(f.statut);
-    const dateEmission = formatDate(f.dateEmission);
-    const dateEcheance = formatDate(f.dateEcheance);
-    return `${numero};${client};${montantHT};${montantTTC};${statut};${dateEmission};${dateEcheance}`;
+    return [
+      escapeCsv(f.numero),
+      escapeCsv(f.entreprise?.nom || ""),
+      f.montantHT.toFixed(2).replace(".", ","),
+      f.montantTTC.toFixed(2).replace(".", ","),
+      escapeCsv(STATUTS[f.statut] || f.statut),
+      formatDateCsv(f.dateEmission),
+      formatDateCsv(f.dateEcheance),
+    ].join(";");
   });
 
-  const csv = "﻿" + [header, ...rows].join("\r\n");
-
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="factures.csv"',
-    },
-  });
+  return csvResponse([header, ...rows], "factures.csv");
 });
-
-function escapeCsv(value: string): string {
-  if (value.includes(";") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function formatStatut(statut: string): string {
-  const labels: Record<string, string> = {
-    en_attente: "En attente",
-    envoyee: "Envoyée",
-    payee: "Payée",
-    en_retard: "En retard",
-    annulee: "Annulée",
-  };
-  return labels[statut] || statut;
-}

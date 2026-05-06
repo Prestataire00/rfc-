@@ -1,39 +1,34 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
+import { escapeCsv, formatDateCsv, csvResponse } from "@/lib/export-utils";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const TYPES: Record<string, string> = {
+  prospect: "Prospect",
+  client: "Client",
+  stagiaire: "Stagiaire",
+};
 
 export const GET = withErrorHandler(async () => {
   const contacts = await prisma.contact.findMany({
     include: {
-      entreprise: { select: { nom: true, ville: true } },
+      entreprise: { select: { nom: true } },
     },
     orderBy: { nom: "asc" },
   });
 
-  const header = "Nom;Prénom;Email;Téléphone;Entreprise;Ville";
+  const header = "Nom;Prénom;Email;Téléphone;Type;Entreprise;Date création";
   const rows = contacts.map((c) => {
-    const nom = escapeCsv(c.nom);
-    const prenom = escapeCsv(c.prenom);
-    const email = escapeCsv(c.email);
-    const telephone = escapeCsv(c.telephone || "");
-    const entreprise = escapeCsv(c.entreprise?.nom || "");
-    const ville = escapeCsv(c.entreprise?.ville || "");
-    return `${nom};${prenom};${email};${telephone};${entreprise};${ville}`;
+    return [
+      escapeCsv(c.nom),
+      escapeCsv(c.prenom),
+      escapeCsv(c.email),
+      escapeCsv(c.telephone || ""),
+      escapeCsv(TYPES[c.type] || c.type),
+      escapeCsv(c.entreprise?.nom || ""),
+      formatDateCsv(c.createdAt),
+    ].join(";");
   });
 
-  const csv = "﻿" + [header, ...rows].join("\r\n");
-
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="contacts.csv"',
-    },
-  });
+  return csvResponse([header, ...rows], "contacts.csv");
 });
-
-function escapeCsv(value: string): string {
-  if (value.includes(";") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}

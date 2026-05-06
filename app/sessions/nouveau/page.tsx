@@ -14,7 +14,12 @@ import { SESSION_STATUTS } from "@/lib/constants";
 import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Formation = { id: string; titre: string };
-type Formateur = { id: string; nom: string; prenom: string };
+type Formateur = {
+  id: string;
+  nom: string;
+  prenom: string;
+  disponibilite?: "disponible" | "indisponible" | "conflit" | "inconnu";
+};
 type DevisData = {
   numero?: string | null;
   objet?: string | null;
@@ -44,7 +49,11 @@ function NouvelleSessionForm() {
   });
 
   const { data: formationsRaw } = useApi<Formation[] | { formations: Formation[] }>("/api/formations");
-  const { data: formateursRaw } = useApi<Formateur[] | { formateurs: Formateur[] }>("/api/formateurs");
+  // Quand les deux dates sont remplies, on demande l'enrichissement disponibilite
+  const formateursUrl = formData.dateDebut && formData.dateFin
+    ? `/api/formateurs?dateDebut=${encodeURIComponent(formData.dateDebut)}&dateFin=${encodeURIComponent(formData.dateFin)}`
+    : "/api/formateurs";
+  const { data: formateursRaw } = useApi<Formateur[] | { formateurs: Formateur[] }>(formateursUrl);
   const { data: devis } = useApi<DevisData>(devisId ? `/api/devis/${devisId}` : null);
   const { trigger: createSession, isMutating: loading } = useApiMutation<Record<string, unknown>, SessionCreated>(
     "/api/sessions",
@@ -220,12 +229,47 @@ function NouvelleSessionForm() {
                 className="w-full h-10 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="">-- Aucun formateur --</option>
-                {formateurs.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.prenom} {f.nom}
-                  </option>
-                ))}
+                {formateurs.map((f) => {
+                  const suffix =
+                    f.disponibilite === "disponible" ? " — Dispo" :
+                    f.disponibilite === "indisponible" ? " — Indispo" :
+                    f.disponibilite === "conflit" ? " — Conflit" :
+                    f.disponibilite === "inconnu" ? " — ?" : "";
+                  return (
+                    <option key={f.id} value={f.id}>
+                      {f.prenom} {f.nom}{suffix}
+                    </option>
+                  );
+                })}
               </select>
+              {/* Pastille de disponibilite pour le formateur selectionne */}
+              {formData.dateDebut && formData.dateFin && formData.formateurId && (() => {
+                const sel = formateurs.find((f) => f.id === formData.formateurId);
+                if (!sel?.disponibilite) return null;
+                const badgeMap: Record<string, { label: string; cls: string }> = {
+                  disponible: { label: "Dispo", cls: "bg-emerald-900/30 text-emerald-400 border-emerald-700" },
+                  indisponible: { label: "Indispo", cls: "bg-red-900/30 text-red-400 border-red-700" },
+                  conflit: { label: "Conflit", cls: "bg-red-900/30 text-red-400 border-red-700" },
+                  inconnu: { label: "?", cls: "bg-gray-700 text-gray-300 border-gray-600" },
+                };
+                const b = badgeMap[sel.disponibilite];
+                return (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${b.cls}`}>
+                      {b.label}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {sel.disponibilite === "conflit"
+                        ? "Une autre session du formateur chevauche cette periode."
+                        : sel.disponibilite === "indisponible"
+                          ? "Le formateur a declare etre indisponible sur cette periode."
+                          : sel.disponibilite === "disponible"
+                            ? "Le formateur a declare etre disponible sur cette periode."
+                            : "Aucune disponibilite renseignee pour cette periode."}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Dates */}

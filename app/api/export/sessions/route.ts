@@ -1,6 +1,15 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
+import { escapeCsv, formatDateCsv, csvResponse } from "@/lib/export-utils";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const STATUTS: Record<string, string> = {
+  planifiee: "Planifiée",
+  confirmee: "Confirmée",
+  en_cours: "En cours",
+  terminee: "Terminée",
+  annulee: "Annulée",
+};
 
 export const GET = withErrorHandler(async () => {
   const sessions = await prisma.session.findMany({
@@ -14,51 +23,18 @@ export const GET = withErrorHandler(async () => {
 
   const header = "Formation;Formateur;Date début;Date fin;Lieu;Inscrits;Capacité;Statut";
   const rows = sessions.map((s) => {
-    const formation = escapeCsv(s.formation.titre);
-    const formateur = s.formateur
-      ? escapeCsv(`${s.formateur.prenom} ${s.formateur.nom}`)
-      : "Non assigné";
-    const dateDebut = formatDate(s.dateDebut);
-    const dateFin = formatDate(s.dateFin);
-    const lieu = escapeCsv(s.lieu || "");
-    const inscrits = s._count.inscriptions;
-    const capacite = s.capaciteMax;
-    const statut = formatStatut(s.statut);
-    return `${formation};${formateur};${dateDebut};${dateFin};${lieu};${inscrits};${capacite};${statut}`;
+    const formateur = s.formateur ? `${s.formateur.prenom} ${s.formateur.nom}` : "Non assigné";
+    return [
+      escapeCsv(s.formation.titre),
+      escapeCsv(formateur),
+      formatDateCsv(s.dateDebut),
+      formatDateCsv(s.dateFin),
+      escapeCsv(s.lieu || ""),
+      String(s._count.inscriptions),
+      String(s.capaciteMax),
+      escapeCsv(STATUTS[s.statut] || s.statut),
+    ].join(";");
   });
 
-  const csv = "﻿" + [header, ...rows].join("\r\n");
-
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="sessions.csv"',
-    },
-  });
+  return csvResponse([header, ...rows], "sessions.csv");
 });
-
-function escapeCsv(value: string): string {
-  if (value.includes(";") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function formatStatut(statut: string): string {
-  const labels: Record<string, string> = {
-    planifiee: "Planifiée",
-    confirmee: "Confirmée",
-    en_cours: "En cours",
-    terminee: "Terminée",
-    annulee: "Annulée",
-  };
-  return labels[statut] || statut;
-}

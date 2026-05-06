@@ -18,6 +18,7 @@ import { AddInscriptionDialog } from "./AddInscriptionDialog";
 import { QRCodeDialog } from "./QRCodeDialog";
 import { PasseportPreventionDialog } from "./PasseportPreventionDialog";
 import { FichesBesoinSection } from "./FichesBesoinSection";
+import { DocumentsRemisPopover } from "./DocumentsRemisPopover";
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -957,6 +958,7 @@ export default function SessionDetailPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Participant</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Entreprise</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400">Documents</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Date inscription</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -988,6 +990,21 @@ export default function SessionDetailPage() {
                               <option key={v} value={v}>{s.label}</option>
                             ))}
                           </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <DocumentsRemisPopover
+                            sessionId={id}
+                            inscriptionId={insc.id}
+                            documentsRemis={insc.documentsRemis}
+                            onChange={(next) => {
+                              setSession((prev) => prev ? {
+                                ...prev,
+                                inscriptions: prev.inscriptions.map((i) =>
+                                  i.id === insc.id ? { ...i, documentsRemis: JSON.stringify(next) } : i
+                                ),
+                              } : prev);
+                            }}
+                          />
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(insc.dateInscription)}</td>
                         <td className="px-4 py-3">

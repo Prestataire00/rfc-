@@ -1,26 +1,11 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
 import { triggerAutomation } from "@/lib/automations-trigger";
 import { notifyAdmins } from "@/lib/notifications";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
-
-const besoinSchema = z.object({
-  titre: z.string().min(1, "Titre requis"),
-  description: z.string().optional().nullable(),
-  origine: z.enum(["client", "stagiaire", "centre"]).default("client"),
-  statut: z.enum(["nouveau", "qualifie", "devis_envoye", "accepte", "refuse", "archive"]).default("nouveau"),
-  priorite: z.enum(["basse", "normale", "haute", "urgente"]).default("normale"),
-  nbStagiaires: z.coerce.number().int().positive().optional().nullable(),
-  datesSouhaitees: z.string().optional().nullable(),
-  budget: z.coerce.number().positive().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  entrepriseId: z.string().cuid().optional().nullable(),
-  contactId: z.string().cuid().optional().nullable(),
-  formationId: z.string().cuid().optional().nullable(),
-});
+import { besoinFormationSchema } from "@/lib/validations/besoin-formation";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -48,10 +33,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   // Pre-clean : convert "" -> null on optional fields before zod parse.
   const raw = await req.json();
   const cleaned = { ...raw };
-  for (const key of ["nbStagiaires", "budget", "entrepriseId", "contactId", "formationId", "description", "datesSouhaitees", "notes"]) {
+  for (const key of ["nbStagiaires", "budget", "entrepriseId", "contactId", "formationId", "description", "datesSouhaitees", "notes", "sourceContact", "observation"]) {
     if (cleaned[key] === "") cleaned[key] = null;
   }
-  const data = besoinSchema.parse(cleaned);
+  const data = besoinFormationSchema.parse(cleaned);
 
   const besoin = await prisma.besoinFormation.create({
     data: {
@@ -67,6 +52,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       entrepriseId: data.entrepriseId || null,
       contactId: data.contactId || null,
       formationId: data.formationId || null,
+      sourceContact: data.sourceContact || null,
+      materielSurPlace: data.materielSurPlace ?? "[]",
+      observation: data.observation || null,
     },
     include: {
       entreprise: { select: { nom: true } },

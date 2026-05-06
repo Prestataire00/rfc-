@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ClipboardList } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SESSION_STATUTS } from "@/lib/constants";
@@ -66,8 +66,16 @@ export default function FormateurSessionsPage() {
                   </div>
                   {st && <StatutBadge label={st.label} color={st.color} />}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between gap-4">
                   <span className="text-sm text-gray-400">{s._count.inscriptions}/{s.capaciteMax} participants</span>
+                  {["confirmee", "en_cours", "terminee"].includes(s.statut) && (
+                    <Link
+                      href={`/espace-formateur/sessions/${s.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      <ClipboardList className="h-3.5 w-3.5" /> Emargement
+                    </Link>
+                  )}
                 </div>
                 {s.inscriptions.length > 0 && (
                   <div className="mt-3 pt-3 border-t">

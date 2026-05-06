@@ -31,10 +31,10 @@ const adminNavGroups: NavGroup[] = [
           { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: GraduationCap },
           { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
           { href: "/contacts?type=prospect", label: "Prospects", icon: UserSearch },
+          { href: "/prospects", label: "Prospects (pipeline)", icon: UserSearch },
           { href: "/entreprises", label: "Entreprises", icon: Building2 },
         ],
       },
-      { href: "/prospects", label: "Prospects (pipeline)", icon: UserSearch },
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
       {
         href: "/besoins", label: "Besoins", icon: ClipboardList,

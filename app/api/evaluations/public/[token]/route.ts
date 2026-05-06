@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+import { notifyAllAdmins } from "@/lib/notifications";
+import { logger } from "@/lib/logger";
 
 // GET: Retrieve evaluation info by token (public, no auth)
 // Priority order for questions source:
@@ -106,6 +108,24 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       estComplete: true,
     },
   });
+
+  try {
+    const evalDetail = await prisma.evaluation.findUnique({
+      where: { tokenAcces: params.token },
+      include: { session: { include: { formation: { select: { titre: true } } } } },
+    });
+    if (evalDetail) {
+      const note = finalNote ?? "—";
+      await notifyAllAdmins({
+        titre: "Évaluation reçue",
+        message: `Note ${note}/5 — ${evalDetail.session.formation.titre}`,
+        type: "info",
+        lien: "/evaluations",
+      });
+    }
+  } catch (e) {
+    logger.warn("notify.evaluation_completed_failed", { error: String(e) });
+  }
 
   return NextResponse.json({ success: true });
 });

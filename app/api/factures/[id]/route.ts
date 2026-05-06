@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { logAction } from "@/lib/historique";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+import { notifyAllAdmins } from "@/lib/notifications";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const facture = await prisma.facture.findUnique({
@@ -16,6 +17,10 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const body = await req.json();
+  const factureAvant = await prisma.facture.findUnique({
+    where: { id: params.id },
+    select: { statut: true },
+  });
   const facture = await prisma.facture.update({
     where: { id: params.id },
     data: {
@@ -35,6 +40,19 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
       });
     } catch (logErr) {
       logger.warn("historique.facture_failed", { error: String(logErr) });
+    }
+
+    if (body.statut === "payee" && factureAvant?.statut !== "payee") {
+      try {
+        await notifyAllAdmins({
+          titre: "Facture payée",
+          message: facture.numero,
+          type: "success",
+          lien: "/commercial/factures/" + params.id,
+        });
+      } catch (e) {
+        logger.warn("notify.facture_payee_failed", { error: String(e) });
+      }
     }
   }
   return NextResponse.json(facture);

@@ -8,6 +8,9 @@ import { randomBytes } from "crypto";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
 import { logger } from "@/lib/logger";
+import { createNotification } from "@/lib/notifications";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const session = await prisma.session.findUnique({
@@ -32,7 +35,7 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
 
   const sessionAvant = await prisma.session.findUnique({
     where: { id: params.id },
-    select: { statut: true },
+    select: { statut: true, formateurId: true },
   });
 
   const session = await prisma.session.update({
@@ -54,6 +57,28 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
 
   if (rest.statut === "terminee" && sessionAvant?.statut !== "terminee") {
     await envoyerQuestionnairesChaud(params.id, session);
+  }
+
+  // Notif formateur quand assignation change vers un nouveau formateur
+  const newFormateurId = formateurId ?? null;
+  if (newFormateurId && newFormateurId !== sessionAvant?.formateurId) {
+    try {
+      const formateurUser = await prisma.user.findFirst({
+        where: { formateurId: newFormateurId },
+      });
+      if (formateurUser) {
+        const dateStr = format(new Date(dateDebut), "dd/MM/yyyy", { locale: fr });
+        await createNotification({
+          userId: formateurUser.id,
+          titre: "Nouvelle session assignée",
+          message: `${session.formation.titre} — ${dateStr}`,
+          type: "info",
+          lien: "/espace-formateur/sessions",
+        });
+      }
+    } catch (e) {
+      logger.warn("notify.session_formateur_assigned_failed", { error: String(e) });
+    }
   }
 
   return NextResponse.json(session);

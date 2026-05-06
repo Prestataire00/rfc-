@@ -43,9 +43,15 @@ type Props = {
   dateFin: string;
   inscriptions: Inscription[];
   formationTitre?: string;
+  /** Base path for presence + emargement endpoints. Defaults to "/api/sessions" (admin).
+   *  Use "/api/formateur/sessions" for the formateur space. The component will append
+   *  `/{sessionId}/presence`, `/{sessionId}/presence/bulk`, `/{sessionId}/emargement`. */
+  apiBasePath?: string;
+  /** Hide actions reserved to admin/formateur (QR generation, bulk, send OTP). Default false. */
+  readOnly?: boolean;
 };
 
-export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, formationTitre }: Props) {
+export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, formationTitre, apiBasePath = "/api/sessions", readOnly = false }: Props) {
   const [presences, setPresences] = useState<PresenceRecord[]>([]);
   const [tokens, setTokens] = useState<EmargementTokenData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,13 +66,13 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
 
   const fetchData = useCallback(async () => {
     const [presRes, tokRes] = await Promise.all([
-      fetch(`/api/sessions/${sessionId}/presence`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/sessions/${sessionId}/emargement`).then((r) => r.ok ? r.json() : []),
+      fetch(`${apiBasePath}/${sessionId}/presence`).then((r) => r.ok ? r.json() : []),
+      fetch(`${apiBasePath}/${sessionId}/emargement`).then((r) => r.ok ? r.json() : []),
     ]);
     setPresences(Array.isArray(presRes) ? presRes : []);
     setTokens(Array.isArray(tokRes) ? tokRes : []);
     setLoading(false);
-  }, [sessionId]);
+  }, [sessionId, apiBasePath]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -80,13 +86,13 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
 
   const generateTokens = async () => {
     setLoading(true);
-    await fetch(`/api/sessions/${sessionId}/emargement`, { method: "POST" });
+    await fetch(`${apiBasePath}/${sessionId}/emargement`, { method: "POST" });
     await fetchData();
   };
 
   const handleBulk = async (dateStr: string, creneau: string) => {
     setBulkLoading(true);
-    await fetch(`/api/sessions/${sessionId}/presence/bulk`, {
+    await fetch(`${apiBasePath}/${sessionId}/presence/bulk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ date: dateStr, creneau }),
@@ -113,7 +119,7 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
 
   const handleToggleV1 = async (contactId: string, dateStr: string, field: "matin" | "apresMidi", current: boolean) => {
     const presence = getPresence(contactId, dateStr);
-    await fetch(`/api/sessions/${sessionId}/presence`, {
+    await fetch(`${apiBasePath}/${sessionId}/presence`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

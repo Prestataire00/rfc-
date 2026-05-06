@@ -5,10 +5,23 @@ import Link from "next/link";
 import {
   BadgeCheck, BarChart3, Shield, ChevronLeft, ChevronRight,
   Search, Download, Target, ClipboardList, Users, BookOpen,
-  TrendingUp, MessageSquare, Sparkles,
+  TrendingUp, MessageSquare, Sparkles, ExternalLink, Database,
 } from "lucide-react";
 import { AIButton } from "@/components/shared/AIButton";
 import { useApi } from "@/hooks/useApi";
+
+// Reponse de /api/qualiopi/auto-preuves
+interface AutoPreuveItem {
+  titre: string;
+  description: string;
+  count: number;
+  lien: string;
+  statut: "disponible" | "manquant";
+}
+interface AutoPreuvesResponse {
+  stats: Record<string, number>;
+  preuves: Record<string, AutoPreuveItem>;
+}
 
 // ─── Types ───
 interface QualiteRow {
@@ -65,6 +78,7 @@ export default function QualiopiPage() {
   const { data: evaluationsData, isLoading: evalLoading } = useApi<any>("/api/evaluations");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: sessionsData, isLoading: sessionsLoading } = useApi<any>("/api/sessions");
+  const { data: autoPreuves } = useApi<AutoPreuvesResponse>("/api/qualiopi/auto-preuves");
   const loading = evalLoading || sessionsLoading;
 
   const rows = useMemo<QualiteRow[]>(() => {
@@ -205,6 +219,7 @@ export default function QualiopiPage() {
 
       {viewMode === "qualiopi" ? (
         /* ─── VUE QUALIOPI ─── */
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {qualiopiScores.map((criterion) => {
             const statusBorder = !criterion.hasData ? "border-gray-700" : criterion.score !== null && criterion.score >= 80 ? "border-emerald-700" : criterion.score !== null && criterion.score >= 50 ? "border-amber-700" : "border-red-700";
@@ -240,6 +255,60 @@ export default function QualiopiPage() {
             );
           })}
         </div>
+
+        {/* ─── Preuves CRM automatiques ─── */}
+        {autoPreuves && Object.keys(autoPreuves.preuves).length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-3">
+              <Database className="h-5 w-5 text-emerald-500" />
+              <h2 className="text-lg font-semibold text-gray-100">Preuves CRM automatiques</h2>
+              <span className="text-xs text-gray-400">— extraites du CRM en temps reel</span>
+            </div>
+            <p className="text-sm text-gray-400 mb-4">
+              Ces preuves sont calculees automatiquement a partir de vos donnees CRM. Elles s&apos;ajoutent aux preuves manuelles documentees dans chaque indicateur Qualiopi.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Object.entries(autoPreuves.preuves)
+                .map(([id, p]) => ({ id: Number(id), ...p }))
+                .sort((a, b) => a.id - b.id)
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="rounded-lg border-2 border-dashed border-emerald-700/60 bg-emerald-50 dark:bg-emerald-900/10 p-4 flex flex-col gap-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                          Auto
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                          Indicateur {p.id}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          p.statut === "disponible"
+                            ? "bg-emerald-200/70 text-emerald-800 dark:bg-emerald-800/40 dark:text-emerald-300"
+                            : "bg-amber-200/70 text-amber-800 dark:bg-amber-800/40 dark:text-amber-300"
+                        }`}
+                      >
+                        {p.statut === "disponible" ? "Disponible" : "Manquant"}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{p.titre}</h3>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-snug">{p.description}</p>
+                    <Link
+                      href={p.lien}
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-500 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      Voir <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+        </>
       ) : (
         /* ─── VUE TABLEAU ─── */
         <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-x-auto">

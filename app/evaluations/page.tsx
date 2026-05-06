@@ -2,7 +2,7 @@
 // v2 - dashboard style
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X, ClipboardList, Flame, Snowflake, GraduationCap } from "lucide-react";
+import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X, ClipboardList, Flame, Snowflake, GraduationCap, ArrowLeft } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { useApi } from "@/hooks/useApi";
 
@@ -47,9 +47,19 @@ export default function EvaluationsPage() {
   const searchParams = useSearchParams();
   const filtre = searchParams.get("filtre"); // "attente" | "completees" | null
   const typeFilter = searchParams.get("type"); // "satisfaction_chaud" | "satisfaction_froid" | "acquis" | null
+  const sessionIdFilter = searchParams.get("sessionId");
   const { data, isLoading } = useApi<Evaluation[]>("/api/evaluations");
-  const allEvaluations = Array.isArray(data) ? data : [];
+  const rawEvaluations = Array.isArray(data) ? data : [];
+  // Filtre prealable par session (avant tout autre filtre)
+  const allEvaluations = sessionIdFilter
+    ? rawEvaluations.filter((e) => e.session?.id === sessionIdFilter)
+    : rawEvaluations;
   const loading = isLoading;
+
+  // Titre formation deduit du premier resultat (les evals d'une session ont toutes la meme formation)
+  const sessionFormationTitre = sessionIdFilter && allEvaluations.length > 0
+    ? allEvaluations[0].session.formation.titre
+    : null;
 
   // Filtered evaluations (based on type from sidebar)
   const evaluations = typeFilter ? allEvaluations.filter((e) => e.type === typeFilter) : allEvaluations;
@@ -123,6 +133,20 @@ export default function EvaluationsPage() {
 
   return (
     <div>
+      {/* Breadcrumb (si filtre par session) */}
+      {sessionIdFilter && (
+        <div className="mb-4">
+          <nav className="flex items-center gap-1.5 text-sm text-gray-400" aria-label="Breadcrumb">
+            <Link href={`/sessions/${sessionIdFilter}`} className="inline-flex items-center gap-1 hover:text-gray-200">
+              <ArrowLeft className="h-3.5 w-3.5" /> Session
+            </Link>
+            <span>/</span>
+            <span className="text-gray-300">{sessionFormationTitre || "Formation"}</span>
+            <span>/</span>
+            <span className="text-gray-200 font-medium">Evaluations</span>
+          </nav>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>

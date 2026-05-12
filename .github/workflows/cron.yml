@@ -1,0 +1,95 @@
+name: Crons RFC
+
+# Remplace les [[crons]] natifs Netlify, qui ne signent pas leurs requêtes
+# et ne peuvent donc pas envoyer le Bearer token attendu par les endpoints
+# /api/cron/* depuis le hotfix CRON_SECRET (security/sprint-0-hotfix).
+#
+# Prérequis :
+#   1. Repository → Settings → Secrets and variables → Actions
+#      → New repository secret : CRON_SECRET (même valeur que sur Netlify)
+#   2. Si l'URL prod n'est pas projetrfc.netlify.app, éditer APP_URL ci-dessous
+#      (ou la passer via Repository variable APP_URL).
+#
+# Tableau des schedules (UTC — GitHub Actions exécute toujours en UTC) :
+#   - 07:00 UTC → /api/cron/recyclages
+#   - 08:00 UTC → /api/cron/evaluations
+#   - 09:00 UTC → /api/cron/factures
+#   - */15 min  → /api/cron/automations-v2
+#
+# Note : GitHub Actions Scheduled a une latence "best effort" (5-15 min de
+# délai possible). Pour automations-v2 qui doit tourner toutes les 15 min,
+# ça reste acceptable. Si latence stricte requise → migrer vers Netlify
+# Scheduled Functions avec wrapper auth (plus complexe à mettre en place).
+
+on:
+  schedule:
+    - cron: '0 7 * * *'    # recyclages
+    - cron: '0 8 * * *'    # evaluations
+    - cron: '0 9 * * *'    # factures
+    - cron: '*/15 * * * *' # automations-v2
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        description: 'Cron à déclencher manuellement'
+        required: true
+        options:
+          - recyclages
+          - evaluations
+          - factures
+          - automations-v2
+
+env:
+  APP_URL: https://projetrfc.netlify.app
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Resolve target endpoint
+        id: target
+        env:
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          MANUAL_TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          case "${EVENT_SCHEDULE:-}" in
+            "0 7 * * *")    target="recyclages" ;;
+            "0 8 * * *")    target="evaluations" ;;
+            "0 9 * * *")    target="factures" ;;
+            "*/15 * * * *") target="automations-v2" ;;
+            "")             target="${MANUAL_TARGET}" ;;
+            *)              echo "Schedule non mappé: ${EVENT_SCHEDULE}" >&2; exit 1 ;;
+          esac
+          echo "target=${target}" >> "$GITHUB_OUTPUT"
+          echo "→ cron cible : ${target}"
+
+      - name: Trigger cron endpoint
+        env:
+          TARGET: ${{ steps.target.outputs.target }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET non défini dans GitHub Actions secrets"
+            exit 1
+          fi
+          url="${APP_URL}/api/cron/${TARGET}"
+          echo "→ GET ${url}"
+          status=$(curl -sS -X GET "${url}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            --max-time 600 \
+            --retry 2 --retry-delay 30 \
+            -o response.txt \
+            -w "%{http_code}")
+          echo "HTTP ${status}"
+          echo "--- Body ---"
+          cat response.txt
+          echo ""
+          if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
+            echo "::error::Cron ${TARGET} a échoué (HTTP ${status})"
+            exit 1
+          fi

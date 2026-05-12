@@ -8,8 +8,17 @@ import { withErrorHandler } from "@/lib/api-wrapper";
 // GET /api/cron/recyclages
 // Cron quotidien : detecte les certifications expirant J-60/J-30, marque les expirees.
 export const GET = withErrorHandler(async (req: NextRequest) => {
+  // CRON_SECRET obligatoire (sinon n'importe qui peut déclencher la détection
+  // de recyclages + l'envoi d'alertes admin → spam admin + DoS notifications).
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "Server misconfigured: CRON_SECRET missing" },
+      { status: 500 },
+    );
+  }
   const auth = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 });
   }
 

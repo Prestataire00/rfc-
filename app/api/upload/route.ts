@@ -1,11 +1,32 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabase";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+
+// Politique uploads : PDF / images / docs Office uniquement, 10 MB max.
+const ALLOWED_MIME = new Set<string>([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+// Nettoie le nom de fichier client : retire path traversal / caractères dangereux
+// et conserve uniquement la basename + extension. cf OWASP Unrestricted File Upload.
+const sanitizeFilename = (name: string): string => {
+  const base = name.split(/[/\\]/).pop() ?? "file";
+  return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180);
+};
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const session = await getServerSession(authOptions);
@@ -31,15 +52,30 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
   }
 
+  if (!ALLOWED_MIME.has(file.type)) {
+    return NextResponse.json(
+      { error: `Type de fichier non autorisé (${file.type})` },
+      { status: 415 },
+    );
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json(
+      { error: `Fichier trop volumineux (max ${MAX_FILE_SIZE / 1024 / 1024} MB)` },
+      { status: 413 },
+    );
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
-  const fileName = `${Date.now()}-${file.name}`;
-  const storagePath = `documents/${fileName}`;
+  // UUID + sanitize : prévient collisions concurrentes + path traversal sur file.name.
+  const safeName = sanitizeFilename(file.name);
+  const storagePath = `documents/${randomUUID()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage
     .from("formapro")
     .upload(storagePath, buffer, {
       contentType: file.type,
-      upsert: true,
+      upsert: false, // pas d'écrasement : si collision UUID (~impossible), on échoue plutôt que silencieusement écraser.
     });
 
   if (uploadError) {

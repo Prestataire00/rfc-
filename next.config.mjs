@@ -17,6 +17,13 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react", "date-fns"],
   },
 
+  // Retire le header "X-Powered-By: Next.js" (cosmétique + leak de version)
+  poweredByHeader: false,
+
+  // Source maps prod désactivés (gain ~5-15s build + bundle plus petit côté
+  // client). Pour debug prod, réactiver ponctuellement via une env var.
+  productionBrowserSourceMaps: false,
+
   // ── Security headers (OWASP baseline) ──────────────────────────────────────
   // Documentation : https://owasp.org/www-project-secure-headers/
   async headers() {

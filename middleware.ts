@@ -87,6 +87,9 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/qualite/public/")) return true;
   if (pathname.startsWith("/qualite/share/")) return true;
   if (pathname.startsWith("/api/email-tracking/webhook")) return true;
+  // Signature électronique — pages publiques signataire (lien magique HMAC validé côté handler)
+  if (pathname.startsWith("/sign/")) return true;
+  if (pathname.startsWith("/api/sign/")) return true;
   if (pathname.startsWith("/catalogue")) return true;
   if (pathname.startsWith("/api/catalogue")) return true;
   if (pathname.startsWith("/badges/")) return true;
@@ -121,6 +124,12 @@ export async function middleware(request: NextRequest) {
 
   // Allow public paths
   if (isPublicPath(pathname)) {
+    // Hardening pour les pages publiques de signature : pas d'indexation moteurs.
+    if (pathname.startsWith("/sign/")) {
+      const res = NextResponse.next();
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return res;
+    }
     return NextResponse.next();
   }
 

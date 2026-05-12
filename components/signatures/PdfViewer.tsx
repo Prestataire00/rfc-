@@ -48,9 +48,7 @@ export function PdfViewer({ fileUrl, scale = 1.5, onPagesLoaded, children }: Pro
           const canvas = document.createElement("canvas");
           canvas.width = viewport.width;
           canvas.height = viewport.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("Canvas 2D context unavailable");
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          await page.render({ canvas, viewport }).promise;
           out.push({
             pageNumber: i,
             canvas,

@@ -17,10 +17,17 @@ import { withErrorHandler } from "@/lib/api-wrapper";
 // Execute par le cron Netlify toutes les 15 minutes.
 // Evalue chaque regle V2 active contre les sessions recentes.
 export const GET = withErrorHandler(async (req: NextRequest) => {
-  // Verification du bearer token
-  const authHeader = req.headers.get("authorization");
+  // CRON_SECRET obligatoire (sinon n'importe qui peut déclencher l'exécution
+  // des automations toutes les 15 min → DoS sur Prisma + actions externes).
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "Server misconfigured: CRON_SECRET missing" },
+      { status: 500 },
+    );
+  }
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 });
   }
 

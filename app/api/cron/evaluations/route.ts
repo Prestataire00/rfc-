@@ -9,10 +9,17 @@ import { withErrorHandler } from "@/lib/api-wrapper";
 // - satisfaction_chaud: J+1 after session ends
 // - satisfaction_froid: J+21 (3 weeks) after session ends
 export const GET = withErrorHandler(async (req: NextRequest) => {
-  // Optional: protect with a secret
-  const authHeader = req.headers.get("authorization");
+  // CRON_SECRET obligatoire (sinon n'importe qui peut déclencher l'envoi
+  // massif d'emails d'évaluation → DoS SMTP + spam stagiaires).
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "Server misconfigured: CRON_SECRET missing" },
+      { status: 500 },
+    );
+  }
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

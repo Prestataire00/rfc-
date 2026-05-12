@@ -45,3 +45,4 @@ prisma/dev.db-journal
 # Auth cookies
 cookie
 *.cookie
+.claude/

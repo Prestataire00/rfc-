@@ -15,6 +15,7 @@
     "@anthropic-ai/sdk": "^0.82.0",
     "@hookform/resolvers": "^3.3.4",
     "@prisma/client": "^5.10.0",
+    "@sentry/nextjs": "^10.53.1",
     "@supabase/supabase-js": "^2.98.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",

@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +10,16 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Global error = crash root layout (le boundary `app/error.tsx` n'a pas
+    // pu attraper, parce que l'erreur vient du layout lui-même). Critique :
+    // tag explicite + extra `digest` pour corrélation côté serveur Netlify.
+    Sentry.captureException(error, {
+      tags: { boundary: "app/global-error.tsx" },
+      extra: { digest: error.digest },
+    });
+  }, [error]);
+
   return (
     <html lang="fr">
       <body>

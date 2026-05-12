@@ -70,6 +70,10 @@ const adminApiPrefixes = [
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/login") return true;
   if (pathname.startsWith("/api/auth")) return true;
+  // /api/cron/* : pas de session NextAuth (appelé par cron externe GitHub Actions).
+  // L'authentification est faite par les route handlers eux-mêmes via le Bearer
+  // CRON_SECRET — cf .github/workflows/cron.yml + commit d49fc77.
+  if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/api/evaluations/public")) return true;
   if (pathname.startsWith("/api/inscription-publique")) return true;
   if (pathname.startsWith("/api/besoin-client/public")) return true;

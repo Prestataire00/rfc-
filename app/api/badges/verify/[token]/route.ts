@@ -2,9 +2,14 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // GET /api/badges/verify/[token] — verification publique d'un badge
-export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { token: string } }) => {
+export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:badge");
+  if (limited) return limited;
+
   const award = await prisma.badgeAward.findUnique({
     where: { verificationToken: params.token },
     include: {

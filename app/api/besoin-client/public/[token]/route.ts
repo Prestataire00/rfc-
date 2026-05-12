@@ -4,8 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { besoinClientReponseSchema } from "@/lib/validations/besoin-client";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
-export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { token: string } }) => {
+export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-client:get");
+  if (limited) return limited;
+
   const fiche = await prisma.besoinClient.findUnique({
     where: { tokenAcces: params.token },
     include: {
@@ -25,6 +30,9 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 });
 
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-client:post");
+  if (limited) return limited;
+
   const fiche = await prisma.besoinClient.findUnique({
     where: { tokenAcces: params.token },
     include: { entreprise: true },

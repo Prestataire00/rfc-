@@ -4,8 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { besoinStagiaireReponseSchema } from "@/lib/validations/besoin-stagiaire";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
-export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { token: string } }) => {
+export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-stag:get");
+  if (limited) return limited;
+
   const fiche = await prisma.besoinStagiaire.findUnique({
     where: { tokenAcces: params.token },
     include: {
@@ -41,6 +46,9 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 });
 
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-stag:post");
+  if (limited) return limited;
+
   const fiche = await prisma.besoinStagiaire.findUnique({ where: { tokenAcces: params.token } });
   // Early returns explicites preserves : codes 4xx publics.
   if (!fiche) return NextResponse.json({ error: "Lien invalide" }, { status: 404 });

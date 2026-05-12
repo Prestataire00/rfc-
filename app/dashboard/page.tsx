@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Users,
-  Building2,
   GraduationCap,
   BookOpen,
   CalendarDays,
@@ -288,7 +287,6 @@ export default function DashboardPage() {
         <StatCard icon={CalendarDays} label="Sessions a venir" value={stats.sessionsAVenir} href="/sessions" color="bg-amber-900/200" />
         <StatCard icon={ClipboardList} label="Besoins en cours" value={stats.nbBesoinsEnCours} href="/besoins" color="bg-orange-900/200" />
         <StatCard icon={Users} label="Contacts" value={stats.nbContacts} href="/contacts" color="bg-red-900/200" />
-        <StatCard icon={Building2} label="Entreprises" value={stats.nbEntreprises} href="/entreprises" color="bg-violet-500" />
       </div>
 
       {/* V2 KPIs */}

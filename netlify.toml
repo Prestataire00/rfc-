@@ -11,28 +11,28 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Cron : envoi automatique évaluations à chaud (J+1) et à froid (J+21)
-[[crons]]
-  schedule = "0 8 * * *"
-  path = "/api/cron/evaluations"
-
-# Cron : détection automatique des factures en retard (tous les jours à 9h)
-[[crons]]
-  schedule = "0 9 * * *"
-  path = "/api/cron/factures"
-
-# V1 cron désactivé — moteur déprécié au profit du V2 (chantier 2).
-# La route /api/cron/automations répond désormais 410 Gone.
+# ─────────────────────────────────────────────────────────────────────────────
+# Crons : DÉSACTIVÉS côté Netlify, remplacés par GitHub Actions Scheduled.
+# ─────────────────────────────────────────────────────────────────────────────
+# Raison : les [[crons]] natifs Netlify n'injectent pas de Bearer token et
+# ne peuvent donc pas s'authentifier auprès des endpoints /api/cron/* depuis
+# que CRON_SECRET est rendu obligatoire (security/sprint-0-hotfix).
+# Le wiring est désormais dans .github/workflows/cron.yml.
+# Si on revient un jour sur Netlify Scheduled Functions avec wrapper auth,
+# restaurer ces blocs et adapter le workflow GitHub.
+#
 # [[crons]]
-#   schedule = "0 * * * *"
-#   path = "/api/cron/automations"
-
-# Cron V2 : moteur d'automatisation graphique (toutes les 15 min pour reactivite)
-[[crons]]
-  schedule = "*/15 * * * *"
-  path = "/api/cron/automations-v2"
-
-# Cron recyclages : detecte les certifications expirant J-60/J-30 (quotidien 7h)
-[[crons]]
-  schedule = "0 7 * * *"
-  path = "/api/cron/recyclages"
+#   schedule = "0 8 * * *"
+#   path = "/api/cron/evaluations"
+#
+# [[crons]]
+#   schedule = "0 9 * * *"
+#   path = "/api/cron/factures"
+#
+# [[crons]]
+#   schedule = "*/15 * * * *"
+#   path = "/api/cron/automations-v2"
+#
+# [[crons]]
+#   schedule = "0 7 * * *"
+#   path = "/api/cron/recyclages"

@@ -70,9 +70,24 @@ const adminGroups: NavGroup[] = [
     label: "Commercial",
     icon: TrendingUp,
     items: [
-      { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
       { href: "/bpf", label: "BPF", icon: BarChart3 },
+    ],
+  },
+  {
+    key: "finance",
+    label: "Finance",
+    icon: CreditCard,
+    items: [
+      {
+        href: "/commercial", label: "Factures", icon: Receipt,
+        children: [
+          { href: "/commercial", label: "Devis et factures", icon: FileText },
+          { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
+        ],
+      },
+      { href: "/admin/notes-frais", label: "Note de frais", icon: Receipt },
+      { href: "/finance/paiements", label: "Paiement", icon: CreditCard },
     ],
   },
   {
@@ -81,7 +96,6 @@ const adminGroups: NavGroup[] = [
     icon: Briefcase,
     items: [
       { href: "/tasks", label: "Tâches", icon: ListChecks },
-      { href: "/finance/paiements", label: "Paiements", icon: CreditCard },
     ],
   },
   {

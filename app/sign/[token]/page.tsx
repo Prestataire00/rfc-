@@ -121,6 +121,7 @@ export default async function SignPage({ params }: Props) {
 
   return (
     <SignViewClient
+      token={token}
       titre={req.titre}
       signataireNom={signataire.nom}
       fileUrl={fileUrl}
@@ -133,6 +134,7 @@ export default async function SignPage({ params }: Props) {
         height: z.height,
         type: z.type,
         label: z.label,
+        required: z.required,
       }))}
     />
   );

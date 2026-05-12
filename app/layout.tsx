@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -7,6 +7,11 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
+// Police cursive utilisée par SignatureMethodTabs (rendu signature "tapée")
+const dancingScript = Dancing_Script({
+  subsets: ["latin"],
+  variable: "--font-cursive",
+});
 
 export const metadata: Metadata = {
   title: "RFC - Rescue Formation Conseil",
@@ -19,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className="light">
+    <html lang="fr" className={`light ${dancingScript.variable}`}>
       <body className={inter.className}>
         <SessionProvider>
           <ThemeProvider>

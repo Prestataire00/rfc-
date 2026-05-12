@@ -1,9 +1,19 @@
 [build]
-  command = "npx prisma db push && npx prisma generate && npm run build"
+  # `prisma generate` est déjà fait par le hook `postinstall` du package.json
+  # (déclenché par `npm install` que Netlify exécute avant ce command).
+  # `prisma db push` retiré : poussait le schéma à chaque déploiement (30-60s).
+  # Désormais : `npx prisma db push` à faire manuellement en local après modif
+  # de prisma/schema.prisma, avant commit. À terme : migrer vers `prisma
+  # migrate deploy` + fichiers dans prisma/migrations/ (PR séparée à prévoir).
+  command = "npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
+  # Skip la télémétrie Next.js (gain ~2-5s par build)
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Skip le check de version Prisma au build
+  PRISMA_HIDE_UPDATE_MESSAGE = "1"
 
 [functions]
   included_files = ["node_modules/pdfmake/**"]

@@ -1,4 +1,6 @@
 import { sha256Hex } from "./hash";
+import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 // Chaîne d'événements hashée — voir spec §"SignatureEvent".
 // eventHash = SHA256({type, actorType, actorId, payload, createdAt, previousEventHash})
@@ -25,6 +27,61 @@ export function computeEventHash(input: EventInput): string {
     previousEventHash: input.previousEventHash,
   });
   return sha256Hex(canonical);
+}
+
+/**
+ * Append un événement à la chaîne d'audit d'une SignatureRequest.
+ * Met à jour SignatureRequest.lastEventHash atomiquement.
+ *
+ * Si tx est passé (cas où on est déjà dans une transaction Prisma plus large),
+ * utilise cette transaction. Sinon ouvre une nouvelle transaction.
+ */
+export async function appendEvent(
+  requestId: string,
+  event: {
+    type: string;
+    actorType: "admin" | "signataire" | "system";
+    actorId?: string | null;
+    payload?: Record<string, unknown> | null;
+  },
+  tx?: Prisma.TransactionClient,
+): Promise<{ eventHash: string }> {
+  const runner = async (client: Prisma.TransactionClient) => {
+    const req = await client.signatureRequest.findUniqueOrThrow({
+      where: { id: requestId },
+      select: { lastEventHash: true },
+    });
+    const previousEventHash = req.lastEventHash;
+    const createdAt = new Date();
+    const eventHash = computeEventHash({
+      type: event.type,
+      actorType: event.actorType,
+      actorId: event.actorId ?? null,
+      payload: (event.payload ?? {}) as Record<string, unknown>,
+      createdAt,
+      previousEventHash,
+    });
+    await client.signatureEvent.create({
+      data: {
+        requestId,
+        type: event.type,
+        actorType: event.actorType,
+        actorId: event.actorId ?? null,
+        payload: (event.payload ?? null) as Prisma.InputJsonValue,
+        previousEventHash,
+        eventHash,
+        createdAt,
+      },
+    });
+    await client.signatureRequest.update({
+      where: { id: requestId },
+      data: { lastEventHash: eventHash },
+    });
+    return { eventHash };
+  };
+
+  if (tx) return runner(tx);
+  return prisma.$transaction(runner);
 }
 
 // Vérifie que la chaîne est intacte. Renvoie le rank du 1er event corrompu, ou -1 si OK.

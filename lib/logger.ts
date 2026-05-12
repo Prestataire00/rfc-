@@ -1,6 +1,8 @@
 // Logger central — JSON structuré en prod, lisible en dev.
 // Usage : logger.info("event", { ...meta }) | logger.error("event", err, { ...meta })
-// En production, alimente les outils d'observabilité (Sentry, Logtail, etc.) via console.
+// `logger.error()` forwarde automatiquement vers Sentry (sprint-2-observability).
+
+import * as Sentry from "@sentry/nextjs";
 
 type Level = "debug" | "info" | "warn" | "error";
 
@@ -58,16 +60,15 @@ export const logger = {
   },
 };
 
-// Forwarde vers Sentry si le SDK est chargé globalement (`@sentry/nextjs` initialisé via sentry.server.config.ts).
-// No-op tant que le SDK n'est pas installé / configuré (DSN manquant).
+// Forwarde vers Sentry. Si SENTRY_DSN n'est pas set, `Sentry.init()` désactive
+// le SDK → ces appels deviennent des no-ops silencieux (pas de network call).
+// Wrap try/catch : ne jamais laisser l'observabilité crasher l'app.
 function forwardToSentry(event: string, err?: unknown, meta?: Record<string, unknown>) {
-  const sentry = (globalThis as { Sentry?: { captureException?: (e: unknown, hint?: unknown) => void; captureMessage?: (m: string, ctx?: unknown) => void } }).Sentry;
-  if (!sentry) return;
   try {
-    if (err !== undefined && sentry.captureException) {
-      sentry.captureException(err, { tags: { event }, extra: meta });
-    } else if (sentry.captureMessage) {
-      sentry.captureMessage(event, { level: "error", extra: meta });
+    if (err !== undefined) {
+      Sentry.captureException(err, { tags: { event }, extra: meta });
+    } else {
+      Sentry.captureMessage(event, { level: "error", extra: meta });
     }
   } catch {
     // Ne jamais laisser l'observabilité crasher l'app

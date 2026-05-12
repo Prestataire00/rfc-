@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
@@ -10,6 +12,13 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Report l'erreur à Sentry au mount (une fois par boundary).
+    // `digest` est l'identifiant côté serveur Next.js : permet de corréler
+    // les logs serveur (Netlify Functions) avec les events Sentry client.
+    Sentry.captureException(error, { tags: { boundary: "app/error.tsx" } });
+  }, [error]);
+
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl bg-gray-800 p-8 text-center shadow-lg">

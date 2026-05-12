@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession as useAuthSession } from "next-auth/react";
 import Link from "next/link";
 import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2, Star, BarChart3, ArrowRight } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
@@ -13,6 +14,7 @@ import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { EmargementGrid } from "@/components/emargement/EmargementGrid";
 import { notify } from "@/lib/toast";
 import { StatusPipeline } from "@/components/shared/StatusPipeline";
+import { PipelinePanelLoader } from "@/components/pipeline/PipelinePanelLoader";
 import type { Contact, Session, BesoinClient, BesoinStagiaire } from "./types";
 import { AddInscriptionDialog } from "./AddInscriptionDialog";
 import { QRCodeDialog } from "./QRCodeDialog";
@@ -23,6 +25,7 @@ import { DocumentsRemisPopover } from "./DocumentsRemisPopover";
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: authSession } = useAuthSession();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -530,6 +533,19 @@ export default function SessionDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Pipeline pédagogique — étapes & tâches */}
+      <section className="mb-6">
+        <h2 className="text-sm uppercase tracking-wide text-gray-400 mb-3">
+          Pipeline pédagogique
+        </h2>
+        <PipelinePanelLoader
+          entityType="session"
+          entityId={id}
+          currentUserRole={authSession?.user?.role ?? "client"}
+          currentUserId={authSession?.user?.id}
+        />
+      </section>
 
       {/* Alertes contextuelles (RQTH, secteur SST, express) */}
       {(() => {

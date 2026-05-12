@@ -251,6 +251,11 @@ model Session {
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
 
+  // Pipeline étapes (cf. docs/superpowers/specs/2026-05-12-pipeline-etapes-v1-design.md)
+  // Valeurs : preparation | convocations | en_cours | cloture | facturation | clos | annulee
+  etape        String   @default("preparation")
+  etapeMajAt   DateTime @default(now())
+
   inscriptions       Inscription[]
   feuillesPresence   FeuillePresence[]
   attestations       Attestation[]
@@ -268,6 +273,9 @@ model Session {
   conversations      Conversation[]
   facturesFormateur  FactureFormateur[]
   evaluationsFormateur EvaluationFormateur[]
+  pipelineTasks      SessionTask[]
+
+  @@index([etape])
 }
 
 model Inscription {
@@ -1376,12 +1384,19 @@ model Prospect {
   contactId  String?
   contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
-  activities ProspectActivity[]
+  // Pipeline étapes commercial (cf. spec)
+  // Valeurs : nouveau | qualifie | devis_envoye | relance | signe | perdu
+  etape        String   @default("nouveau")
+  etapeMajAt   DateTime @default(now())
+
+  activities    ProspectActivity[]
+  pipelineTasks ProspectTask[]
 
   @@index([statut])
   @@index([attribueA])
   @@index([contactId])
   @@index([createdAt])
+  @@index([etape])
 }
 
 // Historique d'actions sur un prospect
@@ -1895,4 +1910,74 @@ model KpiHistory {
 
   @@index([dateSnapshot])
   @@index([source])
+}
+
+// ==================== PIPELINE ÉTAPES & TÂCHES ====================
+// cf. docs/superpowers/specs/2026-05-12-pipeline-etapes-v1-design.md
+
+// Tâche du pipeline pédagogique rattachée à une Session et à une étape donnée.
+// Source = "template" (instanciée automatiquement au passage en étape) ou "adhoc".
+model SessionTask {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  etape       String
+  titre       String
+  description String?
+  ordre       Int      @default(0)
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  dueDate     DateTime?
+  assigneeId  String?    // User assigné (souvent un formateur)
+  source      String   @default("template") // "template" | "adhoc"
+
+  @@index([sessionId, etape])
+  @@index([assigneeId])
+  @@index([completed, dueDate])
+}
+
+// Tâche du pipeline commercial rattachée à un Prospect et à une étape donnée.
+model ProspectTask {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  etape       String
+  titre       String
+  description String?
+  ordre       Int      @default(0)
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  dueDate     DateTime?
+  assigneeId  String?
+  source      String   @default("template")
+
+  @@index([prospectId, etape])
+  @@index([assigneeId])
+  @@index([completed, dueDate])
+}
+
+// Audit trail des changements d'étape (preuve Qualiopi).
+// Polymorphique via entityType — pas de FK Prisma : l'audit doit survivre
+// à la suppression de l'entité source.
+model EtapeTransition {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  entityType String   // "session" | "prospect"
+  entityId   String   // FK applicative
+  fromEtape  String?
+  toEtape    String
+  byUserId   String?
+  notes      String?
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

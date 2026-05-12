@@ -2,6 +2,21 @@
 const nextConfig = {
   allowedDevOrigins: ["http://rfc.local:3001", "http://127.0.0.1:3001"],
 
+  // ── Perf build ─────────────────────────────────────────────────────────────
+  // ESLint reste actif en dev (`next dev`) et doit l'être en CI (GitHub Actions
+  // à ajouter si pas déjà fait). Le re-jouer au build Netlify coûte 30-60s pour
+  // un gain quasi nul : si le code ne lint pas, on le voit avant de merger.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // Tree-shake les packages à beaucoup d'exports (lucide-react = 1000+ icônes,
+  // date-fns = 100+ fonctions). Ne bundle que ce qui est effectivement importé.
+  // Gain : bundle client plus petit + build un peu plus rapide.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "date-fns"],
+  },
+
   // ── Security headers (OWASP baseline) ──────────────────────────────────────
   // Documentation : https://owasp.org/www-project-secure-headers/
   async headers() {

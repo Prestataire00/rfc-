@@ -1,62 +1,89 @@
-"use client";
-
-import { useParams } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, Users, MapPin, Award, Calendar, CheckCircle2, BookOpen, FileText } from "lucide-react";
-import { useApi } from "@/hooks/useApi";
+import { prisma } from "@/lib/prisma";
 
-type Session = {
-  id: string;
-  dateDebut: string;
-  dateFin: string;
-  lieu: string | null;
-  placesRestantes: number;
-  tokenInscription: string | null;
-};
+export const dynamic = "force-dynamic";
 
-type Formation = {
-  id: string;
-  titre: string;
-  description: string | null;
-  duree: number;
-  tarif: number;
-  categorie: string | null;
-  modalite: string;
-  certifiante: boolean;
-  niveau: string;
-  image: string | null;
-  publicCible: string | null;
-  prerequis: string | null;
-  objectifs: string | null;
-  contenuProgramme: string | null;
-  methodesPedagogiques: string | null;
-  accessibilite: string | null;
-  typesFinancement: string;
-  dureeRecyclage: number | null;
-  sessions: Session[];
-};
+type Props = { params: { slug: string } };
 
-type CatalogueResponse = { formations: Formation[] };
+async function getFormation(slug: string) {
+  const formation = await prisma.formation.findFirst({
+    where: { id: slug, statut: "publiee", actif: true },
+    select: {
+      id: true,
+      titre: true,
+      description: true,
+      duree: true,
+      tarif: true,
+      categorie: true,
+      modalite: true,
+      certifiante: true,
+      niveau: true,
+      image: true,
+      publicCible: true,
+      prerequis: true,
+      objectifs: true,
+      contenuProgramme: true,
+      methodesPedagogiques: true,
+      accessibilite: true,
+      typesFinancement: true,
+      dureeRecyclage: true,
+      sessions: {
+        where: {
+          dateDebut: { gte: new Date() },
+          statut: { in: ["planifiee", "confirmee"] },
+        },
+        orderBy: { dateDebut: "asc" },
+        select: {
+          id: true,
+          dateDebut: true,
+          dateFin: true,
+          lieu: true,
+          capaciteMax: true,
+          tokenInscription: true,
+          _count: { select: { inscriptions: true } },
+        },
+      },
+    },
+  });
+  if (!formation) return null;
+  return {
+    ...formation,
+    sessions: formation.sessions.map((s) => ({
+      id: s.id,
+      dateDebut: s.dateDebut,
+      dateFin: s.dateFin,
+      lieu: s.lieu,
+      tokenInscription: s.tokenInscription,
+      placesRestantes: s.capaciteMax - s._count.inscriptions,
+    })),
+  };
+}
 
-export default function FormationDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const { data, isLoading: loading } = useApi<CatalogueResponse>("/api/catalogue");
-  const formation: Formation | null = (data?.formations || []).find((f) => f.id === slug) || null;
-
-  if (loading) {
-    return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
-  }
-
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const formation = await getFormation(params.slug);
   if (!formation) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-400 font-medium mb-2">Formation introuvable</p>
-          <Link href="/catalogue" className="text-red-400 underline text-sm">Retour au catalogue</Link>
-        </div>
-      </div>
-    );
+    return { title: "Formation introuvable — RFC", robots: { index: false } };
   }
+  const desc = formation.description?.slice(0, 160) ?? `Formation ${formation.titre} — ${formation.duree}h, ${formation.modalite}.`;
+  return {
+    title: `${formation.titre} — Catalogue RFC`,
+    description: desc,
+    openGraph: {
+      title: formation.titre,
+      description: desc,
+      type: "article",
+      locale: "fr_FR",
+      ...(formation.image ? { images: [formation.image] } : {}),
+    },
+  };
+}
+
+export default async function FormationDetailPage({ params }: Props) {
+  const formation = await getFormation(params.slug);
+  if (!formation) notFound();
 
   let financements: string[] = [];
   try { financements = JSON.parse(formation.typesFinancement); } catch { /* keep empty */ }
@@ -68,7 +95,6 @@ export default function FormationDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Retour catalogue
         </Link>
 
-        {/* Header */}
         <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden mb-6">
           {formation.image && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -100,7 +126,6 @@ export default function FormationDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Contenu */}
           <div className="lg:col-span-2 space-y-5">
             {formation.objectifs && (
               <Section title="Objectifs" icon={CheckCircle2}>{formation.objectifs}</Section>
@@ -132,7 +157,6 @@ export default function FormationDetailPage() {
             )}
           </div>
 
-          {/* Sessions disponibles */}
           <div>
             <div className="rounded-lg border border-gray-700 bg-gray-800 p-5 sticky top-6">
               <h3 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
@@ -145,10 +169,10 @@ export default function FormationDetailPage() {
                   {formation.sessions.map((s) => (
                     <div key={s.id} className="rounded-lg border border-gray-600 bg-gray-900 p-3">
                       <p className="text-sm font-medium text-gray-200">
-                        {new Date(s.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                        {s.dateDebut.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                       </p>
                       <p className="text-xs text-gray-400">
-                        au {new Date(s.dateFin).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                        au {s.dateFin.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
                       </p>
                       {s.lieu && (
                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">

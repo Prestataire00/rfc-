@@ -37,7 +37,6 @@ const adminGroups: NavGroup[] = [
         href: "/contacts", label: "Contacts", icon: Users,
         children: [
           { href: "/contacts", label: "Tous les contacts", icon: Users },
-          { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: GraduationCap },
           { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
           { href: "/prospects", label: "Prospects", icon: UserSearch },
           { href: "/entreprises", label: "Entreprises", icon: Building2 },

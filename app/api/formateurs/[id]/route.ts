@@ -13,10 +13,28 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
         include: { formation: true },
         orderBy: { dateDebut: "desc" },
       },
+      factures: {
+        include: { session: { include: { formation: true } } },
+        orderBy: { dateEmission: "desc" },
+      },
+      notesFrais: {
+        orderBy: { date: "desc" },
+      },
+      user: { select: { id: true, nom: true, prenom: true, email: true } },
     },
   });
   if (!formateur) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
-  return NextResponse.json(formateur);
+
+  // Tâches assignées au compte User du formateur (si lié)
+  const taches = formateur.user
+    ? await prisma.taskItem.findMany({
+        where: { userId: formateur.user.id },
+        include: { list: { select: { id: true, nom: true, couleur: true } } },
+        orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
+      })
+    : [];
+
+  return NextResponse.json({ ...formateur, taches });
 });
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {

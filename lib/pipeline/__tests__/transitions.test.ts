@@ -14,7 +14,8 @@ import {
   prevSessionStage,
   nextProspectStage,
   prevProspectStage,
-} from "../transitions.ts";
+} from "../transitions";
+import type { SessionStage, ProspectStage } from "../stages";
 
 // ============ SESSION ============
 
@@ -60,7 +61,10 @@ test("session: depuis annulee, aucune transition", () => {
 });
 
 test("session: annulation autorisée depuis non-terminal", () => {
-  for (const from of ["preparation", "convocations", "en_cours", "cloture", "facturation"]) {
+  const stages: SessionStage[] = [
+    "preparation", "convocations", "en_cours", "cloture", "facturation",
+  ];
+  for (const from of stages) {
     assert.deepEqual(
       canTransitionSession(from, "annulee", "admin"),
       { ok: true },
@@ -106,7 +110,8 @@ test("prospect: depuis signe, aucune transition", () => {
 });
 
 test("prospect: perdu accessible depuis nouveau/qualifie/devis_envoye/relance", () => {
-  for (const from of ["nouveau", "qualifie", "devis_envoye", "relance"]) {
+  const stages: ProspectStage[] = ["nouveau", "qualifie", "devis_envoye", "relance"];
+  for (const from of stages) {
     assert.deepEqual(
       canTransitionProspect(from, "perdu", "admin"),
       { ok: true },

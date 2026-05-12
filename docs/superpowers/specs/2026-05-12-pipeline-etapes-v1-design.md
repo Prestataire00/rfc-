@@ -301,6 +301,19 @@ User RFC a un champ `role: string` à valeurs `"admin" | "formateur" | "client"`
 
 Vérification via `getServerSession(authOptions)` dans chaque route handler.
 
+## 9.bis. ⚠️ Découverte tardive : Prospect descopé du CDC
+
+Lors de l'implémentation Sprint 5, découverte du commit `18d3647` (merged sur `main` quelques heures avant) qui **supprime délibérément** `app/prospects/` + `app/api/prospects/` avec mention explicite **« pas de pipeline prospects »** (CDC client RFC).
+
+Conséquence V1 :
+
+- ✅ Conserve : champs `Prospect.etape` + `Prospect.etapeMajAt` + index dans le schéma Prisma (coût zéro ; utile si CDC évolue).
+- ✅ Conserve : domaine `canTransitionProspect`, templates `PROSPECT_STAGE_TASKS`, tests unitaires associés (zéro contrainte sur la prod, prêt à réactiver).
+- ❌ Retire : les 4 routes API `/api/prospects/[id]/*` créées en Sprint 3.
+- ❌ Pas de fiche Prospect, pas de Kanban Prospect, pas d'intégration UI.
+
+Pipeline V1 livré couvre donc **Session uniquement**. Si Prospect revient au CDC : reprendre les 4 routes API depuis l'historique git + ajouter une fiche UI ; le domaine et le schéma sont déjà prêts.
+
 ## 10. Hors scope V1 (= V2/V3)
 
 - Drag-drop sur Kanban.

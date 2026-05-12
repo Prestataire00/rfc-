@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ["http://rfc.local:3001", "http://127.0.0.1:3001"],
@@ -78,4 +80,17 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap Sentry si DSN configuré, sinon passthrough silencieux (pas de overhead build).
+// Sans SENTRY_AUTH_TOKEN, l'upload de source maps est skip mais l'instrumentation
+// Next.js (route handlers, server actions, RSC) reste active.
+export default process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      widenClientFileUpload: false,
+      hideSourceMaps: true,
+      disableLogger: true,
+      reactComponentAnnotation: { enabled: false },
+      // Pour activer l'upload source maps (debug stack traces minifiées) :
+      // ajouter SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN dans Netlify env vars.
+    })
+  : nextConfig;

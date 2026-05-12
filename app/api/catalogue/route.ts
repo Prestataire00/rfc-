@@ -2,10 +2,16 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // GET /api/catalogue — liste publique des formations publiees avec sessions disponibles
 // Pas d'authentification requise.
 export const GET = withErrorHandler(async (req: NextRequest) => {
+  // Préset publicAnon : 100 req/min par IP — tolérance large pour scrapers SEO + visiteurs.
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicAnon, "public:catalogue");
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
   const categorie = searchParams.get("categorie");
   const modalite = searchParams.get("modalite");

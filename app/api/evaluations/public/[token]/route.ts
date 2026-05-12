@@ -4,13 +4,18 @@ import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { notifyAllAdmins } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // GET: Retrieve evaluation info by token (public, no auth)
 // Priority order for questions source:
 //   1. evaluation.questionsSnapshot (figee au moment de l'envoi)
 //   2. Template preset associe au type (fallback)
 //   3. QuestionnaireConfig (legacy format pour anciennes evals)
-export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { token: string } }) => {
+export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:eval:get");
+  if (limited) return limited;
+
   const evaluation = await prisma.evaluation.findUnique({
     where: { tokenAcces: params.token },
     include: {
@@ -77,6 +82,9 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 
 // POST: Submit evaluation (public, no auth)
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:eval:post");
+  if (limited) return limited;
+
   const evaluation = await prisma.evaluation.findUnique({ where: { tokenAcces: params.token } });
   if (!evaluation) return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
   if (evaluation.estComplete) return NextResponse.json({ error: "Cette evaluation a deja ete soumise" }, { status: 400 });

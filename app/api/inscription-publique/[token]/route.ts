@@ -2,9 +2,14 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // GET: session info for public form
-export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { token: string } }) => {
+export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:inscription:get");
+  if (limited) return limited;
+
   const session = await prisma.session.findUnique({
     where: { tokenInscription: params.token },
     include: {
@@ -32,6 +37,9 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 
 // POST: submit registration
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:inscription:post");
+  if (limited) return limited;
+
   const session = await prisma.session.findUnique({
     where: { tokenInscription: params.token },
     include: { inscriptions: { select: { id: true } } },

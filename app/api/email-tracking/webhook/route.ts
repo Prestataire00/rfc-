@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // Resend webhook event types -> internal statut
 const STATUT_MAP: Record<string, string> = {
@@ -26,6 +28,10 @@ const TYPE_MAP: Record<string, string> = {
 // Endpoint public (whitelisté dans middleware.ts)
 // TODO Phase 3 : verifier la signature Resend (header svix-signature)
 export const POST = withErrorHandler(async (req: NextRequest) => {
+  // Burst large autorisé (Resend peut envoyer en masse), mais pas illimité.
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.externalWebhook, "webhook:resend");
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Body invalide" }, { status: 400 });

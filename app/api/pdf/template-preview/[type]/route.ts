@@ -14,19 +14,64 @@ import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
-// GET /api/pdf/template-preview/[type]
+type CustomVars = {
+  stagiaire?: Partial<{ prenom: string; nom: string; email: string }>;
+  formation?: Partial<{ titre: string; duree: number; objectifs: string }>;
+  session?: Partial<{ dateDebut: string; dateFin: string; lieu: string }>;
+  entreprise?: Partial<{
+    nom: string;
+    adresse: string;
+    codePostal: string;
+    ville: string;
+    siret: string;
+  }>;
+  formateur?: Partial<{ prenom: string; nom: string }>;
+  // Variables custom du template (n'importe quel key → string)
+  custom?: Record<string, string>;
+};
+
+function parseVarsFromQuery(req: NextRequest): CustomVars {
+  try {
+    const v = new URL(req.url).searchParams.get("vars");
+    if (!v) return {};
+    return JSON.parse(decodeURIComponent(v)) as CustomVars;
+  } catch {
+    return {};
+  }
+}
+
+// GET /api/pdf/template-preview/[type]?vars=<encoded JSON>
 // Genere un PDF d'apercu du template avec des donnees de demonstration.
-// Utilise pour l'editeur de templates (iframe preview).
-export const GET = withErrorHandlerParams<{ type: string }>(async (_req: NextRequest, { params }) => {
+// Le query param `vars` permet d'override les valeurs par défaut pour la
+// preview live de l'éditeur (saisie utilisateur dans les inputs custom).
+export const GET = withErrorHandlerParams<{ type: string }>(async (req: NextRequest, { params }) => {
   const parametres = await getParametres();
   const branding = await resolveBranding(parametres);
+  const overrides = parseVarsFromQuery(req);
 
-  // Donnees fictives partagees
-  const fakeStagiaire = { prenom: "Marie", nom: "Dupont", email: "marie.dupont@example.com" };
-  const fakeFormation = { titre: "Formation Demo - Securite Incendie", duree: 14, objectifs: "A l'issue de la formation, le stagiaire saura utiliser un extincteur et appliquer les consignes de secours." };
-  const fakeSession = { dateDebut: "15/06/2026", dateFin: "16/06/2026", lieu: "Toulon (83)" };
-  const fakeEntreprise = { nom: "Acme Industrie", adresse: "12 rue de la Republique", codePostal: "83000", ville: "Toulon", siret: "123 456 789 00012" };
-  const fakeFormateur = { prenom: "Pierre", nom: "Martin" };
+  // Donnees fictives partagees (overridables)
+  const fakeStagiaire = {
+    prenom: "Marie", nom: "Dupont", email: "marie.dupont@example.com",
+    ...(overrides.stagiaire ?? {}),
+  };
+  const fakeFormation = {
+    titre: "Formation Demo - Securite Incendie", duree: 14,
+    objectifs: "A l'issue de la formation, le stagiaire saura utiliser un extincteur et appliquer les consignes de secours.",
+    ...(overrides.formation ?? {}),
+  };
+  const fakeSession = {
+    dateDebut: "15/06/2026", dateFin: "16/06/2026", lieu: "Toulon (83)",
+    ...(overrides.session ?? {}),
+  };
+  const fakeEntreprise = {
+    nom: "Acme Industrie", adresse: "12 rue de la Republique",
+    codePostal: "83000", ville: "Toulon", siret: "123 456 789 00012",
+    ...(overrides.entreprise ?? {}),
+  };
+  const fakeFormateur = {
+    prenom: "Pierre", nom: "Martin",
+    ...(overrides.formateur ?? {}),
+  };
   const fakeLignes = [
     { designation: "Formation Securite Incendie (2 jours)", quantite: 4, prixUnitaire: 350, montant: 1400 },
     { designation: "Fourniture de supports pedagogiques", quantite: 1, prixUnitaire: 80, montant: 80 },
@@ -42,6 +87,9 @@ export const GET = withErrorHandlerParams<{ type: string }>(async (_req: NextReq
       siret: parametres.siret,
       nda: parametres.nda,
     },
+    // Variables custom : merge dans le contexte au top-level pour que
+    // {{ma_variable_custom}} dans le template soit substitué.
+    ...(overrides.custom ?? {}),
   };
 
   const template = await renderDocumentTemplate(params.type, varsCtx);

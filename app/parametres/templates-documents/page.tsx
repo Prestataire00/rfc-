@@ -4,12 +4,53 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Save, FileText, RotateCcw, Eye, Pencil, CheckCircle2,
-  RefreshCw, Sparkles, Plus, X, Loader2,
+  RefreshCw, Sparkles, Plus, X, Loader2, Upload,
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { api, ApiError } from "@/lib/fetcher";
 
 type Variable = { nom: string; description: string };
+
+// Mapping clés UI → structure attendue par /api/pdf/template-preview/[type]?vars=
+// Les clés "non standards" (variables custom du template) sont mises dans `custom`.
+const STD_PATHS: Record<string, [string, string]> = {
+  "stagiaire.prenom": ["stagiaire", "prenom"],
+  "stagiaire.nom": ["stagiaire", "nom"],
+  "stagiaire.email": ["stagiaire", "email"],
+  "formation.titre": ["formation", "titre"],
+  "formation.duree": ["formation", "duree"],
+  "formation.objectifs": ["formation", "objectifs"],
+  "session.dateDebut": ["session", "dateDebut"],
+  "session.dateFin": ["session", "dateFin"],
+  "session.lieu": ["session", "lieu"],
+  "entreprise.nom": ["entreprise", "nom"],
+  "entreprise.adresse": ["entreprise", "adresse"],
+  "entreprise.codePostal": ["entreprise", "codePostal"],
+  "entreprise.ville": ["entreprise", "ville"],
+  "entreprise.siret": ["entreprise", "siret"],
+  "formateur.prenom": ["formateur", "prenom"],
+  "formateur.nom": ["formateur", "nom"],
+};
+
+function buildVarsFromCustom(custom: Record<string, string>): Record<string, unknown> {
+  const out: Record<string, Record<string, unknown>> = {};
+  const customVars: Record<string, string> = {};
+  for (const [key, value] of Object.entries(custom)) {
+    if (!value || !value.trim()) continue;
+    const path = STD_PATHS[key];
+    if (path) {
+      const [group, field] = path;
+      if (!out[group]) out[group] = {};
+      out[group][field] = field === "duree" ? Number(value) || value : value;
+    } else {
+      customVars[key] = value;
+    }
+  }
+  if (Object.keys(customVars).length > 0) {
+    out.custom = customVars;
+  }
+  return out;
+}
 type DocTemplate = {
   id: string;
   type: string;
@@ -48,6 +89,15 @@ export default function TemplatesDocumentsPage() {
   // Variable manuelle à ajouter
   const [newVarName, setNewVarName] = useState("");
   const [newVarDesc, setNewVarDesc] = useState("");
+
+  // Valeurs custom pour preview live
+  const [previewCustom, setPreviewCustom] = useState<Record<string, string>>({});
+  const [previewDebounce, setPreviewDebounce] = useState(0);
+
+  // Import doc
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState("");
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: templatesData, isLoading: loading, mutate: mutateTemplates } = useApi<DocTemplate[]>(
     "/api/document-templates"
@@ -156,6 +206,41 @@ export default function TemplatesDocumentsPage() {
     setEditableVariables((prev) => prev.filter((v) => v.nom !== nom));
   };
 
+  const updatePreviewCustom = (key: string, value: string) => {
+    setPreviewCustom((prev) => ({ ...prev, [key]: value }));
+    setPreviewDebounce((v) => v + 1);
+  };
+
+  const handleImport = async (file: File) => {
+    if (!selected) return;
+    setImportLoading(true);
+    setImportError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await fetch("/api/document-templates/import", {
+        method: "POST",
+        body: formData,
+      });
+      if (!result.ok) {
+        const body = await result.json().catch(() => ({}));
+        throw new Error(body.error ?? `Erreur ${result.status}`);
+      }
+      const { texte } = (await result.json()) as { texte: string };
+      // Pré-rempli le corps (le titre et l'intro restent à éditer)
+      setCorps(texte);
+      setSaveMsg("Texte importé dans le corps — relis et enregistre");
+      setTimeout(() => setSaveMsg(""), 4000);
+    } catch (err) {
+      setImportError(
+        err instanceof Error ? err.message : "Échec de l'import",
+      );
+    } finally {
+      setImportLoading(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  };
+
   const handleReset = async () => {
     if (!selected || !window.confirm("Reinitialiser ce template au defaut ? Vos modifications seront perdues.")) return;
     setSaving(true);
@@ -183,12 +268,22 @@ export default function TemplatesDocumentsPage() {
     else setTitre((prev) => prev + " " + tag);
   };
 
-  // Refresh iframe preview when entering preview tab
+  // Refresh iframe preview when entering preview tab OU quand les valeurs
+  // custom changent (debounce 500ms pour ne pas re-générer le PDF à chaque
+  // frappe clavier).
   useEffect(() => {
-    if (tab === "preview" && iframeRef.current && selected) {
-      iframeRef.current.src = `/api/pdf/template-preview/${selected.type}?v=${previewVersion}`;
-    }
-  }, [tab, selected, previewVersion]);
+    if (tab !== "preview" || !selected) return;
+    const handle = setTimeout(() => {
+      if (!iframeRef.current) return;
+      const hasCustom = Object.values(previewCustom).some((v) => v && v.trim());
+      const varsParam = hasCustom
+        ? `&vars=${encodeURIComponent(JSON.stringify(buildVarsFromCustom(previewCustom)))}`
+        : "";
+      iframeRef.current.src = `/api/pdf/template-preview/${selected.type}?v=${previewVersion}${varsParam}`;
+    }, 500);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, selected, previewVersion, previewDebounce]);
 
   if (loading) {
     return <div className="p-6 flex items-center justify-center py-24"><div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" /></div>;
@@ -244,6 +339,32 @@ export default function TemplatesDocumentsPage() {
                 {saveMsg && <span className={`text-xs ${saveMsg.includes("Erreur") ? "text-red-400" : "text-emerald-400"}`}>
                   {saveMsg === "Enregistre" ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : null}{saveMsg}
                 </span>}
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf,.txt,text/plain"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImport(f);
+                  }}
+                />
+                <button
+                  onClick={() => importInputRef.current?.click()}
+                  disabled={importLoading || saving}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-700/50 bg-blue-900/20 px-3 py-1.5 text-xs text-blue-300 hover:bg-blue-900/40 disabled:opacity-40"
+                  title="Importer un PDF ou texte (sera placé dans le corps)"
+                >
+                  {importLoading ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" /> Import…
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-3 w-3" /> Importer
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={() => setAiOpen(true)}
                   disabled={saving}
@@ -404,7 +525,103 @@ export default function TemplatesDocumentsPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-3">
+                {/* Inputs valeurs custom */}
+                <div className="space-y-3 rounded-md border border-gray-700 bg-gray-800 p-3 max-h-[800px] overflow-y-auto">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase">
+                    Valeurs de test
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    Modifie les champs ci-dessous pour voir l'aperçu se mettre
+                    à jour en direct (~500ms).
+                  </p>
+
+                  <CustomFieldGroup
+                    label="Stagiaire"
+                    fields={[
+                      { k: "stagiaire.prenom", label: "Prénom", ph: "Marie" },
+                      { k: "stagiaire.nom", label: "Nom", ph: "Dupont" },
+                      { k: "stagiaire.email", label: "Email", ph: "marie@x.com" },
+                    ]}
+                    values={previewCustom}
+                    onChange={updatePreviewCustom}
+                  />
+                  <CustomFieldGroup
+                    label="Formation"
+                    fields={[
+                      { k: "formation.titre", label: "Titre", ph: "Sécurité incendie" },
+                      { k: "formation.duree", label: "Durée (h)", ph: "14" },
+                    ]}
+                    values={previewCustom}
+                    onChange={updatePreviewCustom}
+                  />
+                  <CustomFieldGroup
+                    label="Session"
+                    fields={[
+                      { k: "session.dateDebut", label: "Début", ph: "15/06/2026" },
+                      { k: "session.dateFin", label: "Fin", ph: "16/06/2026" },
+                      { k: "session.lieu", label: "Lieu", ph: "Toulon" },
+                    ]}
+                    values={previewCustom}
+                    onChange={updatePreviewCustom}
+                  />
+                  <CustomFieldGroup
+                    label="Entreprise"
+                    fields={[
+                      { k: "entreprise.nom", label: "Nom", ph: "Acme" },
+                      { k: "entreprise.siret", label: "SIRET", ph: "123…" },
+                      { k: "entreprise.ville", label: "Ville", ph: "Toulon" },
+                    ]}
+                    values={previewCustom}
+                    onChange={updatePreviewCustom}
+                  />
+                  <CustomFieldGroup
+                    label="Formateur"
+                    fields={[
+                      { k: "formateur.prenom", label: "Prénom", ph: "Pierre" },
+                      { k: "formateur.nom", label: "Nom", ph: "Martin" },
+                    ]}
+                    values={previewCustom}
+                    onChange={updatePreviewCustom}
+                  />
+
+                  {editableVariables.filter((v) => !STD_PATHS[`stagiaire.${v.nom}`] && !STD_PATHS[`formation.${v.nom}`] && !STD_PATHS[`session.${v.nom}`] && !STD_PATHS[`entreprise.${v.nom}`] && !STD_PATHS[`formateur.${v.nom}`]).length > 0 ? (
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">
+                        Variables custom
+                      </p>
+                      <div className="space-y-1.5">
+                        {editableVariables.map((v) => (
+                          <div key={v.nom}>
+                            <label className="text-[10px] text-gray-400 block mb-0.5">
+                              {`{{${v.nom}}}`}
+                            </label>
+                            <input
+                              value={previewCustom[v.nom] ?? ""}
+                              onChange={(e) =>
+                                updatePreviewCustom(v.nom, e.target.value)
+                              }
+                              placeholder={v.description || ""}
+                              className="w-full h-7 rounded border border-gray-700 bg-gray-900 px-2 text-[11px] text-gray-100"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <button
+                    onClick={() => {
+                      setPreviewCustom({});
+                      setPreviewDebounce((v) => v + 1);
+                    }}
+                    className="w-full text-[10px] rounded border border-gray-700 bg-gray-900 px-2 py-1 text-gray-400 hover:bg-gray-700"
+                  >
+                    Réinitialiser les valeurs
+                  </button>
+                </div>
+
+                {/* Iframe PDF */}
                 <div className="rounded-md bg-gray-800 border border-gray-700 p-2">
                   <iframe
                     ref={iframeRef}
@@ -412,10 +629,11 @@ export default function TemplatesDocumentsPage() {
                     className="w-full rounded bg-white"
                     style={{ height: "800px" }}
                   />
+                  <p className="text-[10px] text-gray-500 italic text-center mt-1">
+                    Aperçu live avec les valeurs ci-contre. Enregistre pour
+                    persister les modifications du template.
+                  </p>
                 </div>
-                <p className="text-[10px] text-gray-500 italic text-center">
-                  Apercu avec des donnees fictives. Enregistrez pour rafraichir l&apos;apercu.
-                </p>
               </div>
             )}
           </div>
@@ -509,6 +727,51 @@ export default function TemplatesDocumentsPage() {
           </div>
         </div>
       ) : null}
+
+      {importError ? (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-md border border-red-700 bg-red-900/90 px-4 py-2 text-sm text-red-100 shadow-xl">
+          {importError}
+          <button
+            onClick={() => setImportError("")}
+            className="ml-3 text-red-300 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CustomFieldGroup({
+  label,
+  fields,
+  values,
+  onChange,
+}: {
+  label: string;
+  fields: Array<{ k: string; label: string; ph?: string }>;
+  values: Record<string, string>;
+  onChange: (k: string, v: string) => void;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">
+        {label}
+      </p>
+      <div className="space-y-1">
+        {fields.map((f) => (
+          <div key={f.k}>
+            <label className="text-[9px] text-gray-500 block">{f.label}</label>
+            <input
+              value={values[f.k] ?? ""}
+              onChange={(e) => onChange(f.k, e.target.value)}
+              placeholder={f.ph}
+              className="w-full h-6 rounded border border-gray-700 bg-gray-900 px-1.5 text-[11px] text-gray-100"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

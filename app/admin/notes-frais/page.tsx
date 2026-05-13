@@ -3,11 +3,34 @@ import { Receipt, Clock, CheckCircle2, XCircle, CreditCard } from "lucide-react"
 
 export const dynamic = "force-dynamic";
 
-const STATUT_STYLES: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
-  soumise:   { icon: Clock,         color: "text-amber-400",   bg: "bg-amber-950/40 border-amber-800",   label: "Soumise" },
-  approuvee: { icon: CheckCircle2,  color: "text-emerald-400", bg: "bg-emerald-950/40 border-emerald-800", label: "Approuvée" },
-  rejetee:   { icon: XCircle,       color: "text-red-400",     bg: "bg-red-950/40 border-red-800",       label: "Rejetée" },
-  payee:     { icon: CreditCard,    color: "text-blue-400",    bg: "bg-blue-950/40 border-blue-800",     label: "Payée" },
+const STATUT_STYLES: Record<
+  string,
+  { icon: React.ElementType; label: string; accentBorder: string; accentText: string }
+> = {
+  soumise: {
+    icon: Clock,
+    label: "Soumise",
+    accentBorder: "border-l-amber-500",
+    accentText: "text-amber-600 dark:text-amber-400",
+  },
+  approuvee: {
+    icon: CheckCircle2,
+    label: "Approuvée",
+    accentBorder: "border-l-emerald-500",
+    accentText: "text-emerald-600 dark:text-emerald-400",
+  },
+  rejetee: {
+    icon: XCircle,
+    label: "Rejetée",
+    accentBorder: "border-l-red-500",
+    accentText: "text-red-600 dark:text-red-400",
+  },
+  payee: {
+    icon: CreditCard,
+    label: "Payée",
+    accentBorder: "border-l-blue-500",
+    accentText: "text-blue-600 dark:text-blue-400",
+  },
 };
 
 const CATEGORIE_LABELS: Record<string, string> = {
@@ -48,13 +71,22 @@ export default async function AdminNotesFraisPage() {
           const t = totalParStatut[statut] ?? { count: 0, montant: 0 };
           const Icon = style.icon;
           return (
-            <div key={statut} className={`rounded-xl border ${style.bg} p-4`}>
-              <div className={`flex items-center gap-2 ${style.color} mb-1`}>
+            <div
+              key={statut}
+              className={`rounded-xl border border-gray-200 dark:border-gray-700 border-l-4 ${style.accentBorder} bg-white dark:bg-gray-800 p-4`}
+            >
+              <div className={`flex items-center gap-2 ${style.accentText} mb-1`}>
                 <Icon className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wider">{style.label}</span>
+                <span className="text-xs font-medium uppercase tracking-wider">
+                  {style.label}
+                </span>
               </div>
-              <div className="text-xl font-bold text-gray-100">{t.count}</div>
-              <div className="text-xs text-gray-400">{t.montant.toFixed(2)} € total</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {t.count}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {t.montant.toFixed(2)} € total
+              </div>
             </div>
           );
         })}
@@ -98,7 +130,7 @@ export default async function AdminNotesFraisPage() {
                       {n.montant.toFixed(2)} €
                     </td>
                     <td className="px-4 py-2">
-                      <span className={`inline-flex items-center gap-1 text-xs ${style.color}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs ${style.accentText}`}>
                         <Icon className="h-3 w-3" /> {style.label}
                       </span>
                     </td>

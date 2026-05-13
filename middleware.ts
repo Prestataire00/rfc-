@@ -50,7 +50,9 @@ const adminApiPrefixes = [
   "/api/utilisateurs",
   "/api/parametres",
   "/api/email",
-  "/api/upload",
+  // "/api/upload" retiré : la route handler gère elle-même l'autorisation
+  // admin/formateur (formateur ne peut upload qu'avec son propre formateurId,
+  // pas d'autre). Permet le dépôt depuis /espace-formateur/documents.
   "/api/export",
   "/api/notifications",
   "/api/message-templates",

@@ -30,7 +30,7 @@ const sanitizeFilename = (name: string): string => {
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
@@ -41,12 +41,40 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     );
   }
 
+  const user = session.user as {
+    role?: string;
+    formateurId?: string | null;
+  };
+  const role = user.role ?? "";
+  // Seuls admin et formateur peuvent uploader pour l'instant (les clients
+  // accèdent à des documents mais n'en déposent pas via cette route).
+  if (role !== "admin" && role !== "formateur") {
+    return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file") as File;
   const type = formData.get("type") as string;
   const sessionId = formData.get("sessionId") as string | null;
-  const formateurId = formData.get("formateurId") as string | null;
-  const entrepriseId = formData.get("entrepriseId") as string | null;
+  // RBAC : un formateur ne peut JAMAIS attribuer un upload à un autre que
+  // lui-même (forcer formateurId au session.user.formateurId, ignorer le
+  // formData). Idem pour entrepriseId : un formateur ne lie pas à une
+  // entreprise. Pour l'admin, on trust le formData.
+  let formateurId: string | null;
+  let entrepriseId: string | null;
+  if (role === "formateur") {
+    formateurId = user.formateurId ?? null;
+    if (!formateurId) {
+      return NextResponse.json(
+        { error: "Compte formateur sans fiche associée — contactez un admin" },
+        { status: 403 },
+      );
+    }
+    entrepriseId = null;
+  } else {
+    formateurId = (formData.get("formateurId") as string | null) || null;
+    entrepriseId = (formData.get("entrepriseId") as string | null) || null;
+  }
 
   if (!file) {
     return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });

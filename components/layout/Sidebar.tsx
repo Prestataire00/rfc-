@@ -4,11 +4,10 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Users, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
-  MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
+  MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
   ListChecks, Sparkles, Database, Key, GitMerge, History, Briefcase,
 } from "lucide-react";
@@ -429,17 +428,8 @@ function DesktopRail({
           })}
         </div>
 
-        {/* Footer icon-bar : déconnexion + avatar */}
+        {/* Footer icon-bar : avatar uniquement — la déconnexion est dans le header */}
         <div className="w-full px-2 pb-3 flex flex-col items-center gap-2">
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-10 h-10 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-red-100/70 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300 flex items-center justify-center transition-colors"
-            aria-label="Déconnexion"
-            title="Déconnexion"
-            onMouseEnter={() => setHovered(null)}
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
           <div
             className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 font-semibold text-[12px] flex items-center justify-center shadow-sm ring-2 ring-white/60 dark:ring-gray-900"
             title={userName}
@@ -689,13 +679,7 @@ function MobileDrawer({
             <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabels[role]}</p>
           </div>
         </div>
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Déconnexion
-        </button>
+        {/* Bouton de déconnexion retiré : disponible dans le header en haut à droite */}
       </div>
     </aside>
   );

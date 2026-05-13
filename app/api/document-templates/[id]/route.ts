@@ -14,6 +14,27 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 // PUT /api/document-templates/[id]
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const body = await req.json();
+
+  // variables : tableau [{nom, description?}] persisté en string JSON.
+  // Accepté tel quel si fourni — l'utilisateur peut ajouter/retirer des
+  // variables custom au-delà des defaults seedés.
+  let variables: string | undefined;
+  if (Array.isArray(body.variables)) {
+    const sanitized = body.variables
+      .filter(
+        (v: unknown): v is { nom: string; description?: string } =>
+          typeof v === "object" &&
+          v !== null &&
+          typeof (v as { nom: unknown }).nom === "string",
+      )
+      .map((v: { nom: string; description?: string }) => ({
+        nom: String(v.nom).trim(),
+        description: v.description ? String(v.description).trim() : undefined,
+      }))
+      .filter((v: { nom: string }) => v.nom.length > 0);
+    variables = JSON.stringify(sanitized);
+  }
+
   const tpl = await prisma.documentTemplate.update({
     where: { id: params.id },
     data: {
@@ -24,6 +45,7 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
       corps: body.corps,
       mentions: body.mentions ?? null,
       actif: body.actif !== undefined ? body.actif : undefined,
+      ...(variables !== undefined ? { variables } : {}),
       modifie: true,
     },
   });

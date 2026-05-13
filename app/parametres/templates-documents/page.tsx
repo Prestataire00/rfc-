@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Save, FileText, RotateCcw, Eye, Pencil, CheckCircle2, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft, Save, FileText, RotateCcw, Eye, Pencil, CheckCircle2,
+  RefreshCw, Sparkles, Plus, X, Loader2,
+} from "lucide-react";
 import { useApi } from "@/hooks/useApi";
-import { api } from "@/lib/fetcher";
+import { api, ApiError } from "@/lib/fetcher";
 
 type Variable = { nom: string; description: string };
 type DocTemplate = {
@@ -34,6 +37,17 @@ export default function TemplatesDocumentsPage() {
   const [introduction, setIntroduction] = useState("");
   const [corps, setCorps] = useState("");
   const [mentions, setMentions] = useState("");
+  const [editableVariables, setEditableVariables] = useState<Variable[]>([]);
+
+  // IA generation
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiBrief, setAiBrief] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  // Variable manuelle à ajouter
+  const [newVarName, setNewVarName] = useState("");
+  const [newVarDesc, setNewVarDesc] = useState("");
 
   const { data: templatesData, isLoading: loading, mutate: mutateTemplates } = useApi<DocTemplate[]>(
     "/api/document-templates"
@@ -59,8 +73,9 @@ export default function TemplatesDocumentsPage() {
       setIntroduction(selected.introduction || "");
       setCorps(selected.corps);
       setMentions(selected.mentions || "");
+      setEditableVariables(variables);
     }
-  }, [selectedId, selected]);
+  }, [selectedId, selected, variables]);
 
   const handleSave = async () => {
     if (!selected) return;
@@ -74,6 +89,7 @@ export default function TemplatesDocumentsPage() {
         introduction,
         corps,
         mentions,
+        variables: editableVariables,
         actif: selected.actif,
       });
       setSaveMsg("Enregistre");
@@ -84,6 +100,60 @@ export default function TemplatesDocumentsPage() {
       setSaveMsg("Erreur");
     }
     setSaving(false);
+  };
+
+  const handleGenerateAI = async () => {
+    if (!selected) return;
+    if (aiBrief.trim().length < 10) {
+      setAiError("Décris au moins en 1 phrase ce que tu veux générer.");
+      return;
+    }
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const result = await api.post<{
+        titre: string;
+        introduction: string;
+        corps: string;
+        mentions: string;
+      }>("/api/document-templates/generate-ai", {
+        type: selected.type,
+        brief: aiBrief,
+        variables: editableVariables,
+      });
+      setTitre(result.titre || titre);
+      setIntroduction(result.introduction || introduction);
+      setCorps(result.corps || corps);
+      setMentions(result.mentions || mentions);
+      setAiOpen(false);
+      setAiBrief("");
+      setSaveMsg("Brouillon IA généré — vérifie puis enregistre");
+      setTimeout(() => setSaveMsg(""), 4000);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Erreur IA";
+      setAiError(msg);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const addVariable = () => {
+    const nom = newVarName.trim();
+    if (!nom) return;
+    if (editableVariables.some((v) => v.nom === nom)) {
+      setNewVarName("");
+      return;
+    }
+    setEditableVariables((prev) => [
+      ...prev,
+      { nom, description: newVarDesc.trim() },
+    ]);
+    setNewVarName("");
+    setNewVarDesc("");
+  };
+
+  const removeVariable = (nom: string) => {
+    setEditableVariables((prev) => prev.filter((v) => v.nom !== nom));
   };
 
   const handleReset = async () => {
@@ -174,6 +244,14 @@ export default function TemplatesDocumentsPage() {
                 {saveMsg && <span className={`text-xs ${saveMsg.includes("Erreur") ? "text-red-400" : "text-emerald-400"}`}>
                   {saveMsg === "Enregistre" ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : null}{saveMsg}
                 </span>}
+                <button
+                  onClick={() => setAiOpen(true)}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-purple-700/50 bg-purple-900/20 px-3 py-1.5 text-xs text-purple-300 hover:bg-purple-900/40 disabled:opacity-40"
+                  title="Générer le contenu via Claude"
+                >
+                  <Sparkles className="h-3 w-3" /> Générer avec IA
+                </button>
                 <button
                   onClick={handleReset}
                   disabled={saving || !selected.modifie}
@@ -266,17 +344,28 @@ export default function TemplatesDocumentsPage() {
 
                 <div className="md:col-span-1">
                   <p className="text-xs font-semibold text-gray-300 mb-2 uppercase">Variables</p>
-                  <div className="space-y-1.5">
-                    {variables.length === 0 ? (
+                  <div className="space-y-1.5 mb-3">
+                    {editableVariables.length === 0 ? (
                       <p className="text-xs text-gray-500 italic">Aucune variable</p>
-                    ) : variables.map((v) => (
+                    ) : editableVariables.map((v) => (
                       <div
                         key={v.nom}
                         className="rounded-md border border-gray-700 bg-gray-800 p-2"
                       >
-                        <code className="text-[10px] text-red-400 block mb-1">{"{{"}{v.nom}{"}}"}</code>
-                        <p className="text-[10px] text-gray-500 mb-1.5">{v.description}</p>
-                        <div className="flex gap-1 flex-wrap">
+                        <div className="flex items-start justify-between gap-1">
+                          <code className="text-[10px] text-red-400 block">{"{{"}{v.nom}{"}}"}</code>
+                          <button
+                            onClick={() => removeVariable(v.nom)}
+                            className="text-gray-500 hover:text-red-400 shrink-0"
+                            title="Retirer cette variable"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {v.description ? (
+                          <p className="text-[10px] text-gray-500 mb-1.5">{v.description}</p>
+                        ) : null}
+                        <div className="flex gap-1 flex-wrap mt-1">
                           <button onClick={() => insertVariable("titre", v.nom)} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300">Titre</button>
                           <button onClick={() => insertVariable("intro", v.nom)} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300">Intro</button>
                           <button onClick={() => insertVariable("corps", v.nom)} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-300">Corps</button>
@@ -285,6 +374,33 @@ export default function TemplatesDocumentsPage() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Ajouter une variable custom */}
+                  <div className="rounded-md border border-dashed border-gray-700 bg-gray-900/50 p-2 space-y-1.5">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase">Ajouter une variable</p>
+                    <input
+                      value={newVarName}
+                      onChange={(e) => setNewVarName(e.target.value.replace(/[^a-zA-Z0-9_]/g, "_"))}
+                      placeholder="nom_variable"
+                      className="w-full h-7 rounded border border-gray-700 bg-gray-900 px-2 text-[11px] text-gray-100"
+                    />
+                    <input
+                      value={newVarDesc}
+                      onChange={(e) => setNewVarDesc(e.target.value)}
+                      placeholder="Description (optionnel)"
+                      className="w-full h-7 rounded border border-gray-700 bg-gray-900 px-2 text-[11px] text-gray-100"
+                    />
+                    <button
+                      onClick={addVariable}
+                      disabled={!newVarName.trim()}
+                      className="w-full inline-flex items-center justify-center gap-1 rounded bg-gray-700 hover:bg-gray-600 px-2 py-1 text-[10px] text-gray-200 disabled:opacity-40"
+                    >
+                      <Plus className="h-3 w-3" /> Ajouter
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-2 italic">
+                    Pense à enregistrer pour persister les variables.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -305,6 +421,94 @@ export default function TemplatesDocumentsPage() {
           </div>
         )}
       </div>
+
+      {/* Modale génération IA */}
+      {aiOpen && selected ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => !aiLoading && setAiOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl rounded-xl border border-purple-700/40 bg-gray-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-400" />
+                Générer avec l'IA
+              </h2>
+              <button
+                onClick={() => !aiLoading && setAiOpen(false)}
+                className="text-gray-400 hover:text-gray-200"
+                aria-label="Fermer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-400 mb-3">
+              Décris ce que tu veux dans ce template :{" "}
+              <strong className="text-gray-200">{selected.nom}</strong>. L'IA
+              proposera titre, introduction, corps et mentions — tu pourras
+              ensuite éditer avant d'enregistrer.
+            </p>
+
+            <textarea
+              value={aiBrief}
+              onChange={(e) => setAiBrief(e.target.value)}
+              placeholder="Ex: Une convention de formation pour formation sécurité incendie, 14h sur 2 jours, ton professionnel mais accessible, avec rappel des modalités de paiement à 30 jours et clause d'annulation."
+              rows={6}
+              className="w-full rounded-md border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 mb-2"
+              disabled={aiLoading}
+            />
+
+            {editableVariables.length > 0 ? (
+              <details className="mb-2 text-xs text-gray-400">
+                <summary className="cursor-pointer">
+                  {editableVariables.length} variable(s) disponible(s) pour l'IA
+                </summary>
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {editableVariables.map((v) => (
+                    <code
+                      key={v.nom}
+                      className="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] text-purple-300"
+                    >{`{{${v.nom}}}`}</code>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+
+            {aiError ? (
+              <p className="text-xs text-red-400 mb-2">{aiError}</p>
+            ) : null}
+
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={() => setAiOpen(false)}
+                disabled={aiLoading}
+                className="rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-40"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleGenerateAI}
+                disabled={aiLoading || aiBrief.trim().length < 10}
+                className="inline-flex items-center gap-2 rounded-md bg-purple-600 hover:bg-purple-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Génération…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" /> Générer
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

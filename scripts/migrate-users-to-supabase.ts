@@ -112,7 +112,14 @@ async function main() {
       orderBy: { id: "asc" },
       take: args.batchSize,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-      select: { id: true, email: true, password: true },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+        formateurId: true,
+        entrepriseId: true,
+      },
     });
     if (batch.length === 0) break;
 
@@ -134,17 +141,35 @@ async function main() {
   await prisma.$disconnect();
 }
 
+type MigratableUser = {
+  id: string;
+  email: string;
+  password: string;
+  role: string;
+  formateurId: string | null;
+  entrepriseId: string | null;
+};
+
 async function migrateOne(
   supabase: SupabaseClient,
-  user: { id: string; email: string; password: string },
+  user: MigratableUser,
   apply: boolean,
 ): Promise<
   "migrated" | "alreadyMigrated" | "skippedExistingSupabase" | "failed"
 > {
   if (!apply) {
-    console.log(`[dry-run] would migrate ${user.email}`);
+    console.log(`[dry-run] would migrate ${user.email} (role=${user.role})`);
     return "migrated";
   }
+
+  // app_metadata est lu par le middleware (edge runtime, pas de Prisma).
+  // C'est aussi non modifiable côté client : seul le service-role peut le
+  // mettre à jour, donc safe pour stocker des données d'autorisation.
+  const appMetadata = {
+    role: user.role,
+    formateurId: user.formateurId,
+    entrepriseId: user.entrepriseId,
+  };
 
   try {
     const { data, error } = await supabase.auth.admin.createUser({
@@ -152,6 +177,7 @@ async function migrateOne(
       password_hash: user.password,
       email_confirm: true,
       user_metadata: { prisma_user_id: user.id },
+      app_metadata: appMetadata,
     });
 
     if (error) {
@@ -182,7 +208,7 @@ async function migrateOne(
 
 async function linkExistingSupabaseUser(
   supabase: SupabaseClient,
-  user: { id: string; email: string },
+  user: MigratableUser,
 ): Promise<"skippedExistingSupabase" | "failed"> {
   const { data, error } = await supabase.auth.admin.listUsers({
     page: 1,
@@ -201,6 +227,16 @@ async function linkExistingSupabaseUser(
     if (error) console.error(error.message);
     return "failed";
   }
+
+  // Synchronise app_metadata côté Supabase pour que le middleware edge
+  // puisse lire le rôle, même si le user a été créé manuellement.
+  await supabase.auth.admin.updateUserById(found.id, {
+    app_metadata: {
+      role: user.role,
+      formateurId: user.formateurId,
+      entrepriseId: user.entrepriseId,
+    },
+  });
 
   await prisma.user.update({
     where: { id: user.id },

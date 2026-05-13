@@ -10,6 +10,7 @@ import {
   Plus, X, UserCircle, MessageSquare,
 } from "lucide-react";
 import { TaskCommentsModal } from "@/components/shared/TaskCommentsModal";
+import { GenerateTasksModal } from "@/components/shared/GenerateTasksModal";
 
 interface TaskItem {
   id: string;
@@ -79,6 +80,9 @@ export default function ProjetTachesPage() {
   // Modal commentaires (rich text) — ouvert au clic sur le titre d'une tâche
   const [commentsTask, setCommentsTask] = useState<{ id: string; titre: string } | null>(null);
   const { data: session } = useSession();
+
+  // Génération IA des tâches depuis objectifs (PR #5)
+  const [genOpen, setGenOpen] = useState(false);
 
   const formateursAvecUser = (formateurs ?? []).filter((f) => f.actif && f.user?.id);
 
@@ -219,11 +223,22 @@ export default function ProjetTachesPage() {
 
       {projet.objectifs && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 mb-6">
-          <p className="text-xs font-semibold text-amber-300 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5" />
-            Objectifs du projet
-          </p>
-          <p className="text-sm text-gray-300 whitespace-pre-line">{projet.objectifs}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-amber-300 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                <AlertCircle className="h-3.5 w-3.5" />
+                Objectifs du projet
+              </p>
+              <p className="text-sm text-gray-300 whitespace-pre-line">{projet.objectifs}</p>
+            </div>
+            <button
+              onClick={() => setGenOpen(true)}
+              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium"
+              title="Génère une liste de tâches actionnables via Claude IA à partir des objectifs ci-dessus"
+            >
+              ⚡ Générer les tâches via IA
+            </button>
+          </div>
         </div>
       )}
 
@@ -391,6 +406,14 @@ export default function ProjetTachesPage() {
           currentUserId={session?.user?.id}
           currentUserRole={session?.user?.role}
           onClose={() => setCommentsTask(null)}
+        />
+      )}
+
+      {genOpen && (
+        <GenerateTasksModal
+          projetId={id}
+          onClose={() => setGenOpen(false)}
+          onCreated={() => mutate()}
         />
       )}
     </div>

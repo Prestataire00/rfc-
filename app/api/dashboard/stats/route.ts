@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { memoizeWithTtl } from "@/lib/cache/memoize-ttl";
 
 export const dynamic = "force-dynamic";
+
+// TTL court : le dashboard tolère une staleness de 60s pour gagner ~95% du
+// temps DB sur les rechargements fréquents (admin qui refresh, navigation
+// entre /dashboard et /formations…). 22 queries Prisma par appel sinon.
+const DASHBOARD_STATS_TTL_MS = 60_000;
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") || "mois";
 
+  const payload = await memoizeWithTtl(
+    () => computeDashboardStats(period),
+    { key: `dashboard:stats:${period}`, ttlMs: DASHBOARD_STATS_TTL_MS },
+  );
+  return NextResponse.json(payload);
+});
+
+async function computeDashboardStats(period: string) {
   const now = new Date();
   const debutMois = new Date(now.getFullYear(), now.getMonth(), 1);
   const finMois = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -183,7 +197,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     })(),
   ]);
 
-  return NextResponse.json({
+  return {
     stats: {
       nbContacts,
       nbEntreprises,
@@ -213,5 +227,5 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     derniersContacts,
     sessionsSemaine,
     sessionsAujourdhui,
-  });
-});
+  };
+}

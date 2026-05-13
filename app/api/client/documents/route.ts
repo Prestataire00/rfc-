@@ -54,5 +54,28 @@ export const GET = withErrorHandler(async () => {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ sessions, devis, factures, attestations });
+  // Documents projet visibles client : l'admin a coché "visible client" sur le doc.
+  // Visibles si rattachés directement à l'entreprise du client OU à un projet de
+  // l'entreprise.
+  const projets = await prisma.projet.findMany({
+    where: { entrepriseId },
+    select: { id: true },
+  });
+  const projetIds = projets.map((p) => p.id);
+
+  const documentsProjets = await prisma.document.findMany({
+    where: {
+      visibleClient: true,
+      OR: [
+        { entrepriseId },
+        ...(projetIds.length > 0 ? [{ projetId: { in: projetIds } }] : []),
+      ],
+    },
+    include: {
+      projet: { select: { id: true, nom: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({ sessions, devis, factures, attestations, documentsProjets });
 });

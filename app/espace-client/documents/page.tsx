@@ -43,11 +43,22 @@ type AttestationDoc = {
   contactId: string;
 };
 
+type ProjetDocDoc = {
+  id: string;
+  nom: string;
+  type: string;
+  chemin: string;
+  description: string | null;
+  createdAt: string;
+  projet: { id: string; nom: string } | null;
+};
+
 type Data = {
   sessions: SessionDoc[];
   devis: DevisDoc[];
   factures: FactureDoc[];
   attestations: AttestationDoc[];
+  documentsProjets: ProjetDocDoc[];
 };
 
 function fmtMoney(n: number) {
@@ -76,7 +87,8 @@ export default function ClientDocumentsPage() {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 
-  const hasData = data && (data.sessions.length > 0 || data.devis.length > 0 || data.factures.length > 0 || data.attestations.length > 0);
+  const docsProjets = data?.documentsProjets ?? [];
+  const hasData = data && (data.sessions.length > 0 || data.devis.length > 0 || data.factures.length > 0 || data.attestations.length > 0 || docsProjets.length > 0);
 
   if (!hasData) {
     return (
@@ -194,6 +206,47 @@ export default function ClientDocumentsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {/* Documents projet — partagés par l'admin (livrables, briefs, rapports…)  */}
+      {docsProjets.length > 0 && (
+        <section>
+          <h2 className="flex items-center gap-2 text-base font-semibold text-gray-100 mb-4">
+            <FolderOpen className="h-5 w-5 text-emerald-400" />
+            Documents de vos projets
+          </h2>
+          <div className="rounded-lg border border-gray-700 bg-gray-800 divide-y divide-gray-700">
+            {docsProjets.map((d) => (
+              <div key={d.id} className="flex items-start gap-3 p-3 hover:bg-gray-700/50">
+                <FileText className="h-5 w-5 text-gray-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href={d.chemin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-gray-100 hover:text-emerald-400"
+                    >
+                      {d.nom}
+                    </a>
+                    <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">
+                      {d.type}
+                    </span>
+                    {d.projet && (
+                      <span className="text-[10px] text-gray-500">· {d.projet.nom}</span>
+                    )}
+                  </div>
+                  {d.description && (
+                    <p className="text-xs text-gray-400 mt-0.5">{d.description}</p>
+                  )}
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    Ajouté le {formatDate(d.createdAt)}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}

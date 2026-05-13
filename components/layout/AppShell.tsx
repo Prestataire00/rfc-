@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Menu, Sun, Moon } from "lucide-react";
+import { Menu, Sun, Moon, LogOut } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { CommandPalette } from "@/components/shared/CommandPalette";
@@ -64,6 +64,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </button>
   );
 
+  const SignOutButton = () => (
+    <button
+      onClick={() => signOut({ callbackUrl: "/login" })}
+      className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-red-100/70 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+      aria-label="Déconnexion"
+      title="Déconnexion"
+    >
+      <LogOut className="h-5 w-5" />
+    </button>
+  );
+
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-[#262626]">
       <Sidebar
@@ -90,12 +101,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <NotificationBell />
+            <SignOutButton />
           </div>
         </div>
         {/* Desktop header */}
         <div className="hidden lg:flex sticky top-0 z-30 h-16 items-center justify-end border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-[#262626] px-6 gap-2">
           <ThemeToggle />
           <NotificationBell />
+          <SignOutButton />
         </div>
         <div className="p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</div>
       </main>

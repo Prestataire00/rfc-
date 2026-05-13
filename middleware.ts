@@ -27,6 +27,7 @@ const adminPages = [
   "/utilisateurs",
   "/parametres",
   "/admin",
+  "/projets",
   "/signatures",
 ];
 
@@ -65,6 +66,7 @@ const adminApiPrefixes = [
   "/api/competences",
   "/api/signature-requests",
   "/api/pdf/template-preview",
+  "/api/projets",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];
 

@@ -469,11 +469,16 @@ model FeedbackFormateur {
 model Document {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 
-  nom        String
-  type       String  // convention, feuille_presence, convocation, attestation, contrat, autre
-  chemin     String  // file path or URL
-  taille     Int?    // file size in bytes
+  nom         String
+  // Catégorie pour organisation/filtrage UI. Anciennes valeurs métier conservées
+  // (convention/feuille_presence/etc.) + nouvelles génériques (livrable, contrat,
+  // brief, rapport, autre) pour les documents projet.
+  type        String
+  chemin      String  // file path or URL
+  taille      Int?    // file size in bytes
+  description String?
 
   sessionId    String?
   session      Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
@@ -483,6 +488,15 @@ model Document {
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  // Rattachement projet + politique de visibilité par audience
+  projetId         String?
+  projet           Projet?  @relation(fields: [projetId], references: [id], onDelete: SetNull)
+  visibleClient    Boolean  @default(false)
+  visibleFormateur Boolean  @default(false)
+
+  @@index([projetId])
+  @@index([type])
 }
 
 // ==================== EVALUATIONS & ATTESTATIONS ====================
@@ -2129,6 +2143,7 @@ model Projet {
   sessions   Session[]
   factures   Facture[]
   taskLists  TaskList[]
+  documents  Document[]
 
   @@index([statut])
   @@index([entrepriseId])

@@ -9,6 +9,7 @@ const updateSchema = z.object({
   nom: z.string().min(1),
   description: z.string().optional().nullable(),
   sessionId: z.string().optional().nullable(),
+  projetId: z.string().optional().nullable(),
   userId: z.string().optional().nullable(),
   couleur: z.string().optional(),
 });

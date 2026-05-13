@@ -31,6 +31,7 @@ model User {
 
   notifications Notification[]
   conversationParticipations ConversationParticipant[]
+  taskComments  TaskComment[]
 }
 
 // ==================== CORE MODELS ====================
@@ -1485,9 +1486,31 @@ model TaskItem {
   userId      String?   // utilisateur assigne
   completedAt DateTime?
 
+  comments TaskComment[]
+
   @@index([listId])
   @@index([userId])
   @@index([completed])
+}
+
+// Commentaire sur une tâche — contenu HTML rich text (gras, italique, souligné,
+// couleur). Sanitization côté serveur avec isomorphic-dompurify avant insert.
+// Auteur = User.id (admin ou formateur ayant accès à la tâche).
+model TaskComment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  taskId String
+  task   TaskItem @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId   String
+  author     User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  contentHtml String // HTML rich text sanitized (max ~10 Ko en pratique)
+
+  @@index([taskId])
+  @@index([authorId])
 }
 
 // ==================== CONVERSATIONS GROUPE ====================

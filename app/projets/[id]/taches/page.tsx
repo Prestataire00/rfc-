@@ -3,11 +3,13 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import {
   ArrowLeft, ListChecks, CheckCircle2, Circle, AlertCircle, Trash2,
-  Plus, X, UserCircle,
+  Plus, X, UserCircle, MessageSquare,
 } from "lucide-react";
+import { TaskCommentsModal } from "@/components/shared/TaskCommentsModal";
 
 interface TaskItem {
   id: string;
@@ -73,6 +75,10 @@ export default function ProjetTachesPage() {
   // Form state pour création de tâche (par liste)
   const [newTaskListId, setNewTaskListId] = useState<string | null>(null);
   const [newTaskTitre, setNewTaskTitre] = useState("");
+
+  // Modal commentaires (rich text) — ouvert au clic sur le titre d'une tâche
+  const [commentsTask, setCommentsTask] = useState<{ id: string; titre: string } | null>(null);
+  const { data: session } = useSession();
 
   const formateursAvecUser = (formateurs ?? []).filter((f) => f.actif && f.user?.id);
 
@@ -274,9 +280,14 @@ export default function ProjetTachesPage() {
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-sm ${item.completed ? "line-through text-gray-500" : "text-gray-200"}`}>
+                          <button
+                            type="button"
+                            onClick={() => setCommentsTask({ id: item.id, titre: item.titre })}
+                            className={`text-sm text-left hover:underline ${item.completed ? "line-through text-gray-500" : "text-gray-200"}`}
+                            title="Ouvrir les commentaires"
+                          >
                             {item.titre}
-                          </span>
+                          </button>
                           {item.priorite && (
                             <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${PRIO_COLORS[item.priorite] ?? PRIO_COLORS.basse}`}>
                               {item.priorite}
@@ -295,7 +306,15 @@ export default function ProjetTachesPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setCommentsTask({ id: item.id, titre: item.titre })}
+                          className="text-gray-500 hover:text-blue-400 p-1"
+                          title="Commentaires"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                        </button>
+                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
                         <select
                           value={item.userId ?? ""}
                           onChange={(e) => updateTaskField(item, { userId: e.target.value || null })}
@@ -321,6 +340,7 @@ export default function ProjetTachesPage() {
                         <button onClick={() => deleteTask(item.id)} className="text-gray-500 hover:text-red-400 p-1">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
+                        </div>
                       </div>
                     </li>
                   );
@@ -362,6 +382,16 @@ export default function ProjetTachesPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {commentsTask && (
+        <TaskCommentsModal
+          taskId={commentsTask.id}
+          taskTitle={commentsTask.titre}
+          currentUserId={session?.user?.id}
+          currentUserRole={session?.user?.role}
+          onClose={() => setCommentsTask(null)}
+        />
       )}
     </div>
   );

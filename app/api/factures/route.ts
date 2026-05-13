@@ -55,6 +55,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       statut: body.statut || "en_attente",
       devisId: body.devisId || null,
       entrepriseId: body.entrepriseId || null,
+      // Rattachement projet (bilatéralité projet ↔ facture). Si on vient de
+      // /commercial/factures/nouveau?projetId=X, la facture apparaîtra aussi
+      // dans l'onglet Finance du projet.
+      projetId: body.projetId || null,
     },
   });
   return NextResponse.json(facture, { status: 201 });

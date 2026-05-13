@@ -675,7 +675,17 @@ function FinanceTab({ projet }: { projet: ProjetDetail }) {
         />
       </section>
 
-      <Panel title={`Devis (${projet.devis.length})`}>
+      <Panel
+        title={`Devis (${projet.devis.length})`}
+        action={
+          <Link
+            href={`/commercial/devis/nouveau?projetId=${projet.id}${projet.entreprise ? `&entrepriseId=${projet.entreprise.id}` : ""}`}
+            className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
+          >
+            + Nouveau devis
+          </Link>
+        }
+      >
         {projet.devis.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucun devis lié.</p>
         ) : (
@@ -701,7 +711,17 @@ function FinanceTab({ projet }: { projet: ProjetDetail }) {
         )}
       </Panel>
 
-      <Panel title={`Factures (${projet.factures.length})`}>
+      <Panel
+        title={`Factures (${projet.factures.length})`}
+        action={
+          <Link
+            href={`/commercial/factures/nouveau?projetId=${projet.id}${projet.entreprise ? `&entrepriseId=${projet.entreprise.id}` : ""}`}
+            className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
+          >
+            + Nouvelle facture
+          </Link>
+        }
+      >
         {projet.factures.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucune facture liée.</p>
         ) : (
@@ -743,12 +763,15 @@ function FinanceTab({ projet }: { projet: ProjetDetail }) {
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-border bg-card p-5">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );

@@ -604,27 +604,35 @@ function SessionsTab({ projet }: { projet: ProjetDetail }) {
 }
 
 function DocumentsTab({ projet }: { projet: ProjetDetail }) {
-  // Les documents sont liés via Session.documents ou Entreprise.documents
-  // dans le schéma actuel. Pour cet onglet, on liste les types de docs
-  // disponibles avec des liens vers les sections concernées.
   return (
     <div className="space-y-4">
-      <Panel title="Documents du projet">
-        <p className="text-sm text-muted-foreground">
-          Les documents (conventions, attestations, feuilles de présence,
-          devis signés…) sont rattachés aux sessions et aux factures de ce
-          projet. Utilise les onglets dédiés pour y accéder.
+      <Panel
+        title="Documents du projet"
+        action={
+          <Link
+            href={`/projets/${projet.id}/documents`}
+            className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
+          >
+            Ouvrir la gestion des documents →
+          </Link>
+        }
+      >
+        <p className="text-sm text-muted-foreground mb-4">
+          La page dédiée permet d&apos;ajouter des documents (livrables, contrats,
+          briefs, rapports…) et de choisir <strong>qui peut les voir</strong> : le
+          client uniquement, le(s) formateur(s) uniquement, les deux, ou personne
+          (interne admin).
         </p>
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <DocCard
             icon={FileText}
-            label="Conventions"
+            label="Conventions (devis signés)"
             href={`/documents?projetId=${projet.id}&type=convention`}
             count={projet.devis.filter((d) => d.statut === "signe").length}
           />
           <DocCard
             icon={FileText}
-            label="Attestations"
+            label="Attestations (sessions terminées)"
             href={`/documents?projetId=${projet.id}&type=attestation`}
             count={projet.kpis.nbSessionsTerminees}
           />

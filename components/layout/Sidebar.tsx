@@ -9,7 +9,7 @@ import {
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
-  ListChecks, Briefcase, Database, Key, GitMerge, History, Wallet,
+  ListChecks, Briefcase, History, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -126,10 +126,6 @@ const adminGroups: NavGroup[] = [
       { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
       { href: "/parametres", label: "Paramètres", icon: Settings },
       { href: "/parametres/automations-v2", label: "Automations", icon: Zap },
-      { href: "/admin/champs-personnalises", label: "Champs personnalisés", icon: Database },
-      { href: "/admin/api-keys", label: "Clés API", icon: Key },
-      { href: "/admin/rgpd", label: "RGPD", icon: Shield },
-      { href: "/admin/trainee-merge", label: "Fusionner contacts", icon: GitMerge },
     ],
   },
 ];

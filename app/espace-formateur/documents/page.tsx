@@ -14,8 +14,11 @@ type Document = {
   nom: string;
   type: string;
   chemin: string;
+  description: string | null;
   createdAt: string;
   session: { formation: { titre: string } } | null;
+  // Document partagé par l'admin sur un projet où le formateur est assigné
+  projet: { id: string; nom: string } | null;
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -24,6 +27,9 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   feuille_presence: "Feuille de présence",
   convocation: "Convocation",
   attestation: "Attestation",
+  livrable: "Livrable",
+  brief: "Brief / cahier des charges",
+  rapport: "Rapport",
   autre: "Autre",
 };
 
@@ -143,7 +149,13 @@ export default function FormateurDocumentsPage() {
                     </a>
                   </td>
                   <td className="px-4 py-3 text-gray-400">{DOC_TYPE_LABELS[doc.type] || doc.type}</td>
-                  <td className="px-4 py-3 text-gray-400">{doc.session?.formation?.titre || "—"}</td>
+                  <td className="px-4 py-3 text-gray-400">
+                    {doc.projet ? (
+                      <span className="text-blue-300">📁 {doc.projet.nom}</span>
+                    ) : (
+                      doc.session?.formation?.titre || "—"
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-400">{formatDate(doc.createdAt)}</td>
                   <td className="px-4 py-3">
                     {doc.chemin && (

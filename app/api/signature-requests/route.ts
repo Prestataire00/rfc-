@@ -13,8 +13,35 @@ import { appendEvent } from "@/lib/signatures/audit-chain";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withErrorHandler(async () => {
-  return NextResponse.json({ error: "Not implemented (sprint 6)" }, { status: 501 });
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const session = await getServerSession(authOptions);
+  if (!session?.user || session.user.role !== "admin") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const statut = url.searchParams.get("statut");
+  const search = url.searchParams.get("search")?.trim();
+  const limit = Math.min(Number(url.searchParams.get("limit") ?? 50), 200);
+  const offset = Math.max(Number(url.searchParams.get("offset") ?? 0), 0);
+
+  const where = {
+    ...(statut ? { statut } : {}),
+    ...(search ? { titre: { contains: search, mode: "insensitive" as const } } : {}),
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.signatureRequest.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+      include: { signataire: { select: { email: true, nom: true, statut: true } } },
+    }),
+    prisma.signatureRequest.count({ where }),
+  ]);
+
+  return NextResponse.json({ items, total, limit, offset });
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {

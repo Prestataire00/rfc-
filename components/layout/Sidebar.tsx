@@ -10,7 +10,6 @@ import {
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
   ListChecks, Sparkles, Database, Key, GitMerge, History, Briefcase,
-  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +37,6 @@ const adminGroups: NavGroup[] = [
         children: [
           { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
           { href: "/contacts?type=prospect", label: "Prospects", icon: UserPlus },
-          { href: "/entreprises", label: "Entreprises", icon: Building2 },
           { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
         ],
       },

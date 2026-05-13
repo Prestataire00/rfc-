@@ -95,6 +95,7 @@ const adminGroups: NavGroup[] = [
     label: "Gestion",
     icon: Briefcase,
     items: [
+      { href: "/projets", label: "Projets", icon: Briefcase },
       { href: "/tasks", label: "Tâches", icon: ListChecks },
     ],
   },

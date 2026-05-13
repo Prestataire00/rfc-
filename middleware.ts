@@ -116,12 +116,82 @@ function redirectToPortal(role: string, request: NextRequest): NextResponse {
   return NextResponse.redirect(new URL("/dashboard", request.url));
 }
 
+// ── CSP avec nonce (pattern officiel Next.js 14) ─────────────────────────────
+// https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
+//
+// script-src : strict nonce + strict-dynamic = vraie protection XSS. Next.js
+// auto-injecte le nonce dans ses scripts si le request header est set.
+// style-src : 'unsafe-inline' conservé pour compat sonner (CSS-in-JS) +
+// ThemeProvider (script anti-flash). À durcir en V2 avec sonner CSS hashes
+// ou nonce sur styles.
+function buildCsp(nonce: string): string {
+  const supabaseHost = (() => {
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      return url ? new URL(url).host : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const connectSrc = [
+    "'self'",
+    // Upstash REST (rate-limit)
+    "https://*.upstash.io",
+    // Sentry ingest
+    "https://*.sentry.io",
+    "https://*.ingest.sentry.io",
+  ];
+  if (supabaseHost) {
+    connectSrc.push(`https://${supabaseHost}`, `wss://${supabaseHost}`);
+  }
+
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    `connect-src ${connectSrc.join(" ")}`,
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
+// Helper : génère un nonce 128 bits base64. crypto.randomUUID() est assez fort
+// pour un nonce (uniquement besoin d'unicité par requête, pas de secret).
+const generateNonce = (): string =>
+  Buffer.from(crypto.randomUUID()).toString("base64");
+
+// Applique le header CSP sur une réponse existante (redirect, JSON, next).
+const applyCsp = (response: NextResponse, csp: string): NextResponse => {
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+};
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
+  // Génère un nonce frais pour cette requête + CSP correspondante.
+  const nonce = generateNonce();
+  const csp = buildCsp(nonce);
+
+  // Set le nonce et la CSP dans les request headers pour que Next.js puisse :
+  //   - injecter le nonce dans les scripts d'hydratation auto-générés
+  //   - exposer le nonce au layout via `headers().get('x-nonce')`
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+
+  // Allow public paths — CSP appliquée quand même
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return applyCsp(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      csp,
+    );
   }
 
   // Get the JWT token
@@ -132,9 +202,12 @@ export async function middleware(request: NextRequest) {
   // No token → unauthenticated
   if (!token) {
     if (isApi) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+      return applyCsp(
+        NextResponse.json({ error: "Non authentifié" }, { status: 401 }),
+        csp,
+      );
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+    return applyCsp(NextResponse.redirect(new URL("/login", request.url)), csp);
   }
 
   const role = token.role as string;
@@ -144,29 +217,50 @@ export async function middleware(request: NextRequest) {
     // Admin API routes
     if (adminApiPrefixes.some((prefix) => pathname.startsWith(prefix))) {
       if (role !== "admin") {
-        return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
+        return applyCsp(
+          NextResponse.json({ error: "Accès interdit" }, { status: 403 }),
+          csp,
+        );
       }
-      return NextResponse.next();
+      return applyCsp(
+        NextResponse.next({ request: { headers: requestHeaders } }),
+        csp,
+      );
     }
 
     // Client API routes
     if (pathname.startsWith("/api/client")) {
       if (role !== "client" && role !== "admin") {
-        return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
+        return applyCsp(
+          NextResponse.json({ error: "Accès interdit" }, { status: 403 }),
+          csp,
+        );
       }
-      return NextResponse.next();
+      return applyCsp(
+        NextResponse.next({ request: { headers: requestHeaders } }),
+        csp,
+      );
     }
 
     // Formateur API routes
     if (pathname.startsWith("/api/formateur")) {
       if (role !== "formateur" && role !== "admin") {
-        return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
+        return applyCsp(
+          NextResponse.json({ error: "Accès interdit" }, { status: 403 }),
+          csp,
+        );
       }
-      return NextResponse.next();
+      return applyCsp(
+        NextResponse.next({ request: { headers: requestHeaders } }),
+        csp,
+      );
     }
 
     // Other authenticated API routes
-    return NextResponse.next();
+    return applyCsp(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      csp,
+    );
   }
 
   // --- Page authorization ---
@@ -174,31 +268,53 @@ export async function middleware(request: NextRequest) {
   // Admin pages
   if (adminPages.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"))) {
     if (role !== "admin") {
-      return redirectToPortal(role, request);
+      return applyCsp(redirectToPortal(role, request), csp);
     }
-    return NextResponse.next();
+    return applyCsp(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      csp,
+    );
   }
 
   // Formateur pages
   if (pathname.startsWith("/espace-formateur")) {
     if (role !== "formateur" && role !== "admin") {
-      return redirectToPortal(role, request);
+      return applyCsp(redirectToPortal(role, request), csp);
     }
-    return NextResponse.next();
+    return applyCsp(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      csp,
+    );
   }
 
   // Client pages
   if (pathname.startsWith("/espace-client")) {
     if (role !== "client" && role !== "admin") {
-      return redirectToPortal(role, request);
+      return applyCsp(redirectToPortal(role, request), csp);
     }
-    return NextResponse.next();
+    return applyCsp(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      csp,
+    );
   }
 
   // All other authenticated pages
-  return NextResponse.next();
+  return applyCsp(
+    NextResponse.next({ request: { headers: requestHeaders } }),
+    csp,
+  );
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|logo.svg|logo-icon.svg).*)"],
+  matcher: [
+    // Exclut les assets statiques pour éviter de générer un nonce inutile à
+    // chaque image/font. Inclut tout le reste (pages + API).
+    {
+      source: "/((?!_next/static|_next/image|favicon.ico|logo.svg|logo-icon.svg).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
+  ],
 };

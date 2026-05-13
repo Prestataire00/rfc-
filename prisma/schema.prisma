@@ -65,6 +65,7 @@ model Entreprise {
   financements  Financement[]
   historique    HistoriqueAction[]
   tags          EntrepriseTag[]
+  projets       Projet[]
 }
 
 model Contact {
@@ -143,6 +144,7 @@ model Formateur {
   competences    FormateurCompetence[]
   factures       FactureFormateur[]
   evaluations    EvaluationFormateur[]
+  projets        ProjetFormateur[]
 }
 
 model Formation {
@@ -268,6 +270,12 @@ model Session {
   conversations      Conversation[]
   facturesFormateur  FactureFormateur[]
   evaluationsFormateur EvaluationFormateur[]
+
+  // Rattachement projet (agrégat racine — cf model Projet en fin de fichier)
+  projetId String?
+  projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
+
+  @@index([projetId])
 }
 
 model Inscription {
@@ -327,10 +335,15 @@ model BesoinFormation {
   materielSurPlace  String   @default("[]") // JSON array: ["salles", "videoprojecteur", "paperboard"]
   observation       String?
 
+  // Rattachement projet (agrégat racine)
+  projetId String?
+  projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
+
   @@index([statut])
   @@index([entrepriseId])
   @@index([contactId])
   @@index([createdAt])
+  @@index([projetId])
 }
 
 model Devis {
@@ -360,6 +373,12 @@ model Devis {
   factures Facture[]
   besoins  BesoinFormation[]
   sessions Session[]
+
+  // Rattachement projet (agrégat racine)
+  projetId String?
+  projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
+
+  @@index([projetId])
 }
 
 model LigneDevis {
@@ -401,6 +420,12 @@ model Facture {
   paiementsRecus       Paiement[]
   echeances            EcheancierPaiement[]
   transactionsBancaires TransactionBancaire[]
+
+  // Rattachement projet (agrégat racine)
+  projetId String?
+  projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
+
+  @@index([projetId])
 }
 
 // ==================== FORMATEUR ====================
@@ -1895,4 +1920,76 @@ model KpiHistory {
 
   @@index([dateSnapshot])
   @@index([source])
+}
+
+// ==================== PROJETS (agrégat racine) ====================
+//
+// Un Projet = un engagement client cohérent qui peut regrouper 1..N
+// BesoinFormation, 0..N Devis, 0..N Sessions, 0..N Factures et 0..N
+// Formateurs assignés. Cycle de vie propre indépendant des entités liées.
+//
+// Conception : le rattachement à un projet est OPTIONNEL pour les entités
+// historiques (FK nullable) — n'oblige pas à rétro-relier toute la base.
+// Les nouveaux flux (création depuis /projets) câbleront projetId.
+
+model Projet {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nom         String
+  code        String?  @unique  // référence courte type "PROJ-2026-001"
+  description String?
+
+  // Lifecycle : brouillon → en_cours → en_pause → termine → archive
+  // Le passage par "en_pause" est volontaire — distinguer un projet
+  // suspendu (souvent revient) d'un projet terminé.
+  statut      String   @default("brouillon")
+  priorite    String   @default("normale") // basse, normale, haute, critique
+
+  // Dates de pilotage
+  dateDebut     DateTime?
+  dateFinPrevue DateTime?
+  dateFinReelle DateTime?
+
+  // Pilotage managérial
+  chefProjet String?  // libellé libre du responsable interne (User.id futur)
+  budget     Float?   // budget total alloué (TTC)
+  objectifs  String?
+  livrables  String?  // attendus pédagogiques / contractuels
+
+  // Lien client (entreprise) — un projet a au plus 1 client. Pour des
+  // projets multi-clients, modéliser via N projets siblings.
+  entrepriseId String?
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
+
+  // Agrégats
+  formateurs ProjetFormateur[]
+  besoins    BesoinFormation[]
+  devis      Devis[]
+  sessions   Session[]
+  factures   Facture[]
+
+  @@index([statut])
+  @@index([entrepriseId])
+  @@index([dateDebut])
+  @@index([createdAt])
+}
+
+// Jointure N-N Projet ↔ Formateur avec un rôle métier.
+model ProjetFormateur {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  projetId    String
+  projet      Projet    @relation(fields: [projetId], references: [id], onDelete: Cascade)
+
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  role  String?  // ex: "lead", "support", "evaluation", "tutorat"
+  notes String?
+
+  @@unique([projetId, formateurId])
+  @@index([formateurId])
 }

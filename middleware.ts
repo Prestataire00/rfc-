@@ -27,6 +27,7 @@ const adminPages = [
   "/utilisateurs",
   "/parametres",
   "/admin",
+  "/projets",
 ];
 
 // Admin-only API prefixes
@@ -63,6 +64,7 @@ const adminApiPrefixes = [
   "/api/classes-virtuelles",
   "/api/competences",
   "/api/pdf/template-preview",
+  "/api/projets",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];
 

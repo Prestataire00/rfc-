@@ -27,6 +27,10 @@ on:
     - cron: '0 8 * * *'    # evaluations
     - cron: '0 9 * * *'    # factures
     - cron: '*/15 * * * *' # automations-v2
+    # Signature électronique V1 — voir docs/superpowers/specs/2026-05-12-signature-electronique-self-hosted-design.md
+    - cron: '*/5 * * * *'  # signature-retry-finalization (reprend les requests bloquées en signed)
+    - cron: '0 2 * * *'    # signature-expirations (marque expired + purge SignatureTokenAttempt)
+    - cron: '15 9 * * *'   # signature-reminders (rappels J-3 et J-1) — 15min après factures pour éviter rush
   workflow_dispatch:
     inputs:
       target:
@@ -38,6 +42,9 @@ on:
           - evaluations
           - factures
           - automations-v2
+          - signature-retry-finalization
+          - signature-expirations
+          - signature-reminders
 
 env:
   APP_URL: https://projetrfc.netlify.app
@@ -61,6 +68,9 @@ jobs:
             "0 8 * * *")    target="evaluations" ;;
             "0 9 * * *")    target="factures" ;;
             "*/15 * * * *") target="automations-v2" ;;
+            "*/5 * * * *")  target="signature-retry-finalization" ;;
+            "0 2 * * *")    target="signature-expirations" ;;
+            "15 9 * * *")   target="signature-reminders" ;;
             "")             target="${MANUAL_TARGET}" ;;
             *)              echo "Schedule non mappé: ${EVENT_SCHEDULE}" >&2; exit 1 ;;
           esac

@@ -61,7 +61,10 @@ const adminApiPrefixes = [
   "/api/campaigns",
   "/api/badges",
   "/api/forum",
-  "/api/notes-frais",
+  // "/api/notes-frais" retiré : la route handler gère elle-même
+  // l'autorisation admin/formateur (le formateur ne voit/crée que ses propres
+  // notes via session.user.formateurId). Le mettre en admin-only empêchait
+  // les formateurs de soumettre depuis /espace-formateur/notes-frais.
   "/api/classes-virtuelles",
   "/api/competences",
   "/api/signature-requests",

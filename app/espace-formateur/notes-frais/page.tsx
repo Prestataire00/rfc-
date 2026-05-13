@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Receipt, Plus, CheckCircle2, Clock, XCircle, CreditCard, Upload } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
+import { notify } from "@/lib/toast";
 
 type NoteFrais = {
   id: string;
@@ -53,16 +54,41 @@ export default function NotesFraisPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post("/api/notes-frais", { categorie, description, montant: parseFloat(montant), date, lieu: lieu || null });
+      const montantNum = parseFloat(montant);
+      if (isNaN(montantNum) || montantNum <= 0) {
+        notify.error("Montant invalide");
+        return;
+      }
+      if (!description.trim()) {
+        notify.error("Description requise");
+        return;
+      }
+      await api.post("/api/notes-frais", {
+        categorie,
+        description,
+        montant: montantNum,
+        date,
+        lieu: lieu || null,
+      });
+      notify.success("Note de frais soumise");
       setShowForm(false);
       setDescription("");
       setMontant("");
       setLieu("");
       await mutate();
-    } catch {
-      // ignore
+    } catch (err) {
+      // Avant : catch vide qui masquait toutes les erreurs (403, 400, etc.).
+      // Le 403 venait du middleware qui rangeait /api/notes-frais en admin-only
+      // alors que la route handler gère elle-même l'auth formateur — fixé en
+      // parallèle dans cette PR (middleware.ts).
+      const msg =
+        err instanceof Error && err.message
+          ? err.message
+          : "Impossible de soumettre la note";
+      notify.error(msg);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const totalEnAttente = notes.filter((n) => n.statut === "soumise").reduce((s, n) => s + n.montant, 0);

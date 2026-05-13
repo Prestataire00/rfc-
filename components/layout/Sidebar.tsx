@@ -9,7 +9,7 @@ import {
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
-  ListChecks, Sparkles, Briefcase,
+  ListChecks, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -105,17 +105,7 @@ const adminGroups: NavGroup[] = [
     icon: Award,
     items: [
       { href: "/evaluations", label: "Questionnaires", icon: ClipboardList },
-      {
-        href: "/qualiopi", label: "Qualiopi", icon: BadgeCheck,
-        children: [
-          { href: "/qualiopi", label: "Suivi qualité", icon: BadgeCheck },
-          { href: "/qualiopi/indicateurs", label: "Indicateurs", icon: BarChart3 },
-          { href: "/qualiopi/amelioration", label: "Amélioration", icon: ClipboardList },
-          { href: "/qualiopi/incidents", label: "Incidents", icon: AlertTriangle },
-          { href: "/qualiopi/audits", label: "Audits", icon: Shield },
-          { href: "/qualite/amelioration", label: "Amélioration continue (V2)", icon: Sparkles },
-        ],
-      },
+      { href: "/qualiopi/indicateurs", label: "Indicateurs Qualiopi", icon: BadgeCheck },
       { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },

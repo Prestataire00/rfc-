@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Users, Search, Download, Plus, Mail, Phone, Building2, UserPlus, UserCheck, User } from "lucide-react";
+import { Users, Search, Download, Plus, Mail, Phone, Building2, UserPlus, UserCheck } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Pagination } from "@/components/shared/Pagination";
@@ -24,11 +24,13 @@ interface Contact {
   createdAt: string;
 }
 
+// Stagiaires exclus du CRM — gérés via les sessions de formation uniquement.
+// Les rares cas où un stagiaire devient un client commercial sont à reclasser
+// manuellement via /contacts/[id] (édition du type).
 const TYPE_TABS = [
   { value: "", label: "Tous", icon: Users },
-  { value: "prospect", label: "Prospects", icon: UserPlus },
   { value: "client", label: "Clients", icon: UserCheck },
-  { value: "stagiaire", label: "Stagiaires", icon: User },
+  { value: "prospect", label: "Prospects", icon: UserPlus },
 ];
 
 export default function ContactsPage() {

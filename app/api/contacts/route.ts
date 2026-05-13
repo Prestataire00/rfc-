@@ -12,6 +12,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25")));
 
+  // Stagiaires exclus du CRM : la liste /contacts ne montre que clients et prospects.
+  // Pour récupérer explicitement des stagiaires (gestion session), passer ?type=stagiaire
+  // ou utiliser les endpoints /sessions/[id]/stagiaires dédiés.
+  const typeFilter = type
+    ? { type }
+    : { type: { in: ["client", "prospect"] } };
+
   const where = {
     AND: [
       search
@@ -23,7 +30,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
             ],
           }
         : {},
-      type ? { type } : {},
+      typeFilter,
     ],
   };
 

@@ -18,6 +18,7 @@ const adminPages = [
   "/fiches-besoin",
   "/contacts",
   "/formateurs",
+  "/entreprises",
   "/lieux-formation",
   "/commercial",
   "/evaluations",

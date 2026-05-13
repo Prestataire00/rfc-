@@ -123,6 +123,7 @@ type ProjetDetail = {
 const TABS = [
   { id: "overview", label: "Vue d'ensemble", icon: Activity },
   { id: "sessions", label: "Sessions", icon: CalendarDays },
+  { id: "taches", label: "Tâches", icon: ListChecks },
   { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "finance", label: "Finance", icon: Banknote },
 ] as const;
@@ -282,6 +283,7 @@ export default function ProjetDetailPage() {
 
       {tab === "overview" ? <OverviewTab projet={projet} /> : null}
       {tab === "sessions" ? <SessionsTab projet={projet} /> : null}
+      {tab === "taches" ? <TachesTab projetId={projet.id} /> : null}
       {tab === "documents" ? <DocumentsTab projet={projet} /> : null}
       {tab === "finance" ? <FinanceTab projet={projet} /> : null}
     </div>
@@ -480,6 +482,27 @@ function SessionsTab({ projet }: { projet: ProjetDetail }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function TachesTab({ projetId }: { projetId: string }) {
+  // Onglet preview — la vue complète est sur /projets/[id]/taches (création,
+  // édition, commentaires, etc. à venir dans les PRs suivantes du module Tâches).
+  return (
+    <div className="rounded-xl border bg-card p-6 text-center">
+      <ListChecks className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+      <h3 className="font-semibold mb-1">Tâches du projet</h3>
+      <p className="text-sm text-muted-foreground mb-4">
+        Suivez les tâches, l&apos;avancement et les commentaires des formateurs sur la page dédiée.
+      </p>
+      <Link
+        href={`/projets/${projetId}/taches`}
+        className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium"
+      >
+        Ouvrir la page Tâches
+        <span aria-hidden>→</span>
+      </Link>
     </div>
   );
 }

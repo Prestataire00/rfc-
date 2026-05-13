@@ -526,55 +526,79 @@ function OverviewTab({ projet }: { projet: ProjetDetail }) {
 }
 
 function SessionsTab({ projet }: { projet: ProjetDetail }) {
+  const newSessionHref = `/sessions/nouveau?projetId=${projet.id}`;
+
   if (projet.sessions.length === 0) {
     return (
       <Panel title="Sessions">
-        <p className="text-sm text-muted-foreground">
-          Aucune session liée à ce projet. Les sessions créées peuvent être
-          rattachées à ce projet via leur fiche de modification.
+        <p className="text-sm text-muted-foreground mb-4">
+          Aucune session liée à ce projet pour l'instant.
         </p>
+        <Link
+          href={newSessionHref}
+          className="inline-flex items-center gap-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium"
+        >
+          <CalendarDays className="h-4 w-4" />
+          Créer une session liée à ce projet
+        </Link>
       </Panel>
     );
   }
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="px-3 py-2">Formation</th>
-            <th className="px-3 py-2">Dates</th>
-            <th className="px-3 py-2">Lieu</th>
-            <th className="px-3 py-2">Formateur</th>
-            <th className="px-3 py-2">Statut</th>
-            <th className="px-3 py-2">Inscrits</th>
-          </tr>
-        </thead>
-        <tbody>
-          {projet.sessions.map((s) => (
-            <tr key={s.id} className="border-t border-border hover:bg-muted/30">
-              <td className="px-3 py-2">
-                <Link href={`/sessions/${s.id}`} className="font-medium hover:underline">
-                  {s.formation.titre}
-                </Link>
-                <p className="text-xs text-muted-foreground">{s.formation.duree} h</p>
-              </td>
-              <td className="px-3 py-2 text-xs">
-                {fmtDate(s.dateDebut)} → {fmtDate(s.dateFin)}
-              </td>
-              <td className="px-3 py-2 text-xs">{s.lieu ?? "—"}</td>
-              <td className="px-3 py-2 text-xs">
-                {s.formateur ? `${s.formateur.prenom} ${s.formateur.nom}` : "—"}
-              </td>
-              <td className="px-3 py-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-                  {s.statut}
-                </span>
-              </td>
-              <td className="px-3 py-2 text-xs">{s._count.inscriptions}</td>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {projet.sessions.length} session{projet.sessions.length > 1 ? "s" : ""} liée
+          {projet.sessions.length > 1 ? "s" : ""} à ce projet
+        </p>
+        <Link
+          href={newSessionHref}
+          className="inline-flex items-center gap-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 text-sm font-medium"
+        >
+          <CalendarDays className="h-4 w-4" /> Nouvelle session
+        </Link>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Formation</th>
+              <th className="px-3 py-2">Dates</th>
+              <th className="px-3 py-2">Lieu</th>
+              <th className="px-3 py-2">Formateur</th>
+              <th className="px-3 py-2">Statut</th>
+              <th className="px-3 py-2">Inscrits</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {projet.sessions.map((s) => (
+              <tr key={s.id} className="border-t border-border hover:bg-muted/30">
+                <td className="px-3 py-2">
+                  <Link href={`/sessions/${s.id}`} className="font-medium hover:underline">
+                    {s.formation.titre}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">{s.formation.duree} h</p>
+                </td>
+                <td className="px-3 py-2 text-xs">
+                  {fmtDate(s.dateDebut)} → {fmtDate(s.dateFin)}
+                </td>
+                <td className="px-3 py-2 text-xs">{s.lieu ?? "—"}</td>
+                <td className="px-3 py-2 text-xs">
+                  {s.formateur ? `${s.formateur.prenom} ${s.formateur.nom}` : "—"}
+                </td>
+                <td className="px-3 py-2">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                    {s.statut}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-xs">{s._count.inscriptions}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

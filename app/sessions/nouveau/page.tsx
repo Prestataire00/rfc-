@@ -32,9 +32,13 @@ function NouvelleSessionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const devisId = searchParams.get("devisId");
+  const projetId = searchParams.get("projetId");
 
   const [error, setError] = useState("");
   const [devisTitre, setDevisTitre] = useState("");
+  const { data: projetCtx } = useApi<{ id: string; nom: string; code: string | null }>(
+    projetId ? `/api/projets/${projetId}` : null,
+  );
 
   const [formData, setFormData] = useState({
     formationId: "",
@@ -131,12 +135,19 @@ function NouvelleSessionForm() {
     if (formData.lieu) payload.lieu = formData.lieu;
     if (formData.notes) payload.notes = formData.notes;
     if (devisId) payload.devisId = devisId;
+    if (projetId) payload.projetId = projetId;
     if (formData.modeExpress) payload.modeExpress = true;
 
     try {
       const data = await createSession(payload);
-      notify.success("Session creee");
-      router.push(`/sessions/${data.id}`);
+      notify.success("Session créée");
+      // Si on est en contexte projet, retour sur la fiche projet pour voir
+      // la session immédiatement rattachée. Sinon flow standard.
+      if (projetId) {
+        router.push(`/projets/${projetId}`);
+      } else {
+        router.push(`/sessions/${data.id}`);
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { error?: unknown } | null;
@@ -171,14 +182,26 @@ function NouvelleSessionForm() {
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
         <Link
-          href="/sessions"
+          href={projetId ? `/projets/${projetId}` : "/sessions"}
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4"
         >
-          <ArrowLeft className="h-4 w-4" /> Retour aux sessions
+          <ArrowLeft className="h-4 w-4" />{" "}
+          {projetId ? "Retour au projet" : "Retour aux sessions"}
         </Link>
         <h1 className="text-2xl font-bold text-gray-100">Nouvelle session</h1>
         <p className="text-gray-400">Planifiez une nouvelle session de formation</p>
       </div>
+
+      {projetCtx && (
+        <div className="mb-4 rounded-lg border border-emerald-700/40 bg-emerald-900/10 px-4 py-3 text-sm text-emerald-200">
+          <span className="font-semibold">Rattachement projet : </span>
+          {projetCtx.code ? <code className="text-xs">{projetCtx.code}</code> : null}{" "}
+          {projetCtx.nom}
+          <p className="text-xs text-emerald-300/80 mt-0.5">
+            La session sera automatiquement liée à ce projet à la création.
+          </p>
+        </div>
+      )}
 
       {devisId && devisTitre && (
         <div className="mb-4 rounded-md bg-blue-900/20 border border-blue-700 px-4 py-3 text-sm text-blue-400">

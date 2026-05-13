@@ -13,6 +13,7 @@ export const sessionSchema = z.object({
   notes: z.string().optional().nullable(),
   coutFormateur: z.coerce.number().optional().nullable(),
   devisId: z.string().cuid().optional().nullable(),
+  projetId: z.string().cuid().optional().nullable(),
   modeExpress: z.boolean().optional().default(false),
   declarationPasseportPrevention: z.boolean().optional().default(false),
   datePasseportPrevention: z.string().optional().nullable(),

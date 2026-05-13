@@ -21,7 +21,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           ],
         }
       : {},
-    include: { _count: { select: { sessions: true } } },
+    include: {
+      _count: { select: { sessions: true } },
+      // Le user lié (rel 1:1 optionnelle) — sert à l'assignation de tâches
+      // qui pointent sur TaskItem.userId (= User.id). Sans User lié, le
+      // formateur ne peut pas se voir assigner des tâches dans l'app.
+      user: { select: { id: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 

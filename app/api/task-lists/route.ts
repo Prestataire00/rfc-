@@ -9,6 +9,7 @@ const createSchema = z.object({
   nom: z.string().min(1),
   description: z.string().optional().nullable(),
   sessionId: z.string().optional().nullable(),
+  projetId: z.string().optional().nullable(),
   userId: z.string().optional().nullable(),
   couleur: z.string().optional(),
 });
@@ -16,10 +17,12 @@ const createSchema = z.object({
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("sessionId");
+  const projetId = searchParams.get("projetId");
   const userId = searchParams.get("userId");
 
   const where: Record<string, unknown> = {};
   if (sessionId) where.sessionId = sessionId;
+  if (projetId) where.projetId = projetId;
   if (userId) where.userId = userId;
 
   const lists = await prisma.taskList.findMany({

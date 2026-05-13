@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { BarChart3, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  BarChart3, Download, ChevronLeft, ChevronRight, FileText,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { formatCurrency } from "@/lib/utils";
 import { FINANCEMENT_TYPES } from "@/lib/constants";
@@ -65,12 +67,22 @@ export default function BPFPage() {
         </div>
         <div className="flex items-center gap-2">
           <a
+            href={`/api/bpf/export-cerfa?annee=${annee}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
+            title="Bilan pré-rempli au format officiel Cerfa 10443*17"
+          >
+            <FileText className="h-4 w-4" />
+            Cerfa 10443*17
+          </a>
+          <a
             href={`/api/bpf/export-pdf?annee=${annee}`}
             target="_blank"
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
+            className="flex items-center gap-2 border border-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-700 text-sm font-medium"
           >
             <Download className="h-4 w-4" />
-            Exporter PDF
+            PDF synthèse
           </a>
           <a
             href={`/api/bpf/export?annee=${annee}`}

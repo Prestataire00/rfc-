@@ -147,6 +147,7 @@ const formateurGroups: NavGroup[] = [
       { href: "/espace-formateur/planning", label: "Mon planning", icon: Calendar },
       { href: "/espace-formateur/disponibilites", label: "Disponibilités", icon: CalendarDays },
       { href: "/espace-formateur/sessions", label: "Mes sessions", icon: BookOpen },
+      { href: "/espace-formateur/taches", label: "Mes tâches", icon: ListChecks },
     ],
   },
 

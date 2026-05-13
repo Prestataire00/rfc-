@@ -47,6 +47,7 @@ function NouveauDevisForm() {
   const besoinId = searchParams.get("besoinId");
   const paramEntrepriseId = searchParams.get("entrepriseId");
   const paramContactId = searchParams.get("contactId");
+  const paramProjetId = searchParams.get("projetId");
   const [error, setError] = useState("");
   const [besoinTitre, setBesoinTitre] = useState<string | null>(null);
 
@@ -167,6 +168,10 @@ function NouveauDevisForm() {
       objet,
       entrepriseId: clientType === "entreprise" ? entrepriseId : null,
       contactId: contactId || null,
+      // Rattachement projet si on vient de la page projet (?projetId=...) →
+      // bilatéralité : le devis apparaîtra dans /commercial/devis ET dans
+      // l'onglet Finance du projet.
+      projetId: paramProjetId || null,
       dateValidite,
       tauxTVA: tauxTVA,
       notes: notes || null,

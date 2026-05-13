@@ -9,7 +9,7 @@ import {
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
-  ListChecks, Briefcase,
+  ListChecks, Briefcase, Database, Key, GitMerge, History, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,81 +24,76 @@ type NavGroup = {
   items?: NavItemWithSub[];
 };
 
-// ── Admin : Accueil + 6 groupes ──────────────────────────────────────────────
+// ── Admin : Accueil + 8 groupes orientés flux métier ────────────────────────
+// Ordre : acquisition → catalogue → projets → commercial → finance → qualité
+// → reporting → admin. Pas de sous-niveau (children) pour simplifier le scan.
 const adminGroups: NavGroup[] = [
   { key: "accueil", label: "Accueil", icon: LayoutDashboard, href: "/dashboard" },
+
+  // 1. CRM : qui (contacts + formateurs + comm directe)
   {
     key: "crm",
     label: "CRM",
     icon: Users,
     items: [
-      {
-        href: "/contacts", label: "Contacts", icon: Users,
-        children: [
-          { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
-          { href: "/contacts?type=prospect", label: "Prospects", icon: UserPlus },
-          { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
-        ],
-      },
+      { href: "/contacts?type=prospect", label: "Prospects", icon: UserPlus },
+      { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
+      { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
-      {
-        href: "/besoins", label: "Besoins", icon: ClipboardList,
-        children: [
-          { href: "/besoins", label: "Demandes de formation", icon: ClipboardList },
-          { href: "/fiches-besoin", label: "Fiches besoin (Qualiopi)", icon: ClipboardList },
-        ],
-      },
     ],
   },
+
+  // 2. Pédagogie : offre de formation
   {
     key: "pedagogie",
     label: "Pédagogie",
     icon: BookOpen,
     items: [
-      {
-        href: "/formations", label: "Formations", icon: BookOpen,
-        children: [
-          { href: "/formations", label: "Catalogue", icon: BookOpen },
-          { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
-        ],
-      },
+      { href: "/formations", label: "Catalogue formations", icon: BookOpen },
+      { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
     ],
   },
+
+  // 3. Projets : exécution opérationnelle
   {
-    key: "commercial",
-    label: "Commercial",
-    icon: TrendingUp,
-    items: [
-      { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
-      { href: "/bpf", label: "BPF", icon: BarChart3 },
-    ],
-  },
-  {
-    key: "finance",
-    label: "Finance",
-    icon: CreditCard,
-    items: [
-      {
-        href: "/commercial", label: "Factures", icon: Receipt,
-        children: [
-          { href: "/commercial", label: "Devis et factures", icon: FileText },
-          { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
-        ],
-      },
-      { href: "/admin/notes-frais", label: "Note de frais", icon: Receipt },
-      { href: "/finance/paiements", label: "Paiement", icon: CreditCard },
-    ],
-  },
-  {
-    key: "gestion",
-    label: "Gestion",
+    key: "projets",
+    label: "Projets",
     icon: Briefcase,
     items: [
       { href: "/projets", label: "Projets", icon: Briefcase },
       { href: "/tasks", label: "Tâches", icon: ListChecks },
     ],
   },
+
+  // 4. Commercial : cycle de vente (avant facturation)
+  {
+    key: "commercial",
+    label: "Commercial",
+    icon: TrendingUp,
+    items: [
+      { href: "/commercial", label: "Devis", icon: FileText },
+      { href: "/besoins", label: "Demandes", icon: ClipboardList },
+      { href: "/fiches-besoin", label: "Fiches besoin (Qualiopi)", icon: ClipboardList },
+      { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
+      { href: "/bpf", label: "BPF", icon: BarChart3 },
+    ],
+  },
+
+  // 5. Finance : facturation + paiement
+  {
+    key: "finance",
+    label: "Finance",
+    icon: CreditCard,
+    items: [
+      { href: "/commercial", label: "Factures", icon: Receipt },
+      { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
+      { href: "/admin/notes-frais", label: "Notes de frais", icon: Wallet },
+      { href: "/finance/paiements", label: "Paiements", icon: CreditCard },
+    ],
+  },
+
+  // 6. Qualité : conformité Qualiopi + évaluations + documents
   {
     key: "qualite",
     label: "Qualité",
@@ -109,6 +104,20 @@ const adminGroups: NavGroup[] = [
       { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },
+
+  // 7. Reporting : pilotage stratégique
+  {
+    key: "reporting",
+    label: "Reporting",
+    icon: BarChart3,
+    items: [
+      { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/reporting", label: "Reporting", icon: TrendingUp },
+      { href: "/admin/kpi-history", label: "Historique KPI", icon: History },
+    ],
+  },
+
+  // 8. Admin : outils système
   {
     key: "admin",
     label: "Admin",
@@ -116,66 +125,89 @@ const adminGroups: NavGroup[] = [
     items: [
       { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
       { href: "/parametres", label: "Paramètres", icon: Settings },
-      { href: "/parametres/automations-v2", label: "Automations V2", icon: Zap },
-      { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/reporting", label: "Reporting", icon: TrendingUp },
+      { href: "/parametres/automations-v2", label: "Automations", icon: Zap },
+      { href: "/admin/champs-personnalises", label: "Champs personnalisés", icon: Database },
+      { href: "/admin/api-keys", label: "Clés API", icon: Key },
+      { href: "/admin/rgpd", label: "RGPD", icon: Shield },
+      { href: "/admin/trainee-merge", label: "Fusionner contacts", icon: GitMerge },
     ],
   },
 ];
 
-// ── Formateur ────────────────────────────────────────────────────────────────
+// ── Formateur : Accueil + 5 groupes ──────────────────────────────────────────
 const formateurGroups: NavGroup[] = [
   { key: "accueil", label: "Accueil", icon: LayoutDashboard, href: "/espace-formateur" },
+
+  // Activité pédagogique (mes interventions)
   {
-    key: "planning",
-    label: "Planning",
+    key: "activite",
+    label: "Activité",
     icon: Calendar,
     items: [
-      { href: "/espace-formateur/planning", label: "Mon Planning", icon: Calendar },
+      { href: "/espace-formateur/planning", label: "Mon planning", icon: Calendar },
       { href: "/espace-formateur/disponibilites", label: "Disponibilités", icon: CalendarDays },
+      { href: "/espace-formateur/sessions", label: "Mes sessions", icon: BookOpen },
     ],
   },
-  { key: "sessions", label: "Sessions", icon: BookOpen, href: "/espace-formateur/sessions" },
-  { key: "messagerie", label: "Messagerie", icon: MessageSquare, href: "/messagerie" },
-  { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-formateur/documents" },
-  { key: "frais", label: "Frais", icon: Receipt, href: "/espace-formateur/notes-frais" },
+
+  // Qualité (retours + attestations délivrées)
   {
     key: "qualite",
     label: "Qualité",
     icon: Award,
     items: [
-      { href: "/espace-formateur/feedbacks", label: "Feedbacks", icon: MessageSquare },
+      { href: "/espace-formateur/feedbacks", label: "Feedbacks stagiaires", icon: MessageSquare },
       { href: "/espace-formateur/attestations", label: "Attestations", icon: Award },
     ],
   },
+
+  // Communication
+  { key: "messagerie", label: "Messagerie", icon: MessageSquare, href: "/messagerie" },
+
+  // Ressources
+  { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-formateur/documents" },
+
+  // Finance perso
+  { key: "frais", label: "Notes de frais", icon: Wallet, href: "/espace-formateur/notes-frais" },
 ];
 
-// ── Client ───────────────────────────────────────────────────────────────────
+// ── Client : Accueil + 5 groupes ────────────────────────────────────────────
 const clientGroups: NavGroup[] = [
   { key: "accueil", label: "Accueil", icon: LayoutDashboard, href: "/espace-client" },
-  { key: "formations", label: "Formations", icon: BookOpen, href: "/espace-client/formations" },
+
+  // Formation : ce que mes collaborateurs suivent
   {
-    key: "stagiaires",
-    label: "Stagiaires",
-    icon: Users,
+    key: "formation",
+    label: "Formation",
+    icon: BookOpen,
     items: [
-      { href: "/espace-client/stagiaires", label: "Nos Stagiaires", icon: Users },
+      { href: "/espace-client/formations", label: "Mes formations", icon: BookOpen },
       { href: "/espace-client/inscriptions", label: "Inscriptions", icon: UserPlus },
       { href: "/espace-client/recyclages", label: "Recyclages", icon: AlertTriangle },
     ],
   },
-  { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-client/documents" },
+
+  // Collaborateurs formés
+  { key: "stagiaires", label: "Collaborateurs", icon: Users, href: "/espace-client/stagiaires" },
+
+  // Communication
   { key: "messagerie", label: "Messagerie", icon: MessageSquare, href: "/messagerie" },
+
+  // Ressources
+  { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-client/documents" },
+
+  // Finance & pilotage
   {
     key: "finance",
-    label: "Finance",
+    label: "Finance & pilotage",
     icon: CreditCard,
     items: [
       { href: "/espace-client/devis", label: "Devis", icon: FileText },
-      { href: "/espace-client/paiement", label: "Paiement", icon: CreditCard },
+      { href: "/espace-client/paiement", label: "Paiements", icon: CreditCard },
+      { href: "/espace-client/roi", label: "ROI formation", icon: TrendingUp },
+      { href: "/espace-client/evaluations", label: "Évaluations", icon: Award },
     ],
   },
-  { key: "evaluations", label: "Évaluations", icon: MessageSquare, href: "/espace-client/evaluations" },
 ];
 
 const groupsByRole: Record<string, NavGroup[]> = {

@@ -1896,3 +1896,40 @@ model KpiHistory {
   @@index([dateSnapshot])
   @@index([source])
 }
+
+// ==================== AUDIT LOG (Qualiopi / RGPD / sécurité) ====================
+//
+// Trace de toute action significative : qui (actor), quoi (action sur quelle
+// ressource), quand, depuis où (IP). Append-only — ne JAMAIS update/delete
+// un AuditLog en code applicatif. La rétention est gérée par un job de
+// purge dédié (cron, hors application).
+//
+// Voir lib/audit.ts pour le helper d'écriture. Voir
+// docs/AUDIT_LOGS.md pour la liste des actions tracées et la politique.
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Acteur : User Prisma si action utilisateur, null si action système (cron,
+  // job, webhook). On dénormalise email/role : si le User est supprimé plus
+  // tard, le log reste lisible.
+  actorId    String?
+  actorEmail String?
+  actorRole  String?
+  actorIp    String?
+
+  // Action en notation pointée : "<resource>.<verb>" (ex: "devis.sign").
+  // Liste exhaustive dans lib/audit.ts (type AuditAction).
+  action       String
+  resourceType String   // "User", "Devis", "Session", etc.
+  resourceId   String?
+
+  // Diff / contexte : { before, after } pour les updates, payload pour les
+  // créations, raison pour les soft-deletes, etc. Format libre selon l'action.
+  metadata Json?
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([resourceType, resourceId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+}

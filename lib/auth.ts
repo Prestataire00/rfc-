@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
+import { logAudit } from "@/lib/audit";
 
 if (!process.env.NEXTAUTH_SECRET) {
   throw new Error(
@@ -73,10 +74,36 @@ export const authOptions: NextAuthOptions = {
           include: { formateur: true, entreprise: true },
         });
 
-        if (!user || !user.actif) return null;
+        if (!user || !user.actif) {
+          await logAudit({
+            action: "auth.login_failed",
+            ip,
+            resource: { type: "User", id: user?.id ?? null },
+            metadata: {
+              email,
+              reason: !user ? "unknown_email" : "inactive_account",
+            },
+          });
+          return null;
+        }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
+        if (!isValid) {
+          await logAudit({
+            action: "auth.login_failed",
+            ip,
+            resource: { type: "User", id: user.id },
+            metadata: { email, reason: "bad_password" },
+          });
+          return null;
+        }
+
+        await logAudit({
+          action: "auth.login",
+          actor: { id: user.id, email: user.email, role: user.role },
+          ip,
+          resource: { type: "User", id: user.id },
+        });
 
         return {
           id: user.id,

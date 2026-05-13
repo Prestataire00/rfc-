@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, convocationEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
@@ -9,8 +11,23 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
+  // Rate-limit per-user (denial-of-wallet : chaque appel envoie N emails =
+  // N appels SMTP facturés). Le middleware garantit qu'on a un user admin
+  // ici — sinon la requête n'arrive pas.
+  const userSession = await getServerSession(authOptions);
+  const userId = (userSession?.user as { id?: string } | undefined)?.id;
+  const limited = await enforceRateLimit(
+    req,
+    RATE_LIMIT_PRESETS.emailTrigger,
+    "email:convocation:batch",
+    userId,
+  );
+  if (limited) return limited;
+
   const { sessionId } = await req.json();
 
   if (!sessionId) {

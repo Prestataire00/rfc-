@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAllAdmins } from "@/lib/notifications";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { triggerAutomation } from "@/lib/automations-trigger";
 
 // Cron : détection automatique des factures en retard
 // Passe en "en_retard" toutes les factures "envoyee" dont l'échéance est dépassée
@@ -26,6 +27,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     },
     include: {
       entreprise: { select: { nom: true } },
+      devis: { select: { contactId: true } },
     },
   });
 
@@ -41,7 +43,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     data: { statut: "en_retard" },
   });
 
-  // Une notification par facture passée en retard
+  // Une notification par facture passée en retard, plus le trigger
+  // automation V2 qui permet à l'utilisateur de configurer une règle de
+  // relance (send_email à l'OPCO, change_status, etc.). Fire-and-forget :
+  // un échec automation ne doit pas casser le cron.
   for (const facture of facturesEnRetard) {
     const entrepriseNom = facture.entreprise?.nom ?? "Client inconnu";
     await notifyAllAdmins({
@@ -49,6 +54,15 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       message: `La facture ${facture.numero} (${facture.montantTTC.toFixed(2)}€) de ${entrepriseNom} est en retard de paiement`,
       type: "warning",
       lien: `/commercial/factures/${facture.id}`,
+    });
+
+    await triggerAutomation("facture_overdue", {
+      factureId: facture.id,
+      entrepriseId: facture.entrepriseId ?? undefined,
+      contactId: facture.devis?.contactId ?? undefined,
+      meta: { montantTTC: facture.montantTTC, numero: facture.numero },
+    }).catch(() => {
+      /* swallowed : déjà loggué dans triggerAutomation */
     });
   }
 

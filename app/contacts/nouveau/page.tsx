@@ -14,7 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { useApi, useApiMutation } from "@/hooks/useApi";
-import { ApiError } from "@/lib/fetcher";
+import { ApiError, api } from "@/lib/fetcher";
+import {
+  EntrepriseAutocomplete,
+  type EntrepriseSuggestion,
+} from "@/components/contacts/EntrepriseAutocomplete";
 
 interface Entreprise {
   id: string;
@@ -23,6 +27,7 @@ interface Entreprise {
 
 type ContactCreated = { id: string; prenom: string; nom: string };
 type ContactType = "client" | "prospect";
+type CategorieContact = "particulier" | "entreprise";
 
 const TYPE_CARDS: Array<{
   value: ContactType;
@@ -83,6 +88,10 @@ export default function NouveauContactPage() {
   // Accordéon des champs Qualiopi : replié par défaut. Utile surtout pour les
   // contacts qui sont/deviendront stagiaires (passeport prévention, certifications).
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const [categorie, setCategorie] = useState<CategorieContact>("particulier");
+  const [selectedEntreprise, setSelectedEntreprise] =
+    useState<EntrepriseSuggestion | null>(null);
 
   const [form, setForm] = useState({
     // Type & rattachement (essentiel)
@@ -168,7 +177,31 @@ export default function NouveauContactPage() {
         if (v) payload[key] = v;
       };
       trimAndSet("telephone", form.telephone);
-      if (form.entrepriseId) payload.entrepriseId = form.entrepriseId;
+
+      // Si catégorie = entreprise + sélection depuis l'autocomplete, on upsert
+      // l'entreprise (création depuis SIRET ou récupération existante) avant
+      // de créer le contact. Si déjà en base, on utilise l'id direct.
+      if (categorie === "entreprise" && selectedEntreprise) {
+        if (selectedEntreprise.existing && selectedEntreprise.id) {
+          payload.entrepriseId = selectedEntreprise.id;
+        } else if (selectedEntreprise.siret) {
+          const created = await api.post<{ id: string }>(
+            "/api/entreprises/upsert-by-siret",
+            {
+              siret: selectedEntreprise.siret,
+              nom: selectedEntreprise.nom,
+              adresse: selectedEntreprise.adresse,
+              codePostal: selectedEntreprise.codePostal,
+              ville: selectedEntreprise.ville,
+            },
+          );
+          payload.entrepriseId = created.id;
+        }
+      } else if (form.entrepriseId) {
+        // Fallback : ancien select (en cas de réutilisation manuelle)
+        payload.entrepriseId = form.entrepriseId;
+      }
+
       trimAndSet("poste", form.poste);
       trimAndSet("notes", form.notes);
 
@@ -375,51 +408,94 @@ export default function NouveauContactPage() {
           </div>
         </section>
 
-        {/* SECTION 3 — Rattachement pro */}
+        {/* SECTION 3 — Catégorie + Rattachement */}
         <section>
           <h2 className="text-sm font-semibold text-gray-300 mb-2 uppercase tracking-wide flex items-center gap-2">
-            <Briefcase className="h-4 w-4" /> Rattachement professionnel
+            <Briefcase className="h-4 w-4" /> Catégorie & rattachement
           </h2>
           <div className="rounded-xl border border-gray-700 bg-gray-800 p-4 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="entrepriseId" className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-gray-500" />
-                Entreprise
+            {/* Toggle Particulier / Entreprise */}
+            <div>
+              <Label className="text-xs uppercase tracking-wide text-gray-400">
+                Ce {form.type} est…
               </Label>
-              <div className="flex gap-2">
-                <Select
-                  id="entrepriseId"
-                  name="entrepriseId"
-                  value={form.entrepriseId}
-                  onChange={handleChange}
-                  options={entrepriseOptions}
-                  placeholder="Aucune entreprise"
-                />
-                <Link
-                  href="/entreprises/nouveau"
-                  className="shrink-0 inline-flex items-center gap-1 rounded-md border border-gray-600 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-                  target="_blank"
-                >
-                  + Nouvelle
-                </Link>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {([
+                  { value: "particulier", label: "Particulier", icon: User, hint: "Personne physique sans rattachement" },
+                  { value: "entreprise", label: "Entreprise", icon: Building2, hint: "Liée à une société (auto-fill SIRET)" },
+                ] as const).map((opt) => {
+                  const active = categorie === opt.value;
+                  const Icon = opt.icon;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setCategorie(opt.value);
+                        if (opt.value === "particulier") {
+                          setSelectedEntreprise(null);
+                          setForm((p) => ({ ...p, entrepriseId: "" }));
+                        }
+                      }}
+                      className={`flex items-start gap-2.5 rounded-lg border p-3 text-left transition-colors ${
+                        active
+                          ? "border-emerald-500 bg-emerald-500/10"
+                          : "border-gray-600 bg-gray-900/40 hover:border-gray-500"
+                      }`}
+                    >
+                      <Icon
+                        className={`mt-0.5 h-4 w-4 shrink-0 ${
+                          active ? "text-emerald-400" : "text-gray-400"
+                        }`}
+                      />
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium ${active ? "text-emerald-300" : "text-gray-200"}`}>
+                          {opt.label}
+                        </p>
+                        <p className="text-xs text-gray-500 leading-snug">{opt.hint}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-xs text-gray-500">
-                Pas obligatoire — un {form.type} peut être indépendant ou personne physique.
-              </p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="poste">Poste / fonction</Label>
-              <Input
-                id="poste"
-                name="poste"
-                value={form.poste}
-                onChange={handleChange}
-                placeholder={
-                  form.type === "client" ? "Responsable formation" : "Directeur, Manager…"
-                }
-              />
-            </div>
+            {categorie === "entreprise" ? (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-gray-500" />
+                    Entreprise
+                  </Label>
+                  <EntrepriseAutocomplete
+                    value={selectedEntreprise}
+                    onSelect={setSelectedEntreprise}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Tapez le nom ou le SIRET. Si l'entreprise n'est pas encore en base, elle sera créée automatiquement à l'enregistrement avec les données publiques (data.gouv).
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="poste">Poste / fonction</Label>
+                  <Input
+                    id="poste"
+                    name="poste"
+                    value={form.poste}
+                    onChange={handleChange}
+                    placeholder={
+                      form.type === "client" ? "Responsable formation" : "Directeur, Manager…"
+                    }
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-gray-500">
+                Particulier : pas de rattachement professionnel à saisir. Les
+                coordonnées personnelles (adresse, etc.) sont dans la section
+                « Informations détaillées » plus bas.
+              </p>
+            )}
           </div>
         </section>
 

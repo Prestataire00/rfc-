@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+import { updateSupabaseSession } from "@/lib/supabase-auth/middleware";
+
 // Public paths that don't require authentication
 const publicPaths = [
   "/login",
@@ -69,6 +71,8 @@ const adminApiPrefixes = [
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/login") return true;
   if (pathname.startsWith("/api/auth")) return true;
+  // Callback Supabase Auth (code → session). Cf docs/MIGRATION_AUTH.md.
+  if (pathname.startsWith("/auth/callback")) return true;
   // /api/cron/* : pas de session NextAuth (appelé par cron externe GitHub Actions).
   // L'authentification est faite par les route handlers eux-mêmes via le Bearer
   // CRON_SECRET — cf .github/workflows/cron.yml + commit d49fc77.
@@ -124,20 +128,46 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get the JWT token
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-
   const isApi = isApiRoute(pathname);
 
-  // No token → unauthenticated
-  if (!token) {
-    if (isApi) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+  // 1) Supabase Auth d'abord. Si une session existe, on lit le rôle depuis
+  //    app_metadata (écrit par le script de migration G ou par la création
+  //    de compte via supabase.auth.admin.createUser). app_metadata est non
+  //    modifiable côté client → safe pour les décisions d'autorisation.
+  let role: string | null = null;
+  let supabaseResponse: NextResponse | null = null;
+
+  try {
+    const result = await updateSupabaseSession(request);
+    supabaseResponse = result.response;
+    if (result.user) {
+      const meta = result.user.app_metadata as
+        | { role?: string }
+        | undefined;
+      role = meta?.role ?? null;
     }
-    return NextResponse.redirect(new URL("/login", request.url));
+  } catch {
+    // Si Supabase est indisponible / ENV manquante, on retombe sur NextAuth.
   }
 
-  const role = token.role as string;
+  // 2) Fallback NextAuth tant que la phase G n'est pas terminée pour 100%
+  //    des comptes. Voir docs/MIGRATION_AUTH.md §Phase H pour le cleanup.
+  if (!role) {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    if (!token) {
+      if (isApi) {
+        return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    role = (token.role as string) ?? "";
+  }
+
+  // Réponse "autorisée" propage les cookies Supabase refreshés s'ils existent.
+  const allow = () => supabaseResponse ?? NextResponse.next();
 
   // --- API route authorization ---
   if (isApi) {
@@ -146,7 +176,7 @@ export async function middleware(request: NextRequest) {
       if (role !== "admin") {
         return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
       }
-      return NextResponse.next();
+      return allow();
     }
 
     // Client API routes
@@ -154,7 +184,7 @@ export async function middleware(request: NextRequest) {
       if (role !== "client" && role !== "admin") {
         return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
       }
-      return NextResponse.next();
+      return allow();
     }
 
     // Formateur API routes
@@ -162,11 +192,11 @@ export async function middleware(request: NextRequest) {
       if (role !== "formateur" && role !== "admin") {
         return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
       }
-      return NextResponse.next();
+      return allow();
     }
 
     // Other authenticated API routes
-    return NextResponse.next();
+    return allow();
   }
 
   // --- Page authorization ---
@@ -176,7 +206,7 @@ export async function middleware(request: NextRequest) {
     if (role !== "admin") {
       return redirectToPortal(role, request);
     }
-    return NextResponse.next();
+    return allow();
   }
 
   // Formateur pages
@@ -184,7 +214,7 @@ export async function middleware(request: NextRequest) {
     if (role !== "formateur" && role !== "admin") {
       return redirectToPortal(role, request);
     }
-    return NextResponse.next();
+    return allow();
   }
 
   // Client pages
@@ -192,11 +222,11 @@ export async function middleware(request: NextRequest) {
     if (role !== "client" && role !== "admin") {
       return redirectToPortal(role, request);
     }
-    return NextResponse.next();
+    return allow();
   }
 
   // All other authenticated pages
-  return NextResponse.next();
+  return allow();
 }
 
 export const config = {

@@ -29,6 +29,11 @@ model User {
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id])
 
+  // Lien vers auth.users.id côté Supabase Auth. Nullable pendant la
+  // coexistence avec NextAuth ; devient la clé d'identité après la phase G.
+  // Voir docs/MIGRATION_AUTH.md.
+  supabaseId String? @unique
+
   notifications Notification[]
   conversationParticipations ConversationParticipant[]
 }

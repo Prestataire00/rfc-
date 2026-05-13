@@ -54,7 +54,26 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   }
 
   const body = await req.json();
-  const { nom, prenom, email, telephone, entreprise, dateNaissance, numeroSecuriteSociale, besoinsAdaptation, consentementRGPD } = body;
+  const {
+    nom,
+    prenom,
+    email,
+    telephone,
+    entreprise,
+    entrepriseSiret,
+    entrepriseAdresse,
+    entrepriseCodePostal,
+    entrepriseVille,
+    adressePerso,
+    codePostalPerso,
+    villePerso,
+    profession,
+    numeroDiplome,
+    dateNaissance,
+    numeroSecuriteSociale,
+    besoinsAdaptation,
+    consentementRGPD,
+  } = body;
 
   if (!nom || !prenom || !email) {
     return NextResponse.json({ error: "Nom, prenom et email requis" }, { status: 400 });
@@ -63,19 +82,43 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     return NextResponse.json({ error: "Le consentement RGPD est obligatoire" }, { status: 400 });
   }
 
-  // Find or create contact (upsert pour éviter les doublons en cas de race condition)
+  // Find or create entreprise — priorité au SIRET (clé unique fiable) sur le nom
   let entrepriseId: string | null = null;
-  if (entreprise) {
-    let ent = await prisma.entreprise.findFirst({ where: { nom: entreprise } });
+  if (entrepriseSiret) {
+    const cleaned = String(entrepriseSiret).replace(/\s/g, "");
+    try {
+      const ent = await prisma.entreprise.upsert({
+        where: { siret: cleaned },
+        update: {},
+        create: {
+          siret: cleaned,
+          nom: entreprise || "Entreprise sans nom",
+          adresse: entrepriseAdresse || null,
+          codePostal: entrepriseCodePostal || null,
+          ville: entrepriseVille || null,
+        },
+        select: { id: true },
+      });
+      entrepriseId = ent.id;
+    } catch {
+      // Fallback : recherche par nom si l'upsert SIRET échoue
+      entrepriseId = await fallbackByName(entreprise);
+    }
+  } else if (entreprise) {
+    entrepriseId = await fallbackByName(entreprise);
+  }
+
+  async function fallbackByName(nomEntreprise: string | undefined | null): Promise<string | null> {
+    if (!nomEntreprise) return null;
+    let ent = await prisma.entreprise.findFirst({ where: { nom: nomEntreprise } });
     if (!ent) {
       try {
-        ent = await prisma.entreprise.create({ data: { nom: entreprise } });
+        ent = await prisma.entreprise.create({ data: { nom: nomEntreprise } });
       } catch {
-        // Race condition : une autre requête a créé l'entreprise entre temps
-        ent = await prisma.entreprise.findFirst({ where: { nom: entreprise } });
+        ent = await prisma.entreprise.findFirst({ where: { nom: nomEntreprise } });
       }
     }
-    entrepriseId = ent?.id ?? null;
+    return ent?.id ?? null;
   }
 
   const contactExtraData: Record<string, unknown> = {};
@@ -85,6 +128,11 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   }
   if (numeroSecuriteSociale) contactExtraData.numeroSecuriteSociale = String(numeroSecuriteSociale).replace(/\s/g, "");
   if (besoinsAdaptation) contactExtraData.besoinsAdaptation = besoinsAdaptation;
+  if (adressePerso) contactExtraData.adressePerso = String(adressePerso);
+  if (codePostalPerso) contactExtraData.codePostalPerso = String(codePostalPerso);
+  if (villePerso) contactExtraData.villePerso = String(villePerso);
+  if (profession) contactExtraData.poste = String(profession);
+  if (numeroDiplome) contactExtraData.diplomeObtenu = String(numeroDiplome);
 
   let contact = await prisma.contact.findFirst({ where: { email } });
   if (!contact) {
@@ -108,11 +156,18 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       }
     }
   } else if (Object.keys(contactExtraData).length > 0) {
-    // Mise a jour des donnees legales si fournies et manquantes
+    // Mise a jour des donnees legales si fournies et manquantes (on n'écrase
+    // jamais ce qui est déjà saisi, on remplit uniquement les vides).
     const updateData: Record<string, unknown> = {};
     if (contactExtraData.dateNaissance && !contact.dateNaissance) updateData.dateNaissance = contactExtraData.dateNaissance;
     if (contactExtraData.numeroSecuriteSociale && !contact.numeroSecuriteSociale) updateData.numeroSecuriteSociale = contactExtraData.numeroSecuriteSociale;
     if (contactExtraData.besoinsAdaptation && !contact.besoinsAdaptation) updateData.besoinsAdaptation = contactExtraData.besoinsAdaptation;
+    if (contactExtraData.adressePerso && !contact.adressePerso) updateData.adressePerso = contactExtraData.adressePerso;
+    if (contactExtraData.codePostalPerso && !contact.codePostalPerso) updateData.codePostalPerso = contactExtraData.codePostalPerso;
+    if (contactExtraData.villePerso && !contact.villePerso) updateData.villePerso = contactExtraData.villePerso;
+    if (contactExtraData.poste && !contact.poste) updateData.poste = contactExtraData.poste;
+    if (contactExtraData.diplomeObtenu && !contact.diplomeObtenu) updateData.diplomeObtenu = contactExtraData.diplomeObtenu;
+    if (entrepriseId && !contact.entrepriseId) updateData.entrepriseId = entrepriseId;
     if (Object.keys(updateData).length > 0) {
       await prisma.contact.update({ where: { id: contact.id }, data: updateData }).catch(() => {});
     }

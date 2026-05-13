@@ -17,7 +17,6 @@ const adminPages = [
   "/besoins",
   "/fiches-besoin",
   "/contacts",
-  "/entreprises",
   "/formateurs",
   "/lieux-formation",
   "/commercial",

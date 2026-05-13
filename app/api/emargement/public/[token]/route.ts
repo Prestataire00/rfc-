@@ -2,11 +2,16 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // GET /api/emargement/public/[token]
 // Retourne les infos de la session + liste des stagiaires pour ce creneau.
 // Accessible sans authentification (scan QR).
-export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { token: string } }) => {
+export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:emarg:get");
+  if (limited) return limited;
+
   const emToken = await prisma.emargementToken.findUnique({
     where: { token: params.token },
     include: {
@@ -88,6 +93,9 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 // Soumet la signature d'un stagiaire.
 // Body: { contactId, statut, signature (base64), retardMinutes?, departMinutes? }
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:emarg:post");
+  if (limited) return limited;
+
   const emToken = await prisma.emargementToken.findUnique({ where: { token: params.token } });
 
   if (!emToken) {

@@ -2,12 +2,17 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // GET /api/campaigns/unsubscribe?email=xxx
 // Lien de desinscription RGPD dans les emails marketing.
 // Public — pas d'authentification.
 // Reponse en HTML (pas JSON) car affichee directement dans le navigateur depuis un lien d'email.
 export const GET = withErrorHandler(async (req: NextRequest) => {
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:unsubscribe");
+  if (limited) return limited;
+
   const email = new URL(req.url).searchParams.get("email");
   if (!email) return new NextResponse("Email requis", { status: 400 });
 

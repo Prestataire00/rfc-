@@ -6,10 +6,10 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
-  LayoutDashboard, Users, Building2, BookOpen, CalendarDays, GraduationCap,
+  LayoutDashboard, Users, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, LogOut, Shield, X, Settings, BadgeCheck, CreditCard,
-  UserPlus, MapPin, UserCheck, UserSearch, AlertTriangle, Zap, Mail, Receipt,
+  UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
   ListChecks, Sparkles, Database, Key, GitMerge, History, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,11 +36,8 @@ const adminGroups: NavGroup[] = [
       {
         href: "/contacts", label: "Contacts", icon: Users,
         children: [
-          { href: "/contacts", label: "Tous les contacts", icon: Users },
-          { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: GraduationCap },
           { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
-          { href: "/prospects", label: "Prospects", icon: UserSearch },
-          { href: "/entreprises", label: "Entreprises", icon: Building2 },
+          { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
         ],
       },
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
@@ -66,13 +63,6 @@ const adminGroups: NavGroup[] = [
         ],
       },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
-      {
-        href: "/formateurs", label: "Formateurs", icon: GraduationCap,
-        children: [
-          { href: "/formateurs", label: "Liste", icon: GraduationCap },
-          { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
-        ],
-      },
     ],
   },
   {
@@ -80,9 +70,24 @@ const adminGroups: NavGroup[] = [
     label: "Commercial",
     icon: TrendingUp,
     items: [
-      { href: "/commercial", label: "Devis & Factures", icon: TrendingUp },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
       { href: "/bpf", label: "BPF", icon: BarChart3 },
+    ],
+  },
+  {
+    key: "finance",
+    label: "Finance",
+    icon: CreditCard,
+    items: [
+      {
+        href: "/commercial", label: "Factures", icon: Receipt,
+        children: [
+          { href: "/commercial", label: "Devis et factures", icon: FileText },
+          { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
+        ],
+      },
+      { href: "/admin/notes-frais", label: "Note de frais", icon: Receipt },
+      { href: "/finance/paiements", label: "Paiement", icon: CreditCard },
     ],
   },
   {
@@ -91,7 +96,6 @@ const adminGroups: NavGroup[] = [
     icon: Briefcase,
     items: [
       { href: "/tasks", label: "Tâches", icon: ListChecks },
-      { href: "/finance/paiements", label: "Paiements", icon: CreditCard },
     ],
   },
   {

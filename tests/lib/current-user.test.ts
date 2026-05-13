@@ -55,6 +55,7 @@ const baseDbUser = {
   prenom: "A",
   formateurId: null,
   entrepriseId: null,
+  supabaseId: null,
   password: "ignored",
   createdAt: new Date(),
   updatedAt: new Date(),

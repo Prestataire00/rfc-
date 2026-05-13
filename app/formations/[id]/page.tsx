@@ -71,7 +71,7 @@ const modaliteIcons: Record<string, React.ReactNode> = {
   mixte: <Shuffle className="h-4 w-4" />,
 };
 
-type TabKey = "description" | "sessions" | "documents" | "evaluations" | "programme" | "espace-apprenant" | "approches";
+type TabKey = "description" | "sessions" | "documents" | "evaluations" | "programme";
 
 export default function FormationDetailPage() {
   const params = useParams();
@@ -125,8 +125,6 @@ export default function FormationDetailPage() {
     { key: "documents", label: "Documents", icon: <FolderOpen className="h-4 w-4" /> },
     { key: "evaluations", label: "Evaluations", icon: <MessageSquare className="h-4 w-4" /> },
     { key: "programme", label: "Le programme", icon: <ClipboardList className="h-4 w-4" /> },
-    { key: "espace-apprenant", label: "Espace Apprenant", icon: <GraduationCap className="h-4 w-4" /> },
-    { key: "approches", label: "Approches", icon: <Target className="h-4 w-4" /> },
   ];
 
   return (
@@ -497,24 +495,6 @@ export default function FormationDetailPage() {
               </CardContent>
             </Card>
           )}
-        </div>
-      )}
-
-      {/* ============== TAB: Espace Apprenant ============== */}
-      {activeTab === "espace-apprenant" && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <GraduationCap className="h-10 w-10 text-gray-600 mb-3" />
-          <h3 className="text-base font-medium text-gray-300 mb-1">Espace Apprenant</h3>
-          <p className="text-sm text-gray-400">Configuration de l&apos;espace apprenant pour cette formation.</p>
-        </div>
-      )}
-
-      {/* ============== TAB: Approches ============== */}
-      {activeTab === "approches" && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Target className="h-10 w-10 text-gray-600 mb-3" />
-          <h3 className="text-base font-medium text-gray-300 mb-1">Approches pedagogiques</h3>
-          <p className="text-sm text-gray-400">Les approches pedagogiques de cette formation.</p>
         </div>
       )}
 

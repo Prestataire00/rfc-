@@ -392,6 +392,12 @@ model Facture {
   notes          String?
   statut         String   @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
 
+  // Relances de paiement automatiques (cron /api/cron/factures-relances).
+  // dernierRappelEnvoyeAt : timestamp du dernier email de relance envoyé.
+  // nbRappelsEnvoyes : compteur — sert de palier (0=jamais, 1=J+7, 2=J+14, 3=J+30 final).
+  dernierRappelEnvoyeAt DateTime?
+  nbRappelsEnvoyes      Int       @default(0)
+
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
 

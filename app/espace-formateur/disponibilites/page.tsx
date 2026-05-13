@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { formatDate } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
+import { notify } from "@/lib/toast";
 
 type Dispo = {
   id: string;
@@ -28,19 +29,42 @@ export default function DisponibilitesPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      // Validation basique côté UI : dateDebut <= dateFin
+      if (!form.dateDebut || !form.dateFin) {
+        notify.error("Renseignez date début et date fin");
+        return;
+      }
+      if (new Date(form.dateDebut) > new Date(form.dateFin)) {
+        notify.error("La date de début doit être avant la date de fin");
+        return;
+      }
       await api.post("/api/formateur/disponibilites", form);
+      notify.success("Créneau ajouté");
       setShowForm(false);
       setForm({ dateDebut: "", dateFin: "", type: "disponible", notes: "" });
       await mutate();
-    } catch {
-      // ignore
+    } catch (err) {
+      // Affiche l'erreur réelle pour aider au diagnostic (avant : catch vide
+      // qui masquait tout — typique cas "No formateur linked" sur un compte
+      // formateur sans Formateur lié en BD).
+      const msg =
+        err instanceof Error && err.message
+          ? err.message
+          : "Impossible d'enregistrer le créneau";
+      notify.error(msg);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function handleDelete(id: string) {
-    await api.delete(`/api/formateur/disponibilites/${id}`);
-    await mutate();
+    try {
+      await api.delete(`/api/formateur/disponibilites/${id}`);
+      await mutate();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Suppression impossible";
+      notify.error(msg);
+    }
   }
 
   return (

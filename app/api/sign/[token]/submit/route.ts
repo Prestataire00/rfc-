@@ -129,7 +129,7 @@ export const POST = withErrorHandlerParams<{ token: string }>(async (req: NextRe
     return NextResponse.json({ error: e.kind, missing: e.ids }, { status: 400 });
   }
 
-  // Audit event "signed" + log rate-limit hors transaction (table indépendante).
+  // Audit event "signed" hors transaction (table indépendante).
   await appendEvent(result.requestId, {
     type: "signed",
     actorType: "signataire",
@@ -137,9 +137,17 @@ export const POST = withErrorHandlerParams<{ token: string }>(async (req: NextRe
     payload: { ip, ua, zoneCount: zonesPayload.length },
   });
 
-  // Sprint 5 : déclencher la finalisation crypto async ici (fire-and-forget vers
-  // un endpoint interne ou un job cron). Pour Sprint 4, le statut reste "signed"
-  // jusqu'à ce que le cron signature-retry-finalization (Sprint 5) le complète.
+  // Déclenche la finalisation crypto en arrière-plan (fire-and-forget).
+  // On ne await PAS : la réponse HTTP au signataire est immédiate.
+  // Si la Netlify Function se termine avant la fin de l'exécution background,
+  // le cron signature-retry-finalization reprendra sur les statut "signed" >5min.
+  import("@/lib/signatures/finalize")
+    .then(({ finalizeSignatureRequest }) =>
+      finalizeSignatureRequest(result.requestId).catch((err) =>
+        console.error("[finalize] échec arrière-plan:", err),
+      ),
+    )
+    .catch((err) => console.error("[finalize] échec import:", err));
 
   return NextResponse.json({ ok: true });
 });

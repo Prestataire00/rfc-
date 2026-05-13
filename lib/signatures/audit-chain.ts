@@ -84,6 +84,48 @@ export async function appendEvent(
   return prisma.$transaction(runner);
 }
 
+/**
+ * Charge la chaîne d'événements depuis la BD et vérifie son intégrité.
+ * Retourne `{ valid: true }` si OK, sinon `{ valid: false, brokenAt }` avec l'ID
+ * du 1er event corrompu (ou "lastEventHash" si la tête ne correspond pas).
+ *
+ * Utilisé par :
+ *  - /api/signature-requests/[id]/verify-audit (admin)
+ *  - /api/signatures/verify (public, après upload PDF par tiers)
+ *  - generateProofCertificate (encart "audit log integrity OK")
+ */
+export async function verifyAuditChain(
+  requestId: string,
+): Promise<{ valid: boolean; brokenAt?: string }> {
+  const events = await prisma.signatureEvent.findMany({
+    where: { requestId },
+    orderBy: { createdAt: "asc" },
+  });
+  const corruptedRank = verifyChain(
+    events.map((e) => ({
+      type: e.type,
+      actorType: e.actorType,
+      actorId: e.actorId,
+      payload: e.payload as unknown,
+      createdAt: e.createdAt,
+      previousEventHash: e.previousEventHash,
+      eventHash: e.eventHash,
+    })),
+  );
+  if (corruptedRank !== -1) {
+    return { valid: false, brokenAt: events[corruptedRank]?.id ?? "unknown" };
+  }
+  const req = await prisma.signatureRequest.findUniqueOrThrow({
+    where: { id: requestId },
+    select: { lastEventHash: true },
+  });
+  const expectedTail = events.length === 0 ? null : events[events.length - 1].eventHash;
+  if (req.lastEventHash !== expectedTail) {
+    return { valid: false, brokenAt: "lastEventHash" };
+  }
+  return { valid: true };
+}
+
 // Vérifie que la chaîne est intacte. Renvoie le rank du 1er event corrompu, ou -1 si OK.
 export function verifyChain(
   events: Array<{ type: string; actorType: string; actorId: string | null; payload: unknown; createdAt: Date; previousEventHash: string | null; eventHash: string }>,

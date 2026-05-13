@@ -90,6 +90,9 @@ function isPublicPath(pathname: string): boolean {
   // Signature électronique — pages publiques signataire (lien magique HMAC validé côté handler)
   if (pathname.startsWith("/sign/")) return true;
   if (pathname.startsWith("/api/sign/")) return true;
+  // Vérification publique d'intégrité d'un PDF signé (upload + check hash + audit)
+  if (pathname === "/verify") return true;
+  if (pathname.startsWith("/api/signature-requests/verify")) return true;
   if (pathname.startsWith("/catalogue")) return true;
   if (pathname.startsWith("/api/catalogue")) return true;
   if (pathname.startsWith("/badges/")) return true;

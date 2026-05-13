@@ -20,11 +20,24 @@ export async function uploadSignatureFile(
   file: Buffer,
   contentType: string = "application/pdf",
 ): Promise<{ path: string }> {
+  // upsert: true pour permettre les ré-essais de finalize.ts (idempotence).
+  // En V1 c'est OK puisque les paths sont stables ({id}/signed.pdf etc).
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(path, file, { contentType, upsert: false }); // upsert false : pas d'écrasement silencieux
+    .upload(path, file, { contentType, upsert: true });
   if (error) throw error;
   return data;
+}
+
+// Download d'un fichier signature depuis un bucket privé (lecture côté serveur).
+// Utilisé par finalize.ts pour récupérer le PDF original avant stamping.
+export async function downloadSignatureFile(
+  bucket: (typeof BUCKETS)[keyof typeof BUCKETS],
+  path: string,
+): Promise<Buffer> {
+  const { data, error } = await supabase.storage.from(bucket).download(path);
+  if (error || !data) throw new Error(`Download ${bucket}/${path} failed: ${error?.message ?? "no data"}`);
+  return Buffer.from(await data.arrayBuffer());
 }
 
 // URL signée TTL 5 min — pour téléchargement par signataire ou admin.

@@ -239,6 +239,11 @@ model Session {
   declarationPasseportPrevention Boolean   @default(false)
   datePasseportPrevention        DateTime?
 
+  // Idempotence du cron /api/cron/convocations : timestamp d'envoi des
+  // convocations stagiaires. Null = pas encore envoyé. Le cron skip toute
+  // session ayant cette valeur != null.
+  convocationsEnvoyeesAt DateTime?
+
   formationId String
   formation   Formation  @relation(fields: [formationId], references: [id], onDelete: Cascade)
 

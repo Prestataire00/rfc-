@@ -1439,12 +1439,17 @@ model TaskList {
   description String?
   sessionId   String?
   session     Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  // Rattachement projet — une TaskList peut être liée à un Projet OU à une Session
+  // (ou aucun). Pas contraint en BD (un projet ↔ N sessions, donc cohabitation OK).
+  projetId    String?
+  projet      Projet?  @relation(fields: [projetId], references: [id], onDelete: SetNull)
   userId      String?  // utilisateur assigne
   couleur     String   @default("#dc2626")
 
   items TaskItem[]
 
   @@index([sessionId])
+  @@index([projetId])
   @@index([userId])
 }
 
@@ -2123,6 +2128,7 @@ model Projet {
   devis      Devis[]
   sessions   Session[]
   factures   Facture[]
+  taskLists  TaskList[]
 
   @@index([statut])
   @@index([entrepriseId])

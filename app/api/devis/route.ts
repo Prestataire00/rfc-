@@ -49,7 +49,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }, 0);
   const numero = generateNumero("DEV", maxNum);
 
-  const { lignes, dateValidite, entrepriseId, contactId, tauxTVA, ...rest } = parsed;
+  const { lignes, dateValidite, entrepriseId, contactId, projetId, tauxTVA, ...rest } = parsed;
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
   const montantTTC = montantHT * (1 + tauxTVA / 100);
 
@@ -63,6 +63,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       dateValidite: new Date(dateValidite),
       entrepriseId: entrepriseId || null,
       contactId: contactId || null,
+      projetId: projetId || null,
       lignes: { create: lignes.map(({ id: _, ...l }) => l) },
     },
     include: { lignes: true },

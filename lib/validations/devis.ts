@@ -16,6 +16,8 @@ export const devisSchema = z
     notes: z.string().optional().nullable(),
     entrepriseId: z.string().optional().nullable(),
     contactId: z.string().optional().nullable(),
+    // Rattachement projet (bilatéralité projet ↔ devis)
+    projetId: z.string().optional().nullable(),
     lignes: z.array(ligneDevisSchema).min(1, "Au moins une ligne requise"),
   })
   .refine((data) => data.entrepriseId || data.contactId, {

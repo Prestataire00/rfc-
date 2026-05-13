@@ -39,6 +39,7 @@ export default function NouvelleFacturePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramDevisId = searchParams.get("devisId") ?? "";
+  const paramProjetId = searchParams.get("projetId") ?? "";
   const [error, setError] = useState("");
 
   const [entrepriseId, setEntrepriseId] = useState("");
@@ -144,6 +145,9 @@ export default function NouvelleFacturePage() {
 
     if (devisId) {
       payload.devisId = devisId;
+    }
+    if (paramProjetId) {
+      payload.projetId = paramProjetId;
     }
 
     try {

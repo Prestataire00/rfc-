@@ -25,6 +25,24 @@ export const RATE_LIMIT_PRESETS = {
 
   // Endpoints publics anonymes (catalogue formations) : 100 req / min par IP.
   publicAnon: { max: 100, window: "1 m" } satisfies Preset,
+
+  // Mutations authentifiées sensibles (création user, transitions devis,
+  // génération facture, etc.). Pas pour stopper du burst légitime — plutôt
+  // pour empêcher qu'un compte admin compromis enchaîne 1000 actions à la
+  // seconde. 60 mutations / minute par user = très largement au-dessus de
+  // l'usage humain normal.
+  authMutation: { max: 60, window: "1 m" } satisfies Preset,
+
+  // Endpoints qui déclenchent un envoi email (convocations batch, relances,
+  // notifications, password reset). Coût SMTP réel, donc denial-of-wallet
+  // possible. 10 burst / 5 min par user — un batch légitime tient en 1-2
+  // calls (1 par session). Au-delà = scripting → on bloque.
+  emailTrigger: { max: 10, window: "5 m" } satisfies Preset,
+
+  // Génération PDF / export volumineux : CPU-intensive. 20 / min par user
+  // au-dessus duquel on présume du scripting (un humain ne génère pas 20
+  // PDFs en 60s en cliquant).
+  heavyExport: { max: 20, window: "1 m" } satisfies Preset,
 } as const;
 
 export type RateLimitPreset = (typeof RATE_LIMIT_PRESETS)[keyof typeof RATE_LIMIT_PRESETS];

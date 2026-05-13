@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabase";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 // Politique uploads : PDF / images / docs Office uniquement, 10 MB max.
 const ALLOWED_MIME = new Set<string>([
@@ -33,6 +35,17 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!session) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
+
+  // Rate-limit : un compte compromis pourrait remplir Supabase Storage en
+  // boucle (denial-of-wallet) ou DOS via upload de gros fichiers.
+  const userId = (session.user as { id?: string }).id;
+  const limited = await enforceRateLimit(
+    req,
+    RATE_LIMIT_PRESETS.heavyExport,
+    "upload",
+    userId,
+  );
+  if (limited) return limited;
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json(

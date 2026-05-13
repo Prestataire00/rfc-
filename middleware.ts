@@ -28,6 +28,7 @@ const adminPages = [
   "/parametres",
   "/admin",
   "/projets",
+  "/signatures",
 ];
 
 // Admin-only API prefixes
@@ -63,6 +64,7 @@ const adminApiPrefixes = [
   "/api/notes-frais",
   "/api/classes-virtuelles",
   "/api/competences",
+  "/api/signature-requests",
   "/api/pdf/template-preview",
   "/api/projets",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
@@ -89,6 +91,12 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/qualite/public/")) return true;
   if (pathname.startsWith("/qualite/share/")) return true;
   if (pathname.startsWith("/api/email-tracking/webhook")) return true;
+  // Signature électronique — pages publiques signataire (lien magique HMAC validé côté handler)
+  if (pathname.startsWith("/sign/")) return true;
+  if (pathname.startsWith("/api/sign/")) return true;
+  // Vérification publique d'intégrité d'un PDF signé (upload + check hash + audit)
+  if (pathname === "/verify") return true;
+  if (pathname.startsWith("/api/signature-requests/verify")) return true;
   if (pathname.startsWith("/catalogue")) return true;
   if (pathname.startsWith("/api/catalogue")) return true;
   if (pathname.startsWith("/badges/")) return true;
@@ -123,6 +131,12 @@ export async function middleware(request: NextRequest) {
 
   // Allow public paths
   if (isPublicPath(pathname)) {
+    // Hardening pour les pages publiques de signature : pas d'indexation moteurs.
+    if (pathname.startsWith("/sign/")) {
+      const res = NextResponse.next();
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return res;
+    }
     return NextResponse.next();
   }
 

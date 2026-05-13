@@ -1922,6 +1922,151 @@ model KpiHistory {
   @@index([source])
 }
 
+// ==================== SIGNATURE ELECTRONIQUE V1 ====================
+// Module greffe a cote de SignatureDocument legacy (qui sert encore les devis).
+// Migration progressive prevue V2. Voir spec:
+// docs/superpowers/specs/2026-05-12-signature-electronique-self-hosted-design.md
+
+model SignatureRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  titre       String
+  description String?
+  type        String  @default("custom") // custom | devis | convention | attestation | nda | autre
+
+  // Rattachement RFC optionnel (FK soft, pas de relation Prisma pour eviter couplage agressif V1)
+  devisId      String?
+  sessionId    String?
+  contactId    String?
+  entrepriseId String?
+
+  // Fichier original (PDF source uploade par l'admin)
+  originalFileUrl    String
+  originalFileSha256 String
+  originalFileSize   Int
+  originalPageCount  Int
+
+  // Fichier signe (genere apres signature)
+  signedFileUrl    String?
+  signedFileSha256 String?
+
+  // Workflow
+  statut      String    @default("draft") // draft | ready | sent | viewed | signed | completed | expired | cancelled | rejected
+  expiresAt   DateTime?
+  sentAt      DateTime?
+  viewedAt    DateTime?
+  signedAt    DateTime?
+  completedAt DateTime?
+
+  // Preuves cryptographiques
+  tsaTimestamp     Bytes?    // TSR RFC 3161 binaire
+  tsaTimestampedAt DateTime?
+  certificateUrl   String?
+  lastEventHash    String?   // tete de chaine audit log
+
+  createdByUserId String
+
+  zones      SignatureZone[]
+  signataire Signataire?
+  events     SignatureEvent[]
+
+  @@index([statut])
+  @@index([createdAt])
+  @@index([devisId])
+  @@index([sessionId])
+  @@index([entrepriseId])
+}
+
+model SignatureZone {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  requestId String
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  page   Int    // 1-indexed
+  // Coordonnees en unites PDF (points, 72 dpi) — pas en pixels
+  x      Float
+  y      Float
+  width  Float
+  height Float
+  type   String  // signature | initials | date | text
+  label  String?
+  required Boolean @default(true)
+
+  // Remplissage par signataire
+  filled       Boolean   @default(false)
+  filledValue  String?   // base64 image ou texte
+  filledMethod String?   // canvas | text | image
+  filledAt     DateTime?
+
+  @@index([requestId])
+}
+
+model Signataire {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  requestId String           @unique // V1 mono-signataire ; @unique sera retire en V3
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  email     String
+  nom       String
+  contactId String? // rattachement auto si email matche un Contact existant
+
+  // Token magique (jamais stocke en clair)
+  tokenHash   String  @unique // sha256(fullToken)
+  tokenSentAt DateTime?
+
+  // Statut individuel
+  statut       String    @default("pending") // pending | viewed | signed | declined | expired
+  viewedAt     DateTime?
+  signedAt     DateTime?
+  declinedAt   DateTime?
+  declineReason String?
+
+  // Preuves signature
+  signatureIp          String?
+  signatureUserAgent   String?
+  signatureFingerprint String? // hash IP+UA+resolution+timezone
+
+  @@index([email])
+}
+
+model SignatureEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  requestId String
+  request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  type      String  // created | zones_placed | sent | email_opened | viewed | signature_started | signed | tsa_stamped | completed | expired | cancelled | rejected | downloaded
+  actorType String  // admin | signataire | system
+  actorId   String?
+  payload   Json    @default("{}")
+
+  // Chaine hashee : modifier un event casse tous les previousEventHash suivants
+  previousEventHash String?
+  eventHash         String  @unique
+
+  @@index([requestId])
+  @@index([createdAt])
+}
+
+model SignatureTokenAttempt {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  tokenPrefix String  // 8 premiers chars du fullToken
+  ip          String
+  success     Boolean
+
+  @@index([tokenPrefix, createdAt])
+  @@index([ip, createdAt])
+}
+
 // ==================== PROJETS (agrégat racine) ====================
 //
 // Un Projet = un engagement client cohérent qui peut regrouper 1..N

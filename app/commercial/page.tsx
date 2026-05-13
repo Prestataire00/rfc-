@@ -131,22 +131,45 @@ export default function CommercialPage() {
         <div className="mb-6">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Tunnel CA</p>
           <div className="flex items-center gap-3">
-            <div className="flex-1 rounded-lg bg-blue-900/30 dark:bg-blue-900/30 border border-blue-700 p-4 text-center">
-              <div className="text-xs text-blue-400 mb-1">Devis en cours</div>
-              <div className="text-lg font-bold text-blue-300">{formatCurrency(tunnelStats.caPrevisionnel)}</div>
-              <div className="text-xs text-gray-500 mt-1">{tunnelStats.nbDevisEnCours} devis</div>
+            {/* Devis en cours */}
+            <div className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500 bg-white dark:bg-gray-800 p-4 text-center">
+              <div className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400 mb-1">
+                Devis en cours
+              </div>
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {formatCurrency(tunnelStats.caPrevisionnel)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {tunnelStats.nbDevisEnCours} devis
+              </div>
             </div>
-            <ArrowRight className="h-5 w-5 text-gray-600 flex-shrink-0" />
-            <div className="flex-1 rounded-lg bg-orange-900/30 dark:bg-orange-900/30 border border-orange-700 p-4 text-center">
-              <div className="text-xs text-orange-400 mb-1">Facturé à encaisser</div>
-              <div className="text-lg font-bold text-orange-300">{formatCurrency(tunnelStats.caAEncaisser)}</div>
-              <div className="text-xs text-gray-500 mt-1">{tunnelStats.nbFacturesAEncaisser} factures</div>
+
+            <ArrowRight className="h-5 w-5 text-gray-400 dark:text-gray-600 flex-shrink-0" />
+
+            {/* Facturé à encaisser */}
+            <div className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 border-l-4 border-l-orange-500 bg-white dark:bg-gray-800 p-4 text-center">
+              <div className="text-xs font-medium uppercase tracking-wide text-orange-600 dark:text-orange-400 mb-1">
+                Facturé à encaisser
+              </div>
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {formatCurrency(tunnelStats.caAEncaisser)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {tunnelStats.nbFacturesAEncaisser} factures
+              </div>
             </div>
-            <ArrowRight className="h-5 w-5 text-gray-600 flex-shrink-0" />
-            <div className="flex-1 rounded-lg bg-emerald-900/30 dark:bg-emerald-900/30 border border-emerald-700 p-4 text-center">
-              <div className="text-xs text-emerald-400 mb-1">Encaissé</div>
-              <div className="text-lg font-bold text-emerald-300">{formatCurrency(tunnelStats.caFactureMois)}</div>
-              <div className="text-xs text-gray-500 mt-1">ce mois</div>
+
+            <ArrowRight className="h-5 w-5 text-gray-400 dark:text-gray-600 flex-shrink-0" />
+
+            {/* Encaissé */}
+            <div className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 border-l-4 border-l-emerald-500 bg-white dark:bg-gray-800 p-4 text-center">
+              <div className="text-xs font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-400 mb-1">
+                Encaissé
+              </div>
+              <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {formatCurrency(tunnelStats.caFactureMois)}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">ce mois</div>
             </div>
           </div>
         </div>

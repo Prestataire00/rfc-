@@ -136,6 +136,7 @@ const formateurGroups: NavGroup[] = [
     ],
   },
   { key: "sessions", label: "Sessions", icon: BookOpen, href: "/espace-formateur/sessions" },
+  { key: "messagerie", label: "Messagerie", icon: MessageSquare, href: "/messagerie" },
   { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-formateur/documents" },
   { key: "frais", label: "Frais", icon: Receipt, href: "/espace-formateur/notes-frais" },
   {
@@ -164,6 +165,7 @@ const clientGroups: NavGroup[] = [
     ],
   },
   { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-client/documents" },
+  { key: "messagerie", label: "Messagerie", icon: MessageSquare, href: "/messagerie" },
   {
     key: "finance",
     label: "Finance",

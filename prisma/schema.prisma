@@ -1482,6 +1482,14 @@ model Conversation {
   sujet            String?
   dernierMessageAt DateTime?
 
+  // Type de conversation (sémantique métier — utilisé pour le filtrage UI
+  // et le RBAC côté API) :
+  //   direct_formateur : 1-1 admin ↔ formateur
+  //   direct_client    : 1-1 admin ↔ client
+  //   session_group    : groupe autour d'une session (admin + formateur(s)
+  //                      assigné(s) + client(s) inscrits)
+  type      String   @default("direct_formateur")
+
   sessionId String?
   session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
@@ -1490,6 +1498,7 @@ model Conversation {
 
   @@index([sessionId])
   @@index([dernierMessageAt])
+  @@index([type])
 }
 
 // Participant a une conversation

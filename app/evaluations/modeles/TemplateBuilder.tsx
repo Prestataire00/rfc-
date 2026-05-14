@@ -252,7 +252,7 @@ export default function TemplateBuilder({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-300 mb-1">Categorie</label>
+              <label className="block text-xs font-medium text-gray-300 mb-1">Catégorie</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}

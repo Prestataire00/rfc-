@@ -210,7 +210,7 @@ export default function ReportingPage() {
         <KpiCard label="Contacts" value={stats.nbContacts} icon={Users} />
         <KpiCard label="Entreprises" value={stats.nbEntreprises} icon={Building2} />
         <KpiCard label="Sessions a venir" value={stats.sessionsAVenir} icon={BookOpen} />
-        <KpiCard label="Stagiaires formes" value={stats.nbStagiairesFormes} icon={GraduationCap} />
+        <KpiCard label="Stagiaires formés" value={stats.nbStagiairesFormes} icon={GraduationCap} />
         <KpiCard label="CA mois" value={formatCurrency(stats.caFactureMois)} icon={Banknote} highlight />
         <KpiCard label="A encaisser" value={formatCurrency(stats.caAEncaisser)} icon={FileText} />
       </div>

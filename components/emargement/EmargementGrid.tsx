@@ -148,7 +148,7 @@ export function EmargementGrid({ sessionId, dateDebut, dateFin, inscriptions, fo
               onClick={generateTokens}
               className="inline-flex items-center gap-1.5 rounded-md bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-medium text-white"
             >
-              <QrCode className="h-3.5 w-3.5" /> Generer les QR codes
+              <QrCode className="h-3.5 w-3.5" /> Générer les QR codes
             </button>
           ) : (
             <button

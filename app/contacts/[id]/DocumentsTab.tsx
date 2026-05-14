@@ -78,7 +78,7 @@ export function DocumentsTab({ attestations, feuillesPresence }: Props) {
                       {fp.matin ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />} Matin
                     </span>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${fp.apresMidi ? "bg-emerald-500/20 text-emerald-400" : "bg-gray-700 text-gray-500"}`}>
-                      {fp.apresMidi ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />} Apres-midi
+                      {fp.apresMidi ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />} Après-midi
                     </span>
                   </div>
                 </div>

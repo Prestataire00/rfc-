@@ -90,7 +90,7 @@ export default function DevisDetailPage() {
     try {
       const copie = await dupliquerDevis();
       if (copie) {
-        notify.success("Devis duplique", copie.numero);
+        notify.success("Devis dupliqué", copie.numero);
         router.push(`/commercial/devis/${copie.id}`);
       }
     } catch {
@@ -370,7 +370,7 @@ export default function DevisDetailPage() {
                   className="w-full"
                 >
                   <Receipt className="h-4 w-4 mr-2" />
-                  {generatingFacture ? "Generation..." : "Generer automatiquement"}
+                  {generatingFacture ? "Génération..." : "Générer automatiquement"}
                 </Button>
                 <Link
                   href={`/commercial/factures/nouveau?devisId=${id}`}

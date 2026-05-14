@@ -46,7 +46,7 @@ export default function UtilisateursPage() {
     if (!resetUserId || !newPassword) return;
     try {
       await api.post(`/api/utilisateurs/${resetUserId}/reset-password`, { password: newPassword });
-      setResetMsg("Mot de passe modifie avec succes");
+      setResetMsg("Mot de passe modifié avec succès");
       setNewPassword("");
       setTimeout(() => {
         setResetUserId(null);

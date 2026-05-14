@@ -52,7 +52,7 @@ export default function BPFPage() {
 
   return (
     <div>
-      <PageHeader title="Bilan Pedagogique et Financier" description="Donnees annuelles pour le BPF" />
+      <PageHeader title="Bilan Pedagogique et Financier" description="Données annuelles pour le BPF" />
 
       {/* Year selector + Export */}
       <div className="flex items-center justify-between mb-6">
@@ -101,7 +101,7 @@ export default function BPFPage() {
           <p className="text-3xl font-bold text-gray-100">{data.sessionsTerminees}</p>
         </div>
         <div className="rounded-lg border bg-gray-800 p-5">
-          <p className="text-sm text-gray-400">Stagiaires formes</p>
+          <p className="text-sm text-gray-400">Stagiaires formés</p>
           <p className="text-3xl font-bold text-gray-100">{data.totalStagiaires}</p>
         </div>
         <div className="rounded-lg border bg-gray-800 p-5">
@@ -109,7 +109,7 @@ export default function BPFPage() {
           <p className="text-3xl font-bold text-gray-100">{data.totalHeures}h</p>
         </div>
         <div className="rounded-lg border bg-gray-800 p-5">
-          <p className="text-sm text-gray-400">CA Realise HT</p>
+          <p className="text-sm text-gray-400">CA Réalisé HT</p>
           <p className="text-3xl font-bold text-green-600">{formatCurrency(data.caRealiseHT)}</p>
         </div>
       </div>
@@ -207,9 +207,9 @@ export default function BPFPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-6 mb-6">
-        {/* Par categorie */}
+        {/* Par catégorie */}
         <div className="rounded-lg border bg-gray-800 p-6">
-          <h3 className="font-semibold text-gray-100 mb-4">Par categorie</h3>
+          <h3 className="font-semibold text-gray-100 mb-4">Par catégorie</h3>
           {Object.keys(data.parCategorie).length === 0 ? (
             <p className="text-sm text-gray-400">Aucune donnee</p>
           ) : (

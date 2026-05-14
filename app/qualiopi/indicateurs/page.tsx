@@ -45,7 +45,7 @@ export default function IndicateursPage() {
     return [
       { label: "Taux de satisfaction globale", value: `${tauxSatisfaction}%`, target: "90%", progress: tauxSatisfaction, status: tauxSatisfaction >= 90 ? "ok" : tauxSatisfaction >= 70 ? "warning" : "danger", icon: Star },
       { label: "Taux de completion des evaluations", value: `${tauxCompletion}%`, target: "80%", progress: tauxCompletion, status: tauxCompletion >= 80 ? "ok" : tauxCompletion >= 60 ? "warning" : "danger", icon: CheckCircle2 },
-      { label: "Nombre de stagiaires formes", value: String(totalInscrits), target: "100+", progress: Math.min(100, totalInscrits), status: totalInscrits >= 100 ? "ok" : totalInscrits >= 50 ? "warning" : "danger", icon: Users },
+      { label: "Nombre de stagiaires formés", value: String(totalInscrits), target: "100+", progress: Math.min(100, totalInscrits), status: totalInscrits >= 100 ? "ok" : totalInscrits >= 50 ? "warning" : "danger", icon: Users },
       { label: "Sessions realisees", value: String(sessionsTerminees), target: "20+", progress: Math.min(100, sessionsTerminees * 5), status: sessionsTerminees >= 20 ? "ok" : sessionsTerminees >= 10 ? "warning" : "danger", icon: BookOpen },
       { label: "Evaluations collectees", value: String(evalsArr.length), target: "50+", progress: Math.min(100, evalsArr.length * 2), status: evalsArr.length >= 50 ? "ok" : evalsArr.length >= 20 ? "warning" : "danger", icon: MessageSquare },
       { label: "Note moyenne (/5)", value: avgNote > 0 ? avgNote.toFixed(1) : "N/A", target: "4.5/5", progress: Math.round(avgNote * 20), status: avgNote >= 4.5 ? "ok" : avgNote >= 3.5 ? "warning" : "danger", icon: TrendingUp },

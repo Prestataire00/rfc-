@@ -142,7 +142,7 @@ export default function TemplatesDocumentsPage() {
         variables: editableVariables,
         actif: selected.actif,
       });
-      setSaveMsg("Enregistre");
+      setSaveMsg("Enregistré");
       await mutateTemplates();
       setPreviewVersion((v) => v + 1);
       setTimeout(() => setSaveMsg(""), 2500);
@@ -337,7 +337,7 @@ export default function TemplatesDocumentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 {saveMsg && <span className={`text-xs ${saveMsg.includes("Erreur") ? "text-red-400" : "text-emerald-400"}`}>
-                  {saveMsg === "Enregistre" ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : null}{saveMsg}
+                  {saveMsg === "Enregistré" ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : null}{saveMsg}
                 </span>}
                 <input
                   ref={importInputRef}

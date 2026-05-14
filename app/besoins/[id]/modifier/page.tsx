@@ -141,7 +141,7 @@ export default function ModifierBesoinPage() {
                 endpoint="/api/ai/besoin"
                 payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, entrepriseId: form.entrepriseId }}
                 onResult={(t) => setForm({ ...form, description: t })}
-                label="Generer un brief IA"
+                label="Générer un brief IA"
               />
             </div>
             <textarea
@@ -151,7 +151,7 @@ export default function ModifierBesoinPage() {
               rows={6}
               placeholder="Contexte, objectifs, contraintes, delais..."
             />
-            <p className="text-xs text-gray-500 text-right">{form.description.length} caracteres</p>
+            <p className="text-xs text-gray-500 text-right">{form.description.length} caractères</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

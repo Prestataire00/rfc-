@@ -361,7 +361,7 @@ export default function NouveauBesoinPage() {
                   onChange={(e) => handleEntrepriseChange(e.target.value)}
                   className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
                 >
-                  <option value="">-- Selectionner une entreprise --</option>
+                  <option value="">-- Sélectionner une entreprise --</option>
                   {entreprises.map((e) => (
                     <option key={e.id} value={e.id}>{e.nom}</option>
                   ))}
@@ -382,7 +382,7 @@ export default function NouveauBesoinPage() {
                     onChange={(e) => set("contactId", e.target.value)}
                     className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
                   >
-                    <option value="">-- Selectionner un contact --</option>
+                    <option value="">-- Sélectionner un contact --</option>
                     {contactsVisibles.map((c) => (
                       <option key={c.id} value={c.id}>{c.prenom} {c.nom}</option>
                     ))}
@@ -438,7 +438,7 @@ export default function NouveauBesoinPage() {
                 onChange={(e) => set("contactId", e.target.value)}
                 className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
               >
-                <option value="">-- Selectionner un stagiaire --</option>
+                <option value="">-- Sélectionner un stagiaire --</option>
                 {contacts.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.prenom} {c.nom}{c.entrepriseId ? "" : " (individuel)"}
@@ -548,7 +548,7 @@ export default function NouveauBesoinPage() {
                 endpoint="/api/ai/besoin"
                 payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, contactId: lockedContactId || form.contactId, entrepriseId: form.entrepriseId }}
                 onResult={(t) => set("description", t)}
-                label="Generer un brief IA"
+                label="Générer un brief IA"
               />
             </div>
             <textarea
@@ -558,7 +558,7 @@ export default function NouveauBesoinPage() {
               rows={6}
               placeholder="Contexte, objectifs, contraintes, delais..."
             />
-            <p className="text-xs text-gray-500 text-right">{form.description.length} caracteres</p>
+            <p className="text-xs text-gray-500 text-right">{form.description.length} caractères</p>
           </div>
 
           <div>
@@ -613,7 +613,7 @@ export default function NouveauBesoinPage() {
             Annuler
           </button>
           <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-sm text-white font-medium disabled:opacity-50">
-            {saving ? "Creation..." : "Creer le besoin"}
+            {saving ? "Création..." : "Créer le besoin"}
           </button>
         </div>
       </form>

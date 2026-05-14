@@ -19,7 +19,7 @@ export function QrCodePresence({ token, date, creneau, formationTitre }: Props) 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=000000&margin=10`;
   const qrUrlHd = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=000000&margin=10`;
 
-  const creneauLabel = creneau === "matin" ? "Matin" : "Apres-midi";
+  const creneauLabel = creneau === "matin" ? "Matin" : "Après-midi";
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(url);

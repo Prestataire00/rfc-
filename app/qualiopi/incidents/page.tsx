@@ -206,7 +206,7 @@ export default function IncidentsPage() {
             {filtered.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-16 text-center text-gray-500">
                 <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-gray-600" />
-                <p className="text-sm">Aucun incident enregistre</p>
+                <p className="text-sm">Aucun incident enregistré</p>
               </td></tr>
             ) : filtered.map((item) => (
               <tr key={item.id} className="border-b border-gray-700 hover:bg-gray-750 transition-colors">

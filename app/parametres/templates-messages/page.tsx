@@ -65,7 +65,7 @@ export default function TemplatesMessagesPage() {
         contenu,
         actif: selected.actif,
       });
-      setSaveMsg("Enregistre");
+      setSaveMsg("Enregistré");
       await mutateTemplates();
       setTimeout(() => setSaveMsg(""), 2500);
     } catch {
@@ -174,7 +174,7 @@ export default function TemplatesMessagesPage() {
               </div>
               <div className="flex items-center gap-2">
                 {saveMsg && <span className={`text-xs ${saveMsg.includes("Erreur") ? "text-red-400" : "text-emerald-400"}`}>
-                  {saveMsg === "Enregistre" ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : null}{saveMsg}
+                  {saveMsg === "Enregistré" ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : null}{saveMsg}
                 </span>}
                 <button
                   onClick={handleReset}

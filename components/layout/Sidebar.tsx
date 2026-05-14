@@ -165,7 +165,15 @@ const formateurGroups: NavGroup[] = [
   { key: "documents", label: "Documents", icon: FolderOpen, href: "/espace-formateur/documents" },
 
   // Finance perso
-  { key: "frais", label: "Notes de frais", icon: Wallet, href: "/espace-formateur/notes-frais" },
+  {
+    key: "finance",
+    label: "Finance",
+    icon: Wallet,
+    items: [
+      { href: "/espace-formateur/factures", label: "Mes factures", icon: Receipt },
+      { href: "/espace-formateur/notes-frais", label: "Notes de frais", icon: Wallet },
+    ],
+  },
 ];
 
 // ── Client : Accueil + 5 groupes ────────────────────────────────────────────

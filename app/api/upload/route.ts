@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabase";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+import { ensureFormateurId } from "@/lib/formateur/ensure-formateur";
 
 // Politique uploads : PDF / images / docs Office uniquement, 10 MB max.
 const ALLOWED_MIME = new Set<string>([
@@ -63,10 +64,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   let formateurId: string | null;
   let entrepriseId: string | null;
   if (role === "formateur") {
-    formateurId = user.formateurId ?? null;
+    // Auto-crée la fiche Formateur si absente (cas des comptes formateur
+    // créés sans liaison côté admin) — cf [[lib/formateur/ensure-formateur]].
+    formateurId = await ensureFormateurId(session);
     if (!formateurId) {
       return NextResponse.json(
-        { error: "Compte formateur sans fiche associée — contactez un admin" },
+        { error: "Impossible de résoudre la fiche formateur" },
         { status: 403 },
       );
     }

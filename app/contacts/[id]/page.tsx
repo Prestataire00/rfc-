@@ -109,7 +109,7 @@ export default function ContactDetailPage() {
     try {
       const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
-      notify.success("Contact supprime");
+      notify.success("Contact supprimé");
       router.push("/contacts");
     } catch {
       notify.error("Erreur", "Suppression impossible");
@@ -325,7 +325,7 @@ export default function ContactDetailPage() {
                   href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
                   className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors"
                 >
-                  <Euro className="h-4 w-4 text-red-500" /> Creer un devis
+                  <Euro className="h-4 w-4 text-red-500" /> Créer un devis
                 </Link>
                 <Link
                   href={`/besoins/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
@@ -523,7 +523,7 @@ export default function ContactDetailPage() {
                 href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
                 className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
               >
-                <Plus className="h-4 w-4" /> Creer le premier devis
+                <Plus className="h-4 w-4" /> Créer le premier devis
               </Link>
             </div>
           ) : (
@@ -651,12 +651,12 @@ export default function ContactDetailPage() {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <ClipboardList className="h-10 w-10 text-gray-600 mb-3" />
               <h3 className="text-base font-medium text-gray-300 mb-1">Aucun besoin</h3>
-              <p className="text-sm text-gray-400 mb-4">Aucun besoin de formation enregistre pour ce contact.</p>
+              <p className="text-sm text-gray-400 mb-4">Aucun besoin de formation enregistré pour ce contact.</p>
               <Link
                 href={`/besoins/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
                 className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
               >
-                <Plus className="h-4 w-4" /> Creer le premier besoin
+                <Plus className="h-4 w-4" /> Créer le premier besoin
               </Link>
             </div>
           ) : (
@@ -765,7 +765,7 @@ export default function ContactDetailPage() {
                   </div>
                   <div><label className="block text-xs text-gray-400 mb-1">SIRET</label><input value={convertSiret} onChange={(e) => setConvertSiret(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
                   <div><label className="block text-xs text-gray-400 mb-1">Email</label><input value={convertEmail} onChange={(e) => setConvertEmail(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
-                  <div><label className="block text-xs text-gray-400 mb-1">Telephone</label><input value={convertTel} onChange={(e) => setConvertTel(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
+                  <div><label className="block text-xs text-gray-400 mb-1">Téléphone</label><input value={convertTel} onChange={(e) => setConvertTel(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
                   <div><label className="block text-xs text-gray-400 mb-1">Code postal</label><input value={convertCp} onChange={(e) => setConvertCp(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
                   <div><label className="block text-xs text-gray-400 mb-1">Ville</label><input value={convertVille} onChange={(e) => setConvertVille(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>
                   <div><label className="block text-xs text-gray-400 mb-1">Adresse</label><input value={convertAdresse} onChange={(e) => setConvertAdresse(e.target.value)} className="w-full h-9 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" /></div>

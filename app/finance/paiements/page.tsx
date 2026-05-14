@@ -118,7 +118,7 @@ export default function FinancePaiementsPage() {
         reference: paiementForm.reference || null,
       });
       await invalidate("/api/paiements");
-      notify.success("Paiement enregistre");
+      notify.success("Paiement enregistré");
       setOpenPaiement(false);
       setPaiementForm({
         factureId: "",

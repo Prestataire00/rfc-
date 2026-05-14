@@ -278,7 +278,7 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-purple-800">Formations Realisees</span>
           </div>
           <p className="text-3xl font-bold text-purple-900">{stats.nbFormationsRealisees}</p>
-          <p className="text-xs text-purple-600 mt-1">{stats.nbStagiairesFormes} stagiaires formes cette annee</p>
+          <p className="text-xs text-purple-600 mt-1">{stats.nbStagiairesFormes} stagiaires formés cette année</p>
         </div>
       </div>
 

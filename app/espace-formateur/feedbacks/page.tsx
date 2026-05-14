@@ -108,7 +108,7 @@ export default function FeedbacksPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Commentaire general</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Commentaire général</label>
             <textarea value={form.commentaire} onChange={(e) => setForm({ ...form, commentaire: e.target.value })} className="w-full rounded-md border border-gray-600 px-3 py-2 text-sm" rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-4">

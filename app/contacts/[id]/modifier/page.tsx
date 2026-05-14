@@ -51,7 +51,7 @@ const typeOptions = Object.entries(CONTACT_TYPES).map(([key, val]) => ({
 }));
 
 const niveauFormationOptions = [
-  { value: "", label: "Non precise" },
+  { value: "", label: "Non précisé" },
   { value: "sans_diplome", label: "Sans diplome" },
   { value: "cap", label: "CAP / BEP" },
   { value: "bac", label: "BAC" },
@@ -269,7 +269,7 @@ export default function ModifierContactPage() {
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="numeroSecuriteSociale">N° de securite sociale</Label>
+                  <Label htmlFor="numeroSecuriteSociale">N° de sécurité sociale</Label>
                   {!secuEditable && secuMasked && (
                     <button type="button" onClick={() => setSecuEditable(true)} className="text-xs text-red-600 hover:underline">Modifier</button>
                   )}
@@ -344,7 +344,7 @@ export default function ModifierContactPage() {
                 <Select id="niveauFormation" name="niveauFormation" value={form.niveauFormation} onChange={handleChange} options={niveauFormationOptions} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="diplomeObtenu">Diplome obtenu (le plus eleve)</Label>
+                <Label htmlFor="diplomeObtenu">Diplome obtenu (le plus élevé)</Label>
                 <Input id="diplomeObtenu" name="diplomeObtenu" value={form.diplomeObtenu} onChange={handleChange} placeholder="Ex: BAC Pro Securite" />
               </div>
             </div>
@@ -396,7 +396,7 @@ export default function ModifierContactPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="numeroPasseportPrevention">Numero Passeport Prevention</Label>
+                <Label htmlFor="numeroPasseportPrevention">Numéro Passeport Prévention</Label>
                 <Input id="numeroPasseportPrevention" name="numeroPasseportPrevention" value={form.numeroPasseportPrevention} onChange={handleChange} placeholder="Obligation ministerielle (decret 2022-1434)" />
               </div>
 

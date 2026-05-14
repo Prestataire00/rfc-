@@ -117,7 +117,7 @@ export default function NotesFraisPage() {
         <form onSubmit={handleSubmit} className="rounded-lg border border-gray-700 bg-gray-800 p-5 mb-6 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-300 mb-1">Categorie</label>
+              <label className="block text-xs font-medium text-gray-300 mb-1">Catégorie</label>
               <select value={categorie} onChange={(e) => setCategorie(e.target.value)} className="w-full h-10 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3">
                 {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
@@ -159,7 +159,7 @@ export default function NotesFraisPage() {
             <thead className="bg-gray-900 border-b border-gray-700">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Date</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-400">Categorie</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-400">Catégorie</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Description</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-400">Montant</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>

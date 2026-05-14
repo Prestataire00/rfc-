@@ -340,7 +340,7 @@ export default function FacturesFormateurPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenCreate(false)}>Annuler</Button>
             <Button onClick={handleCreate} disabled={saving} className="bg-red-600 hover:bg-red-700">
-              {saving ? "Creation..." : "Creer"}
+              {saving ? "Création..." : "Creer"}
             </Button>
           </DialogFooter>
         </DialogContent>

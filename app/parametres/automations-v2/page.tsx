@@ -80,7 +80,7 @@ export default function AutomationsV2Page() {
           <p className="text-gray-900 dark:text-gray-100 font-medium mb-1">Aucune règle d&apos;automatisation</p>
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Créez votre première règle d&apos;automatisation personnalisée.</p>
           <Link href="/parametres/automations-v2/nouveau" className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white">
-            <Plus className="h-4 w-4" /> Creer une regle
+            <Plus className="h-4 w-4" /> Créer une règle
           </Link>
         </div>
       ) : (

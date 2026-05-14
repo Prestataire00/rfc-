@@ -63,12 +63,12 @@ export default function AutomationV2DetailPage() {
     try {
       if (isNew) {
         const created = await api.post<{ id: string }>("/api/automations-v2", data);
-        setSaveMsg("Enregistre");
+        setSaveMsg("Enregistré");
         setTimeout(() => setSaveMsg(""), 2500);
         router.push(`/parametres/automations-v2/${created.id}`);
       } else {
         const updated = await api.put<Rule>(`/api/automations-v2/${id}`, data);
-        setSaveMsg("Enregistre");
+        setSaveMsg("Enregistré");
         setTimeout(() => setSaveMsg(""), 2500);
         setRule((prev) => prev ? { ...prev, ...updated } : updated);
         await mutateRule();

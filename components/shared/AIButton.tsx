@@ -17,7 +17,7 @@ export function AIButton({
   endpoint,
   payload,
   onResult,
-  label = "Generer avec IA",
+  label = "Générer avec IA",
   size = "sm",
   className = "",
   disabled = false,

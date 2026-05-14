@@ -60,8 +60,8 @@ const COLUMNS = [
 ];
 
 const QUALIOPI_CRITERIA = [
-  { num: 1, title: "Information du public", description: "Conditions d'information du public sur les prestations, delais et resultats", indicators: ["satisfaction_chaud"], icon: Target, color: "text-blue-500 bg-blue-900/30" },
-  { num: 2, title: "Identification des objectifs", description: "Identification precise des objectifs et adaptation aux beneficiaires", indicators: ["eval_acquis"], icon: ClipboardList, color: "text-emerald-500 bg-emerald-900/30" },
+  { num: 1, title: "Information du public", description: "Conditions d'information du public sur les prestations, délais et resultats", indicators: ["satisfaction_chaud"], icon: Target, color: "text-blue-500 bg-blue-900/30" },
+  { num: 2, title: "Identification des objectifs", description: "Identification précise des objectifs et adaptation aux beneficiaires", indicators: ["eval_acquis"], icon: ClipboardList, color: "text-emerald-500 bg-emerald-900/30" },
   { num: 3, title: "Adaptation des prestations", description: "Adaptation aux publics beneficiaires et modalites d'accueil", indicators: ["satisfaction_chaud"], icon: Users, color: "text-purple-500 bg-purple-900/30" },
   { num: 4, title: "Moyens pedagogiques", description: "Adequation des moyens pedagogiques, techniques et d'encadrement", indicators: ["satisfaction_chaud", "satisfaction_froid"], icon: BookOpen, color: "text-amber-500 bg-amber-900/30" },
   { num: 5, title: "Qualification des personnels", description: "Qualification et developpement des competences des personnels", indicators: ["eval_acquis"], icon: BadgeCheck, color: "text-red-500 bg-red-900/30" },

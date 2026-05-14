@@ -70,7 +70,7 @@ export default function CampaignDetailPage() {
         nom, description, objet, contenu,
         segmentConfig: { tags: segmentTags, type: segmentType || undefined },
       });
-      setMsg("Enregistre");
+      setMsg("Enregistré");
       notify.success("Campagne enregistree");
       setTimeout(() => setMsg(""), 2500);
       await mutateCampaign();

@@ -130,7 +130,7 @@ export default function TemplatePage() {
       <div className="rounded-md bg-blue-900/20 border border-blue-700 px-4 py-3 text-sm text-blue-300 flex items-start gap-2 mb-6">
         <Info className="h-4 w-4 mt-0.5 shrink-0" />
         <div>
-          Ce template est <strong>officiel et non modifiable</strong>. Cliquez sur <strong>&quot;Dupliquer pour modifier&quot;</strong> pour en creer une copie personnalisable.
+          Ce template est <strong>officiel et non modifiable</strong>. Cliquez sur <strong>&quot;Dupliquer pour modifier&quot;</strong> pour en créer une copie personnalisable.
         </div>
       </div>
 

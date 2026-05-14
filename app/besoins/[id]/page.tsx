@@ -138,7 +138,7 @@ export default function BesoinDetailPage() {
 
   async function handleDelete() {
     await deleteBesoin();
-    notify.success("Besoin supprime");
+    notify.success("Besoin supprimé");
     router.push("/besoins");
   }
 

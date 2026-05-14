@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { ensureFormateurId } from "@/lib/formateur/ensure-formateur";
 
 export const GET = withErrorHandler(async () => {
   const session = await getServerSession(authOptions);
@@ -11,7 +12,7 @@ export const GET = withErrorHandler(async () => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formateurId = session.user.formateurId;
+  const formateurId = await ensureFormateurId(session);
   if (!formateurId) return NextResponse.json([]);
 
   const disponibilites = await prisma.disponibilite.findMany({
@@ -28,8 +29,16 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formateurId = session.user.formateurId;
-  if (!formateurId) return NextResponse.json({ error: "No formateur linked" }, { status: 400 });
+  // Auto-crée la fiche Formateur si le User n'en a pas (cas des comptes
+  // formateur créés sans liaison côté admin). Évite le 400 "No formateur
+  // linked" qui bloquait toute action depuis l'espace formateur.
+  const formateurId = await ensureFormateurId(session);
+  if (!formateurId) {
+    return NextResponse.json(
+      { error: "Impossible de résoudre la fiche formateur" },
+      { status: 400 },
+    );
+  }
 
   const body = await req.json();
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { ensureFormateurId } from "@/lib/formateur/ensure-formateur";
 
 // GET /api/notes-frais — liste les notes (formateur: les siennes, admin: toutes)
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -15,9 +16,12 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const where: any = {};
   if (statut) where.statut = statut;
 
-  // Formateur : ses propres notes uniquement
-  if (session.user.role === "formateur" && session.user.formateurId) {
-    where.formateurId = session.user.formateurId;
+  // Formateur : ses propres notes uniquement. ensureFormateurId auto-crée
+  // la fiche si manquante (cas des comptes formateur sans liaison).
+  if (session.user.role === "formateur") {
+    const formateurId = await ensureFormateurId(session);
+    if (!formateurId) return NextResponse.json([]);
+    where.formateurId = formateurId;
   }
 
   const notes = await prisma.noteFrais.findMany({
@@ -34,8 +38,21 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
   const body = await req.json();
-  const formateurId = body.formateurId || session.user.formateurId;
-  if (!formateurId) return NextResponse.json({ error: "formateurId requis" }, { status: 400 });
+  // RBAC : un formateur ne peut JAMAIS créer une note pour un autre que
+  // lui-même. On force le formateurId depuis la session (et on auto-crée
+  // la fiche si manquante). Pour admin, on trust le body.
+  let formateurId: string | null;
+  if (session.user.role === "formateur") {
+    formateurId = await ensureFormateurId(session);
+  } else {
+    formateurId = body.formateurId || null;
+  }
+  if (!formateurId) {
+    return NextResponse.json(
+      { error: "Impossible de résoudre la fiche formateur" },
+      { status: 400 },
+    );
+  }
 
   const note = await prisma.noteFrais.create({
     data: {

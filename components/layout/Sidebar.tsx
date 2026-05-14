@@ -36,7 +36,9 @@ const adminGroups: NavGroup[] = [
     label: "CRM",
     icon: Users,
     items: [
-      { href: "/contacts?type=prospect", label: "Prospects", icon: UserPlus },
+      // "Prospects" (filtre Contacts) fusionné dans le pipeline "Demandes &
+      // prospects" sous Commercial — un prospect sans demande exprimée n'a
+      // pas d'intérêt opérationnel.
       { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
       { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
@@ -73,7 +75,7 @@ const adminGroups: NavGroup[] = [
     icon: TrendingUp,
     items: [
       { href: "/commercial", label: "Devis", icon: FileText },
-      { href: "/besoins", label: "Demandes", icon: ClipboardList },
+      { href: "/besoins", label: "Demandes & prospects", icon: ClipboardList },
       { href: "/fiches-besoin", label: "Fiches besoin (Qualiopi)", icon: ClipboardList },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
       { href: "/bpf", label: "BPF", icon: BarChart3 },

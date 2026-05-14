@@ -103,15 +103,17 @@ export default function BesoinsPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-red-500" /> Demandes de formation
+            <ClipboardList className="h-6 w-6 text-red-500" /> Demandes & prospects
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Pipeline commercial : qualifiez et convertissez les demandes entrantes en sessions</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Pipeline commercial unifié : du prospect entrant à la session signée
+          </p>
         </div>
         <Link
           href="/besoins/nouveau"
           className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
         >
-          <Plus className="h-4 w-4" /> Nouvelle demande
+          <Plus className="h-4 w-4" /> Nouveau prospect / demande
         </Link>
       </div>
 
@@ -170,9 +172,9 @@ export default function BesoinsPage() {
         <div className="bg-gray-800 rounded-xl border border-gray-700">
           <EmptyState
             icon={ClipboardList}
-            title="Aucune demande de formation"
-            description="Creez votre premiere demande ou attendez les inscriptions publiques"
-            actionLabel="Nouvelle demande"
+            title="Aucun prospect ni demande"
+            description="Saisissez un prospect entrant pour démarrer le pipeline commercial"
+            actionLabel="Nouveau prospect / demande"
             actionHref="/besoins/nouveau"
           />
         </div>

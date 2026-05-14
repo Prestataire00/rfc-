@@ -127,7 +127,7 @@ const adminGroups: NavGroup[] = [
     items: [
       { href: "/utilisateurs", label: "Utilisateurs", icon: Shield },
       { href: "/parametres", label: "Paramètres", icon: Settings },
-      { href: "/parametres/automations-v2", label: "Automations", icon: Zap },
+      { href: "/parametres/automations-v2", label: "Automatisations", icon: Zap },
     ],
   },
 ];

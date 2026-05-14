@@ -55,11 +55,11 @@ export default function AutomationsV2Page() {
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-              <Zap className="h-6 w-6 text-red-500" /> Automatisations V2
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Zap className="h-6 w-6 text-red-500" /> Automatisations
             </h1>
-            <p className="text-sm text-gray-400 mt-1">
-              Creez des regles personnalisees : declencheur → conditions → delai → action.
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Créez des règles personnalisées : déclencheur → conditions → délai → action.
             </p>
           </div>
           <Link href="/parametres/automations-v2/nouveau" className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white">
@@ -75,10 +75,10 @@ export default function AutomationsV2Page() {
       </div>
 
       {rules.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-600 bg-gray-800/50 p-12 text-center">
-          <Zap className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 font-medium mb-1">Aucune regle V2</p>
-          <p className="text-sm text-gray-500 mb-4">Creez votre premiere regle d&apos;automatisation personnalisee.</p>
+        <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 p-12 text-center">
+          <Zap className="h-10 w-10 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+          <p className="text-gray-900 dark:text-gray-100 font-medium mb-1">Aucune règle d&apos;automatisation</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Créez votre première règle d&apos;automatisation personnalisée.</p>
           <Link href="/parametres/automations-v2/nouveau" className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white">
             <Plus className="h-4 w-4" /> Creer une regle
           </Link>

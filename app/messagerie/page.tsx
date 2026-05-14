@@ -77,6 +77,16 @@ interface SessionsResponse {
 export default function MessageriePage() {
   const { data: authSession } = useSession();
   const myUserId = authSession?.user?.id;
+  const myRole = (authSession?.user as { role?: string } | undefined)?.role;
+  // Vu d'un formateur, une conversation "direct_formateur" est en fait
+  // un 1-1 avec l'admin (le formateur est lui-même le formateur de la
+  // conv). On adapte donc le label pour parler "Admin" plutôt que
+  // "Formateurs", qui n'aurait pas de sens dans l'espace formateur.
+  const formateurTabLabel = myRole === "formateur" ? "Admin" : "Formateurs";
+  const formateurChoiceLabel =
+    myRole === "formateur" ? "Direct admin" : "Direct formateur";
+  const formateurChoiceHint =
+    myRole === "formateur" ? "1-1 avec un admin" : "1-1 avec un formateur";
 
   const { data: conversations, error: conversationsError, isLoading: loadingConvs, mutate: mutateConvList } =
     useApi<Conversation[]>("/api/conversations");
@@ -210,10 +220,20 @@ export default function MessageriePage() {
   };
 
   const otherUsers = (users ?? []).filter((u) => u.id !== myUserId);
+  // Pour direct_formateur, le RBAC backend impose admin ↔ formateur :
+  // - depuis un compte admin, on choisit un formateur
+  // - depuis un compte formateur, on choisit un admin
+  const formateurDirectRole = myRole === "formateur" ? "admin" : "formateur";
   const formateurOptions = [
-    { value: "", label: "— Choisir un formateur —" },
+    {
+      value: "",
+      label:
+        myRole === "formateur"
+          ? "— Choisir un admin —"
+          : "— Choisir un formateur —",
+    },
     ...otherUsers
-      .filter((u) => u.role === "formateur")
+      .filter((u) => u.role === formateurDirectRole)
       .map((u) => ({ value: u.id, label: `${u.prenom} ${u.nom} (${u.email})` })),
   ];
   const clientOptions = [
@@ -250,7 +270,7 @@ export default function MessageriePage() {
           <div className="flex gap-1 px-3 pt-2 pb-1">
             {([
               { v: "", label: "Toutes" },
-              { v: "direct_formateur", label: "Formateurs" },
+              { v: "direct_formateur", label: formateurTabLabel },
               { v: "direct_client", label: "Clients" },
               { v: "session_group", label: "Sessions" },
             ] as const).map((t) => (
@@ -399,8 +419,8 @@ export default function MessageriePage() {
                 {([
                   {
                     v: "direct_formateur" as ConvType,
-                    label: "Direct formateur",
-                    hint: "1-1 avec un formateur",
+                    label: formateurChoiceLabel,
+                    hint: formateurChoiceHint,
                     icon: GraduationCap,
                   },
                   {
@@ -459,7 +479,7 @@ export default function MessageriePage() {
 
             {newConvType === "direct_formateur" ? (
               <div className="space-y-1.5">
-                <Label>Formateur *</Label>
+                <Label>{myRole === "formateur" ? "Admin *" : "Formateur *"}</Label>
                 <Select
                   value={newConv.otherUserId}
                   onChange={(e) =>

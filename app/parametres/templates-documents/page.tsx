@@ -352,7 +352,7 @@ export default function TemplatesDocumentsPage() {
                 <button
                   onClick={() => importInputRef.current?.click()}
                   disabled={importLoading || saving}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-700/50 bg-blue-900/20 px-3 py-1.5 text-xs text-blue-300 hover:bg-blue-900/40 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 dark:border-blue-700/50 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 text-xs text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-40"
                   title="Importer un PDF ou texte (sera placé dans le corps)"
                 >
                   {importLoading ? (
@@ -368,7 +368,7 @@ export default function TemplatesDocumentsPage() {
                 <button
                   onClick={() => setAiOpen(true)}
                   disabled={saving}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-purple-700/50 bg-purple-900/20 px-3 py-1.5 text-xs text-purple-300 hover:bg-purple-900/40 disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-purple-300 dark:border-purple-700/50 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 text-xs text-purple-800 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 disabled:opacity-40"
                   title="Générer le contenu via Claude"
                 >
                   <Sparkles className="h-3 w-3" /> Générer avec IA
@@ -376,10 +376,10 @@ export default function TemplatesDocumentsPage() {
                 <button
                   onClick={handleReset}
                   disabled={saving || !selected.modifie}
-                  className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40"
-                  title={selected.modifie ? "Reinitialiser au defaut" : "Template deja au defaut"}
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+                  title={selected.modifie ? "Réinitialiser au défaut" : "Template déjà au défaut"}
                 >
-                  <RotateCcw className="h-3 w-3" /> Reinitialiser
+                  <RotateCcw className="h-3 w-3" /> Réinitialiser
                 </button>
                 <button
                   onClick={handleSave}

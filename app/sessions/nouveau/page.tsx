@@ -53,6 +53,9 @@ function NouvelleSessionForm() {
   });
 
   const { data: formationsRaw } = useApi<Formation[] | { formations: Formation[] }>("/api/formations");
+  // Lieux de formation préenregistrés (page /lieux-formation côté admin) pour
+  // le datalist du champ Lieu. Garde la saisie libre possible si besoin ponctuel.
+  const { data: lieuxFormationRaw } = useApi<Array<{ id: string; nom: string; adresse: string | null; ville: string | null; codePostal: string | null }>>("/api/lieux-formation");
   // Quand les deux dates sont remplies, on demande l'enrichissement disponibilite
   const formateursUrl = formData.dateDebut && formData.dateFin
     ? `/api/formateurs?dateDebut=${encodeURIComponent(formData.dateDebut)}&dateFin=${encodeURIComponent(formData.dateFin)}`
@@ -193,18 +196,18 @@ function NouvelleSessionForm() {
       </div>
 
       {projetCtx && (
-        <div className="mb-4 rounded-lg border border-emerald-700/40 bg-emerald-900/10 px-4 py-3 text-sm text-emerald-200">
+        <div className="mb-4 rounded-lg border border-emerald-300 dark:border-emerald-700/40 bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3 text-sm text-emerald-900 dark:text-emerald-200">
           <span className="font-semibold">Rattachement projet : </span>
           {projetCtx.code ? <code className="text-xs">{projetCtx.code}</code> : null}{" "}
           {projetCtx.nom}
-          <p className="text-xs text-emerald-300/80 mt-0.5">
+          <p className="text-xs text-emerald-700 dark:text-emerald-300/80 mt-0.5">
             La session sera automatiquement liée à ce projet à la création.
           </p>
         </div>
       )}
 
       {devisId && devisTitre && (
-        <div className="mb-4 rounded-md bg-blue-900/20 border border-blue-700 px-4 py-3 text-sm text-blue-400">
+        <div className="mb-4 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 px-4 py-3 text-sm text-blue-900 dark:text-blue-400">
           Formulaire pré-rempli depuis le devis : <span className="font-medium">{devisTitre}</span>
         </div>
       )}
@@ -321,16 +324,34 @@ function NouvelleSessionForm() {
               </div>
             </div>
 
-            {/* Lieu */}
+            {/* Lieu — suggère les lieux préenregistrés via /lieux-formation,
+                tout en autorisant la saisie libre pour les cas ponctuels. */}
             <div className="space-y-1.5">
               <Label htmlFor="lieu">Lieu</Label>
               <Input
                 id="lieu"
                 name="lieu"
-                placeholder="Ex: Salle A, 10 rue de la Paix, Paris"
+                list="lieux-suggestions"
+                placeholder={
+                  Array.isArray(lieuxFormationRaw) && lieuxFormationRaw.length > 0
+                    ? "Choisis un lieu enregistré ou saisis librement…"
+                    : "Ex: Salle A, 10 rue de la Paix, Paris"
+                }
                 value={formData.lieu}
                 onChange={handleChange}
               />
+              <datalist id="lieux-suggestions">
+                {(Array.isArray(lieuxFormationRaw) ? lieuxFormationRaw : []).map((l) => {
+                  const adresse = [l.adresse, l.codePostal, l.ville].filter(Boolean).join(", ");
+                  const label = adresse ? `${l.nom} — ${adresse}` : l.nom;
+                  return <option key={l.id} value={label} />;
+                })}
+              </datalist>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {Array.isArray(lieuxFormationRaw) && lieuxFormationRaw.length > 0
+                  ? `${lieuxFormationRaw.length} lieu${lieuxFormationRaw.length > 1 ? "x" : ""} préenregistré${lieuxFormationRaw.length > 1 ? "s" : ""} — gérez-les dans Pédagogie › Lieux de formation`
+                  : "Aucun lieu préenregistré. Crée-en via Pédagogie › Lieux de formation."}
+              </p>
             </div>
 
             {/* Capacité et statut */}

@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 import { notify } from "@/lib/toast";
+import { ProjetTachesPanel } from "@/components/projets/ProjetTachesPanel";
 
 type Kpis = {
   nbBesoins: number;
@@ -290,97 +291,8 @@ export default function ProjetDetailPage() {
   );
 }
 
-type TachesStats = {
-  totalLists: number;
-  totalItems: number;
-  completedItems: number;
-  percent: number;
-};
-
 function TachesTab({ projetId }: { projetId: string }) {
-  const { data, isLoading, error } = useApi<{
-    lists: Array<{
-      id: string;
-      nom: string;
-      couleur: string;
-      stats: { total: number; completed: number; percent: number };
-    }>;
-    stats: TachesStats;
-  }>(`/api/projets/${projetId}/taches`);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <Panel title="Tâches">
-        <p className="text-sm text-red-500">Erreur de chargement : {error.message}</p>
-      </Panel>
-    );
-  }
-  if (!data) return null;
-
-  return (
-    <div className="space-y-4">
-      <Panel title="Avancement global">
-        <div className="flex items-center gap-4">
-          <div className="text-3xl font-bold">{data.stats.percent}%</div>
-          <div className="flex-1">
-            <div className="text-xs text-muted-foreground mb-1">
-              {data.stats.completedItems} / {data.stats.totalItems} tâches terminées
-              · {data.stats.totalLists} liste{data.stats.totalLists > 1 ? "s" : ""}
-            </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 transition-all"
-                style={{ width: `${data.stats.percent}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </Panel>
-
-      <Panel title="Listes de tâches">
-        {data.lists.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Aucune liste de tâches sur ce projet pour l'instant.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {data.lists.map((l) => (
-              <li key={l.id} className="flex items-center justify-between py-2 text-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: l.couleur }}
-                  />
-                  <span className="font-medium truncate">{l.nom}</span>
-                </div>
-                <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-                  <span>
-                    {l.stats.completed}/{l.stats.total}
-                  </span>
-                  <span className="font-medium">{l.stats.percent}%</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="mt-4 pt-3 border-t border-border">
-          <Link
-            href={`/projets/${projetId}/taches`}
-            className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
-          >
-            Voir / gérer les tâches en détail →
-          </Link>
-        </div>
-      </Panel>
-    </div>
-  );
+  return <ProjetTachesPanel projetId={projetId} />;
 }
 
 function OverviewTab({ projet }: { projet: ProjetDetail }) {

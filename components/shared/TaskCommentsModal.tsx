@@ -43,7 +43,7 @@ export function TaskCommentsModal({
   currentUserRole,
   onClose,
 }: Props) {
-  const { data: comments, mutate } = useSWR<Comment[]>(
+  const { data: comments, error: loadError, mutate } = useSWR<Comment[]>(
     `/api/task-items/${taskId}/comments`,
     fetcher,
   );
@@ -98,7 +98,11 @@ export function TaskCommentsModal({
 
         {/* Liste commentaires */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {!comments ? (
+          {loadError ? (
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded p-3">
+              Impossible de charger les commentaires (code {loadError.message}). Si vous venez de créer la tâche, vérifiez que vous avez les droits d&apos;accès à cette tâche.
+            </p>
+          ) : !comments ? (
             <p className="text-sm text-gray-500">Chargement…</p>
           ) : comments.length === 0 ? (
             <p className="text-sm text-gray-500 italic text-center py-8">

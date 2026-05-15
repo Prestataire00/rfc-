@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useApi, useApiMutation } from "@/hooks/useApi";
-import { api } from "@/lib/fetcher";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Mail, Send, CheckCircle, XCircle, Settings, Database, Shield, Building2, Save, FileText, CreditCard, Palette } from "lucide-react";
+import { CheckCircle, Building2, Save, FileText, CreditCard, Palette } from "lucide-react";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { notify } from "@/lib/toast";
 
@@ -62,11 +61,6 @@ const defaultParams: Parametres = {
 export default function ParametresPage() {
   const [params, setParams] = useState<Parametres>(defaultParams);
   const [saved, setSaved] = useState(false);
-  const [testEmail, setTestEmail] = useState("");
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [smtpStatus, setSmtpStatus] = useState<{ configured: boolean; host?: string } | null>(null);
-  const [checking, setChecking] = useState(false);
 
   const { data: paramsData } = useApi<Partial<Parametres>>("/api/parametres/entreprise");
   const { trigger: saveParams, isMutating: saving } = useApiMutation<Parametres>(
@@ -93,33 +87,6 @@ export default function ParametresPage() {
 
   const updateField = (field: keyof Parametres, value: string) => {
     setParams((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const checkSmtp = async () => {
-    setChecking(true);
-    try {
-      const data = await api.get<{ configured: boolean; host?: string }>("/api/parametres/smtp-status");
-      setSmtpStatus(data);
-    } catch {
-      setSmtpStatus({ configured: false });
-    }
-    setChecking(false);
-  };
-
-  const sendTestEmail = async () => {
-    if (!testEmail) return;
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const data = await api.post<{ success: boolean; message: string }>(
-        "/api/parametres/test-email",
-        { to: testEmail }
-      );
-      setTestResult(data);
-    } catch {
-      setTestResult({ success: false, message: "Erreur de connexion" });
-    }
-    setTesting(false);
   };
 
   return (
@@ -347,103 +314,6 @@ export default function ParametresPage() {
             </Button>
           </CardContent>
         </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* SMTP */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-red-600" />
-                Configuration SMTP
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-400">
-                Configurez les variables SMTP dans <code className="bg-gray-700 px-1.5 py-0.5 rounded text-xs">.env</code>
-              </p>
-              <div className="bg-gray-900 rounded-lg p-4 space-y-2 text-sm font-mono">
-                <div><span className="text-gray-400">SMTP_HOST=</span><span className="text-red-600">smtp.gmail.com</span></div>
-                <div><span className="text-gray-400">SMTP_PORT=</span><span className="text-red-600">587</span></div>
-                <div><span className="text-gray-400">SMTP_USER=</span><span className="text-red-600">votre-email</span></div>
-                <div><span className="text-gray-400">SMTP_PASS=</span><span className="text-red-600">mot-de-passe-app</span></div>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={checkSmtp} disabled={checking}>
-                    <Settings className="h-4 w-4 mr-1" />
-                    {checking ? "Vérification..." : "Vérifier SMTP"}
-                  </Button>
-                  {smtpStatus && (
-                    <span className={`text-sm flex items-center gap-1 ${smtpStatus.configured ? "text-green-500" : "text-red-500"}`}>
-                      {smtpStatus.configured ? <><CheckCircle className="h-4 w-4" /> Configuré</> : <><XCircle className="h-4 w-4" /> Non configuré</>}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <Label>Email de test</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input type="email" placeholder="test@exemple.com" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} className="flex-1" />
-                  <Button onClick={sendTestEmail} disabled={testing || !testEmail}>
-                    <Send className="h-4 w-4 mr-1" />
-                    {testing ? "Envoi..." : "Tester"}
-                  </Button>
-                </div>
-                {testResult && (
-                  <span className={`mt-2 text-sm flex items-center gap-1 ${testResult.success ? "text-green-500" : "text-red-500"}`}>
-                    {testResult.success ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                    {testResult.message}
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Infos système */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5 text-green-600" />
-                  Base de données
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Fournisseur</span>
-                  <span className="font-medium">Supabase (PostgreSQL)</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Statut</span>
-                  <span className="text-green-500 font-medium flex items-center gap-1">
-                    <CheckCircle className="h-3.5 w-3.5" /> Connecté
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-purple-600" />
-                  Authentification
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Provider</span>
-                  <span className="font-medium">NextAuth v4</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Rôles</span>
-                  <span className="font-medium">Admin, Formateur, Client</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       </div>
     </div>
   );

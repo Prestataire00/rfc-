@@ -117,5 +117,10 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    // TTL 24h : si un compte est désactivé (User.actif = false), l'accès est
+    // coupé au prochain refresh (≤ 1h). Cf docs/operations/secret-rotation.md
+    // pour la procédure d'invalidation immédiate (rotation NEXTAUTH_SECRET).
+    maxAge: 24 * 60 * 60, // 24h
+    updateAge: 60 * 60,    // refresh transparent toutes les heures
   },
 };

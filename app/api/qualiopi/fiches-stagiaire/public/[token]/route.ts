@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { besoinStagiaireReponseSchema } from "@/lib/validations/besoin-stagiaire";
+import { fichePreFormationStagiaireReponseSchema } from "@/lib/validations/fiche-pre-formation-stagiaire";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
 import { enforceRateLimit } from "@/lib/with-rate-limit";
@@ -9,10 +9,10 @@ import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 import { encryptNSS, decryptNSS } from "@/lib/encryption";
 
 export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
-  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-stag:get");
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:fiche-stagiaire:get");
   if (limited) return limited;
 
-  const fiche = await prisma.besoinStagiaire.findUnique({
+  const fiche = await prisma.fichePreFormationStagiaire.findUnique({
     where: { tokenAcces: params.token },
     include: {
       session: {
@@ -49,17 +49,17 @@ export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: {
 });
 
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
-  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-stag:post");
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:fiche-stagiaire:post");
   if (limited) return limited;
 
-  const fiche = await prisma.besoinStagiaire.findUnique({ where: { tokenAcces: params.token } });
+  const fiche = await prisma.fichePreFormationStagiaire.findUnique({ where: { tokenAcces: params.token } });
   // Early returns explicites preserves : codes 4xx publics.
   if (!fiche) return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
   if (fiche.statut === "repondu") {
     return NextResponse.json({ error: "Fiche deja soumise" }, { status: 409 });
   }
 
-  const d = await parseBody(req, besoinStagiaireReponseSchema);
+  const d = await parseBody(req, fichePreFormationStagiaireReponseSchema);
 
   // MAJ contact si donnees legales fournies (date naissance, n° secu, passeport prevention)
   const contactUpdate: Record<string, unknown> = {};
@@ -78,13 +78,13 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     if (details) contactUpdate.besoinsAdaptation = details;
   }
 
-  // Atomique : MAJ contact + MAJ besoinStagiaire dans la meme transaction.
+  // Atomique : MAJ contact + MAJ fichePreFormationStagiaire dans la meme transaction.
   // Eviter qu'un crash entre les deux laisse un contact partiellement mis a jour.
   await prisma.$transaction(async (tx) => {
     if (Object.keys(contactUpdate).length > 0) {
       await tx.contact.update({ where: { id: fiche.contactId }, data: contactUpdate });
     }
-    await tx.besoinStagiaire.update({
+    await tx.fichePreFormationStagiaire.update({
       where: { id: fiche.id },
       data: {
         numeroPasseportPrevention: d.numeroPasseportPrevention ?? null,

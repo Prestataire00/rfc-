@@ -5,7 +5,7 @@ import { sendEmail, ficheBesoinStagiaireEmail } from "@/lib/email";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  const fiche = await prisma.besoinStagiaire.findUnique({
+  const fiche = await prisma.fichePreFormationStagiaire.findUnique({
     where: { id: params.id },
     include: { contact: true, session: { include: { formation: true } } },
   });
@@ -14,7 +14,7 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 });
 
 export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await prisma.besoinStagiaire.delete({ where: { id: params.id } });
+  await prisma.fichePreFormationStagiaire.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });
 });
 
@@ -22,7 +22,7 @@ export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params 
 export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const { action } = await req.json().catch(() => ({ action: "" }));
   if (action === "envoyer") {
-    const fiche = await prisma.besoinStagiaire.findUnique({
+    const fiche = await prisma.fichePreFormationStagiaire.findUnique({
       where: { id: params.id },
       include: { contact: true, session: { include: { formation: true } } },
     });
@@ -40,7 +40,7 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
     });
     await sendEmail({ to: fiche.contact.email, subject: email.subject, html: email.html });
 
-    const updated = await prisma.besoinStagiaire.update({
+    const updated = await prisma.fichePreFormationStagiaire.update({
       where: { id: params.id },
       data: { statut: fiche.statut === "en_attente" ? "envoye" : fiche.statut, dateEnvoi: new Date() },
     });

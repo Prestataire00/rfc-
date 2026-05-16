@@ -1,0 +1,56 @@
+name: Tests
+
+# Exécute la suite Vitest sur chaque PR vers main + sur les pushs sur main.
+# À configurer en "required status check" via Settings → Branches → main →
+# Branch protection rules → "Require status checks to pass before merging" →
+# sélectionner le check "Vitest" (nom du job, exposé par GitHub Actions).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Annule les runs en cours si une nouvelle commit est poussée sur la même branche.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # Upgrade npm — la version 10.x bundlée avec Node 20 a un bug avec les
+      # optional deps multi-plateforme (rejette @rollup/rollup-android-arm-eabi
+      # sur Linux x64 même si optional). Fix : npm 11+. Ref :
+      # https://github.com/npm/cli/issues/4828
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `prisma generate` est lancé par le hook `postinstall` du package.json,
+      # mais on le ré-exécute explicitement par sécurité (au cas où le cache npm
+      # serait servi sans postinstall sur certains paths).
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run Vitest
+        env:
+          # NEXTAUTH_SECRET requis par lib/auth.ts au import time (throw sinon).
+          # Valeur fictive — pas de vraie session signée pendant les tests unitaires.
+          NEXTAUTH_SECRET: ci-test-secret-not-used-for-real-tokens
+        run: npm test

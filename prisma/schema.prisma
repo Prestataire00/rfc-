@@ -84,7 +84,7 @@ model Contact {
 
   // Donnees stagiaire (Qualiopi / BPF / Passeport Prevention)
   dateNaissance              DateTime?
-  numeroSecuriteSociale      String?  // stockage en clair pour l'instant, chiffrement applicatif a prevoir
+  numeroSecuriteSociale      String?  // chiffré AES-256-GCM via lib/encryption.ts (préfixe enc::v1::)
   numeroPasseportPrevention  String?  // decret 2022-1434
   besoinsAdaptation          String?  // RQTH / contraintes
   niveauFormation            String?  // sans_diplome | cap | bac | bac+2 | autre

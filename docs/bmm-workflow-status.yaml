@@ -1,0 +1,69 @@
+initialized_at: "2026-05-16T00:00:00Z"
+project:
+  name: "RFC Formations"
+  type: "web-app"
+  level: 2
+
+current_phase: 4
+current_workflow: null
+
+phases:
+  phase_1_analysis:
+    name: "Analysis"
+    status: "in_progress"
+    workflows:
+      product_brief:
+        status: "completed"
+        output: "docs/product-brief-rfc-formations-2026-05-16.md"
+        completed_at: "2026-05-16"
+      research:
+        status: "optional"
+        output: null
+      brainstorm:
+        status: "optional"
+        output: null
+
+  phase_2_planning:
+    name: "Planning"
+    status: "in_progress"
+    workflows:
+      prd:
+        status: "completed"
+        output: "docs/prd-rfc-formations-2026-05-16.md"
+        completed_at: "2026-05-16"
+      tech_spec:
+        status: "optional"
+        output: null
+
+  phase_3_solutioning:
+    name: "Solutioning"
+    status: "in_progress"
+    workflows:
+      architecture:
+        status: "completed"
+        output: "docs/architecture-rfc-formations-2026-05-16.md"
+        completed_at: "2026-05-16"
+      ux_design:
+        status: "optional"
+        output: null
+
+  phase_4_implementation:
+    name: "Implementation"
+    status: "in_progress"
+    workflows:
+      sprint_planning:
+        status: "completed"
+        output: "docs/sprint-plan-rfc-formations-2026-05-16.md"
+        completed_at: "2026-05-16"
+      create_story:
+        status: "required"
+        output: null
+      dev_story:
+        status: "required"
+        output: null
+
+stories:
+  total: 0
+  completed: 0
+  in_progress: 0
+  pending: 0

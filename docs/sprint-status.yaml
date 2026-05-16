@@ -1,0 +1,131 @@
+version: "6.0.0"
+project_name: "RFC Formations"
+project_level: 2
+sprint_plan_path: "docs/sprint-plan-rfc-formations-2026-05-16.md"
+scope: "Dette technique architecture §15 (sécurité, RGPD, pipeline, ops)"
+
+current_sprint: 1
+last_updated: "2026-05-16"
+
+sprints:
+  - sprint_number: 1
+    name: "Sécurité, RGPD & qualité CI"
+    goal: "Refermer les risques sécurité critiques (NSS chiffré, JWT révocable, alerte rate-limit) et activer les tests automatiques en CI."
+    start_date: "2026-05-19"
+    end_date: "2026-05-30"
+    capacity_points: 50
+    committed_points: 21
+    completed_points: 21
+    status: "in_review"  # Code prêt en PR, attend review + déploiement
+    stories:
+      - story_id: "STORY-TD-001"
+        title: "Chiffrement applicatif du numéro SS sur Contact"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Must Have"
+        points: 5
+        status: "in_review"
+        commit: "6dce3c9"
+      - story_id: "STORY-TD-002"
+        title: "Raccourcir TTL JWT + documenter rotation NEXTAUTH_SECRET"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Must Have"
+        points: 3
+        status: "in_review"
+        commit: "817630a"
+      - story_id: "STORY-TD-003"
+        title: "Alerter si UPSTASH_REDIS_REST_URL non défini en prod"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Must Have"
+        points: 2
+        status: "in_review"
+        commit: "67ab65f"
+      - story_id: "STORY-TD-006"
+        title: "Câbler Vitest dans GitHub Actions sur chaque PR"
+        epic: "TD-002 Pipeline & qualité"
+        priority: "Must Have"
+        points: 3
+        status: "in_review"
+        commit: "1a49180"
+      - story_id: "STORY-TD-008"
+        title: "Test de restore Supabase (DR drill)"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Must Have"
+        points: 3
+        status: "not_started"
+        notes: "Opérationnel — nécessite accès Supabase et exécution d'un restore réel. Hors scope code de cette PR."
+      - story_id: "STORY-TD-004"
+        title: "Registre RGPD des traitements documenté"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Should Have"
+        points: 5
+        status: "in_review"
+        commit: "1e149ec"
+
+  - sprint_number: 2
+    name: "Pipeline & ops"
+    goal: "Industrialiser le déploiement (migrations versionnées en CI, environnement staging) et renforcer la surveillance et la documentation opérationnelle."
+    start_date: "2026-06-02"
+    end_date: "2026-06-13"
+    capacity_points: 50
+    committed_points: 20
+    completed_points: 8
+    status: "partially_complete"
+    stories:
+      - story_id: "STORY-TD-007"
+        title: "Mettre en place un environnement staging"
+        epic: "TD-002 Pipeline & qualité"
+        priority: "Should Have"
+        points: 5
+        status: "not_started"
+        notes: "Opérationnel — nécessite création d'un projet Supabase staging + branche Netlify dédiée. Hors scope code de cette PR."
+      - story_id: "STORY-TD-005"
+        title: "Migrer prisma db push → prisma migrate deploy en CI"
+        epic: "TD-002 Pipeline & qualité"
+        priority: "Must Have"
+        points: 5
+        status: "not_started"
+        notes: "Bloqué par STORY-TD-007 (test sur staging avant prod requis). Hors scope code de cette PR."
+      - story_id: "STORY-TD-009"
+        title: "Monitoring uptime externe"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Should Have"
+        points: 2
+        status: "not_started"
+        notes: "Opérationnel — nécessite création d'un compte UptimeRobot ou équivalent. Hors scope code de cette PR."
+      - story_id: "STORY-TD-011"
+        title: "Documenter procédures opérationnelles consolidées"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Should Have"
+        points: 3
+        status: "in_review"
+        commit: "60436c9"
+      - story_id: "STORY-TD-010"
+        title: "Re-synchroniser PRD ↔ code (FR-016+)"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Could Have"
+        points: 5
+        status: "in_review"
+        commit: "34f64dd"
+
+velocity:
+  sprint_1_code_delivered: 21  # 5+3+2+3+5 (TD-001, 002, 003, 006, 004)
+  sprint_2_code_delivered: 8   # 3+5 (TD-011, 010)
+  total_code_delivered: 29
+  total_committed: 41
+  remaining_operational: 12     # TD-008 (3) + TD-007 (5) + TD-005 (5) + TD-009 (2) - 3 = 12
+  rolling_average: null
+
+team:
+  size: 1
+  sprint_length_weeks: 2
+  capacity_per_sprint: 50
+  notes: "1 dev solo plein temps, ~60h productives par sprint (50 pts à 1pt=1.2h)"
+
+notes:
+  pr_url: null  # à compléter après push
+  branch: "feat/tech-debt-sprint-1"
+  remaining_operational_stories:
+    - "STORY-TD-005 : nécessite STORY-TD-007 préalable"
+    - "STORY-TD-007 : créer Supabase staging + branche Netlify"
+    - "STORY-TD-008 : exécuter un restore Supabase réel"
+    - "STORY-TD-009 : créer compte UptimeRobot + endpoint /api/health"

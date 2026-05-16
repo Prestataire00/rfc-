@@ -10,6 +10,7 @@
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { logger } from "@/lib/logger";
 
 const hasUpstash = !!(
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -17,15 +18,33 @@ const hasUpstash = !!(
 
 const redis = hasUpstash ? Redis.fromEnv() : null;
 
-if (!hasUpstash && process.env.NODE_ENV === "production") {
-  // Warning au boot (pas un throw : on veut pas bloquer le déploiement si l'admin
-  // n'a pas encore set Upstash. Le rate-limit dégradera juste en in-memory inefficace.)
-  console.warn(
-    "[rate-limit] Upstash non configuré en production : fallback in-memory inefficace " +
-      "(Netlify Functions = process différent par invocation, le compteur ne persiste pas). " +
-      "Configurer UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN dans les env vars Netlify.",
-  );
+/**
+ * Vérifie au boot si Upstash est configuré en prod. Si absent, remonte une
+ * erreur Sentry (via logger.error) pour qu'un admin soit alerté du fallback
+ * in-memory inefficace en multi-instance Netlify.
+ *
+ * Pas de throw : ne bloque pas le boot — le rate-limit dégrade silencieusement
+ * en in-memory, qui reste mieux que rien en dev / single-instance.
+ *
+ * Exporté pour faciliter les tests.
+ *
+ * @returns true si l'alerte a été émise (prod sans Upstash), false sinon.
+ */
+export function alertIfUpstashMissingInProd(
+  env: NodeJS.ProcessEnv = process.env,
+  log: { error: (event: string, err?: unknown, meta?: Record<string, unknown>) => void } = logger,
+): boolean {
+  const hasU = !!(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
+  if (hasU || env.NODE_ENV !== "production") return false;
+  log.error("rate-limit.upstash-missing-in-prod", undefined, {
+    hint: "Configurer UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN dans Netlify env vars.",
+    impact: "Fallback in-memory inefficace en Netlify multi-instance, compteurs ne persistent pas entre invocations.",
+  });
+  return true;
 }
+
+// Auto-check au load du module
+alertIfUpstashMissingInProd();
 
 // ── In-memory fallback (existant, conservé pour compat ai-guard.ts + dev) ────
 

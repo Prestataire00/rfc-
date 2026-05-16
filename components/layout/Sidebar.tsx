@@ -56,6 +56,7 @@ const adminGroups: NavGroup[] = [
       { href: "/formations", label: "Catalogue formations", icon: BookOpen },
       { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
+      { href: "/dashboard/planning", label: "Planning", icon: Calendar },
     ],
   },
 

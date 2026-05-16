@@ -14,8 +14,8 @@ const adminPages = [
   "/dashboard",
   "/formations",
   "/sessions",
-  "/besoins",
-  "/fiches-besoin",
+  "/demandes",
+  "/qualiopi/fiches-pre-formation",
   "/contacts",
   "/formateurs",
   "/lieux-formation",
@@ -42,9 +42,9 @@ const adminApiPrefixes = [
   "/api/formateurs",
   "/api/devis",
   "/api/factures",
-  "/api/besoins",
-  "/api/besoin-client",
-  "/api/besoin-stagiaire",
+  "/api/demandes",
+  "/api/qualiopi/fiches-entreprise",
+  "/api/qualiopi/fiches-stagiaire",
   "/api/evaluations",
   "/api/bpf",
   "/api/certifications",
@@ -89,12 +89,18 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/api/cron/")) return true;
   if (pathname.startsWith("/api/evaluations/public")) return true;
   if (pathname.startsWith("/api/inscription-publique")) return true;
+  // Anciens patterns (backward compat redirects, deprecation 2026-11-16) :
   if (pathname.startsWith("/api/besoin-client/public")) return true;
   if (pathname.startsWith("/api/besoin-stagiaire/public")) return true;
-  if (pathname.startsWith("/evaluation/")) return true;
-  if (pathname.startsWith("/inscription-stagiaire")) return true;
   if (pathname.startsWith("/fiche-besoin-client/")) return true;
   if (pathname.startsWith("/fiche-besoin-stagiaire/")) return true;
+  // Nouveaux patterns Qualiopi publics :
+  if (pathname.startsWith("/api/qualiopi/fiches-entreprise/public")) return true;
+  if (pathname.startsWith("/api/qualiopi/fiches-stagiaire/public")) return true;
+  if (pathname.startsWith("/qualiopi/fiche-entreprise/")) return true;
+  if (pathname.startsWith("/qualiopi/fiche-stagiaire/")) return true;
+  if (pathname.startsWith("/evaluation/")) return true;
+  if (pathname.startsWith("/inscription-stagiaire")) return true;
   if (pathname.startsWith("/emargement/")) return true;
   if (pathname.startsWith("/api/emargement/public")) return true;
   if (pathname.startsWith("/api/campaigns/unsubscribe")) return true;

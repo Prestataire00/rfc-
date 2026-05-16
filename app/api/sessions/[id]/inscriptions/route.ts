@@ -90,6 +90,15 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     formationId: sessionWithFormation?.formation.id,
   }).catch((err) => logger.error("automation.inscription_created_failed", err));
 
+  // Phase 3 : auto-création fiche stagiaire si session liée à devis signé (fire-and-forget)
+  import("@/lib/automations/auto-fiches-pre-formation")
+    .then(({ autoCreateFicheStagiaireOnInscription }) =>
+      autoCreateFicheStagiaireOnInscription(inscription.id).catch((err) =>
+        logger.warn("phase-3.auto-fiche-stagiaire-failed", { error: String(err) }),
+      ),
+    )
+    .catch((err) => logger.warn("phase-3.import-failed", { error: String(err) }));
+
   const traineeName = contact ? `${contact.prenom} ${contact.nom}` : "Un stagiaire";
   const sessionTitle = sessionWithFormation?.formation.titre ?? "une session";
 

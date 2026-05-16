@@ -48,9 +48,12 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   //   nbStagiaires  (plan utilisait nbStagiairesSouhaite — non-existant)
   //   budget        (plan utilisait budgetEnvisage — non-existant)
   const result = await prisma.$transaction(async (tx) => {
-    let entrepriseId: string;
+    let entrepriseId: string | null = null;
 
     if (data.entrepriseMode === "nouvelle") {
+      // Construire les notes secteur avec nature organisme si présent
+      const secteurValue = data.entrepriseNouvelle?.secteur ||
+        (data.entrepriseNouvelle?.natureOrganisme ? `Organisme : ${data.entrepriseNouvelle.natureOrganisme}` : null);
       const ent = await tx.entreprise.create({
         data: {
           nom: data.entrepriseNouvelle!.nom,
@@ -58,15 +61,19 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
           adresse: data.entrepriseNouvelle?.adresse || null,
           codePostal: data.entrepriseNouvelle?.codePostal || null,
           ville: data.entrepriseNouvelle?.ville || null,
-          secteur: data.entrepriseNouvelle?.secteur || null,
+          secteur: secteurValue || null,
           effectif: data.entrepriseNouvelle?.effectif ?? null,
         },
         select: { id: true },
       });
       entrepriseId = ent.id;
-    } else {
+    } else if (data.entrepriseMode === "existante") {
       entrepriseId = data.entrepriseId!;
     }
+    // entrepriseMode === "aucune" → stagiaire individuel, pas d'entreprise
+
+    // Déterminer le type Contact selon prospectType
+    const contactType = data.prospectType === "stagiaire" ? "stagiaire" : "prospect";
 
     const contact = await tx.contact.create({
       data: {
@@ -75,8 +82,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         email: data.contact.email,
         telephone: data.contact.telephone || null,
         poste: data.contact.poste || null,
-        type: "prospect",
-        entrepriseId,
+        type: contactType,
+        entrepriseId: entrepriseId || null,
       },
       select: { id: true },
     });
@@ -92,6 +99,16 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       notesParts.push(`Notes internes : ${data.notesInternes}`);
     }
 
+    // Enrichir les notes avec le type de prospect si pertinent
+    if (data.prospectType === "stagiaire") {
+      notesParts.push("[Type: Stagiaire individuel]");
+    } else if (data.prospectType === "organisme") {
+      notesParts.push("[Type: Organisme / société tierce]");
+      if (data.entrepriseNouvelle?.natureOrganisme) {
+        notesParts.push(`Nature de l'organisme : ${data.entrepriseNouvelle.natureOrganisme}`);
+      }
+    }
+
     const demande = await tx.demande.create({
       data: {
         titre: data.demande.formationSouhaitee,
@@ -103,7 +120,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         budget: data.demande.budgetEnvisage ?? null,        // plan: budgetEnvisage
         statut: "nouveau",
         contactId: contact.id,
-        entrepriseId,
+        entrepriseId: entrepriseId || null,
+        // Lier à une formation du catalogue si fourni
+        formationId: data.demande.formationId || null,
         notes: notesParts.join("\n\n") || null,
       },
       select: { id: true },
@@ -112,7 +131,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return {
       demandeId: demande.id,
       contactId: contact.id,
-      entrepriseId,
+      entrepriseId: entrepriseId ?? undefined,
     };
   });
 
@@ -133,3 +152,4 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     { status: 201 },
   );
 });
+

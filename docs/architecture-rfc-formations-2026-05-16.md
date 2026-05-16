@@ -478,7 +478,7 @@ Quelques routes ont leur autorisation portée par le handler plutôt que par le 
 - **CI/CD** : Netlify déclenché sur push GitHub
 - **Build** : `npm run build` (Next.js + Prisma generate via postinstall)
 - **Migrations** : `prisma db push` **manuel en local avant commit** (commentaire `netlify.toml`). À terme : passer à `prisma migrate deploy` pour migrations versionnées en CI (PR séparée prévue).
-- **Tests** : `npm test` (Vitest) — exécutables localement, à câbler en CI si pas déjà fait
+- **Tests** : `npm test` (Vitest) — exécutés automatiquement en CI via [.github/workflows/test.yml](../.github/workflows/test.yml) sur chaque PR/push main
 
 ### Configuration
 - Variables env (cf. `.env.example`) :
@@ -609,7 +609,7 @@ Le code en production **dépasse significativement** le périmètre v1 décrit d
 3. **Tests CI** : Vitest installé, à vérifier si exécuté en CI sur chaque PR.
 4. **Rate-limit fallback** : sans Upstash, dégradation in-memory inefficace en serverless. Alerter si `UPSTASH_*` non défini en prod.
 5. **Cache applicatif Redis** : Upstash sert uniquement au rate-limit. Opportunité d'évolution si points chauds identifiés (KPI dashboard, calculs BPF).
-6. **Numéro Sécurité Sociale stocké en clair** sur `Contact` (commentaire `schema.prisma:88` : "chiffrement applicatif à prevoir") — risque RGPD à traiter.
+6. ~~**Numéro Sécurité Sociale stocké en clair** sur `Contact`~~ — **résolu par STORY-TD-001** (chiffrement AES-256-GCM via [lib/encryption.ts](../lib/encryption.ts), préfixe `enc::v1::`). Procédure de migration des données existantes : [docs/operations/migration-nss.md](operations/migration-nss.md).
 7. **JWT révocation** : pas de mécanisme de blacklist ; en cas de compte compromis, rotation `NEXTAUTH_SECRET` requise (impact tous utilisateurs).
 8. **PRD vs code** : décision à prendre sur la stratégie de re-synchronisation (cf. §13).
 9. **Backups Supabase** : fréquence à vérifier selon plan ; tester un restore réel pour valider la procédure DR.

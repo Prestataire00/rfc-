@@ -45,28 +45,46 @@ Procédure de rotation des secrets critiques. À appliquer **immédiatement** en
 
 **Procédure (v1 — manuelle, sans support multi-clé)** :
 
-1. **Sauvegarder l'ancienne clé** (ne pas la perdre — nécessaire pour le déchiffrement initial).
+⚠️ **Précautions sécurité avant de démarrer** :
+- Ce processus implique du NSS en clair en mémoire (et potentiellement sur disque). À exécuter **uniquement** sur une machine de confiance, idéalement un bastion / poste admin dédié, avec disque chiffré au repos (FileVault sur Mac, LUKS sur Linux).
+- Ne JAMAIS commiter le dump en clair dans git (vérifier `.gitignore`).
+- Limiter les ACLs : seul l'opérateur exécutant la rotation doit pouvoir lire les fichiers temporaires.
+- Enregistrer l'opération dans un changelog interne (date, opérateur, raison de la rotation).
 
-2. **Décrypter en masse** avec l'ancienne clé :
-   - Snapshot Supabase
-   - Script ad hoc : pour chaque Contact avec NSS chiffré, déchiffrer en mémoire, stocker temporairement en clair (dans une table de migration ou un dump local sécurisé)
+1. **Sauvegarder l'ancienne clé** (ne pas la perdre — nécessaire pour le déchiffrement initial). Conserver dans le gestionnaire de mots de passe sous le nom `NSS_ENCRYPTION_KEY (rotated YYYY-MM-DD)`.
 
-3. **Générer la nouvelle clé** :
+2. **Snapshot Supabase** (sécurité — permet un retour en arrière propre).
+
+3. **Décrypter en masse** avec l'ancienne clé :
+   - Script ad hoc : pour chaque Contact avec NSS chiffré, déchiffrer en mémoire, écrire dans un fichier temporaire `nss-rotation-<date>.jsonl` (format `{ "id": "...", "nss": "..." }` par ligne).
+   - Le fichier doit être sur disque chiffré, avec permissions 0600.
+
+4. **Générer la nouvelle clé** :
    ```bash
    openssl rand -base64 32
    ```
 
-4. **Mettre à jour Netlify** :
+5. **Mettre à jour Netlify** :
    - Variable `NSS_ENCRYPTION_KEY` → nouvelle valeur
    - Trigger deploy
 
-5. **Ré-encrypter** : lancer `prisma/migrate-nss-encryption.ts` avec la nouvelle clé sur les valeurs en clair restaurées en step 2.
+6. **Ré-encrypter** : adapter `prisma/migrate-nss-encryption.ts` pour lire le fichier `nss-rotation-<date>.jsonl` et chiffrer chaque entrée avec la nouvelle clé.
 
-6. **Vérifier** :
+7. **Vérifier** (ordre important) :
    - Ouvrir une fiche contact admin → NSS affiché correctement
    - Lancer le PDF fiche-inscription d'un contact → NSS présent
+   - Comparer un échantillon de 5-10 NSS avant/après (depuis le dump) pour confirmer 0 perte ni corruption
 
-7. **Détruire** l'ancienne clé après validation (ne pas conserver — réduit la surface d'attaque).
+8. **Purger les fichiers temporaires** :
+   ```bash
+   shred -u nss-rotation-<date>.jsonl   # Linux
+   rm -P nss-rotation-<date>.jsonl       # macOS
+   ```
+   Vérifier qu'aucune copie ne traîne (`find / -name "nss-rotation*" 2>/dev/null`).
+
+9. **Détruire l'ancienne clé** après validation finale (ne pas conserver — réduit la surface d'attaque). Marquer dans le gestionnaire de mots de passe comme "rotated and destroyed YYYY-MM-DD".
+
+10. **Documenter** dans `docs/operations/incident-YYYY-MM-DD-key-rotation-nss.md` (même format qu'un post-mortem) : date, raison, durée, vérifications passées.
 
 **Évolution future** : implémenter le support multi-clés dans `lib/encryption.ts` (préfixe `enc::v2::`, déchiffrement essayant v2 puis v1 en fallback) → rotation sans downtime. Hors scope v1.
 

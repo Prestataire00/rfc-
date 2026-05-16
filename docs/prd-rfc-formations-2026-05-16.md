@@ -224,7 +224,7 @@ Le système expose à `/espace-formateur` un portail pour le formateur connecté
 - [ ] Le formateur ne voit que ses propres sessions et données
 - [ ] La déclaration de disponibilités est éditable par le formateur
 
-**Dépendances** : FR-013 (auth), FR-003
+**Dépendances** : FR-014 (auth), FR-003
 
 ---
 
@@ -239,7 +239,7 @@ Le système expose à `/espace-client` un portail pour le contact référent d'u
 - [ ] Le client ne voit que les données de son entreprise
 - [ ] Les documents PDF sont téléchargeables depuis le portail
 
-**Dépendances** : FR-013 (auth), FR-001
+**Dépendances** : FR-014 (auth), FR-001
 
 ---
 

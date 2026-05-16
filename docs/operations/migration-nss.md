@@ -42,20 +42,21 @@ Ajouter la valeur dans **deux endroits** :
 
 ## Exécution
 
+Depuis la racine du dépôt :
+
 ```bash
-cd /Users/anissa/rfc-
 npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/migrate-nss-encryption.ts
 ```
 
 **Sortie attendue (première exécution)** :
-```
+```text
 → 42 contact(s) avec un numeroSecuriteSociale non-null
 → 42 ligne(s) à chiffrer (0 déjà chiffrée(s))
 ✓ Migration terminée : 42 succès, 0 échec(s)
 ```
 
 **Sortie attendue (re-run d'idempotence)** :
-```
+```text
 → 42 contact(s) avec un numeroSecuriteSociale non-null
 → 0 ligne(s) à chiffrer (42 déjà chiffrée(s))
 ✓ Rien à faire — migration idempotente OK

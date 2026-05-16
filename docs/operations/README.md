@@ -28,7 +28,7 @@ Index des procédures opérationnelles. Tout ce qui n'est pas du code applicatif
 
 ## Contacts
 
-- Owner / propriétaire RFC : <à compléter>
+- Owner / propriétaire RFC : **TODO** — renseigner nom + email + backup (cf. registre RGPD, art. 30 : responsable de traitement nominatif requis)
 - Prestataire dev : Ismael Lepennec
 - Hébergeur app : Netlify ([dashboard](https://app.netlify.com))
 - Hébergeur DB : Supabase ([dashboard](https://supabase.com/dashboard))

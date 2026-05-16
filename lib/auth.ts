@@ -91,11 +91,30 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // Sign-in : poser les claims initiaux à partir de l'objet user (authorize())
       if (user) {
         token.role = user.role;
         token.formateurId = user.formateurId;
         token.entrepriseId = user.entrepriseId;
+        return token;
       }
+      // Refresh : NextAuth appelle ce callback à chaque updateAge (1h). On
+      // re-vérifie User.actif en DB → si désactivé/supprimé, throw fait que
+      // NextAuth invalide le token, l'utilisateur est déconnecté au prochain
+      // appel. Sans ce check, le JWT reste valide jusqu'à maxAge (24h) même
+      // après désactivation. Cf STORY-TD-002.
+      if (!token.sub) return token; // garde-fou : pas d'identifiant utilisateur
+      const u = await prisma.user.findUnique({
+        where: { id: token.sub },
+        select: { actif: true, role: true, formateurId: true, entrepriseId: true },
+      });
+      if (!u || !u.actif) {
+        throw new Error("User désactivé ou supprimé — session invalidée");
+      }
+      // Rafraîchir les claims qui peuvent avoir changé entre-temps
+      token.role = u.role;
+      token.formateurId = u.formateurId;
+      token.entrepriseId = u.entrepriseId;
       return token;
     },
     async session({ session, token }) {
@@ -117,9 +136,11 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    // TTL 24h : si un compte est désactivé (User.actif = false), l'accès est
-    // coupé au prochain refresh (≤ 1h). Cf docs/operations/secret-rotation.md
-    // pour la procédure d'invalidation immédiate (rotation NEXTAUTH_SECRET).
+    // TTL 24h plafond. La révocation effective dépend du callback jwt() ci-dessus
+    // qui re-vérifie User.actif en DB à chaque refresh (toutes les updateAge).
+    // → Un compte désactivé (User.actif = false) est déconnecté au prochain refresh,
+    //   soit ≤ 1h (vs 24h sans callback). Pour invalidation immédiate de toutes
+    //   les sessions : rotation NEXTAUTH_SECRET (cf docs/operations/secret-rotation.md).
     maxAge: 24 * 60 * 60, // 24h
     updateAge: 60 * 60,    // refresh transparent toutes les heures
   },

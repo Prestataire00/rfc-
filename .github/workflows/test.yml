@@ -3,7 +3,7 @@ name: Tests
 # Exécute la suite Vitest sur chaque PR vers main + sur les pushs sur main.
 # À configurer en "required status check" via Settings → Branches → main →
 # Branch protection rules → "Require status checks to pass before merging" →
-# sélectionner "test".
+# sélectionner le check "Vitest" (nom du job, exposé par GitHub Actions).
 
 on:
   pull_request:
@@ -31,6 +31,13 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+
+      # Upgrade npm — la version 10.x bundlée avec Node 20 a un bug avec les
+      # optional deps multi-plateforme (rejette @rollup/rollup-android-arm-eabi
+      # sur Linux x64 même si optional). Fix : npm 11+. Ref :
+      # https://github.com/npm/cli/issues/4828
+      - name: Upgrade npm
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci

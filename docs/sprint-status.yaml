@@ -100,7 +100,7 @@ sprints:
         status: "in_review"
         commit: "60436c9"
       - story_id: "STORY-TD-010"
-        title: "Re-syncroniser PRD ↔ code (FR-016+)"
+        title: "Re-synchroniser PRD ↔ code (FR-016+)"
         epic: "TD-003 Fiabilité & ops"
         priority: "Could Have"
         points: 5

@@ -51,8 +51,31 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
   const data: Record<string, unknown> = {};
   if (body.devisId !== undefined) data.devisId = body.devisId || null;
   if (body.statut !== undefined) data.statut = body.statut;
+
+  // Charger la demande AVANT la mise à jour pour capturer l'ancien statut et devisId
+  const demandeBefore = await prisma.demande.findUnique({
+    where: { id: params.id },
+    select: { statut: true, devisId: true },
+  });
+
+  const oldStatut = demandeBefore?.statut;
+  const newStatut = body.statut;
+
   const demande = await prisma.demande.update({ where: { id: params.id }, data });
-  return NextResponse.json(demande);
+
+  // Hook Phase 2 : génération auto devis IA sur transition nouveau→qualifie
+  let aiResult: { generated: boolean; devisId?: string; error?: string } | undefined;
+  if (oldStatut === "nouveau" && newStatut === "qualifie" && !demandeBefore?.devisId) {
+    const { generateDevisFromDemandeWithAI } = await import("@/lib/ai/generate-devis-from-demande");
+    const generation = await generateDevisFromDemandeWithAI(params.id);
+    if ("devisId" in generation) {
+      aiResult = { generated: true, devisId: generation.devisId };
+    } else {
+      aiResult = { generated: false, error: generation.error };
+    }
+  }
+
+  return NextResponse.json({ ...demande, ai: aiResult });
 });
 
 export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {

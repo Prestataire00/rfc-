@@ -36,6 +36,7 @@ const adminGroups: NavGroup[] = [
     label: "CRM",
     icon: Users,
     items: [
+      { href: "/prospects/nouveau", label: "Nouveau prospect", icon: UserPlus },
       // "Prospects" (filtre Contacts) fusionné dans le pipeline "Demandes &
       // prospects" sous Commercial — un prospect sans demande exprimée n'a
       // pas d'intérêt opérationnel.

@@ -12,6 +12,7 @@ import { SkeletonCard, SkeletonTable } from "@/components/shared/Skeleton";
 import { DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
+import { DevisKanbanBoard } from "@/components/commercial/DevisKanbanBoard";
 
 type TunnelStats = {
   caPrevisionnel: number;
@@ -238,52 +239,19 @@ export default function CommercialPage() {
               actionHref="/commercial/devis/nouveau"
             />
           ) : (
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {PIPELINE_COLUMNS.map((col) => {
-                const colDevis = devisByStatut[col.key] || [];
-                const st = DEVIS_STATUTS[col.key as keyof typeof DEVIS_STATUTS];
-                return (
-                  <div
-                    key={col.key}
-                    className={cn(
-                      "flex-shrink-0 w-64 rounded-lg border-2 p-3",
-                      col.color
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-300">{col.label}</h3>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-800 text-xs font-medium text-gray-400 border">
-                        {colDevis.length}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {colDevis.map((d) => (
-                        <div
-                          key={d.id}
-                          onClick={() => router.push(`/commercial/devis/${d.id}`)}
-                          className="bg-gray-800 rounded-md border border-gray-700 p-3 cursor-pointer hover:shadow-md hover:border-red-300 transition-all"
-                        >
-                          <div className="flex items-start justify-between gap-1 mb-1">
-                            <span className="text-xs font-mono text-gray-400">{d.numero}</span>
-                            {st && <StatutBadge label={st.label} color={st.color} />}
-                          </div>
-                          <p className="text-sm font-medium text-gray-100 line-clamp-2 mb-2">
-                            {d.objet}
-                          </p>
-                          <p className="text-xs text-gray-400 mb-1">{getClientName(d)}</p>
-                          <p className="text-sm font-semibold text-gray-200">
-                            {formatCurrency(d.montantTTC)}
-                          </p>
-                        </div>
-                      ))}
-                      {colDevis.length === 0 && (
-                        <p className="text-xs text-gray-400 text-center py-4">Aucun devis</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DevisKanbanBoard
+              initialDevis={devis.map((d) => ({
+                id: d.id,
+                numero: d.numero,
+                objet: d.objet,
+                statut: d.statut,
+                montantTTC: d.montantTTC,
+                entreprise: d.entreprise ? { nom: d.entreprise.nom } : null,
+                contact: d.contact ? { nom: d.contact.nom, prenom: d.contact.prenom } : null,
+              }))}
+              columns={[...PIPELINE_COLUMNS]}
+              statutsMeta={DEVIS_STATUTS}
+            />
           )}
         </>
       )}

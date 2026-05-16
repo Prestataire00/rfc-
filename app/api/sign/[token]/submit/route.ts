@@ -137,6 +137,25 @@ export const POST = withErrorHandlerParams<{ token: string }>(async (req: NextRe
     payload: { ip, ua, zoneCount: zonesPayload.length },
   });
 
+  // Sync Devis si la SignatureRequest est rattachée à un devis (type=devis).
+  // Cahier des charges §2.2 : "Une alerte sera envoyée à l'administrateur dès la signature".
+  // → On marque le devis "signe", on log la trace, on déclenche les automatisations
+  // (devis_signed) et on notifie l'admin in-app.
+  try {
+    const reqRow = await prisma.signatureRequest.findUnique({
+      where: { id: result.requestId },
+      select: { devisId: true, type: true },
+    });
+    if (reqRow?.devisId && (reqRow.type === "devis" || reqRow.type === "custom")) {
+      const { syncDevisOnSignature } = await import("@/lib/signatures/devis-sync");
+      await syncDevisOnSignature(reqRow.devisId, result.requestId);
+    }
+  } catch (err) {
+    console.error("[sign.submit] syncDevisOnSignature failed:", err);
+    // Ne pas faire échouer le flow de signature pour autant — le devis pourra
+    // être resynchronisé manuellement par l'admin.
+  }
+
   // Déclenche la finalisation crypto en arrière-plan (fire-and-forget).
   // On ne await PAS : la réponse HTTP au signataire est immédiate.
   // Si la Netlify Function se termine avant la fin de l'exécution background,

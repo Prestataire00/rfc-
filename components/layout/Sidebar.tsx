@@ -36,7 +36,7 @@ const adminGroups: NavGroup[] = [
     label: "CRM",
     icon: Users,
     items: [
-      { href: "/prospects", label: "Prospects", icon: UserPlus },
+      { href: "/prospects", label: "Nouvelle demande", icon: UserPlus },
       { href: "/entreprises", label: "Entreprises", icon: Building2 },
       { href: "/contacts", label: "Tous contacts", icon: Users },
       { href: "/contacts?type=client", label: "Clients", icon: UserCheck },

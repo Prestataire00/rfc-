@@ -85,7 +85,7 @@ export interface Contact {
   devis: Devis[];
   attestations: Attestation[];
   evaluations: EvaluationData[];
-  besoins: Besoin[];
+  demandes: Besoin[];
   feuillesPresence: FeuillePresence[];
   createdAt: string;
 }

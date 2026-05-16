@@ -12,14 +12,14 @@ type SearchResult = { type: string; id: string; title: string; subtitle: string;
 
 const NAV_ITEMS = [
   { group: "Accueil", items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }] },
-  { group: "CRM", items: [{ label: "Contacts", href: "/contacts", icon: Users }, { label: "Entreprises", href: "/entreprises", icon: Building2 }, { label: "Besoins", href: "/besoins", icon: ClipboardList }] },
+  { group: "CRM", items: [{ label: "Contacts", href: "/contacts", icon: Users }, { label: "Entreprises", href: "/entreprises", icon: Building2 }, { label: "Demandes", href: "/demandes", icon: ClipboardList }] },
   { group: "Pedagogie", items: [{ label: "Formations", href: "/formations", icon: BookOpen }, { label: "Sessions", href: "/sessions", icon: Calendar }, { label: "Formateurs", href: "/formateurs", icon: GraduationCap }] },
   { group: "Commercial", items: [{ label: "Devis & Factures", href: "/commercial", icon: FileText }, { label: "Campagnes", href: "/commercial/campagnes", icon: Mail }] },
   { group: "Qualite", items: [{ label: "Questionnaires", href: "/evaluations", icon: ClipboardList }, { label: "Qualiopi", href: "/qualiopi", icon: Shield }, { label: "Documents", href: "/documents", icon: FolderOpen }] },
   { group: "Admin", items: [{ label: "Parametres", href: "/parametres", icon: Settings }, { label: "Automations V2", href: "/parametres/automations-v2", icon: Zap }] },
 ];
 
-const TYPE_ICONS: Record<string, React.ElementType> = { contact: User, entreprise: Building2, session: Calendar, devis: FileText, facture: Receipt, besoin: ClipboardList };
+const TYPE_ICONS: Record<string, React.ElementType> = { contact: User, entreprise: Building2, session: Calendar, devis: FileText, facture: Receipt, demande: ClipboardList };
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);

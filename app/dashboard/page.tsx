@@ -301,7 +301,7 @@ export default function DashboardPage() {
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard icon={CalendarDays} label="Sessions a venir" value={stats.sessionsAVenir} href="/sessions" color="bg-amber-900/200" />
-        <StatCard icon={ClipboardList} label="Besoins en cours" value={stats.nbBesoinsEnCours} href="/besoins" color="bg-orange-900/200" />
+        <StatCard icon={ClipboardList} label="Demandes en cours" value={stats.nbBesoinsEnCours} href="/demandes" color="bg-orange-900/200" />
         <StatCard icon={Users} label="Contacts" value={stats.nbContacts} href="/contacts" color="bg-red-900/200" />
       </div>
 

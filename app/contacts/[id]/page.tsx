@@ -145,7 +145,7 @@ export default function ContactDetailPage() {
     { key: "documents", label: "Documents", icon: <FolderOpen className="h-4 w-4" />, count: contact.attestations.length + contact.feuillesPresence.length },
     { key: "devis", label: "Devis & Factures", icon: <Euro className="h-4 w-4" />, count: contact.devis.length },
     { key: "evaluations", label: "Evaluations", icon: <MessageSquare className="h-4 w-4" />, count: contact.evaluations.length },
-    { key: "besoins", label: "Besoins", icon: <ClipboardList className="h-4 w-4" />, count: contact.besoins.length },
+    { key: "besoins", label: "Besoins", icon: <ClipboardList className="h-4 w-4" />, count: contact.demandes.length },
   ];
 
   return (
@@ -192,7 +192,7 @@ export default function ContactDetailPage() {
               <Plus className="h-4 w-4" /> Devis
             </Link>
             <Link
-              href={`/besoins/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+              href={`/demandes/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
               className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
             >
               <Plus className="h-4 w-4" /> Besoin
@@ -328,7 +328,7 @@ export default function ContactDetailPage() {
                   <Euro className="h-4 w-4 text-red-500" /> Créer un devis
                 </Link>
                 <Link
-                  href={`/besoins/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+                  href={`/demandes/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
                   className="flex items-center gap-2 rounded-md border border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors"
                 >
                   <ClipboardList className="h-4 w-4 text-red-500" /> Nouveau besoin
@@ -640,20 +640,20 @@ export default function ContactDetailPage() {
         <div>
           <div className="flex justify-end mb-4">
             <Link
-              href={`/besoins/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+              href={`/demandes/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
               className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors"
             >
               <Plus className="h-4 w-4" /> Nouveau besoin
             </Link>
           </div>
           <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-sm overflow-hidden">
-          {contact.besoins.length === 0 ? (
+          {contact.demandes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <ClipboardList className="h-10 w-10 text-gray-600 mb-3" />
               <h3 className="text-base font-medium text-gray-300 mb-1">Aucun besoin</h3>
               <p className="text-sm text-gray-400 mb-4">Aucun besoin de formation enregistré pour ce contact.</p>
               <Link
-                href={`/besoins/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+                href={`/demandes/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
                 className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
               >
                 <Plus className="h-4 w-4" /> Créer le premier besoin
@@ -672,13 +672,13 @@ export default function ContactDetailPage() {
                 </tr>
               </thead>
               <tbody className="bg-gray-800 divide-y divide-gray-700">
-                {contact.besoins.map((b) => {
+                {contact.demandes.map((b) => {
                   const bInfo = BESOIN_STATUTS[b.statut];
                   const pInfo = BESOIN_PRIORITES[b.priorite];
                   return (
                     <tr key={b.id} className="hover:bg-gray-750 transition-colors">
                       <td className="px-6 py-4">
-                        <Link href={`/besoins/${b.id}`} className="text-sm font-medium text-red-500 hover:underline">
+                        <Link href={`/demandes/${b.id}`} className="text-sm font-medium text-red-500 hover:underline">
                           {b.titre}
                         </Link>
                       </td>

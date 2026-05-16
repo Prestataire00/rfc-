@@ -27,7 +27,7 @@ export const GET = withErrorHandlerParams(
             },
           },
         },
-        besoins: {
+        demandes: {
           select: {
             id: true,
             titre: true,
@@ -86,7 +86,7 @@ export const GET = withErrorHandlerParams(
       statut: projet.statut,
       budget: projet.budget,
       dateFinPrevue: projet.dateFinPrevue,
-      besoins: projet.besoins.map((b) => ({ statut: b.statut })),
+      besoins: projet.demandes.map((b) => ({ statut: b.statut })),
       devis: projet.devis.map((d) => ({
         statut: d.statut,
         montantTTC: d.montantTTC,

@@ -93,7 +93,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           },
         },
         _count: {
-          select: { besoins: true, devis: true, sessions: true, factures: true },
+          select: { demandes: true, devis: true, sessions: true, factures: true },
         },
       },
     }),

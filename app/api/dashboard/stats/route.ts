@@ -130,7 +130,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     prisma.session.count({
       where: { statut: "terminee", dateDebut: { gte: debutAnnee } },
     }),
-    prisma.besoinFormation.count({
+    prisma.demande.count({
       where: { statut: { in: ["nouveau", "qualifie"] } },
     }),
   ]);

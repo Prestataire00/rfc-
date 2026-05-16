@@ -34,3 +34,11 @@ Index des procédures opérationnelles. Tout ce qui n'est pas du code applicatif
 - Hébergeur DB : Supabase ([dashboard](https://supabase.com/dashboard))
 - Monitoring erreurs : Sentry ([dashboard](https://sentry.io))
 - Rate-limit / cache : Upstash ([dashboard](https://console.upstash.com))
+
+---
+
+## TODOs datées
+
+| Échéance | Action |
+|----------|--------|
+| **2026-11-16** | Supprimer les redirects 301 vers les anciennes routes publiques `/fiche-besoin-{client,stagiaire}/[token]` et `/api/besoin-{client,stagiaire}/public/[token]` (cf. [docs/superpowers/specs/2026-05-16-refactor-besoin-design.md](../superpowers/specs/2026-05-16-refactor-besoin-design.md)). 6 mois après le déploiement du refactor besoin. |

@@ -163,9 +163,11 @@ Les NFRs qui orientent les choix structurants :
 - FRs couvertes : FR-013
 
 ### C6 — Commerce
-- Pages : `/commercial`, `/besoins`, `/fiches-besoin`, `/fiche-besoin-client/[token]` (public), `/fiche-besoin-stagiaire/[token]` (public)
-- API : `/api/devis`, `/api/factures`, `/api/besoins`, `/api/besoin-client`, `/api/besoin-stagiaire`, `/api/financements`, `/api/paiements`, `/api/echeanciers`
-- Modèles : `Devis`, `LigneDevis`, `Facture`, `BesoinFormation`, `BesoinClient`, `BesoinStagiaire`, `Financement`, `Paiement`, `EcheancierPaiement`, `TransactionBancaire`
+- Pages : `/commercial`, `/demandes`, `/qualiopi/fiches`, `/qualiopi/fiche-entreprise/[token]` (public), `/qualiopi/fiche-stagiaire/[token]` (public)
+  - Redirects 301 maintenus (jusqu'à 2026-11-16) : `/besoins`, `/fiches-besoin`, `/fiche-besoin-client/[token]`, `/fiche-besoin-stagiaire/[token]`
+- API : `/api/devis`, `/api/factures`, `/api/demandes`, `/api/qualiopi/fiche-entreprise`, `/api/qualiopi/fiche-stagiaire`, `/api/financements`, `/api/paiements`, `/api/echeanciers`
+  - Redirects 301 maintenus (jusqu'à 2026-11-16) : `/api/besoins`, `/api/besoin-client`, `/api/besoin-stagiaire`
+- Modèles : `Devis`, `LigneDevis`, `Facture`, `DemandeFormation` (anciennement `BesoinFormation`), `FichePreFormationEntreprise` (anciennement `BesoinClient`), `FichePreFormationStagiaire` (anciennement `BesoinStagiaire`), `Financement`, `Paiement`, `EcheancierPaiement`, `TransactionBancaire`
 - FRs couvertes : FR-004, FR-005, FR-006, FR-007
 
 ### C7 — Documents pédagogiques & génération PDF
@@ -267,7 +269,7 @@ AUTH                  CRM                       CATALOGUE & SESSIONS
                      │  ├─ Contact             │  └─ Parcours
                      │  ├─ Devis (→ Facture)    │     └─ ParcoursModule
                      │  ├─ Facture              ├─ LieuFormation
-                     │  ├─ BesoinFormation      ├─ Session
+                     │  ├─ DemandeFormation     ├─ Session
                      │  ├─ Financement          │  ├─ Inscription (→ Contact)
                      │  └─ Document             │  ├─ FeuillePresence
                      ├─ Contact ──┐             │  │  └─ EmargementToken
@@ -279,8 +281,8 @@ AUTH                  CRM                       CATALOGUE & SESSIONS
 
 FORMATEURS                          COMMERCE (suite)
 ├─ Formateur                        ├─ LigneDevis
-│  ├─ Disponibilite                 ├─ BesoinClient (token public)
-│  ├─ FormateurCompetence           ├─ BesoinStagiaire (token public)
+│  ├─ Disponibilite                 ├─ FichePreFormationEntreprise (token public)
+│  ├─ FormateurCompetence           ├─ FichePreFormationStagiaire (token public)
 │  └─ NoteFrais                     ├─ Paiement
 ├─ CompetenceReferentiel            ├─ EcheancierPaiement
 └─ EvaluationFormateur              ├─ TransactionBancaire
@@ -324,7 +326,7 @@ CLASSES VIRTUELLES                  └─ QuestionnaireConfig
 - IDs : `cuid()` (collisions-safe, ordonnés, courts)
 - Timestamps : `createdAt @default(now())` + `updatedAt @updatedAt` systématiques
 - Soft-delete : pas généralisé — préférer `actif: Boolean` ou statut explicite
-- Tokens publics : champs dédiés sur les modèles concernés (`Evaluation`, `BesoinClient`, `BesoinStagiaire`, `EmargementToken`), HMAC pour la signature
+- Tokens publics : champs dédiés sur les modèles concernés (`Evaluation`, `FichePreFormationEntreprise` (anciennement `BesoinClient`), `FichePreFormationStagiaire` (anciennement `BesoinStagiaire`), `EmargementToken`), HMAC pour la signature
 - RGPD : `optOutMarketing` sur `Contact` ; `DemandeRgpd` pour les requêtes formelles
 - Tags : pattern many-to-many explicite (`ContactTag`, `EntrepriseTag`)
 
@@ -340,7 +342,8 @@ CLASSES VIRTUELLES                  └─ QuestionnaireConfig
   - Sessions NextAuth (JWT cookie) pour admin / formateur / client
   - Bearer `CRON_SECRET` pour `/api/cron/*`
   - HMAC token pour `/api/sign/*` et `/sign/[token]`
-  - Tokens UUID pour `/api/evaluations/public`, `/api/inscription-publique`, `/api/besoin-client/public`, `/api/besoin-stagiaire/public`, `/api/emargement/public`, `/api/qualite/public/*`, `/api/badges/verify`
+  - Tokens UUID pour `/api/evaluations/public`, `/api/inscription-publique`, `/api/qualiopi/fiche-entreprise/public`, `/api/qualiopi/fiche-stagiaire/public`, `/api/emargement/public`, `/api/qualite/public/*`, `/api/badges/verify`
+    - Redirects 301 maintenus (jusqu'à 2026-11-16) : `/api/besoin-client/public`, `/api/besoin-stagiaire/public`
 
 ### Conventions de réponses
 - Succès 2xx : `{ data: ... }` ou ressource directe
@@ -353,13 +356,13 @@ CLASSES VIRTUELLES                  └─ QuestionnaireConfig
 - `lib/validations/*` : schémas Zod réutilisables
 
 ### Préfixes principaux (admin)
-`/api/ai`, `/api/automations`, `/api/automations-v2`, `/api/badges`, `/api/besoins`, `/api/besoin-client`, `/api/besoin-stagiaire`, `/api/bpf`, `/api/campaigns`, `/api/classes-virtuelles`, `/api/competences`, `/api/contacts`, `/api/devis`, `/api/documents`, `/api/document-templates`, `/api/email`, `/api/entreprises`, `/api/evaluations`, `/api/export`, `/api/factures`, `/api/formateurs`, `/api/formations`, `/api/forum`, `/api/message-templates`, `/api/notifications`, `/api/parametres`, `/api/pdf/template-preview`, `/api/projets`, `/api/signature-requests`, `/api/sessions`, `/api/tags`, `/api/utilisateurs`
+`/api/ai`, `/api/automations`, `/api/automations-v2`, `/api/badges`, `/api/demandes`, `/api/qualiopi/fiche-entreprise`, `/api/qualiopi/fiche-stagiaire`, `/api/bpf`, `/api/campaigns`, `/api/classes-virtuelles`, `/api/competences`, `/api/contacts`, `/api/devis`, `/api/documents`, `/api/document-templates`, `/api/email`, `/api/entreprises`, `/api/evaluations`, `/api/export`, `/api/factures`, `/api/formateurs`, `/api/formations`, `/api/forum`, `/api/message-templates`, `/api/notifications`, `/api/parametres`, `/api/pdf/template-preview`, `/api/projets`, `/api/signature-requests`, `/api/sessions`, `/api/tags`, `/api/utilisateurs`
 
 ### Préfixes par portail
 `/api/client/*` (rôle client+admin), `/api/formateur/*` (rôle formateur+admin)
 
 ### Routes publiques
-`/api/auth/*` (NextAuth), `/api/cron/*` (Bearer), `/api/evaluations/public`, `/api/inscription-publique`, `/api/besoin-client/public`, `/api/besoin-stagiaire/public`, `/api/emargement/public`, `/api/campaigns/unsubscribe`, `/api/qualite/public/*`, `/api/email-tracking/webhook`, `/api/sign/*`, `/api/signature-requests/verify`, `/api/catalogue`, `/api/badges/verify`
+`/api/auth/*` (NextAuth), `/api/cron/*` (Bearer), `/api/evaluations/public`, `/api/inscription-publique`, `/api/qualiopi/fiche-entreprise/public`, `/api/qualiopi/fiche-stagiaire/public`, `/api/emargement/public`, `/api/campaigns/unsubscribe`, `/api/qualite/public/*`, `/api/email-tracking/webhook`, `/api/sign/*`, `/api/signature-requests/verify`, `/api/catalogue`, `/api/badges/verify`
 
 ---
 

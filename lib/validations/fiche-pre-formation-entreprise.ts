@@ -18,7 +18,7 @@ export const OBJECTIFS_FORMATION = [
 ] as const;
 
 // Reponses publiques au questionnaire (via token)
-export const besoinClientReponseSchema = z.object({
+export const fichePreFormationEntrepriseReponseSchema = z.object({
   // Section 1
   secteurActivite: z.enum(SECTEURS_ACTIVITE).optional().nullable(),
   effectifTotal: z.coerce.number().int().min(0).optional().nullable(),
@@ -41,10 +41,10 @@ export const besoinClientReponseSchema = z.object({
   detailsHandicap: z.string().optional().nullable(),
 });
 
-export type BesoinClientReponseData = z.infer<typeof besoinClientReponseSchema>;
+export type FichePreFormationEntrepriseReponseData = z.infer<typeof fichePreFormationEntrepriseReponseSchema>;
 
 // Creation/maj cote admin
-export const besoinClientAdminSchema = besoinClientReponseSchema.extend({
+export const fichePreFormationEntrepriseAdminSchema = fichePreFormationEntrepriseReponseSchema.extend({
   sessionId: z.string().cuid(),
   entrepriseId: z.string().cuid().optional().nullable(),
   destinataireNom: z.string().optional().nullable(),

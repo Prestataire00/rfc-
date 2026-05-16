@@ -4,7 +4,7 @@ export const NIVEAUX_SCOLAIRES = ["sans_diplome", "cap", "bac", "bac+2", "bac+3"
 export const NIVEAUX_PREREQUIS = ["debutant", "intermediaire", "avance", "expert"] as const;
 
 // Reponse publique au questionnaire (via token)
-export const besoinStagiaireReponseSchema = z.object({
+export const fichePreFormationStagiaireReponseSchema = z.object({
   // Section 1 - Identification (maj des champs Contact si fournis)
   dateNaissance: z.string().optional().nullable(), // ISO date string
   numeroSecuriteSociale: z.string().optional().nullable(),
@@ -31,9 +31,9 @@ export const besoinStagiaireReponseSchema = z.object({
   path: ["consentementRGPD"],
 });
 
-export type BesoinStagiaireReponseData = z.infer<typeof besoinStagiaireReponseSchema>;
+export type FichePreFormationStagiaireReponseData = z.infer<typeof fichePreFormationStagiaireReponseSchema>;
 
-export const besoinStagiaireAdminSchema = z.object({
+export const fichePreFormationStagiaireAdminSchema = z.object({
   sessionId: z.string().cuid(),
   contactId: z.string().cuid(),
   statut: z.enum(["en_attente", "envoye", "repondu", "incomplet"]).optional(),

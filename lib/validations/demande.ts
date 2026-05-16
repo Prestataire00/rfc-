@@ -3,7 +3,7 @@ import { z } from "zod";
 export const SOURCE_CONTACT = ["telephone", "mail", "agence", "site_internet"] as const;
 export const MATERIEL_OPTIONS = ["salles", "videoprojecteur", "paperboard"] as const;
 
-export const besoinFormationSchema = z.object({
+export const demandeSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
   description: z.string().optional().nullable(),
   origine: z.enum(["client", "stagiaire", "centre"]).default("client"),
@@ -22,4 +22,4 @@ export const besoinFormationSchema = z.object({
   observation: z.string().optional().nullable(),
 });
 
-export type BesoinFormationData = z.infer<typeof besoinFormationSchema>;
+export type DemandeData = z.infer<typeof demandeSchema>;

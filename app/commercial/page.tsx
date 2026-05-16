@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FileText, Plus, Receipt, Download, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -70,7 +70,11 @@ type DashboardStats = {
 
 export default function CommercialPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"devis" | "factures">("devis");
+  const searchParams = useSearchParams();
+  // Onglet initial : ?tab=factures ou ?tab=devis (cf. sidebar nav qui distingue
+  // Commercial.Devis vs Finance.Factures via deux entrées de menu différentes).
+  const initialTab = searchParams.get("tab") === "factures" ? "factures" : "devis";
+  const [activeTab, setActiveTab] = useState<"devis" | "factures">(initialTab);
   const [facturePage, setFacturePage] = useState(1);
   const [filtreStatutFacture, setFiltreStatutFacture] = useState("");
 

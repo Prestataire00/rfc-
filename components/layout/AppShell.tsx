@@ -15,8 +15,10 @@ const PUBLIC_PATHS = [
   "/login",
   "/evaluation/",
   "/inscription-stagiaire",
-  "/fiche-besoin-client",
-  "/fiche-besoin-stagiaire",
+  "/fiche-besoin-client",       // backward compat redirect (deprecation 2026-11-16)
+  "/fiche-besoin-stagiaire",    // backward compat redirect (deprecation 2026-11-16)
+  "/qualiopi/fiche-entreprise/",
+  "/qualiopi/fiche-stagiaire/",
   "/legal/",
   "/rgpd/demande",
   "/qualite/share/",

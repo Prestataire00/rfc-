@@ -82,7 +82,7 @@ type ProjetDetail = {
       tarifJournalier: number | null;
     };
   }>;
-  besoins: Array<{
+  demandes: Array<{
     id: string;
     titre: string;
     statut: string;
@@ -410,13 +410,13 @@ function OverviewTab({ projet }: { projet: ProjetDetail }) {
         </section>
       ) : null}
 
-      {projet.besoins.length > 0 ? (
-        <Panel title={`Besoins (${projet.besoins.length})`}>
+      {projet.demandes.length > 0 ? (
+        <Panel title={`Demandes (${projet.demandes.length})`}>
           <ul className="divide-y divide-border">
-            {projet.besoins.map((b) => (
+            {projet.demandes.map((b) => (
               <li key={b.id} className="flex items-center justify-between py-2 text-sm">
                 <Link
-                  href={`/besoins/${b.id}`}
+                  href={`/demandes/${b.id}`}
                   className="font-medium hover:underline"
                 >
                   {b.titre}

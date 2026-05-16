@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
-import { sendEmail, ficheBesoinClientEmail, ficheBesoinStagiaireEmail } from "@/lib/email";
+import { sendEmail, fichePreFormationEntrepriseEmail, fichePreFormationStagiaireEmail } from "@/lib/email";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
 // POST /api/sessions/[id]/envoyer-fiches-besoin
@@ -61,9 +61,9 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     entreprise?.nom ||
     "";
 
-  let ficheClient = await prisma.besoinClient.findFirst({ where: { sessionId: session.id } });
+  let ficheClient = await prisma.fichePreFormationEntreprise.findFirst({ where: { sessionId: session.id } });
   if (!ficheClient) {
-    ficheClient = await prisma.besoinClient.create({
+    ficheClient = await prisma.fichePreFormationEntreprise.create({
       data: {
         sessionId: session.id,
         entrepriseId: entreprise?.id ?? null,
@@ -78,7 +78,7 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     });
   } else if (overrideEmail || overrideNom || overrideEntrepriseId) {
     // Mise a jour des infos destinataire si override fourni
-    ficheClient = await prisma.besoinClient.update({
+    ficheClient = await prisma.fichePreFormationEntreprise.update({
       where: { id: ficheClient.id },
       data: {
         ...(overrideEmail ? { destinataireEmail } : {}),
@@ -93,18 +93,18 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     warnings.push("Aucun email destinataire pour la fiche client (pas de devis ni d'entreprise liee). Fiche creee mais non envoyee — vous pouvez copier le lien public.");
   }
   if (destinataireEmail) {
-    const mail = ficheBesoinClientEmail({
+    const mail = fichePreFormationEntrepriseEmail({
       destinataireNom: destinataireNom || entreprise?.nom || "",
       entreprise: { nom: entreprise?.nom || "" },
       formation: { titre: session.formation.titre },
       session: { dateDebut: session.dateDebut.toISOString() },
-      link: `${baseUrl}/fiche-besoin-client/${ficheClient.tokenAcces}`,
+      link: `${baseUrl}/qualiopi/fiche-entreprise/${ficheClient.tokenAcces}`,
       optionnel,
     });
     const res = await sendEmail({ to: destinataireEmail, subject: mail.subject, html: mail.html });
     clientEnvoye = !res.skipped;
     if (clientEnvoye && ficheClient.statut === "en_attente") {
-      ficheClient = await prisma.besoinClient.update({
+      ficheClient = await prisma.fichePreFormationEntreprise.update({
         where: { id: ficheClient.id },
         data: { statut: "envoye", dateEnvoi: new Date() },
       });
@@ -120,11 +120,11 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     const contact = ins.contact;
     if (!contact) continue;
 
-    let fiche = await prisma.besoinStagiaire.findUnique({
+    let fiche = await prisma.fichePreFormationStagiaire.findUnique({
       where: { sessionId_contactId: { sessionId: session.id, contactId: contact.id } },
     });
     if (!fiche) {
-      fiche = await prisma.besoinStagiaire.create({
+      fiche = await prisma.fichePreFormationStagiaire.create({
         data: {
           sessionId: session.id,
           contactId: contact.id,
@@ -140,16 +140,16 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       continue;
     }
 
-    const mail = ficheBesoinStagiaireEmail({
+    const mail = fichePreFormationStagiaireEmail({
       stagiaire: { prenom: contact.prenom, nom: contact.nom },
       formation: { titre: session.formation.titre },
       session: { dateDebut: session.dateDebut.toISOString() },
-      link: `${baseUrl}/fiche-besoin-stagiaire/${fiche.tokenAcces}`,
+      link: `${baseUrl}/qualiopi/fiche-stagiaire/${fiche.tokenAcces}`,
       optionnel,
     });
     const envoi = await sendEmail({ to: contact.email, subject: mail.subject, html: mail.html });
     if (!envoi.skipped && fiche.statut === "en_attente") {
-      fiche = await prisma.besoinStagiaire.update({
+      fiche = await prisma.fichePreFormationStagiaire.update({
         where: { id: fiche.id },
         data: { statut: "envoye", dateEnvoi: new Date() },
       });

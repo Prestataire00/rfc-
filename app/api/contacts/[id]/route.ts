@@ -20,7 +20,7 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
       devis: { orderBy: { createdAt: "desc" } },
       attestations: { orderBy: { createdAt: "desc" } },
       evaluations: { orderBy: { createdAt: "desc" } },
-      besoins: {
+      demandes: {
         include: { formation: true },
         orderBy: { createdAt: "desc" },
       },

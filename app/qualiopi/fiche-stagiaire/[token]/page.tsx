@@ -61,7 +61,7 @@ function formatSecuDisplay(v: string): string {
   return `${clean.slice(0, 1)} ${clean.slice(1, 3)} ${clean.slice(3, 5)} ${clean.slice(5, 7)} ${clean.slice(7, 10)} ${clean.slice(10, 13)} ${clean.slice(13, 15)}`;
 }
 
-export default function FicheBesoinStagiairePage() {
+export default function FichePreFormationStagiairePage() {
   const { token } = useParams<{ token: string }>();
   const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
     token ? `/api/qualiopi/fiches-stagiaire/public/${token}` : null

@@ -66,7 +66,7 @@ function NouveauDevisForm() {
 
   const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
   const { data: contactsRaw } = useApi<{ data: Contact[] } | Contact[]>("/api/contacts?limit=100");
-  const { data: besoin } = useApi<BesoinDetail>(besoinId ? `/api/besoins/${besoinId}` : null);
+  const { data: besoin } = useApi<BesoinDetail>(besoinId ? `/api/demandes/${besoinId}` : null);
   const { trigger: createDevis, isMutating: loading } = useApiMutation<Record<string, unknown>, DevisCreated>(
     "/api/devis",
     "POST"
@@ -188,7 +188,7 @@ function NouveauDevisForm() {
       // Lier le devis au besoin et passer le statut à "devis_envoye"
       if (besoinId) {
         try {
-          await api.patch(`/api/besoins/${besoinId}`, { devisId: data.id, statut: "devis_envoye" });
+          await api.patch(`/api/demandes/${besoinId}`, { devisId: data.id, statut: "devis_envoye" });
         } catch {
           // non-bloquant
         }

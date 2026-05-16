@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendEmail, ficheBesoinStagiaireEmail } from "@/lib/email";
+import { sendEmail, fichePreFormationStagiaireEmail } from "@/lib/email";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
@@ -30,8 +30,8 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
     if (!fiche.contact.email) return NextResponse.json({ error: "Email stagiaire manquant" }, { status: 400 });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const link = `${baseUrl}/fiche-besoin-stagiaire/${fiche.tokenAcces}`;
-    const email = ficheBesoinStagiaireEmail({
+    const link = `${baseUrl}/qualiopi/fiche-stagiaire/${fiche.tokenAcces}`;
+    const email = fichePreFormationStagiaireEmail({
       stagiaire: { prenom: fiche.contact.prenom, nom: fiche.contact.nom },
       formation: { titre: fiche.session.formation.titre },
       session: { dateDebut: fiche.session.dateDebut.toISOString() },

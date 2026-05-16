@@ -70,7 +70,7 @@ type EntrepriseDetail = { id: string; nom: string; secteur?: string | null; effe
 
 type BesoinCreated = { id: string; titre: string };
 
-export default function NouveauBesoinPage() {
+export default function NouvelleDemandePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paramContactId = searchParams.get("contactId") ?? "";

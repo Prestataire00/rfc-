@@ -30,7 +30,7 @@ export const GET = withErrorHandler(async () => {
         orderBy: { dateEcheance: "asc" },
         take: 10,
       }),
-      prisma.besoinFormation.findMany({
+      prisma.demande.findMany({
         where: { statut: "nouveau", createdAt: { lt: j3 } },
         select: { id: true, titre: true, createdAt: true, entreprise: { select: { nom: true } }, contact: { select: { prenom: true, nom: true } } },
         orderBy: { createdAt: "asc" },

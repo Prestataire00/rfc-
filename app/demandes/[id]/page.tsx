@@ -108,7 +108,7 @@ function actionLabel(action: string): string {
 
 type TabKey = "detail" | "historique";
 
-export default function BesoinDetailPage() {
+export default function DemandeDetailPage() {
   const router = useRouter();
   const { id } = useParams();
   const [showDelete, setShowDelete] = useState(false);
@@ -218,7 +218,7 @@ export default function BesoinDetailPage() {
             </Link>
           )}
           <button
-            onClick={() => window.open(`/api/pdf/analyse-besoins/${besoin.id}`, "_blank")}
+            onClick={() => window.open(`/api/pdf/analyse-demandes/${besoin.id}`, "_blank")}
             className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
           >
             <Download className="h-4 w-4" /> Analyse besoins

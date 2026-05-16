@@ -12,6 +12,9 @@ import { createHash } from "crypto";
 export type AutomationEvent =
   | "prospect_created"
   | "prospect_converted"
+  // NOTE: Ces deux events sont intentionnellement conserves avec leurs anciens noms
+  // (besoin_created / besoin_qualified) pour ne pas casser les regles d'automation
+  // deja configurees en production. A renommer dans un changement separe.
   | "besoin_created"
   | "besoin_qualified"
   | "devis_created"

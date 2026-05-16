@@ -17,7 +17,7 @@ import type { Contact, Session, BesoinClient, BesoinStagiaire } from "./types";
 import { AddInscriptionDialog } from "./AddInscriptionDialog";
 import { QRCodeDialog } from "./QRCodeDialog";
 import { PasseportPreventionDialog } from "./PasseportPreventionDialog";
-import { FichesBesoinSection } from "./FichesBesoinSection";
+import { FichesBesoinSection } from "./FichesPreFormationSection";
 import { DocumentsRemisPopover } from "./DocumentsRemisPopover";
 
 export default function SessionDetailPage() {
@@ -101,8 +101,8 @@ export default function SessionDetailPage() {
 
   const fetchBesoins = useCallback(async () => {
     const [rc, rs] = await Promise.all([
-      fetch(`/api/besoin-client?sessionId=${id}`).then((r) => r.ok ? r.json() : []),
-      fetch(`/api/besoin-stagiaire?sessionId=${id}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/qualiopi/fiches-entreprise?sessionId=${id}`).then((r) => r.ok ? r.json() : []),
+      fetch(`/api/qualiopi/fiches-stagiaire?sessionId=${id}`).then((r) => r.ok ? r.json() : []),
     ]);
     setBesoinsClient(Array.isArray(rc) ? rc : []);
     setBesoinsStagiaire(Array.isArray(rs) ? rs : []);
@@ -194,7 +194,7 @@ export default function SessionDetailPage() {
     setSendingFiches(true);
     setFichesMsg("");
     try {
-      const res = await fetch(`/api/sessions/${id}/envoyer-fiches-besoin`, {
+      const res = await fetch(`/api/sessions/${id}/envoyer-fiches-pre-formation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(override || {}),
@@ -224,7 +224,10 @@ export default function SessionDetailPage() {
   };
 
   const handleResendFiche = async (type: "client" | "stagiaire", ficheId: string) => {
-    await fetch(`/api/besoin-${type}/${ficheId}`, {
+    const apiPath = type === "client"
+      ? `/api/qualiopi/fiches-entreprise/${ficheId}`
+      : `/api/qualiopi/fiches-stagiaire/${ficheId}`;
+    await fetch(apiPath, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "envoyer" }),

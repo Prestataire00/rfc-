@@ -113,9 +113,9 @@ export function MaJournee() {
           </Section>
         )}
         {data.besoinsAQualifier.length > 0 && (
-          <Section title={`Besoins a qualifier (${data.besoinsAQualifier.length})`} icon={ClipboardList} color="purple">
+          <Section title={`Demandes a qualifier (${data.besoinsAQualifier.length})`} icon={ClipboardList} color="purple">
             {data.besoinsAQualifier.slice(0, 5).map((b) => (
-              <TaskRow key={b.id} href={`/besoins/${b.id}`} label={b.titre}
+              <TaskRow key={b.id} href={`/demandes/${b.id}`} label={b.titre}
                 sublabel={`${b.entreprise?.nom ?? (b.contact ? `${b.contact.prenom} ${b.contact.nom}` : "Sans origine")} — ouvert depuis ${formatDistanceToNow(new Date(b.createdAt), { locale: fr })}`} />
             ))}
           </Section>

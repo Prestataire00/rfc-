@@ -8,7 +8,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const q = (new URL(req.url).searchParams.get("q") ?? "").trim();
   if (q.length < 2) return NextResponse.json({ results: [] });
 
-  const [contacts, entreprises, sessions, devis, factures, besoins] = await Promise.all([
+  const [contacts, entreprises, sessions, devis, factures, demandes] = await Promise.all([
     prisma.contact.findMany({
       where: { OR: [{ nom: { contains: q, mode: "insensitive" } }, { prenom: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }] },
       select: { id: true, nom: true, prenom: true, type: true, entreprise: { select: { nom: true } } },
@@ -34,7 +34,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       select: { id: true, numero: true, montantTTC: true, statut: true },
       take: 5,
     }),
-    prisma.besoinFormation.findMany({
+    prisma.demande.findMany({
       where: { titre: { contains: q, mode: "insensitive" } },
       select: { id: true, titre: true, statut: true },
       take: 5,
@@ -47,7 +47,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     ...sessions.map((s) => ({ type: "session", id: s.id, title: s.formation.titre, subtitle: new Date(s.dateDebut).toLocaleDateString("fr-FR"), href: `/sessions/${s.id}` })),
     ...devis.map((d) => ({ type: "devis", id: d.id, title: d.numero, subtitle: `${d.montantTTC.toFixed(2)} EUR · ${d.statut}`, href: `/commercial/devis/${d.id}` })),
     ...factures.map((f) => ({ type: "facture", id: f.id, title: f.numero, subtitle: `${f.montantTTC.toFixed(2)} EUR · ${f.statut}`, href: `/commercial/factures/${f.id}` })),
-    ...besoins.map((b) => ({ type: "besoin", id: b.id, title: b.titre, subtitle: `Besoin · ${b.statut}`, href: `/besoins/${b.id}` })),
+    ...demandes.map((b) => ({ type: "demande", id: b.id, title: b.titre, subtitle: `Demande · ${b.statut}`, href: `/demandes/${b.id}` })),
   ];
 
   return NextResponse.json({ results });

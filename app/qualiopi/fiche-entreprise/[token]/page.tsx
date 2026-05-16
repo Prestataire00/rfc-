@@ -50,7 +50,7 @@ const OBJECTIFS = [
   { value: "autre", label: "Autre" },
 ];
 
-export default function FicheBesoinClientPage() {
+export default function FichePreFormationEntreprisePage() {
   const { token } = useParams<{ token: string }>();
   const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
     token ? `/api/qualiopi/fiches-entreprise/public/${token}` : null

@@ -40,7 +40,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const [contacts, formations, sessions, devis, factures, besoins] = await Promise.all([
     prisma.contact.count().catch(() => 0), prisma.formation.count().catch(() => 0),
     prisma.session.count().catch(() => 0), prisma.devis.count().catch(() => 0),
-    prisma.facture.count().catch(() => 0), prisma.besoinFormation.count().catch(() => 0),
+    prisma.facture.count().catch(() => 0), prisma.demande.count().catch(() => 0),
   ]);
 
   const systemPrompt = buildSystemPrompt({ contacts, formations, sessions, devis, factures, besoins });

@@ -16,7 +16,7 @@ async function main() {
   await prisma.inscription.deleteMany();
   await prisma.ligneDevis.deleteMany();
   await prisma.facture.deleteMany();
-  await prisma.besoinFormation.deleteMany();
+  await prisma.demande.deleteMany();
   await prisma.devis.deleteMany();
   await prisma.financement.deleteMany();
   await prisma.session.deleteMany();
@@ -384,8 +384,8 @@ async function main() {
     },
   });
 
-  // === BESOINS ===
-  await prisma.besoinFormation.create({
+  // === DEMANDES ===
+  await prisma.demande.create({
     data: {
       titre: "Formation Python pour l'equipe data",
       description: "L'equipe data souhaite monter en competences sur Python et les librairies d'analyse de donnees",
@@ -399,7 +399,7 @@ async function main() {
     },
   });
 
-  await prisma.besoinFormation.create({
+  await prisma.demande.create({
     data: {
       titre: "Sensibilisation RGPD obligatoire",
       description: "Mise a jour annuelle obligatoire sur la protection des donnees",
@@ -412,7 +412,7 @@ async function main() {
     },
   });
 
-  await prisma.besoinFormation.create({
+  await prisma.demande.create({
     data: {
       titre: "Communication digitale",
       description: "Formation reseaux sociaux et strategie de contenu",

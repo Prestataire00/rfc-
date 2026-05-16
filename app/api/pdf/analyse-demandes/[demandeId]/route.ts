@@ -9,11 +9,11 @@ import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-export const GET = withErrorHandlerParams<{ besoinId: string }>(
+export const GET = withErrorHandlerParams<{ demandeId: string }>(
   async (_req: NextRequest, { params }) => {
     const [besoin, parametres] = await Promise.all([
-      prisma.besoinFormation.findUnique({
-        where: { id: params.besoinId },
+      prisma.demande.findUnique({
+        where: { id: params.demandeId },
         include: {
           entreprise: true,
           formation: true,
@@ -85,7 +85,7 @@ export const GET = withErrorHandlerParams<{ besoinId: string }>(
     return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="analyse-besoins-${safeTitre}.pdf"`,
+        "Content-Disposition": `inline; filename="analyse-demande-${safeTitre}.pdf"`,
       },
     });
   }

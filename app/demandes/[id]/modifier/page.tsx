@@ -25,7 +25,7 @@ type BesoinData = {
   formationId?: string | null;
 };
 
-export default function ModifierBesoinPage() {
+export default function ModifierDemandePage() {
   const router = useRouter();
   const { id } = useParams();
   const [error, setError] = useState("");

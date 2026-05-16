@@ -52,7 +52,7 @@ const STATUT_LABELS: Record<string, string> = {
   incomplet: "Incomplet",
 };
 
-export default function FichesBesoinPage() {
+export default function FichesPreFormationPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"client" | "stagiaire">("client");
   const [statutFilter, setStatutFilter] = useState("");

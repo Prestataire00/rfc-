@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fichePreFormationEntrepriseReponseSchema } from "@/lib/validations/fiche-pre-formation-entreprise";
-import { sendEmail, ficheBesoinClientEmail } from "@/lib/email";
+import { sendEmail, fichePreFormationEntrepriseEmail } from "@/lib/email";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parsePartialBody } from "@/lib/validations/helpers";
 
@@ -39,8 +39,8 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
     if (!fiche.destinataireEmail) return NextResponse.json({ error: "Email destinataire manquant" }, { status: 400 });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const link = `${baseUrl}/fiche-besoin-client/${fiche.tokenAcces}`;
-    const email = ficheBesoinClientEmail({
+    const link = `${baseUrl}/qualiopi/fiche-entreprise/${fiche.tokenAcces}`;
+    const email = fichePreFormationEntrepriseEmail({
       destinataireNom: fiche.destinataireNom || fiche.entreprise?.nom || "",
       entreprise: { nom: fiche.entreprise?.nom || "" },
       formation: { titre: fiche.session.formation.titre },

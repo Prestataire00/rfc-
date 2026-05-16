@@ -192,8 +192,8 @@ export function evaluationEmail(data: {
   };
 }
 
-// Fiche besoin CLIENT (envoyee au responsable entreprise)
-export function ficheBesoinClientEmail(data: {
+// Fiche pre-formation ENTREPRISE (envoyee au responsable entreprise)
+export function fichePreFormationEntrepriseEmail(data: {
   destinataireNom: string;
   entreprise: { nom: string };
   formation: { titre: string };
@@ -231,8 +231,8 @@ export function ficheBesoinClientEmail(data: {
   };
 }
 
-// Fiche besoin STAGIAIRE (envoyee a chaque apprenant)
-export function ficheBesoinStagiaireEmail(data: {
+// Fiche pre-formation STAGIAIRE (envoyee a chaque apprenant)
+export function fichePreFormationStagiaireEmail(data: {
   stagiaire: { prenom: string; nom: string };
   formation: { titre: string };
   session: { dateDebut: string };

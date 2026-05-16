@@ -132,8 +132,37 @@ export default function DemandeDetailPage() {
 
   async function updateStatut(statut: string) {
     if (!besoin) return;
-    await updateBesoin({ ...besoin, statut });
+
+    // Hook Phase 2 : confirmation + génération devis IA sur transition nouveau→qualifie
+    const isQualifieTransition = besoin.statut === "nouveau" && statut === "qualifie" && !besoin.devis;
+    if (isQualifieTransition) {
+      const confirmed = window.confirm("Cela va générer un devis brouillon avec l'IA. Continuer ?");
+      if (!confirmed) return;
+    }
+
+    // PATCH partiel pour le statut (gère la réponse AI)
+    const res = await fetch(`/api/demandes/${besoin.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statut }),
+    });
+    const data = await res.json();
+
     await mutate({ ...besoin, statut }, { revalidate: false });
+
+    if (data.ai?.generated === true) {
+      notify.success(
+        "Devis brouillon généré par l'IA",
+        `Voir le devis : /commercial/devis/${data.ai.devisId}`
+      );
+    } else if (data.ai?.generated === false) {
+      notify.error(
+        "Statut mis à jour, mais l'IA n'a pas pu générer le devis",
+        data.ai.error + " — Créez-le manuellement."
+      );
+    } else {
+      notify.success("Statut mis à jour");
+    }
   }
 
   async function handleDelete() {

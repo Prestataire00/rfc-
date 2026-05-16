@@ -82,11 +82,11 @@ const adminGroups: NavGroup[] = [
       // /commercial?tab=devis : page commerciale, onglet Devis (par défaut).
       // /commercial?tab=factures = même page, onglet Factures → exposé dans Finance.
       { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
-      // /besoins = pipeline commercial (statuts nouveau→qualifie→devis…)
-      // /fiches-besoin = fiches Qualiopi à envoyer aux clients/stagiaires
-      // Pages distinctes mais liées : depuis /besoins on peut envoyer une fiche.
-      { href: "/besoins", label: "Besoins & demandes", icon: ClipboardList },
-      { href: "/fiches-besoin", label: "Fiches Qualiopi", icon: BadgeCheck },
+      // /demandes = pipeline commercial (statuts nouveau→qualifie→devis…)
+      // /qualiopi/fiches-pre-formation = fiches Qualiopi à envoyer aux clients/stagiaires
+      // Pages distinctes mais liées : depuis /demandes on peut envoyer une fiche.
+      { href: "/demandes", label: "Demandes", icon: ClipboardList },
+      { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
     ],
   },
@@ -116,7 +116,7 @@ const adminGroups: NavGroup[] = [
     label: "Qualité",
     icon: Award,
     items: [
-      { href: "/evaluations", label: "Questionnaires", icon: ClipboardList },
+      { href: "/evaluations", label: "Questionnaires de satisfaction", icon: ClipboardList },
       { href: "/qualiopi/indicateurs", label: "Indicateurs Qualiopi", icon: BadgeCheck },
       { href: "/certifications", label: "Certifications", icon: Award },
       { href: "/bpf", label: "BPF", icon: BarChart3 },

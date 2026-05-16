@@ -81,8 +81,11 @@ const adminGroups: NavGroup[] = [
       // /commercial?tab=devis : page commerciale, onglet Devis (par défaut).
       // /commercial?tab=factures = même page, onglet Factures → exposé dans Finance.
       { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
-      { href: "/besoins", label: "Demandes & prospects", icon: ClipboardList },
-      { href: "/fiches-besoin", label: "Fiches besoin (Qualiopi)", icon: ClipboardList },
+      // /besoins = pipeline commercial (statuts nouveau→qualifie→devis…)
+      // /fiches-besoin = fiches Qualiopi à envoyer aux clients/stagiaires
+      // Pages distinctes mais liées : depuis /besoins on peut envoyer une fiche.
+      { href: "/besoins", label: "Besoins & demandes", icon: ClipboardList },
+      { href: "/fiches-besoin", label: "Fiches Qualiopi", icon: BadgeCheck },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
     ],
   },
@@ -126,9 +129,12 @@ const adminGroups: NavGroup[] = [
     label: "Reporting",
     icon: BarChart3,
     items: [
-      { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/reporting", label: "Reporting", icon: TrendingUp },
-      { href: "/admin/kpi-history", label: "Historique KPI", icon: History },
+      // 3 vues complémentaires : reporting synthétique (catalogue/financier),
+      // analytics détaillées (deep-dive), historique KPI (évolution dans le temps).
+      // Labels renommés pour clarifier les usages distincts.
+      { href: "/reporting", label: "Synthèse activité", icon: TrendingUp },
+      { href: "/dashboard/analytics", label: "Analyses détaillées", icon: BarChart3 },
+      { href: "/admin/kpi-history", label: "Évolution KPI", icon: History },
     ],
   },
 

@@ -1,8 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, User, GraduationCap, Phone, Mail, MapPin, Globe } from "lucide-react";
+import {
+  Building2,
+  User,
+  GraduationCap,
+  Phone,
+  Mail,
+  MapPin,
+  Globe,
+  Search,
+  X,
+  ChevronDown,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
 import { notify } from "@/lib/toast";
@@ -18,6 +29,39 @@ type EntrepriseOption = {
   secteur?: string | null;
   effectif?: number | null;
 };
+
+type FormationOption = {
+  id: string;
+  titre: string;
+  categorie?: string | null;
+};
+
+// TYPE DE PROSPECT (amélioration #2)
+const PROSPECT_TYPES = [
+  {
+    value: "entreprise" as const,
+    label: "Entreprise",
+    sublabel: "Manager RH d'une entreprise",
+    icon: Building2,
+    color: "border-blue-600 bg-blue-900/10",
+  },
+  {
+    value: "stagiaire" as const,
+    label: "Stagiaire individuel",
+    sublabel: "Particulier qui demande une formation pour lui",
+    icon: User,
+    color: "border-green-600 bg-green-900/10",
+  },
+  {
+    value: "organisme" as const,
+    label: "Organisme / société tierce",
+    sublabel: "Sous-traitant, OPCO, autre structure",
+    icon: GraduationCap,
+    color: "border-purple-600 bg-purple-900/10",
+  },
+];
+
+type ProspectType = "entreprise" | "stagiaire" | "organisme";
 
 const ORIGINES = [
   {
@@ -57,6 +101,47 @@ const MATERIEL = [
 ];
 
 // ---------------------------------------------------------------------------
+// Types API gouv (amélioration #4)
+// ---------------------------------------------------------------------------
+
+type EntrepriseGouv = {
+  siren: string;
+  nom_raison_sociale: string;
+  siege: {
+    siret: string;
+    adresse: string;
+    code_postal: string;
+    libelle_commune: string;
+    activite_principale: string;
+  };
+  tranche_effectif_salarie?: string;
+};
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+// Recherche entreprise API gouv (amélioration #4)
+async function searchEntrepriseGouv(query: string): Promise<EntrepriseGouv[]> {
+  if (!query || query.trim().length < 2) return [];
+  try {
+    const url = `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(query.trim())}&page=1&per_page=8`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.results || [];
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -76,6 +161,9 @@ export default function NouveauProspectPage() {
 
   const [error, setError] = useState("");
 
+  // ---- Type de prospect (amélioration #2) ----
+  const [prospectType, setProspectType] = useState<ProspectType>("entreprise");
+
   // ---- Contact (décideur) ----
   const [contact, setContact] = useState({
     prenom: "",
@@ -88,7 +176,7 @@ export default function NouveauProspectPage() {
   // ---- Mode entreprise ----
   const [entrepriseMode, setEntrepriseMode] = useState<"existante" | "nouvelle">("existante");
 
-  // ---- Formulaire principal (même shape que l'ancien /demandes/nouveau) ----
+  // ---- Formulaire principal ----
   const [form, setForm] = useState({
     titre: "",
     description: "",
@@ -110,18 +198,40 @@ export default function NouveauProspectPage() {
     entrepriseVille: "",
     entrepriseSecteur: "",
     entrepriseEffectif: "",
+    // Organisme : nature supplémentaire
+    natureOrganisme: "",
     // Autres
     sourceContact: "",
     lieu: "",
     observation: "",
     priorite: "normale",
     materielSurPlace: [] as string[],
+    // Formation catalogue (amélioration #3)
+    formationId: "",
+    formationAutre: "", // texte libre si "Autre"
   });
+
+  // ---- Formation autocomplete (amélioration #3) ----
+  const [formationSearch, setFormationSearch] = useState("");
+  const [formationDropdownOpen, setFormationDropdownOpen] = useState(false);
+  const [selectedFormationLabel, setSelectedFormationLabel] = useState("");
+  const formationRef = useRef<HTMLDivElement>(null);
+
+  // ---- SIRET / Entreprise gouv search (amélioration #4) ----
+  const [siretSearchQuery, setSiretSearchQuery] = useState("");
+  const [siretResults, setSiretResults] = useState<EntrepriseGouv[]>([]);
+  const [siretLoading, setSiretLoading] = useState(false);
+  const [siretDropdownOpen, setSiretDropdownOpen] = useState(false);
+  const siretRef = useRef<HTMLDivElement>(null);
+  const debouncedSiretQuery = useDebounce(siretSearchQuery, 300);
 
   // ---- APIs ----
   const { data: entreprisesRaw } = useApi<EntrepriseOption[] | { entreprises: EntrepriseOption[] }>("/api/entreprises");
   const { data: entrepriseDetail } = useApi<EntrepriseOption>(
     form.entrepriseId ? `/api/entreprises/${form.entrepriseId}` : null
+  );
+  const { data: formationsRaw } = useApi<{ formations: FormationOption[] } | FormationOption[]>(
+    "/api/formations?actif=true&limit=100"
   );
   const { trigger: createProspect, isMutating: saving } = useApiMutation<Record<string, unknown>, ProspectResult>(
     "/api/prospects",
@@ -132,6 +242,17 @@ export default function NouveauProspectPage() {
     ? entreprisesRaw
     : (entreprisesRaw as { entreprises?: EntrepriseOption[] })?.entreprises ?? [];
 
+  const formations: FormationOption[] = Array.isArray(formationsRaw)
+    ? formationsRaw
+    : (formationsRaw as { formations?: FormationOption[] })?.formations ?? [];
+
+  // Filtrer formations selon recherche
+  const filteredFormations = formations.filter((f) =>
+    formationSearch.trim() === "" ||
+    f.titre.toLowerCase().includes(formationSearch.toLowerCase()) ||
+    (f.categorie && f.categorie.toLowerCase().includes(formationSearch.toLowerCase()))
+  );
+
   // Auto-remplir nature + nbSalaries depuis l'entreprise sélectionnée
   useEffect(() => {
     if (!entrepriseDetail) return;
@@ -139,11 +260,47 @@ export default function NouveauProspectPage() {
       ...f,
       nature: f.nature || entrepriseDetail.secteur || "",
       nbSalaries: f.nbSalaries || (entrepriseDetail.effectif != null ? String(entrepriseDetail.effectif) : ""),
-      // Pré-remplir aussi les champs "nouvelle" pour cohérence
       entrepriseSecteur: f.entrepriseSecteur || entrepriseDetail.secteur || "",
       entrepriseEffectif: f.entrepriseEffectif || (entrepriseDetail.effectif != null ? String(entrepriseDetail.effectif) : ""),
     }));
   }, [entrepriseDetail]);
+
+  // Recherche API gouv au debounce (amélioration #4)
+  useEffect(() => {
+    if (!debouncedSiretQuery || debouncedSiretQuery.trim().length < 2) {
+      setSiretResults([]);
+      return;
+    }
+    setSiretLoading(true);
+    searchEntrepriseGouv(debouncedSiretQuery).then((results) => {
+      setSiretResults(results);
+      setSiretDropdownOpen(results.length > 0);
+      setSiretLoading(false);
+    });
+  }, [debouncedSiretQuery]);
+
+  // Fermer dropdowns au clic extérieur
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (formationRef.current && !formationRef.current.contains(e.target as Node)) {
+        setFormationDropdownOpen(false);
+      }
+      if (siretRef.current && !siretRef.current.contains(e.target as Node)) {
+        setSiretDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Quand le type de prospect change → ajuster l'origine par défaut
+  useEffect(() => {
+    if (prospectType === "stagiaire") {
+      setForm((f) => ({ ...f, origine: "stagiaire" }));
+    } else {
+      setForm((f) => ({ ...f, origine: "client" }));
+    }
+  }, [prospectType]);
 
   const setF = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
   const setC = (field: string, value: string) => setContact((c) => ({ ...c, [field]: value }));
@@ -166,6 +323,37 @@ export default function NouveauProspectPage() {
     }));
   }
 
+  // Sélectionner une formation depuis le catalogue (amélioration #3)
+  function handleFormationSelect(formation: FormationOption | null) {
+    if (!formation) {
+      // "Autre" : texte libre
+      setForm((f) => ({ ...f, formationId: "", titre: formationSearch }));
+      setSelectedFormationLabel("Autre — saisie libre");
+    } else {
+      setForm((f) => ({ ...f, formationId: formation.id, titre: formation.titre }));
+      setSelectedFormationLabel(formation.titre);
+    }
+    setFormationSearch("");
+    setFormationDropdownOpen(false);
+  }
+
+  // Auto-fill depuis API gouv (amélioration #4)
+  function handleEntrepriseGouvSelect(ent: EntrepriseGouv) {
+    setForm((f) => ({
+      ...f,
+      entrepriseNom: ent.nom_raison_sociale || f.entrepriseNom,
+      entrepriseSiret: ent.siege?.siret || f.entrepriseSiret,
+      entrepriseAdresse: ent.siege?.adresse || f.entrepriseAdresse,
+      entrepriseCodePostal: ent.siege?.code_postal || f.entrepriseCodePostal,
+      entrepriseVille: ent.siege?.libelle_commune || f.entrepriseVille,
+      entrepriseSecteur: ent.siege?.activite_principale || f.entrepriseSecteur,
+      entrepriseEffectif: f.entrepriseEffectif, // pas dans l'API gouv de manière fiable
+    }));
+    setSiretSearchQuery("");
+    setSiretResults([]);
+    setSiretDropdownOpen(false);
+  }
+
   // ---- Submit ----
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -178,6 +366,17 @@ export default function NouveauProspectPage() {
     if (form.nbSalaries) extra.push(`Nb de salaries : ${form.nbSalaries}`);
     const notesInternes = [form.notes, ...extra].filter(Boolean).join("\n") || undefined;
 
+    // Déterminer entrepriseMode selon prospectType
+    let entrepriseModePayload: "nouvelle" | "existante" | "aucune";
+    if (prospectType === "stagiaire") {
+      entrepriseModePayload = "aucune";
+    } else {
+      entrepriseModePayload = entrepriseMode === "nouvelle" ? "nouvelle" : "existante";
+    }
+
+    // Titre : si formation catalogue choisie → utiliser son titre ; sinon form.titre
+    const formationSouhaitee = form.titre || selectedFormationLabel || "";
+
     // Payload vers POST /api/prospects
     const payload: Record<string, unknown> = {
       contact: {
@@ -186,11 +385,14 @@ export default function NouveauProspectPage() {
         email: contact.email,
         telephone: contact.telephone || undefined,
         poste: contact.poste || undefined,
+        type: prospectType === "stagiaire" ? "stagiaire" : "prospect",
       },
-      entrepriseMode,
-      ...(entrepriseMode === "existante"
+      prospectType,
+      entrepriseMode: entrepriseModePayload,
+      ...(entrepriseModePayload === "existante"
         ? { entrepriseId: form.entrepriseId }
-        : {
+        : entrepriseModePayload === "nouvelle"
+        ? {
             entrepriseNouvelle: {
               nom: form.entrepriseNom,
               siret: form.entrepriseSiret || undefined,
@@ -199,12 +401,15 @@ export default function NouveauProspectPage() {
               ville: form.entrepriseVille || undefined,
               secteur: form.entrepriseSecteur || undefined,
               effectif: form.entrepriseEffectif ? Number(form.entrepriseEffectif) : undefined,
+              natureOrganisme: prospectType === "organisme" ? (form.natureOrganisme || undefined) : undefined,
             },
-          }),
+          }
+        : {}),
       demande: {
-        origine: form.origine,
+        origine: form.origine as "client" | "stagiaire" | "centre" | "prospection",
         sourceContact: form.sourceContact || undefined,
-        formationSouhaitee: form.titre,
+        formationSouhaitee: formationSouhaitee || "Non précisée",
+        formationId: form.formationId || undefined,
         nbStagiaires: form.nbStagiaires ? Number(form.nbStagiaires) : undefined,
         datesSouhaitees: form.datesSouhaitees || undefined,
         budgetEnvisage: form.budget ? Number(form.budget) : undefined,
@@ -242,6 +447,12 @@ export default function NouveauProspectPage() {
     }
   }
 
+  // Label dynamique selon type prospect
+  const contactSectionLabel =
+    prospectType === "stagiaire" ? "Stagiaire" : "Contact (décideur)";
+  const entrepriseSectionLabel =
+    prospectType === "organisme" ? "Organisme" : "Entreprise";
+
   // ---- Render ----
   return (
     <div>
@@ -258,9 +469,42 @@ export default function NouveauProspectPage() {
 
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
 
-        {/* SECTION 0 : Contact (décideur) */}
+        {/* SECTION TYPE DE PROSPECT (amélioration #2) */}
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Type de prospect</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {PROSPECT_TYPES.map((pt) => {
+              const Icon = pt.icon;
+              const selected = prospectType === pt.value;
+              return (
+                <button
+                  key={pt.value}
+                  type="button"
+                  onClick={() => setProspectType(pt.value)}
+                  className={`rounded-lg border-2 p-4 text-left transition-all ${
+                    selected
+                      ? pt.color
+                      : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:border-gray-400 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <Icon
+                    className={`h-5 w-5 mb-2 ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
+                  />
+                  <p
+                    className={`text-sm font-semibold ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}
+                  >
+                    {pt.label}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{pt.sublabel}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* SECTION CONTACT */}
         <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
-          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Contact (décideur)</h2>
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">{contactSectionLabel}</h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -307,19 +551,21 @@ export default function NouveauProspectPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Poste / Fonction</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {prospectType === "stagiaire" ? "Entreprise / Organisme employeur" : "Poste / Fonction"}
+              </label>
               <input
                 type="text"
                 value={contact.poste}
                 onChange={(e) => setC("poste", e.target.value)}
-                placeholder="Responsable formation"
+                placeholder={prospectType === "stagiaire" ? "Optionnel" : "Responsable formation"}
                 className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
               />
             </div>
           </div>
         </div>
 
-        {/* SECTION 1 : Origine de la demande */}
+        {/* SECTION ORIGINE DE LA DEMANDE */}
         <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
           <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Origine de la demande *</h2>
           <div className="grid grid-cols-3 gap-3">
@@ -352,7 +598,7 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* SECTION 2 : Prise de contact */}
+        {/* SECTION PRISE DE CONTACT */}
         <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
           <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Prise de contact</h2>
           <div className="grid grid-cols-4 gap-3">
@@ -390,197 +636,375 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* SECTION 3 : Entreprise */}
-        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Entreprise</h2>
-            <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-xs">
-              <button
-                type="button"
-                onClick={() => setEntrepriseMode("existante")}
-                className={`px-3 py-1.5 transition-colors ${
-                  entrepriseMode === "existante"
-                    ? "bg-red-600 text-white"
-                    : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
-                }`}
-              >
-                Existante
-              </button>
-              <button
-                type="button"
-                onClick={() => setEntrepriseMode("nouvelle")}
-                className={`px-3 py-1.5 transition-colors ${
-                  entrepriseMode === "nouvelle"
-                    ? "bg-red-600 text-white"
-                    : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
-                }`}
-              >
-                Nouvelle
-              </button>
-            </div>
-          </div>
-
-          {entrepriseMode === "existante" ? (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Entreprise *
-                </label>
-                <select
-                  value={form.entrepriseId}
-                  onChange={(e) => handleEntrepriseChange(e.target.value)}
-                  required={entrepriseMode === "existante"}
-                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+        {/* SECTION ENTREPRISE / ORGANISME — masquée si Stagiaire (amélioration #2) */}
+        {prospectType !== "stagiaire" && (
+          <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-red-600 dark:text-red-500">{entrepriseSectionLabel}</h2>
+              <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setEntrepriseMode("existante")}
+                  className={`px-3 py-1.5 transition-colors ${
+                    entrepriseMode === "existante"
+                      ? "bg-red-600 text-white"
+                      : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  }`}
                 >
-                  <option value="">-- Sélectionner une entreprise --</option>
-                  {entreprises.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nom}
-                    </option>
-                  ))}
-                </select>
+                  Existante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntrepriseMode("nouvelle")}
+                  className={`px-3 py-1.5 transition-colors ${
+                    entrepriseMode === "nouvelle"
+                      ? "bg-red-600 text-white"
+                      : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  Nouvelle
+                </button>
               </div>
+            </div>
 
-              {/* Nature + Nb salariés (auto depuis entreprise) */}
-              <div className="grid grid-cols-2 gap-4">
+            {entrepriseMode === "existante" ? (
+              <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nature (secteur)
+                    {entrepriseSectionLabel} *
+                  </label>
+                  <select
+                    value={form.entrepriseId}
+                    onChange={(e) => handleEntrepriseChange(e.target.value)}
+                    required={entrepriseMode === "existante"}
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {entreprises.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nature (secteur)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.nature}
+                      onChange={(e) => setF("nature", e.target.value)}
+                      placeholder="Auto-rempli depuis l'entreprise"
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nb de salariés
+                    </label>
+                    <input
+                      type="number"
+                      value={form.nbSalaries}
+                      onChange={(e) => setF("nbSalaries", e.target.value)}
+                      placeholder="Auto depuis effectif"
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Nouvelle entreprise/organisme */
+              <>
+                {/* Recherche SIRET / nom API gouv (amélioration #4) */}
+                <div ref={siretRef} className="relative">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Rechercher par nom ou SIRET
+                    <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">(auto-fill via API gouvernement)</span>
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={siretSearchQuery}
+                      onChange={(e) => {
+                        setSiretSearchQuery(e.target.value);
+                        if (!e.target.value) setSiretDropdownOpen(false);
+                      }}
+                      placeholder="Ex : Bouygues, 12345678901234..."
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 pl-9 pr-8 text-sm"
+                    />
+                    {siretSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => { setSiretSearchQuery(""); setSiretResults([]); setSiretDropdownOpen(false); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {siretLoading && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Recherche en cours...</p>
+                  )}
+                  {siretDropdownOpen && siretResults.length > 0 && (
+                    <ul className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {siretResults.map((ent) => (
+                        <li key={ent.siren}>
+                          <button
+                            type="button"
+                            onClick={() => handleEntrepriseGouvSelect(ent)}
+                            className="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          >
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{ent.nom_raison_sociale}</span>
+                            <span className="text-gray-500 dark:text-gray-400 ml-2 text-xs">
+                              {ent.siege?.siret && `SIRET: ${ent.siege.siret}`}
+                              {ent.siege?.libelle_commune && ` — ${ent.siege.libelle_commune}`}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Raison sociale *
                   </label>
                   <input
                     type="text"
-                    value={form.nature}
-                    onChange={(e) => setF("nature", e.target.value)}
-                    placeholder="Auto-rempli depuis l'entreprise"
+                    required={entrepriseMode === "nouvelle"}
+                    value={form.entrepriseNom}
+                    onChange={(e) => setF("entrepriseNom", e.target.value)}
                     className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
                   />
                 </div>
+
+                {/* Champ "Nature de l'organisme" visible uniquement si type = organisme (amélioration #2) */}
+                {prospectType === "organisme" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nature de l'organisme
+                    </label>
+                    <select
+                      value={form.natureOrganisme}
+                      onChange={(e) => setF("natureOrganisme", e.target.value)}
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    >
+                      <option value="">-- Sélectionner --</option>
+                      <option value="opco">OPCO</option>
+                      <option value="sous-traitant">Sous-traitant</option>
+                      <option value="partenaire">Partenaire</option>
+                      <option value="autre">Autre</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SIRET</label>
+                    <input
+                      type="text"
+                      value={form.entrepriseSiret}
+                      onChange={(e) => setF("entrepriseSiret", e.target.value)}
+                      placeholder="14 chiffres"
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Secteur / Code NAF</label>
+                    <input
+                      type="text"
+                      value={form.entrepriseSecteur}
+                      onChange={(e) => setF("entrepriseSecteur", e.target.value)}
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nb de salariés
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Adresse</label>
+                  <input
+                    type="text"
+                    value={form.entrepriseAdresse}
+                    onChange={(e) => setF("entrepriseAdresse", e.target.value)}
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Code postal</label>
+                    <input
+                      type="text"
+                      value={form.entrepriseCodePostal}
+                      onChange={(e) => setF("entrepriseCodePostal", e.target.value)}
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville</label>
+                    <input
+                      type="text"
+                      value={form.entrepriseVille}
+                      onChange={(e) => setF("entrepriseVille", e.target.value)}
+                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Effectif</label>
                   <input
                     type="number"
-                    value={form.nbSalaries}
-                    onChange={(e) => setF("nbSalaries", e.target.value)}
-                    placeholder="Auto depuis effectif"
+                    value={form.entrepriseEffectif}
+                    onChange={(e) => setF("entrepriseEffectif", e.target.value)}
+                    placeholder="Nb de salariés"
                     className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
                   />
                 </div>
-              </div>
-            </>
-          ) : (
-            /* Nouvelle entreprise */
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Raison sociale *
-                </label>
-                <input
-                  type="text"
-                  required={entrepriseMode === "nouvelle"}
-                  value={form.entrepriseNom}
-                  onChange={(e) => setF("entrepriseNom", e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                />
-              </div>
+              </>
+            )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SIRET</label>
-                  <input
-                    type="text"
-                    value={form.entrepriseSiret}
-                    onChange={(e) => setF("entrepriseSiret", e.target.value)}
-                    placeholder="14 chiffres"
-                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Secteur</label>
-                  <input
-                    type="text"
-                    value={form.entrepriseSecteur}
-                    onChange={(e) => setF("entrepriseSecteur", e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Adresse</label>
-                <input
-                  type="text"
-                  value={form.entrepriseAdresse}
-                  onChange={(e) => setF("entrepriseAdresse", e.target.value)}
-                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Code postal</label>
-                  <input
-                    type="text"
-                    value={form.entrepriseCodePostal}
-                    onChange={(e) => setF("entrepriseCodePostal", e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville</label>
-                  <input
-                    type="text"
-                    value={form.entrepriseVille}
-                    onChange={(e) => setF("entrepriseVille", e.target.value)}
-                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Effectif</label>
-                <input
-                  type="number"
-                  value={form.entrepriseEffectif}
-                  onChange={(e) => setF("entrepriseEffectif", e.target.value)}
-                  placeholder="Nb de salariés"
-                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nb de stagiaires (à former)
-            </label>
-            <input
-              type="number"
-              value={form.nbStagiaires}
-              onChange={(e) => setF("nbStagiaires", e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nb de stagiaires (à former)
+              </label>
+              <input
+                type="number"
+                value={form.nbStagiaires}
+                onChange={(e) => setF("nbStagiaires", e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* SECTION 4 : Formation souhaitée */}
+        {/* Nb de stagiaires pour type Stagiaire individuel */}
+        {prospectType === "stagiaire" && (
+          <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
+            <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Informations formation</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nb de stagiaires
+              </label>
+              <input
+                type="number"
+                value={form.nbStagiaires}
+                onChange={(e) => setF("nbStagiaires", e.target.value)}
+                defaultValue="1"
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* SECTION FORMATION SOUHAITÉE — avec autocomplete catalogue (amélioration #3) */}
         <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
           <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Formation souhaitée</h2>
 
-          <div>
+          {/* Combobox / autocomplete formation */}
+          <div ref={formationRef} className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Titre de la demande *
+              Formation du catalogue
+              <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">(ou saisie libre)</span>
             </label>
-            <input
-              type="text"
-              required
-              value={form.titre}
-              onChange={(e) => setF("titre", e.target.value)}
-              placeholder="Ex: Formation Sécurité Incendie pour 10 salariés"
-              className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-            />
+
+            {selectedFormationLabel && !formationDropdownOpen ? (
+              <div className="flex items-center gap-2 h-10 rounded-md border border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-900/10 px-3">
+                <span className="text-sm text-gray-900 dark:text-gray-100 flex-1 truncate">{selectedFormationLabel}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFormationLabel("");
+                    setForm((f) => ({ ...f, formationId: "", titre: "" }));
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formationSearch}
+                    onChange={(e) => {
+                      setFormationSearch(e.target.value);
+                      setFormationDropdownOpen(true);
+                    }}
+                    onFocus={() => setFormationDropdownOpen(true)}
+                    placeholder="Rechercher une formation (ex : SST, incendie...)"
+                    className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 pl-9 pr-4 text-sm"
+                  />
+                </div>
+
+                {formationDropdownOpen && (
+                  <ul className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {filteredFormations.length === 0 && formationSearch.trim() !== "" ? (
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => handleFormationSelect(null)}
+                          className="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-500 dark:text-gray-400"
+                        >
+                          Autre — saisir &ldquo;{formationSearch}&rdquo; manuellement
+                        </button>
+                      </li>
+                    ) : (
+                      <>
+                        {filteredFormations.slice(0, 10).map((f) => (
+                          <li key={f.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleFormationSelect(f)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{f.titre}</span>
+                              {f.categorie && (
+                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">{f.categorie}</span>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => handleFormationSelect(null)}
+                            className="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-600"
+                          >
+                            Autre — saisir manuellement
+                          </button>
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                )}
+              </>
+            )}
           </div>
+
+          {/* Titre libre — affiché si pas de formation catalogue choisie OU si "Autre" */}
+          {(!form.formationId) && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Titre de la demande *
+              </label>
+              <input
+                type="text"
+                required={!form.formationId}
+                value={form.titre}
+                onChange={(e) => setF("titre", e.target.value)}
+                placeholder="Ex: Formation Sécurité Incendie pour 10 salariés"
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -620,15 +1044,15 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* SECTION 5 : Besoins particuliers */}
+        {/* SECTION DÉCRIVEZ LE BESOIN (amélioration #1) */}
         <div className="rounded-lg border border-red-300 dark:border-red-700/30 bg-red-50/50 dark:bg-red-900/5 p-6 space-y-4">
-          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Besoins particuliers</h2>
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Décrivez le besoin</h2>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  Descriptif de la demande *
+                  Description du besoin *
                 </label>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                   Contexte, objectifs, contraintes, délais, public cible...
@@ -651,8 +1075,8 @@ export default function NouveauProspectPage() {
             <textarea
               value={form.description}
               onChange={(e) => setF("description", e.target.value)}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm resize-y min-h-[140px]"
-              rows={6}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm resize-y min-h-[160px]"
+              rows={7}
               placeholder="Contexte, objectifs, contraintes, délais..."
             />
             <p className="text-xs text-gray-500 text-right">{form.description.length} caractères</p>
@@ -660,7 +1084,7 @@ export default function NouveauProspectPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Observation / Contraintes
+              Observation / Contraintes spécifiques
             </label>
             <textarea
               value={form.observation}
@@ -672,7 +1096,7 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* SECTION 6 : Matériel sur place */}
+        {/* SECTION MATÉRIEL SUR PLACE */}
         <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
           <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Matériel sur place</h2>
           <p className="text-xs text-gray-600 dark:text-gray-400">Cocher le matériel disponible chez le client.</p>

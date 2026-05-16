@@ -4,12 +4,18 @@
 
 import { z } from "zod";
 
+// Types de prospect : "entreprise" | "stagiaire" | "organisme"
+export const PROSPECT_TYPE_VALUES = ["entreprise", "stagiaire", "organisme"] as const;
+export type ProspectType = (typeof PROSPECT_TYPE_VALUES)[number];
+
 const contactSchema = z.object({
   prenom: z.string().min(1, "Prénom requis"),
   nom: z.string().min(1, "Nom requis"),
   email: z.string().email("Email invalide"),
   telephone: z.string().optional(),
   poste: z.string().optional(),
+  // "prospect" (entreprise/organisme) | "stagiaire"
+  type: z.string().optional(),
 });
 
 const entrepriseNouvelleSchema = z.object({
@@ -20,12 +26,18 @@ const entrepriseNouvelleSchema = z.object({
   ville: z.string().optional(),
   secteur: z.string().optional(),
   effectif: z.coerce.number().int().nonnegative().optional(),
+  // Pour organisme : nature supplémentaire
+  natureOrganisme: z.string().optional(),
 });
 
 const demandeSchema = z.object({
   origine: z.enum(["client", "stagiaire", "centre", "prospection"]),
   sourceContact: z.string().optional(),
   formationSouhaitee: z.string().min(1, "Formation souhaitée requise"),
+  // formationId : lier à une formation du catalogue (optionnel)
+  formationId: z.string().cuid().optional(),
+  // description : contenu du textarea "Décrivez le besoin"
+  description: z.string().optional(),
   nbStagiaires: z.coerce.number().int().positive().optional(),
   datesSouhaitees: z.string().optional(),
   budgetEnvisage: z.coerce.number().nonnegative().optional(),
@@ -40,7 +52,10 @@ const besoinsParticulierssSchema = z.object({
 export const prospectCreationSchema = z
   .object({
     contact: contactSchema,
-    entrepriseMode: z.enum(["nouvelle", "existante"]),
+    // prospectType guide le comportement côté formulaire et back
+    prospectType: z.enum(PROSPECT_TYPE_VALUES).optional().default("entreprise"),
+    // Pour stagiaire : pas d'entreprise requise ; pour les autres, obligatoire
+    entrepriseMode: z.enum(["nouvelle", "existante", "aucune"]),
     entrepriseId: z.string().cuid().optional(),
     entrepriseNouvelle: entrepriseNouvelleSchema.optional(),
     demande: demandeSchema,
@@ -49,6 +64,8 @@ export const prospectCreationSchema = z
   })
   .refine(
     (data) => {
+      // Stagiaire → pas d'entreprise requise
+      if (data.entrepriseMode === "aucune") return true;
       if (data.entrepriseMode === "nouvelle") return !!data.entrepriseNouvelle?.nom;
       if (data.entrepriseMode === "existante") return !!data.entrepriseId;
       return false;

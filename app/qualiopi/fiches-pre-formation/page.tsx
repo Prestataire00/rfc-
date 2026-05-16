@@ -61,10 +61,10 @@ export default function FichesBesoinPage() {
   const [generatingDevisId, setGeneratingDevisId] = useState<string | null>(null);
 
   const { data: clientData, isLoading: clientLoading, mutate: mutateClient } = useApi<FicheClient[]>(
-    "/api/besoin-client"
+    "/api/qualiopi/fiches-entreprise"
   );
   const { data: stagiaireData, isLoading: stagiaireLoading, mutate: mutateStagiaire } = useApi<FicheStagiaire[]>(
-    "/api/besoin-stagiaire"
+    "/api/qualiopi/fiches-stagiaire"
   );
 
   const fichesClient: FicheClient[] = Array.isArray(clientData) ? clientData : [];
@@ -73,7 +73,8 @@ export default function FichesBesoinPage() {
 
   const handleResend = async (type: "client" | "stagiaire", id: string) => {
     try {
-      await api.patch(`/api/besoin-${type}/${id}`, { action: "envoyer" });
+      const apiBase = type === "client" ? "/api/qualiopi/fiches-entreprise" : "/api/qualiopi/fiches-stagiaire";
+      await api.patch(`${apiBase}/${id}`, { action: "envoyer" });
       if (type === "client") await mutateClient();
       else await mutateStagiaire();
     } catch {
@@ -82,7 +83,8 @@ export default function FichesBesoinPage() {
   };
 
   const handleCopyLink = (type: "client" | "stagiaire", token: string) => {
-    const url = `${window.location.origin}/fiche-besoin-${type}/${token}`;
+    const slug = type === "client" ? "fiche-entreprise" : "fiche-stagiaire";
+    const url = `${window.location.origin}/qualiopi/${slug}/${token}`;
     navigator.clipboard.writeText(url);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
@@ -94,7 +96,7 @@ export default function FichesBesoinPage() {
     setGeneratingDevisId(besoinId);
     try {
       const res = await api.post<{ devisId: string; numero: string; redirectUrl: string }>(
-        `/api/besoin-client/${besoinId}/generate-devis`,
+        `/api/qualiopi/fiches-entreprise/${besoinId}/generate-devis`,
         {},
       );
       notify.success(`Devis ${res.numero} créé — redirection en cours…`);
@@ -131,7 +133,7 @@ export default function FichesBesoinPage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-          <ClipboardList className="h-6 w-6 text-red-500" /> Fiches besoin
+          <ClipboardList className="h-6 w-6 text-red-500" /> Fiches pré-formation
         </h1>
         <p className="text-sm text-gray-400 mt-1">Questionnaires d&apos;adaptation pedagogique envoyes aux clients et stagiaires avant formation</p>
       </div>
@@ -325,7 +327,7 @@ function ClientTable({ fiches, onResend, onCopy, onGenerateDevis, generatingDevi
                   <button onClick={() => onCopy(f.tokenAcces)} className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700" title="Copier le lien">
                     <Copy className="h-3 w-3" /> {copiedToken === f.tokenAcces ? "Copie!" : "Lien"}
                   </button>
-                  <Link href={`/fiche-besoin-client/${f.tokenAcces}`} target="_blank" className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700" title="Ouvrir le formulaire">
+                  <Link href={`/qualiopi/fiche-entreprise/${f.tokenAcces}`} target="_blank" className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700" title="Ouvrir le formulaire">
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                   {f.destinataireEmail && (
@@ -339,7 +341,7 @@ function ClientTable({ fiches, onResend, onCopy, onGenerateDevis, generatingDevi
                       onClick={() => onGenerateDevis(f.id)}
                       disabled={generatingDevisId === f.id}
                       className="inline-flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 text-xs text-white"
-                      title="Générer un devis brouillon à partir de ce besoin"
+                      title="Générer un devis brouillon à partir de cette fiche pré-formation"
                     >
                       <FileText className="h-3 w-3" />
                       {generatingDevisId === f.id ? "…" : "Devis"}
@@ -413,7 +415,7 @@ function StagiaireTable({ fiches, onResend, onCopy, copiedToken }: {
                   <button onClick={() => onCopy(f.tokenAcces)} className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700" title="Copier le lien">
                     <Copy className="h-3 w-3" /> {copiedToken === f.tokenAcces ? "Copie!" : "Lien"}
                   </button>
-                  <Link href={`/fiche-besoin-stagiaire/${f.tokenAcces}`} target="_blank" className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700" title="Ouvrir le formulaire">
+                  <Link href={`/qualiopi/fiche-stagiaire/${f.tokenAcces}`} target="_blank" className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700" title="Ouvrir le formulaire">
                     <ExternalLink className="h-3 w-3" />
                   </Link>
                   {f.contact.email && (

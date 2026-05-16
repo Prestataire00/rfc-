@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  const besoin = await prisma.besoinFormation.findUnique({
+  const demande = await prisma.demande.findUnique({
     where: { id: params.id },
     include: {
       entreprise: true,
@@ -14,14 +14,14 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
     },
   });
 
-  if (!besoin) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(besoin);
+  if (!demande) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(demande);
 });
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const body = await req.json();
 
-  const besoin = await prisma.besoinFormation.update({
+  const demande = await prisma.demande.update({
     where: { id: params.id },
     data: {
       titre: body.titre,
@@ -43,7 +43,7 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
     },
   });
 
-  return NextResponse.json(besoin);
+  return NextResponse.json(demande);
 });
 
 export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -51,11 +51,11 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
   const data: Record<string, unknown> = {};
   if (body.devisId !== undefined) data.devisId = body.devisId || null;
   if (body.statut !== undefined) data.statut = body.statut;
-  const besoin = await prisma.besoinFormation.update({ where: { id: params.id }, data });
-  return NextResponse.json(besoin);
+  const demande = await prisma.demande.update({ where: { id: params.id }, data });
+  return NextResponse.json(demande);
 });
 
 export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await prisma.besoinFormation.delete({ where: { id: params.id } });
+  await prisma.demande.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });
 });

@@ -5,7 +5,7 @@ import { triggerAutomation } from "@/lib/automations-trigger";
 import { notifyAdmins } from "@/lib/notifications";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
-import { besoinFormationSchema } from "@/lib/validations/besoin-formation";
+import { demandeSchema } from "@/lib/validations/demande";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -15,7 +15,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const where: any = {};
   if (statut) where.statut = statut;
 
-  const besoins = await prisma.besoinFormation.findMany({
+  const demandes = await prisma.demande.findMany({
     where,
     include: {
       entreprise: { select: { id: true, nom: true } },
@@ -26,7 +26,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(besoins);
+  return NextResponse.json(demandes);
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
@@ -36,9 +36,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   for (const key of ["nbStagiaires", "budget", "entrepriseId", "contactId", "formationId", "description", "datesSouhaitees", "notes", "sourceContact", "observation"]) {
     if (cleaned[key] === "") cleaned[key] = null;
   }
-  const data = besoinFormationSchema.parse(cleaned);
+  const data = demandeSchema.parse(cleaned);
 
-  const besoin = await prisma.besoinFormation.create({
+  const demande = await prisma.demande.create({
     data: {
       titre: data.titre,
       description: data.description || null,
@@ -64,21 +64,21 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   // Fire-and-forget : automations + notifications (hors tx, side-effects volontairement non-rollback).
   triggerAutomation("besoin_created", {
-    besoinId: besoin.id,
-    entrepriseId: besoin.entrepriseId ?? undefined,
-    contactId: besoin.contactId ?? undefined,
-    formationId: besoin.formationId ?? undefined,
+    besoinId: demande.id,
+    entrepriseId: demande.entrepriseId ?? undefined,
+    contactId: demande.contactId ?? undefined,
+    formationId: demande.formationId ?? undefined,
   }).catch((err) => logger.warn("automation.besoin_created_failed", { error: String(err) }));
 
-  const origineName = besoin.entreprise?.nom
-    || (besoin.contact ? `${besoin.contact.prenom} ${besoin.contact.nom}` : "origine non renseignee");
+  const origineName = demande.entreprise?.nom
+    || (demande.contact ? `${demande.contact.prenom} ${demande.contact.nom}` : "origine non renseignee");
 
   notifyAdmins({
     titre: "Nouveau besoin de formation",
-    message: `${besoin.titre} — ${origineName}`,
+    message: `${demande.titre} — ${origineName}`,
     type: "info",
-    lien: `/besoins/${besoin.id}`,
+    lien: `/demandes/${demande.id}`,
   }).catch(() => {});
 
-  return NextResponse.json(besoin, { status: 201 });
+  return NextResponse.json(demande, { status: 201 });
 });

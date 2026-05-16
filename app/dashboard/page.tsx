@@ -239,9 +239,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Ma Journee */}
-      <MaJournee />
-
       {/* CA Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="rounded-lg border bg-gradient-to-br from-green-50 to-emerald-50 p-5">
@@ -328,6 +325,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Ma Journee */}
+      <MaJournee />
+
       {/* Planning du jour */}
       {sessionsAujourdhui.length > 0 && (
         <div className="rounded-lg border bg-gray-800 mb-6 overflow-hidden">
@@ -367,9 +367,14 @@ export default function DashboardPage() {
       <div className="rounded-lg border bg-gray-800 mb-6 overflow-hidden">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b">
           <h2 className="font-semibold text-gray-100">Planning de la semaine</h2>
-          <Link href="/sessions" className="text-sm text-red-600 hover:underline flex items-center gap-1">
-            Voir tout <ArrowRight className="h-3 w-3" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/planning" className="text-sm text-red-600 hover:underline flex items-center gap-1">
+              Planning complet <ArrowRight className="h-3 w-3" />
+            </Link>
+            <Link href="/sessions" className="text-sm text-gray-400 hover:underline flex items-center gap-1">
+              Liste sessions <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
         <div className="overflow-x-auto">
         <div className="grid grid-cols-7 divide-x min-w-[640px]">

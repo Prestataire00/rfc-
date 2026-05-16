@@ -9,7 +9,7 @@ import {
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
-  ListChecks, Briefcase, History, Wallet,
+  ListChecks, Briefcase, History, Wallet, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +39,8 @@ const adminGroups: NavGroup[] = [
       // "Prospects" (filtre Contacts) fusionné dans le pipeline "Demandes &
       // prospects" sous Commercial — un prospect sans demande exprimée n'a
       // pas d'intérêt opérationnel.
+      { href: "/entreprises", label: "Entreprises", icon: Building2 },
+      { href: "/contacts", label: "Tous contacts", icon: Users },
       { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
       { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
@@ -54,6 +56,7 @@ const adminGroups: NavGroup[] = [
       { href: "/formations", label: "Catalogue formations", icon: BookOpen },
       { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
+      { href: "/dashboard/planning", label: "Planning", icon: Calendar },
     ],
   },
 
@@ -69,16 +72,22 @@ const adminGroups: NavGroup[] = [
   },
 
   // 4. Commercial : cycle de vente (avant facturation)
+  // BPF retiré → groupe Qualité (c'est de la conformité réglementaire,
+  // pas du commercial).
   {
     key: "commercial",
     label: "Commercial",
     icon: TrendingUp,
     items: [
-      { href: "/commercial", label: "Devis", icon: FileText },
-      { href: "/besoins", label: "Demandes & prospects", icon: ClipboardList },
-      { href: "/fiches-besoin", label: "Fiches besoin (Qualiopi)", icon: ClipboardList },
+      // /commercial?tab=devis : page commerciale, onglet Devis (par défaut).
+      // /commercial?tab=factures = même page, onglet Factures → exposé dans Finance.
+      { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
+      // /besoins = pipeline commercial (statuts nouveau→qualifie→devis…)
+      // /fiches-besoin = fiches Qualiopi à envoyer aux clients/stagiaires
+      // Pages distinctes mais liées : depuis /besoins on peut envoyer une fiche.
+      { href: "/besoins", label: "Besoins & demandes", icon: ClipboardList },
+      { href: "/fiches-besoin", label: "Fiches Qualiopi", icon: BadgeCheck },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
-      { href: "/bpf", label: "BPF", icon: BarChart3 },
     ],
   },
 
@@ -88,14 +97,20 @@ const adminGroups: NavGroup[] = [
     label: "Finance",
     icon: CreditCard,
     items: [
-      { href: "/commercial", label: "Factures", icon: Receipt },
+      // /commercial?tab=factures : même page que Commercial.Devis mais onglet
+      // pré-sélectionné sur Factures (cf. activeTab dans app/commercial/page.tsx).
+      { href: "/commercial?tab=factures", label: "Factures", icon: Receipt },
       { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
       { href: "/admin/notes-frais", label: "Notes de frais", icon: Wallet },
       { href: "/finance/paiements", label: "Paiements", icon: CreditCard },
     ],
   },
 
-  // 6. Qualité : conformité Qualiopi + évaluations + documents
+  // 6. Qualité : conformité Qualiopi + évaluations + documents + certifications + BPF
+  // BPF déplacé ici (depuis Commercial) : c'est une obligation réglementaire
+  // Qualiopi (Bilan Pédagogique et Financier annuel obligatoire pour OF).
+  // Certifications ajoutée : suivi des formations certifiantes + stats annuelles
+  // (créée dans la PR contract-compliance #98).
   {
     key: "qualite",
     label: "Qualité",
@@ -103,6 +118,8 @@ const adminGroups: NavGroup[] = [
     items: [
       { href: "/evaluations", label: "Questionnaires", icon: ClipboardList },
       { href: "/qualiopi/indicateurs", label: "Indicateurs Qualiopi", icon: BadgeCheck },
+      { href: "/certifications", label: "Certifications", icon: Award },
+      { href: "/bpf", label: "BPF", icon: BarChart3 },
       { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },
@@ -113,9 +130,12 @@ const adminGroups: NavGroup[] = [
     label: "Reporting",
     icon: BarChart3,
     items: [
-      { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/reporting", label: "Reporting", icon: TrendingUp },
-      { href: "/admin/kpi-history", label: "Historique KPI", icon: History },
+      // 3 vues complémentaires : reporting synthétique (catalogue/financier),
+      // analytics détaillées (deep-dive), historique KPI (évolution dans le temps).
+      // Labels renommés pour clarifier les usages distincts.
+      { href: "/reporting", label: "Synthèse activité", icon: TrendingUp },
+      { href: "/dashboard/analytics", label: "Analyses détaillées", icon: BarChart3 },
+      { href: "/admin/kpi-history", label: "Évolution KPI", icon: History },
     ],
   },
 

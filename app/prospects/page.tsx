@@ -103,17 +103,17 @@ export default function ProspectsPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-            <UserPlus className="h-6 w-6 text-red-500" /> Prospects
+            <UserPlus className="h-6 w-6 text-red-500" /> Demandes
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Pipeline commercial unifie : du prospect entrant a la session signee
+            Pipeline unifié prospect → demande → devis → client
           </p>
         </div>
         <Link
           href="/prospects/nouveau"
           className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
         >
-          <Plus className="h-4 w-4" /> Nouveau prospect
+          <Plus className="h-4 w-4" /> Nouvelle demande
         </Link>
       </div>
 
@@ -174,7 +174,7 @@ export default function ProspectsPage() {
             icon={UserPlus}
             title="Aucun prospect"
             description="Saisissez un prospect entrant pour demarrer le pipeline commercial"
-            actionLabel="Nouveau prospect"
+            actionLabel="Nouvelle demande"
             actionHref="/prospects/nouveau"
           />
         </div>

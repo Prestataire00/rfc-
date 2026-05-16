@@ -78,6 +78,9 @@ const adminApiPrefixes = [
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/login") return true;
   if (pathname.startsWith("/api/auth")) return true;
+  // /api/health : monitoring uptime externe (UptimeRobot, etc.). Public,
+  // pas de PII exposée — retourne juste le statut DB + uptime. Cf. TD-009.
+  if (pathname === "/api/health") return true;
   // /api/cron/* : pas de session NextAuth (appelé par cron externe GitHub Actions).
   // L'authentification est faite par les route handlers eux-mêmes via le Bearer
   // CRON_SECRET — cf .github/workflows/cron.yml + commit d49fc77.

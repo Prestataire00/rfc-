@@ -287,7 +287,7 @@ export default function DemandeDetailPage() {
               <p className="text-xs text-gray-400 mb-3">Exploitez l&apos;IA Claude pour analyser, structurer ou proposer des reponses adaptees a cette demande.</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <AIButton
-                  endpoint="/api/ai/besoin"
+                  endpoint="/api/ai/demande"
                   payload={{ action: "analyser", titre: besoin.titre, description: besoin.description, origine: besoin.origine, nbStagiaires: besoin.nbStagiaires, contactId: besoin.contact?.id, entrepriseId: besoin.entreprise?.id }}
                   onResult={(t) => { setAiResult(t); setAiTitle("Analyse de la demande"); }}
                   label="Analyser"
@@ -295,7 +295,7 @@ export default function DemandeDetailPage() {
                   className="w-full"
                 />
                 <AIButton
-                  endpoint="/api/ai/besoin"
+                  endpoint="/api/ai/demande"
                   payload={{ action: "brief", titre: besoin.titre, description: besoin.description, origine: besoin.origine, nbStagiaires: besoin.nbStagiaires, contactId: besoin.contact?.id, entrepriseId: besoin.entreprise?.id }}
                   onResult={(t) => { setAiResult(t); setAiTitle("Brief pedagogique"); }}
                   label="Brief formation"
@@ -303,7 +303,7 @@ export default function DemandeDetailPage() {
                   className="w-full"
                 />
                 <AIButton
-                  endpoint="/api/ai/besoin"
+                  endpoint="/api/ai/demande"
                   payload={{ action: "suggerer_formations", titre: besoin.titre, description: besoin.description, origine: besoin.origine, nbStagiaires: besoin.nbStagiaires, contactId: besoin.contact?.id, entrepriseId: besoin.entreprise?.id }}
                   onResult={(t) => { setAiResult(t); setAiTitle("Formations suggerees"); }}
                   label="Suggerer formations"

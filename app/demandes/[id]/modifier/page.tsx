@@ -138,7 +138,7 @@ export default function ModifierDemandePage() {
                 <p className="text-xs text-gray-400 mt-0.5">Contexte, objectifs, contraintes, delais, public cible...</p>
               </div>
               <AIButton
-                endpoint="/api/ai/besoin"
+                endpoint="/api/ai/demande"
                 payload={{ action: "brief", titre: form.titre, description: form.description, origine: form.origine, nbStagiaires: form.nbStagiaires, entrepriseId: form.entrepriseId }}
                 onResult={(t) => setForm({ ...form, description: t })}
                 label="Générer un brief IA"

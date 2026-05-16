@@ -53,10 +53,10 @@ const OBJECTIFS = [
 export default function FicheBesoinClientPage() {
   const { token } = useParams<{ token: string }>();
   const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
-    token ? `/api/besoin-client/public/${token}` : null
+    token ? `/api/qualiopi/fiches-entreprise/public/${token}` : null
   );
   const submitMutation = useApiMutation<Record<string, unknown>>(
-    `/api/besoin-client/public/${token}`,
+    `/api/qualiopi/fiches-entreprise/public/${token}`,
     "POST"
   );
   const [submitError, setSubmitError] = useState("");
@@ -146,7 +146,7 @@ export default function FicheBesoinClientPage() {
           <div className="flex items-center gap-3 mb-4">
             <Image src="/logorescue.png" alt="RFC" width={48} height={48} className="rounded-lg" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Fiche d&apos;analyse du besoin</h1>
+              <h1 className="text-xl font-bold text-gray-900">Fiche pré-formation entreprise</h1>
               <p className="text-xs text-gray-500">Rescue Formation Conseil</p>
             </div>
           </div>

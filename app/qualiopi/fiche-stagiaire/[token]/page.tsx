@@ -64,10 +64,10 @@ function formatSecuDisplay(v: string): string {
 export default function FicheBesoinStagiairePage() {
   const { token } = useParams<{ token: string }>();
   const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
-    token ? `/api/besoin-stagiaire/public/${token}` : null
+    token ? `/api/qualiopi/fiches-stagiaire/public/${token}` : null
   );
   const submitMutation = useApiMutation<Record<string, unknown>>(
-    `/api/besoin-stagiaire/public/${token}`,
+    `/api/qualiopi/fiches-stagiaire/public/${token}`,
     "POST"
   );
   const [submitError, setSubmitError] = useState("");
@@ -158,7 +158,7 @@ export default function FicheBesoinStagiairePage() {
           <div className="flex items-center gap-3 mb-4">
             <Image src="/logorescue.png" alt="RFC" width={48} height={48} className="rounded-lg" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Fiche individuelle de besoin</h1>
+              <h1 className="text-xl font-bold text-gray-900">Fiche pré-formation individuelle</h1>
               <p className="text-xs text-gray-500">Rescue Formation Conseil</p>
             </div>
           </div>

@@ -47,6 +47,10 @@ on:
           - signature-reminders
 
 env:
+  # Crons ciblent la prod uniquement. Le staging (https://staging--projetrfc.netlify.app)
+  # n'a pas de crons automatiques — voir docs/operations/environments.md pour
+  # le rationale + déclencher manuellement via workflow_dispatch si besoin de
+  # tester un cron sur staging (penser à modifier APP_URL temporairement).
   APP_URL: https://projetrfc.netlify.app
 
 jobs:

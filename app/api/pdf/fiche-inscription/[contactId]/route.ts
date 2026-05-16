@@ -6,6 +6,7 @@ import { ficheInscriptionPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+import { decryptNSS } from "@/lib/encryption";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -73,7 +74,7 @@ export const GET = withErrorHandlerParams<{ contactId: string }>(
         dateNaissance: contact.dateNaissance ? contact.dateNaissance.toISOString() : null,
         lieuNaissance: contact.lieuNaissance,
         pays: contact.pays,
-        numeroSecuriteSociale: contact.numeroSecuriteSociale,
+        numeroSecuriteSociale: decryptNSS(contact.numeroSecuriteSociale),
         adressePerso: contact.adressePerso,
         codePostalPerso: contact.codePostalPerso,
         villePerso: contact.villePerso,

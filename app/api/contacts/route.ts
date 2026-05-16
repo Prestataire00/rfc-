@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { contactSchema } from "@/lib/validations/contact";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
+import { encryptNSS } from "@/lib/encryption";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -56,6 +57,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     notes: parsed.notes || null,
     entrepriseId: parsed.entrepriseId || null,
     dateNaissance: parsed.dateNaissance ? new Date(parsed.dateNaissance) : null,
+    numeroSecuriteSociale: encryptNSS(parsed.numeroSecuriteSociale),
   };
 
   const contact = await prisma.contact.create({ data });

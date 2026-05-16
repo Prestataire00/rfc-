@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { enforceRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
+import { encryptNSS } from "@/lib/encryption";
 
 // GET: session info for public form
 export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
@@ -126,7 +127,9 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     const d = new Date(dateNaissance);
     if (!isNaN(d.getTime())) contactExtraData.dateNaissance = d;
   }
-  if (numeroSecuriteSociale) contactExtraData.numeroSecuriteSociale = String(numeroSecuriteSociale).replace(/\s/g, "");
+  if (numeroSecuriteSociale) {
+    contactExtraData.numeroSecuriteSociale = encryptNSS(String(numeroSecuriteSociale).replace(/\s/g, ""));
+  }
   if (besoinsAdaptation) contactExtraData.besoinsAdaptation = besoinsAdaptation;
   if (adressePerso) contactExtraData.adressePerso = String(adressePerso);
   if (codePostalPerso) contactExtraData.codePostalPerso = String(codePostalPerso);

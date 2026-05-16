@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { contactSchema } from "@/lib/validations/contact";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parsePartialBody } from "@/lib/validations/helpers";
+import { encryptNSS, decryptNSS } from "@/lib/encryption";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const contact = await prisma.contact.findUnique({
@@ -31,7 +32,10 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
   });
 
   if (!contact) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
-  return NextResponse.json(contact);
+  return NextResponse.json({
+    ...contact,
+    numeroSecuriteSociale: decryptNSS(contact.numeroSecuriteSociale),
+  });
 });
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -43,7 +47,7 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
     data.dateNaissance = isNaN(d.getTime()) ? null : d;
   }
   if (typeof data.numeroSecuriteSociale === "string" && data.numeroSecuriteSociale) {
-    data.numeroSecuriteSociale = data.numeroSecuriteSociale.replace(/\s/g, "");
+    data.numeroSecuriteSociale = encryptNSS(data.numeroSecuriteSociale.replace(/\s/g, ""));
   }
 
   const contact = await prisma.contact.update({

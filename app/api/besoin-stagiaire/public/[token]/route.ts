@@ -6,6 +6,7 @@ import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
 import { enforceRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
+import { encryptNSS, decryptNSS } from "@/lib/encryption";
 
 export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
   const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-stag:get");
@@ -38,9 +39,11 @@ export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: {
   });
   if (!fiche) return NextResponse.json({ error: "Lien invalide" }, { status: 404 });
 
-  // Masquer partiellement le numero de secu (ne revelons pas ce qui est en base pour un non-authentifie)
+  // Masquer partiellement le numero de secu (ne revelons pas ce qui est en base pour un non-authentifie).
+  // Décrypter d'abord pour masquer le clair, pas le ciphertext.
   if (fiche.contact?.numeroSecuriteSociale) {
-    fiche.contact.numeroSecuriteSociale = "••••••••••••" + fiche.contact.numeroSecuriteSociale.slice(-3);
+    const plain = decryptNSS(fiche.contact.numeroSecuriteSociale);
+    fiche.contact.numeroSecuriteSociale = plain ? "••••••••••••" + plain.slice(-3) : null;
   }
   return NextResponse.json(fiche);
 });
@@ -65,7 +68,7 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     if (!isNaN(date.getTime())) contactUpdate.dateNaissance = date;
   }
   if (d.numeroSecuriteSociale && !d.numeroSecuriteSociale.startsWith("•")) {
-    contactUpdate.numeroSecuriteSociale = d.numeroSecuriteSociale.replace(/\s/g, "");
+    contactUpdate.numeroSecuriteSociale = encryptNSS(d.numeroSecuriteSociale.replace(/\s/g, ""));
   }
   if (d.numeroPasseportPrevention) contactUpdate.numeroPasseportPrevention = d.numeroPasseportPrevention;
   if (d.niveauFormation) contactUpdate.niveauFormation = d.niveauFormation;

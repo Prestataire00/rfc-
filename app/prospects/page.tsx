@@ -10,19 +10,20 @@ import { useApi } from "@/hooks/useApi";
 import { StatsBar } from "./_components/StatsBar";
 import { TableView } from "./_components/TableView";
 import { KanbanView, PIPELINE_COLS, type Besoin } from "./_components/KanbanView";
+import { CardsView } from "./_components/CardsView";
 
 const LS_KEY = "prospects_view_mode";
 
 export default function ProspectsPage() {
   const router = useRouter();
 
-  // View mode with localStorage persistence (default: table)
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  // View mode with localStorage persistence (default: cards)
+  const [viewMode, setViewMode] = useState<"table" | "kanban" | "cards">("cards");
   useEffect(() => {
     const saved = localStorage.getItem(LS_KEY);
-    if (saved === "kanban" || saved === "table") setViewMode(saved);
+    if (saved === "kanban" || saved === "table" || saved === "cards") setViewMode(saved);
   }, []);
-  function switchView(mode: "table" | "kanban") {
+  function switchView(mode: "table" | "kanban" | "cards") {
     setViewMode(mode);
     localStorage.setItem(LS_KEY, mode);
   }
@@ -151,8 +152,15 @@ export default function ProspectsPage() {
           </button>
         )}
 
-        {/* Toggle Table / Kanban */}
+        {/* Toggle Cards / Table / Kanban */}
         <div className="ml-auto flex items-center gap-1 border border-gray-600 rounded-md p-0.5">
+          <button
+            onClick={() => switchView("cards")}
+            title="Vue cards"
+            className={`h-8 w-8 inline-flex items-center justify-center rounded transition-colors ${viewMode === "cards" ? "bg-gray-600 text-gray-100" : "text-gray-400 hover:bg-gray-700"}`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
           <button
             onClick={() => switchView("table")}
             title="Vue table"
@@ -185,6 +193,8 @@ export default function ProspectsPage() {
             actionHref="/prospects/nouveau"
           />
         </div>
+      ) : viewMode === "cards" ? (
+        <CardsView besoins={filtered} onRefresh={() => mutate()} />
       ) : viewMode === "table" ? (
         <TableView besoins={filtered} onRefresh={() => mutate()} />
       ) : (

@@ -42,6 +42,11 @@ type Stats = {
   nbFormationsRealisees: number;
   nbBesoinsEnCours: number;
   nbDevisEnCours: number;
+  // Heures vendues (cahier des charges art. 2.3)
+  heuresVenduesMois: number;
+  heuresVenduesTrimestre: number;
+  heuresVenduesAnnee: number;
+  heuresVenduesFiltre: number;
   // V2 KPIs
   nbBadges30j: number;
   nbRecyclagesUrgents: number;
@@ -279,6 +284,20 @@ export default function DashboardPage() {
           </div>
           <p className="text-3xl font-bold text-purple-900">{stats.nbFormationsRealisees}</p>
           <p className="text-xs text-purple-600 mt-1">{stats.nbStagiairesFormes} stagiaires formés cette année</p>
+        </div>
+      </div>
+
+      {/* Heures vendues (cahier des charges art. 2.3) — réutilise le filtre période ci-dessus */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="rounded-lg border bg-gradient-to-br from-blue-50 to-sky-50 p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <CalendarDays className="h-5 w-5 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">Heures vendues ({stats.periodLabel})</span>
+          </div>
+          <p className="text-3xl font-bold text-blue-900">{stats.heuresVenduesFiltre} h</p>
+          <p className="text-xs text-blue-600 mt-1">
+            Année : {stats.heuresVenduesAnnee} h · Trim. : {stats.heuresVenduesTrimestre} h
+          </p>
         </div>
       </div>
 

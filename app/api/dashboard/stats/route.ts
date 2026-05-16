@@ -135,6 +135,44 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }),
   ]);
 
+  // ── Heures vendues (article 2.3 du cahier des charges) ──────────────────
+  // Calcul : pour les sessions confirmées / en cours / terminées (= "vendues"),
+  // on agrège formation.duree × nombre d'inscriptions confirmées/présentes,
+  // par période (mois / trimestre / année).
+  // Pas de lien direct devis ↔ session dans le schéma, donc on prend la session
+  // comme proxy de "vente réalisée" — cohérent avec le BPF.
+  const computeHeuresVendues = async (debut: Date, fin: Date) => {
+    const sessions = await prisma.session.findMany({
+      where: {
+        dateDebut: { gte: debut, lte: fin },
+        statut: { in: ["confirmee", "en_cours", "terminee"] },
+      },
+      select: {
+        formation: { select: { duree: true } },
+        _count: {
+          select: {
+            inscriptions: {
+              where: { statut: { in: ["confirmee", "presente"] } },
+            },
+          },
+        },
+      },
+    });
+    return sessions.reduce((sum, s) => sum + (s.formation?.duree ?? 0) * s._count.inscriptions, 0);
+  };
+
+  const [heuresVenduesMois, heuresVenduesTrimestre, heuresVenduesAnnee] = await Promise.all([
+    computeHeuresVendues(debutMois, finMois),
+    computeHeuresVendues(debutTrimestre, finTrimestre),
+    computeHeuresVendues(debutAnnee, finAnnee),
+  ]);
+  const heuresPeriodMap: Record<string, number> = {
+    mois: heuresVenduesMois,
+    trimestre: heuresVenduesTrimestre,
+    annee: heuresVenduesAnnee,
+  };
+  const heuresVenduesFiltre = heuresPeriodMap[period] ?? heuresVenduesMois;
+
   const caFactureMois = caFactureMoisAgg._sum.montantTTC ?? 0;
   const caFactureTrimestre = caFactureTrimestreAgg._sum.montantTTC ?? 0;
   const caFactureAnnee = caFactureAnneeAgg._sum.montantTTC ?? 0;
@@ -203,6 +241,11 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       nbStagiairesFormes,
       nbFormationsRealisees,
       nbBesoinsEnCours,
+      // Heures vendues (cahier des charges art. 2.3)
+      heuresVenduesMois,
+      heuresVenduesTrimestre,
+      heuresVenduesAnnee,
+      heuresVenduesFiltre,
       // V2 KPIs
       nbBadges30j,
       nbRecyclagesUrgents,

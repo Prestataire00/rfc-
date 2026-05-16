@@ -59,7 +59,7 @@ export default function BesoinsPage() {
   const [origineFilter, setOrigineFilter] = useState("");
   const [prioriteFilter, setPrioriteFilter] = useState("");
 
-  const { data: besoinsData, isLoading: loading } = useApi<Besoin[]>("/api/besoins");
+  const { data: besoinsData, isLoading: loading } = useApi<Besoin[]>("/api/demandes");
   const besoins: Besoin[] = Array.isArray(besoinsData) ? besoinsData : [];
 
   const filtered = useMemo(() => {
@@ -110,7 +110,7 @@ export default function BesoinsPage() {
           </p>
         </div>
         <Link
-          href="/besoins/nouveau"
+          href="/demandes/nouveau"
           className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           <Plus className="h-4 w-4" /> Nouveau prospect / demande
@@ -175,13 +175,13 @@ export default function BesoinsPage() {
             title="Aucun prospect ni demande"
             description="Saisissez un prospect entrant pour démarrer le pipeline commercial"
             actionLabel="Nouveau prospect / demande"
-            actionHref="/besoins/nouveau"
+            actionHref="/demandes/nouveau"
           />
         </div>
       ) : view === "kanban" ? (
-        <KanbanView cols={PIPELINE_COLS} byStatut={byStatut} onOpen={(id) => router.push(`/besoins/${id}`)} />
+        <KanbanView cols={PIPELINE_COLS} byStatut={byStatut} onOpen={(id) => router.push(`/demandes/${id}`)} />
       ) : (
-        <ListView besoins={filtered} onOpen={(id) => router.push(`/besoins/${id}`)} />
+        <ListView besoins={filtered} onOpen={(id) => router.push(`/demandes/${id}`)} />
       )}
     </div>
   );

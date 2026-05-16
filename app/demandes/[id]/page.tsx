@@ -116,9 +116,9 @@ export default function BesoinDetailPage() {
   const [aiResult, setAiResult] = useState("");
   const [aiTitle, setAiTitle] = useState("");
 
-  const { data: besoin, isLoading: loading, mutate } = useApi<Besoin | null>(`/api/besoins/${id}`);
-  const { trigger: updateBesoin } = useApiMutation<Partial<Besoin>>(`/api/besoins/${id}`, "PUT");
-  const { trigger: deleteBesoin } = useApiMutation(`/api/besoins/${id}`, "DELETE");
+  const { data: besoin, isLoading: loading, mutate } = useApi<Besoin | null>(`/api/demandes/${id}`);
+  const { trigger: updateBesoin } = useApiMutation<Partial<Besoin>>(`/api/demandes/${id}`, "PUT");
+  const { trigger: deleteBesoin } = useApiMutation(`/api/demandes/${id}`, "DELETE");
 
   const historiqueUrl = useMemo(() => {
     if (!besoin) return null;
@@ -138,15 +138,15 @@ export default function BesoinDetailPage() {
 
   async function handleDelete() {
     await deleteBesoin();
-    notify.success("Besoin supprimé");
-    router.push("/besoins");
+    notify.success("Demande supprimée");
+    router.push("/demandes");
   }
 
   if (loading) {
     return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" /></div>;
   }
 
-  if (!besoin) return <p>Besoin non trouvé</p>;
+  if (!besoin) return <p>Demande non trouvée</p>;
 
   const st = BESOIN_STATUTS[besoin.statut as keyof typeof BESOIN_STATUTS];
   const prio = BESOIN_PRIORITES[besoin.priorite as keyof typeof BESOIN_PRIORITES];
@@ -160,8 +160,8 @@ export default function BesoinDetailPage() {
 
   return (
     <div>
-      <Link href="/besoins" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
-        <ArrowLeft className="h-4 w-4" /> Retour aux besoins
+      <Link href="/demandes" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
+        <ArrowLeft className="h-4 w-4" /> Retour aux demandes
       </Link>
 
       {/* Header */}
@@ -260,12 +260,12 @@ export default function BesoinDetailPage() {
                 <h3 className="font-semibold text-gray-100 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-red-500" /> Descriptif de la demande
                 </h3>
-                <Link href={`/besoins/${besoin.id}/modifier`} className="text-xs text-red-500 hover:underline">Modifier</Link>
+                <Link href={`/demandes/${besoin.id}/modifier`} className="text-xs text-red-500 hover:underline">Modifier</Link>
               </div>
               {besoin.description ? (
                 <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{besoin.description}</p>
               ) : (
-                <p className="text-sm text-gray-500 italic">Aucun descriptif renseigne. <Link href={`/besoins/${besoin.id}/modifier`} className="text-red-500 hover:underline">Ajouter</Link></p>
+                <p className="text-sm text-gray-500 italic">Aucun descriptif renseigne. <Link href={`/demandes/${besoin.id}/modifier`} className="text-red-500 hover:underline">Ajouter</Link></p>
               )}
             </div>
 
@@ -653,7 +653,7 @@ export default function BesoinDetailPage() {
 
       <ConfirmDialog
         open={showDelete}
-        title="Supprimer ce besoin ?"
+        title="Supprimer cette demande ?"
         description="Cette action est irréversible."
         onConfirm={handleDelete}
         onOpenChange={setShowDelete}

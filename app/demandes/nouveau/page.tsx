@@ -115,7 +115,7 @@ export default function NouveauBesoinPage() {
     form.entrepriseId ? `/api/entreprises/${form.entrepriseId}` : null
   );
   const { trigger: createBesoin, isMutating: saving } = useApiMutation<Record<string, unknown>, BesoinCreated>(
-    "/api/besoins",
+    "/api/demandes",
     "POST"
   );
 
@@ -220,8 +220,8 @@ export default function NouveauBesoinPage() {
     try {
       const besoin = await createBesoin(payload);
       clearDraft();
-      notify.success("Besoin cree", besoin.titre);
-      router.push(`/besoins/${besoin.id}`);
+      notify.success("Demande créée", besoin.titre);
+      router.push(`/demandes/${besoin.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { error?: unknown } | null;
@@ -246,7 +246,7 @@ export default function NouveauBesoinPage() {
 
   return (
     <div>
-      <PageHeader title="Nouveau besoin de formation" description="Analyse des besoins clients (RFC)" />
+      <PageHeader title="Nouvelle demande de formation" description="Analyse des besoins clients (RFC)" />
 
       {error && (
         <div className="max-w-2xl mb-4 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-400">
@@ -613,7 +613,7 @@ export default function NouveauBesoinPage() {
             Annuler
           </button>
           <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-sm text-white font-medium disabled:opacity-50">
-            {saving ? "Création..." : "Créer le besoin"}
+            {saving ? "Création..." : "Créer la demande"}
           </button>
         </div>
       </form>

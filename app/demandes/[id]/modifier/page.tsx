@@ -43,10 +43,10 @@ export default function ModifierBesoinPage() {
     formationId: "",
   });
 
-  const { data: besoin, isLoading: besoinLoading } = useApi<BesoinData>(`/api/besoins/${id}`);
+  const { data: besoin, isLoading: besoinLoading } = useApi<BesoinData>(`/api/demandes/${id}`);
   const { data: entRaw, isLoading: entLoading } = useApi<Option[] | { entreprises: Option[] }>("/api/entreprises");
   const { data: formRaw, isLoading: formLoading } = useApi<Option[] | { formations: Option[] }>("/api/formations");
-  const { trigger: updateBesoin, isMutating: saving } = useApiMutation<typeof form>(`/api/besoins/${id}`, "PUT");
+  const { trigger: updateBesoin, isMutating: saving } = useApiMutation<typeof form>(`/api/demandes/${id}`, "PUT");
 
   const entreprises: Option[] = Array.isArray(entRaw) ? entRaw : entRaw?.entreprises ?? [];
   const formations: Option[] = Array.isArray(formRaw) ? formRaw : formRaw?.formations ?? [];
@@ -74,7 +74,7 @@ export default function ModifierBesoinPage() {
     setError("");
     try {
       await updateBesoin(form);
-      router.push(`/besoins/${id}`);
+      router.push(`/demandes/${id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { error?: unknown } | null;
@@ -105,11 +105,11 @@ export default function ModifierBesoinPage() {
 
   return (
     <div>
-      <Link href={`/besoins/${id}`} className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
-        <ArrowLeft className="h-4 w-4" /> Retour au besoin
+      <Link href={`/demandes/${id}`} className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
+        <ArrowLeft className="h-4 w-4" /> Retour à la demande
       </Link>
 
-      <PageHeader title="Modifier le besoin" description="Modifiez les informations du besoin de formation" />
+      <PageHeader title="Modifier la demande" description="Modifiez les informations de la demande de formation" />
 
       {error && (
         <div className="max-w-2xl mb-4 rounded-md bg-red-900/20 border border-red-700 px-4 py-3 text-sm text-red-400">
@@ -281,7 +281,7 @@ export default function ModifierBesoinPage() {
             {saving ? "Enregistrement..." : "Enregistrer les modifications"}
           </button>
           <Link
-            href={`/besoins/${id}`}
+            href={`/demandes/${id}`}
             className="rounded-md border border-gray-600 px-6 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700"
           >
             Annuler

@@ -120,7 +120,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     await logAction({
       action: "prospect_cree",
       label: `Prospect créé : ${data.contact.prenom} ${data.contact.nom}`,
-      lien: `/demandes/${result.demandeId}`,
+      lien: `/prospects/${result.demandeId}`,
       entrepriseId: result.entrepriseId,
       contactId: result.contactId,
     });
@@ -129,7 +129,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   return NextResponse.json(
-    { ...result, redirectUrl: `/demandes/${result.demandeId}` },
+    { ...result, redirectUrl: `/prospects/${result.demandeId}` },
     { status: 201 },
   );
 });

@@ -49,7 +49,7 @@ describe("POST /api/prospects", () => {
       demandeId: "cuid_demande",
       contactId: "cuid_contact",
       entrepriseId: "cuid_entreprise",
-      redirectUrl: "/demandes/cuid_demande",
+      redirectUrl: "/prospects/cuid_demande",
     });
   });
 

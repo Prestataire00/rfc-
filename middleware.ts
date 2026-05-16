@@ -15,6 +15,7 @@ const adminPages = [
   "/formations",
   "/sessions",
   "/demandes",
+  "/prospects",
   "/qualiopi/fiches-pre-formation",
   "/contacts",
   "/formateurs",
@@ -74,6 +75,7 @@ const adminApiPrefixes = [
   "/api/signature-requests",
   "/api/pdf/template-preview",
   "/api/projets",
+  "/api/prospects",
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];
 

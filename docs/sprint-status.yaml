@@ -1,0 +1,118 @@
+version: "6.0.0"
+project_name: "RFC Formations"
+project_level: 2
+sprint_plan_path: "docs/sprint-plan-rfc-formations-2026-05-16.md"
+scope: "Dette technique architecture §15 (sécurité, RGPD, pipeline, ops)"
+
+current_sprint: 1
+
+sprints:
+  - sprint_number: 1
+    name: "Sécurité, RGPD & qualité CI"
+    goal: "Refermer les risques sécurité critiques (NSS chiffré, JWT révocable, alerte rate-limit) et activer les tests automatiques en CI."
+    start_date: "2026-05-19"
+    end_date: "2026-05-30"
+    capacity_points: 50
+    committed_points: 21
+    completed_points: 0
+    status: "not_started"
+    stories:
+      - story_id: "STORY-TD-001"
+        title: "Chiffrement applicatif du numéro SS sur Contact"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Must Have"
+        points: 5
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-002"
+        title: "Raccourcir TTL JWT + documenter rotation NEXTAUTH_SECRET"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Must Have"
+        points: 3
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-003"
+        title: "Alerter si UPSTASH_REDIS_REST_URL non défini en prod"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Must Have"
+        points: 2
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-006"
+        title: "Câbler Vitest dans GitHub Actions sur chaque PR"
+        epic: "TD-002 Pipeline & qualité"
+        priority: "Must Have"
+        points: 3
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-008"
+        title: "Test de restore Supabase (DR drill)"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Must Have"
+        points: 3
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-004"
+        title: "Registre RGPD des traitements documenté"
+        epic: "TD-001 Sécurité & RGPD"
+        priority: "Should Have"
+        points: 5
+        status: "not_started"
+        assigned_to: null
+
+  - sprint_number: 2
+    name: "Pipeline & ops"
+    goal: "Industrialiser le déploiement (migrations versionnées en CI, environnement staging) et renforcer la surveillance et la documentation opérationnelle."
+    start_date: "2026-06-02"
+    end_date: "2026-06-13"
+    capacity_points: 50
+    committed_points: 20
+    completed_points: 0
+    status: "not_started"
+    stories:
+      - story_id: "STORY-TD-007"
+        title: "Mettre en place un environnement staging"
+        epic: "TD-002 Pipeline & qualité"
+        priority: "Should Have"
+        points: 5
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-005"
+        title: "Migrer prisma db push → prisma migrate deploy en CI"
+        epic: "TD-002 Pipeline & qualité"
+        priority: "Must Have"
+        points: 5
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-009"
+        title: "Monitoring uptime externe"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Should Have"
+        points: 2
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-011"
+        title: "Documenter procédures opérationnelles consolidées"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Should Have"
+        points: 3
+        status: "not_started"
+        assigned_to: null
+      - story_id: "STORY-TD-010"
+        title: "Re-synchroniser PRD ↔ code (FR-016+)"
+        epic: "TD-003 Fiabilité & ops"
+        priority: "Could Have"
+        points: 5
+        status: "not_started"
+        assigned_to: null
+
+velocity:
+  sprint_1: null
+  sprint_2: null
+  rolling_average: null
+
+team:
+  size: 1
+  sprint_length_weeks: 2
+  capacity_per_sprint: 50
+  notes: "1 dev solo plein temps, ~60h productives par sprint (50 pts à 1pt=1.2h)"

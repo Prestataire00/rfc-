@@ -269,6 +269,300 @@ Le système permet de configurer les paramètres globaux de l'organisme (nom, sl
 
 ---
 
+> **FRs ajoutées en re-sync avec le code prod (STORY-TD-010)** : les FR-016 à FR-034 ci-dessous reflètent des fonctionnalités livrées au-delà du périmètre v1 initial documenté dans [PRD.md](../PRD.md). Cf. [architecture §13](architecture-rfc-formations-2026-05-16.md#13-écart-périmètre-prd--code-finding) pour le détail de l'écart.
+
+### FR-016 : Signature électronique self-hosted
+
+**Priorité** : Must Have
+
+**Description** :
+Le système permet de demander la signature électronique de documents (conventions, devis, attestations) par les signataires via un lien magique HMAC (sans création de compte). L'horodatage est assuré par FreeTSA (RFC 3161). Audit complet des tentatives et événements (`SignatureTokenAttempt`, `SignatureEvent`).
+
+**Critères d'acceptation** :
+- [ ] Création d'une `SignatureRequest` avec zones de signature positionnées sur le PDF
+- [ ] Lien magique envoyé par email au signataire, expiration configurable (par défaut 30 j)
+- [ ] Hash du PDF stocké pour vérification d'intégrité a posteriori (`/verify`)
+- [ ] Rotation gracieuse des secrets HMAC via `SECRET_HMAC_TOKENS_OLD`
+- [ ] Crons dédiés : retry finalization (5 min), expirations (02h), reminders (J-3 et J-1)
+
+**Dépendances** : FR-005 (devis), FR-008 (documents)
+
+---
+
+### FR-017 : Émargement numérique (QR + token public)
+
+**Priorité** : Must Have
+
+**Description** :
+Le système permet l'émargement des stagiaires sur tablette ou smartphone via un QR code généré par session. Les tokens sont uniques et tracés (`EmargementToken`).
+
+**Critères d'acceptation** :
+- [ ] QR code généré par session, scannable depuis le portail formateur
+- [ ] Page publique tokenisée `/emargement/[token]` accessible sans compte
+- [ ] Signature stagiaire capturée et stockée (date + hash)
+
+**Dépendances** : FR-003 (sessions)
+
+---
+
+### FR-018 : Campagnes marketing email
+
+**Priorité** : Should Have
+
+**Description** :
+Le système permet de créer et envoyer des campagnes email marketing aux contacts/prospects, avec gestion de l'opt-in/opt-out RGPD, tracking des ouvertures/clics, et désinscription un clic.
+
+**Critères d'acceptation** :
+- [ ] Création campagne avec ciblage par tags / type de contact
+- [ ] Lien désinscription dans chaque email (`/api/campaigns/unsubscribe`)
+- [ ] Opt-out tracé (`MarketingOptOut`, `Contact.optOutMarketing`)
+- [ ] Tracking événements (`EmailTrackingEvent`) : delivered, opened, clicked, bounced, unsubscribed
+- [ ] Aucun envoi vers les contacts en opt-out
+
+**Dépendances** : FR-001 (contacts)
+
+---
+
+### FR-019 : Badges digitaux vérifiables
+
+**Priorité** : Could Have
+
+**Description** :
+Le système peut émettre des badges digitaux (style Open Badges) aux stagiaires ayant complété une formation, avec une URL publique de vérification.
+
+**Critères d'acceptation** :
+- [ ] Création de templates de badges (`DigitalBadge`)
+- [ ] Émission de badges (`BadgeAward`) à la complétion d'une session
+- [ ] Page publique `/badges/[token]` qui affiche le badge + vérification
+- [ ] API publique `/api/badges/verify` pour vérification automatisée
+
+---
+
+### FR-020 : Forum interne + messagerie directe
+
+**Priorité** : Should Have
+
+**Description** :
+Le système expose un forum interne (topics + replies) pour les utilisateurs admin/formateurs, ainsi qu'une messagerie directe entre utilisateurs (conversations 1-1 ou groupées).
+
+**Critères d'acceptation** :
+- [ ] Forum : créer un topic, répondre, marquer résolu
+- [ ] Messagerie : conversation 1-1 ou multi-participants
+- [ ] Sanitization du contenu HTML (DOMPurify)
+- [ ] RBAC : seuls les participants voient le contenu d'une conversation
+
+---
+
+### FR-021 : Analyse IA de documents (Claude/Anthropic)
+
+**Priorité** : Should Have
+
+**Description** :
+Le système permet à l'admin de soumettre un document (CV, attestation, PDF divers) à un modèle IA Anthropic Claude pour analyse / extraction de données structurées.
+
+**Critères d'acceptation** :
+- [ ] Route `/api/ai` réservée aux admins (middleware)
+- [ ] Anti-abus applicatif (`lib/ai-guard.ts`) : quotas par utilisateur
+- [ ] Résultats stockés (`AiDocumentAnalysis`) avec effacement automatique après 30 j
+- [ ] Pas de PII envoyée en prompt sans consentement éclairé
+
+---
+
+### FR-022 : Automations métier (v2)
+
+**Priorité** : Should Have
+
+**Description** :
+Le système permet de définir des règles d'automatisation (`AutomationRuleV2`) déclenchées par événements (session terminée, devis accepté, etc.) ou par cron (toutes les 15 min). Exécutions tracées (`AutomationExecutionV2`).
+
+**Critères d'acceptation** :
+- [ ] Création/édition de règles avec conditions + actions
+- [ ] Cron quotidien toutes les 15 min (GitHub Actions)
+- [ ] Trace de chaque exécution avec statut succès/échec
+- [ ] Coexistence avec l'ancienne `AutomationRule` (v1) pour les règles legacy
+
+---
+
+### FR-023 : Templates documents, messages & champs personnalisés
+
+**Priorité** : Should Have
+
+**Description** :
+Le système permet de définir des templates réutilisables pour les documents PDF (`DocumentTemplate`), les messages email (`MessageTemplate`), et les SMS (`SmsTemplate`). Des champs personnalisés (`ChampPersonnalise` + `ValeurChampPersonnalise`) peuvent être attachés aux entités principales.
+
+**Critères d'acceptation** :
+- [ ] Éditeur de template (TipTap) avec variables interpolables
+- [ ] Prévisualisation avant envoi/génération
+- [ ] Champs personnalisés typés (string, number, date, select, boolean)
+
+---
+
+### FR-024 : Tâches & gestion de projets
+
+**Priorité** : Should Have
+
+**Description** :
+Le système expose un gestionnaire de tâches (`TaskList`, `TaskItem`, `TaskComment`) et un suivi de projets (`Projet`, `ProjetFormateur`) liés aux entreprises.
+
+**Critères d'acceptation** :
+- [ ] Création de listes de tâches avec items, statuts, échéances
+- [ ] Commentaires sur les items
+- [ ] Liaison projet ↔ entreprise ↔ formateurs
+
+---
+
+### FR-025 : Notes de frais formateur
+
+**Priorité** : Should Have
+
+**Description** :
+Les formateurs peuvent soumettre leurs notes de frais via le portail formateur. L'admin valide ou refuse.
+
+**Critères d'acceptation** :
+- [ ] Soumission depuis `/espace-formateur/notes-frais`
+- [ ] Le formateur ne voit/crée que ses propres notes (`session.user.formateurId`)
+- [ ] Workflow de validation admin (approuvé / refusé / remboursé)
+- [ ] Justificatif PDF/image attachable (Supabase Storage)
+
+---
+
+### FR-026 : Classes virtuelles
+
+**Priorité** : Could Have
+
+**Description** :
+Le système référence les classes virtuelles (`ClasseVirtuelle`) avec liens de connexion (Zoom, Meet, etc.) liées aux sessions.
+
+**Critères d'acceptation** :
+- [ ] Création/édition d'une classe virtuelle attachée à une session
+- [ ] Lien de connexion exposé au stagiaire dans la convocation
+
+**Dépendances** : FR-003
+
+---
+
+### FR-027 : Référentiel compétences + mapping formateurs
+
+**Priorité** : Should Have
+
+**Description** :
+Le système gère un référentiel de compétences (`CompetenceReferentiel`) et permet d'associer ces compétences aux formateurs (`FormateurCompetence`) pour le matching session ↔ formateur.
+
+**Critères d'acceptation** :
+- [ ] CRUD du référentiel compétences (admin)
+- [ ] Sélection des compétences sur la fiche formateur
+- [ ] Filtre formateur par compétence lors de l'assignation session
+
+---
+
+### FR-028 : Parcours multi-modules
+
+**Priorité** : Should Have
+
+**Description** :
+Le système permet de définir des parcours de formation composés de plusieurs modules (`Parcours`, `ParcoursModule`), et de lier les sessions à un parcours (`SessionParcours`).
+
+**Critères d'acceptation** :
+- [ ] Création parcours avec ordre des modules
+- [ ] Liaison session ↔ module de parcours
+- [ ] Suivi de la progression stagiaire dans le parcours
+
+**Dépendances** : FR-002
+
+---
+
+### FR-029 : CRM prospects (pipeline + activités)
+
+**Priorité** : Should Have
+
+**Description** :
+Le système gère un pipeline CRM dédié aux prospects (`Prospect`) avec historique des activités (`ProspectActivity` : appels, emails, rendez-vous).
+
+**Critères d'acceptation** :
+- [ ] Création d'un prospect avec statut (nouveau, qualifié, opportunité, gagné, perdu)
+- [ ] Journal d'activités horodaté
+- [ ] Conversion prospect → contact + entreprise
+
+---
+
+### FR-030 : Comptabilité avancée (financements, paiements, échéanciers)
+
+**Priorité** : Must Have
+
+**Description** :
+Au-delà des devis/factures (FR-005/006), le système gère les financements OPCO/CPF (`Financement`), les paiements (`Paiement`), les échéanciers de paiement (`EcheancierPaiement`), les transactions bancaires (`TransactionBancaire`) et les factures formateur (`FactureFormateur`).
+
+**Critères d'acceptation** :
+- [ ] Saisie d'un financement attaché à une entreprise/session
+- [ ] Échéancier multi-paiements pour une facture
+- [ ] Rapprochement bancaire manuel (transaction ↔ paiement)
+- [ ] Factures formateur séparées des factures client
+
+**Dépendances** : FR-005, FR-006
+
+---
+
+### FR-031 : Enrichissement entreprise via Pappers (SIRET)
+
+**Priorité** : Could Have
+
+**Description** :
+Le système permet d'enrichir automatiquement la fiche entreprise à partir du SIRET via l'API Pappers (raison sociale, adresse, dirigeants, etc.).
+
+**Critères d'acceptation** :
+- [ ] Bouton "Enrichir depuis SIRET" sur la fiche entreprise
+- [ ] Route `/api/pappers` (admin only)
+- [ ] Données ajoutées sans écraser les saisies manuelles
+
+**Dépendances** : FR-001
+
+---
+
+### FR-032 : Page publique de demande RGPD
+
+**Priorité** : Must Have
+
+**Description** :
+Le système expose une page publique `/rgpd/demande` permettant à toute personne d'exercer ses droits RGPD (accès, rectification, effacement, opposition, portabilité). Les demandes sont stockées (`DemandeRgpd`) et traitées par l'admin.
+
+**Critères d'acceptation** :
+- [ ] Formulaire public sans authentification
+- [ ] Email de confirmation envoyé au demandeur
+- [ ] Notification admin (in-app + email)
+- [ ] Traitement sous 1 mois (extensible 3 mois — art. 12.3 RGPD)
+
+---
+
+### FR-033 : API keys pour intégrations externes
+
+**Priorité** : Could Have
+
+**Description** :
+Le système permet de créer des clés API (`ApiKey`) pour intégrer des outils tiers (sans utiliser une session NextAuth).
+
+**Critères d'acceptation** :
+- [ ] Création/révocation de clés depuis l'admin
+- [ ] Authentification API via header `Authorization: Bearer <key>`
+- [ ] Rate-limit appliqué par clé
+
+---
+
+### FR-034 : Tracking d'envois email (deliverability)
+
+**Priorité** : Should Have
+
+**Description** :
+Le système trace les événements email (delivered, opened, clicked, bounced) via webhook fournisseur, stockés dans `EmailTrackingEvent` et `LogEmail`. Permet de mesurer la deliverability des campagnes et envois transactionnels.
+
+**Critères d'acceptation** :
+- [ ] Webhook public `/api/email-tracking/webhook` accepte les payloads fournisseur
+- [ ] Dashboard admin avec stats par campagne / par template
+- [ ] Bounces durs marquent automatiquement l'email comme invalide
+
+**Dépendances** : FR-018
+
+---
+
 ## 5. Non-Functional Requirements (NFRs)
 
 ### NFR-001 : Performance (Standard PME)
@@ -372,16 +666,32 @@ Le code suit TypeScript strict, lint via ESLint, structure Next.js App Router. L
 
 ---
 
+### NFR-008 : Anti-abus (rate-limit)
+
+**Priorité** : Must Have
+
+**Description** :
+Les endpoints publics tokenisés (évaluations, inscription publique, besoin client/stagiaire, émargement, signature) et les endpoints sensibles (login) sont rate-limités pour bloquer les attaques par force brute et l'abus automatisé. En production, le rate-limit utilise Upstash Redis (distribué inter-instances Netlify) ; sans Upstash, l'absence est alertée via Sentry (cf. STORY-TD-003).
+
+**Critères d'acceptation** :
+- [ ] Login : double rate-limit par email + par IP
+- [ ] Endpoints publics : rate-limit par IP via Upstash (sliding window)
+- [ ] Alerte Sentry au boot prod si UPSTASH_REDIS_REST_URL absent
+
+**Rationale** : NSS et autres données sensibles côté tokens publics — exposition non contrôlée serait inacceptable.
+
+---
+
 ## 6. Epics
 
 ### EPIC-001 : CRM & Catalogue
 
 **Description** :
-Fondation CRM — gestion des entreprises clientes, contacts/stagiaires, catalogue de formations et planification des sessions avec inscriptions.
+Fondation CRM — gestion des entreprises clientes, contacts/stagiaires, catalogue de formations et planification des sessions avec inscriptions, parcours multi-modules, et pipeline prospects.
 
-**FRs associées** : FR-001, FR-002, FR-003
+**FRs associées** : FR-001, FR-002, FR-003, FR-027, FR-028, FR-029, FR-031
 
-**Estimation stories** : 5-7
+**Estimation stories** : 7-10
 
 **Priorité** : Must Have
 
@@ -389,18 +699,18 @@ Fondation CRM — gestion des entreprises clientes, contacts/stagiaires, catalog
 
 ---
 
-### EPIC-002 : Commerce & Documents
+### EPIC-002 : Commerce, Documents & Signature
 
 **Description** :
-Pipeline commercial complet (besoins → devis → factures → tunnel CA) + génération de tous les documents PDF (commerciaux et pédagogiques).
+Pipeline commercial complet (besoins → devis → factures → tunnel CA), génération de tous les documents PDF (commerciaux et pédagogiques), signature électronique self-hosted, émargement numérique tokenisé, et comptabilité avancée (financements, paiements, échéanciers).
 
-**FRs associées** : FR-004, FR-005, FR-006, FR-007, FR-008
+**FRs associées** : FR-004, FR-005, FR-006, FR-007, FR-008, FR-016, FR-017, FR-030
 
-**Estimation stories** : 6-8
+**Estimation stories** : 10-14
 
 **Priorité** : Must Have
 
-**Valeur business** : automatisation de la facturation, image professionnelle via PDFs, accélération du cycle commercial.
+**Valeur business** : automatisation de la facturation, image professionnelle via PDFs signés, accélération du cycle commercial, traçabilité émargement Qualiopi.
 
 ---
 
@@ -419,18 +729,48 @@ Outillage Qualiopi (32 indicateurs + preuves), BPF annuel automatisé, évaluati
 
 ---
 
-### EPIC-004 : Portails & Plateforme
+### EPIC-004 : Portails, Plateforme & RGPD
 
 **Description** :
-Portails self-service formateur et client, gestion des comptes utilisateurs avec rôles, paramètres organisme et notifications in-app.
+Portails self-service formateur et client, gestion des comptes utilisateurs avec rôles, paramètres organisme, notifications in-app, tâches/projets, notes de frais formateur, page publique de demande RGPD, API keys pour intégrations externes.
 
-**FRs associées** : FR-012, FR-013, FR-014, FR-015
+**FRs associées** : FR-012, FR-013, FR-014, FR-015, FR-024, FR-025, FR-032, FR-033
 
-**Estimation stories** : 5-7
+**Estimation stories** : 7-10
 
 **Priorité** : Must Have
 
-**Valeur business** : autonomie des utilisateurs externes (réduction de la sollicitation admin), différenciation concurrentielle.
+**Valeur business** : autonomie des utilisateurs externes (réduction de la sollicitation admin), différenciation concurrentielle, conformité RGPD.
+
+---
+
+### EPIC-005 : Communication & engagement
+
+**Description** :
+Campagnes marketing email avec opt-in/opt-out RGPD et tracking, badges digitaux vérifiables, forum interne et messagerie directe entre utilisateurs, classes virtuelles, templates de documents et messages, tracking d'envois email.
+
+**FRs associées** : FR-018, FR-019, FR-020, FR-023, FR-026, FR-034
+
+**Estimation stories** : 6-9
+
+**Priorité** : Should Have
+
+**Valeur business** : engagement post-vente, fidélisation, communication client / formateur fluide, valeur ajoutée marketing au-delà du CRM cœur.
+
+---
+
+### EPIC-006 : Intelligence & automatisations
+
+**Description** :
+Analyse IA de documents (Anthropic Claude) avec ai-guard anti-abus, moteur d'automatisations métier v2 (déclencheurs événementiels + cron), exécutions tracées.
+
+**FRs associées** : FR-021, FR-022
+
+**Estimation stories** : 4-6
+
+**Priorité** : Should Have
+
+**Valeur business** : automatisation des tâches répétitives (relances, notifications), gain de temps admin via assistance IA, scalabilité opérationnelle.
 
 ---
 
@@ -438,18 +778,20 @@ Portails self-service formateur et client, gestion des comptes utilisateurs avec
 
 | Epic | Nom | FRs | Estimation stories |
 |------|-----|-----|--------------------|
-| EPIC-001 | CRM & Catalogue | FR-001, FR-002, FR-003 | 5-7 |
-| EPIC-002 | Commerce & Documents | FR-004, FR-005, FR-006, FR-007, FR-008 | 6-8 |
+| EPIC-001 | CRM & Catalogue | FR-001, FR-002, FR-003, FR-027, FR-028, FR-029, FR-031 | 7-10 |
+| EPIC-002 | Commerce, Documents & Signature | FR-004, FR-005, FR-006, FR-007, FR-008, FR-016, FR-017, FR-030 | 10-14 |
 | EPIC-003 | Conformité & Évaluations | FR-009, FR-010, FR-011 | 4-6 |
-| EPIC-004 | Portails & Plateforme | FR-012, FR-013, FR-014, FR-015 | 5-7 |
+| EPIC-004 | Portails, Plateforme & RGPD | FR-012, FR-013, FR-014, FR-015, FR-024, FR-025, FR-032, FR-033 | 7-10 |
+| EPIC-005 | Communication & engagement | FR-018, FR-019, FR-020, FR-023, FR-026, FR-034 | 6-9 |
+| EPIC-006 | Intelligence & automatisations | FR-021, FR-022 | 4-6 |
 
-**Total estimé** : 20-28 stories (Level 2 cible 5-15, projet dépasse légèrement la borne haute — cohérent avec un système déjà en production couvrant 12 modules fonctionnels).
+**Total estimé** : 38-55 stories (Level 2 cible 5-15 → projet largement au-dessus, cohérent avec un système prod couvrant 20 composants logiques — cf. [architecture §4](architecture-rfc-formations-2026-05-16.md#4-composants-logiques)). Le projet pourrait être re-classé Level 3 si re-scopé depuis zéro.
 
 ---
 
 ## 8. User stories
 
-Stories détaillées créées en Phase 4 via `/bmad:sprint-planning`.
+Stories détaillées créées en Phase 4 via `/bmad:sprint-planning`. Le sprint plan initial (`docs/sprint-plan-rfc-formations-2026-05-16.md`) couvre la dette technique identifiée en archi §15 ; un sprint plan dédié à la roadmap fonctionnelle ([PRD.md §8](../PRD.md)) est à produire séparément.
 
 ---
 
@@ -457,11 +799,11 @@ Stories détaillées créées en Phase 4 via `/bmad:sprint-planning`.
 
 | Catégorie | Must Have | Should Have | Could Have |
 |-----------|-----------|-------------|------------|
-| Functional Requirements | 15 | 0 | 0 |
-| Non-Functional Requirements | 6 | 1 | 0 |
-| Epics | 4 | 0 | 0 |
+| Functional Requirements | 17 | 13 | 4 |
+| Non-Functional Requirements | 7 | 1 | 0 |
+| Epics | 4 | 2 | 0 |
 
-*Toutes les FRs sont **Must Have** car le périmètre v1 est déjà livré ; les arbitrages "Should/Could" seront utilisés lors des futures phases (v2, roadmap).*
+*Must Have : FR-001 à FR-017, FR-030, FR-032 (cœur métier, sécurité, RGPD, commerce, signature, émargement). Should Have : FR-018, FR-020 à FR-025, FR-027 à FR-029, FR-034 (différenciation, engagement, productivité). Could Have : FR-019, FR-026, FR-031, FR-033 (nice-to-have ou intégration).*
 
 ---
 

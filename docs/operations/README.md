@@ -14,7 +14,7 @@ Index des procédures opérationnelles. Tout ce qui n'est pas du code applicatif
 | **Réponse à incident** | Détection d'un incident prod | [incident-response.md](incident-response.md) |
 | **Migration chiffrement NSS** | Une fois après mise en prod de TD-001 | [migration-nss.md](migration-nss.md) |
 | **Disaster recovery / restore DB** | À blanc 1×/an + en cas de crash | (à produire — STORY-TD-008) |
-| **Environnement staging** | Setup ponctuel | (à produire — STORY-TD-007) |
+| **Environnement staging** | Setup ponctuel + workflow de test release | [environments.md](environments.md) |
 
 ---
 

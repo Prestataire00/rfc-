@@ -91,16 +91,16 @@ Le système permet de planifier des sessions (dates, lieu, capacité max, statut
 
 ---
 
-### FR-004 : Pipeline de besoins formations
+### FR-004 : Pipeline des demandes de formation
 
 **Priorité** : Must Have
 
 **Description** :
-Le système gère un pipeline CRM des besoins formations exprimés par les entreprises (Nouveau → Qualifié → Devis envoyé → Accepté → Refusé → Archivé), avec priorité, budget, nb stagiaires souhaités, et lien vers le devis et la formation correspondante.
+Le système gère un pipeline CRM des demandes de formation exprimées par les entreprises (Nouveau → Qualifié → Devis envoyé → Accepté → Refusé → Archivé), avec priorité, budget, nb stagiaires souhaités, et lien vers le devis et la formation correspondante. Modèle Prisma : `DemandeFormation` (anciennement `BesoinFormation`).
 
 **Critères d'acceptation** :
 - [ ] Affichage Kanban par statut
-- [ ] Liaison bidirectionnelle besoin ↔ devis ↔ formation
+- [ ] Liaison bidirectionnelle demande ↔ devis ↔ formation
 
 ---
 

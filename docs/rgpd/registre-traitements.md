@@ -65,7 +65,7 @@
 - Admin RFC (lecture / écriture complète)
 - Formateurs (lecture des données de leurs sessions uniquement, via `/espace-formateur`)
 - Client entreprise (lecture des données de ses stagiaires uniquement, via `/espace-client`)
-- Stagiaire lui-même (lecture / soumission via lien tokenisé pour évaluation et fiche besoin)
+- Stagiaire lui-même (lecture / soumission via lien tokenisé pour évaluation et fiche pré-formation Qualiopi)
 
 **Durée de conservation** :
 - BPF : 10 ans à compter de la fin de la session (obligation légale Code du travail)

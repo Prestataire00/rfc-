@@ -75,4 +75,13 @@ export async function syncDevisOnSignature(
     contactId: devis.contactId ?? undefined,
     meta: { signatureRequestId, source: "electronic_signature" },
   }).catch((err) => logger.warn("devis-sync.automation-failed", { error: String(err) }));
+
+  // Phase 3 : auto-création session brouillon + fiche entreprise + email (fire-and-forget)
+  import("@/lib/automations/auto-fiches-pre-formation")
+    .then(({ autoCreateSessionAndFicheEntrepriseOnDevisSigned }) =>
+      autoCreateSessionAndFicheEntrepriseOnDevisSigned(devisId).catch((err) =>
+        logger.warn("phase-3.auto-session-fiche-failed", { error: String(err) }),
+      ),
+    )
+    .catch((err) => logger.warn("phase-3.import-failed", { error: String(err) }));
 }

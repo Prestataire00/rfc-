@@ -1,17 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { besoinClientReponseSchema } from "@/lib/validations/besoin-client";
+import { fichePreFormationEntrepriseReponseSchema } from "@/lib/validations/fiche-pre-formation-entreprise";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
 import { enforceRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 
 export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
-  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-client:get");
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:fiche-entreprise:get");
   if (limited) return limited;
 
-  const fiche = await prisma.besoinClient.findUnique({
+  const fiche = await prisma.fichePreFormationEntreprise.findUnique({
     where: { tokenAcces: params.token },
     include: {
       session: {
@@ -30,10 +30,10 @@ export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: {
 });
 
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
-  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:besoin-client:post");
+  const limited = await enforceRateLimit(req, RATE_LIMIT_PRESETS.publicToken, "public:fiche-entreprise:post");
   if (limited) return limited;
 
-  const fiche = await prisma.besoinClient.findUnique({
+  const fiche = await prisma.fichePreFormationEntreprise.findUnique({
     where: { tokenAcces: params.token },
     include: { entreprise: true },
   });
@@ -42,11 +42,11 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     return NextResponse.json({ error: "Fiche deja soumise" }, { status: 409 });
   }
 
-  const data = await parseBody(req, besoinClientReponseSchema);
+  const data = await parseBody(req, fichePreFormationEntrepriseReponseSchema);
 
   // Atomique : la fiche n'est marquée "repondu" que si la maj entreprise réussit aussi.
   const updated = await prisma.$transaction(async (tx) => {
-    const u = await tx.besoinClient.update({
+    const u = await tx.fichePreFormationEntreprise.update({
       where: { id: fiche.id },
       data: {
         ...data,

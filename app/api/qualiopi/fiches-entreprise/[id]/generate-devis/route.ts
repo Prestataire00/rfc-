@@ -1,10 +1,10 @@
-// Génération automatique d'un devis brouillon à partir d'un BesoinClient
+// Génération automatique d'un devis brouillon à partir d'une FichePreFormationEntreprise
 // "repondu" — adresse l'exigence du cahier des charges §2.2 :
 // "Un formulaire de recueil de besoin générera automatiquement un devis."
 //
 // Le devis est créé en statut "brouillon" → l'admin le revoit, l'ajuste et
 // l'envoie au client pour signature électronique. Pré-rempli avec :
-//   - entreprise = entreprise du besoin
+//   - entreprise = entreprise de la fiche pré-formation
 //   - 1 ligne de devis : formation × effectifConcerne (ou 1 si non renseigné),
 //     prix unitaire = formation.tarif
 //   - objet = "Formation <titre> - <N> stagiaire(s)"
@@ -20,7 +20,7 @@ import { logger } from "@/lib/logger";
 
 export const POST = withErrorHandlerParams(
   async (_req: NextRequest, { params }: { params: { id: string } }) => {
-    const besoin = await prisma.besoinClient.findUnique({
+    const fiche = await prisma.fichePreFormationEntreprise.findUnique({
       where: { id: params.id },
       include: {
         session: {
@@ -30,24 +30,24 @@ export const POST = withErrorHandlerParams(
       },
     });
 
-    if (!besoin) {
-      return NextResponse.json({ error: "Besoin client introuvable" }, { status: 404 });
+    if (!fiche) {
+      return NextResponse.json({ error: "Fiche pré-formation entreprise introuvable" }, { status: 404 });
     }
-    if (besoin.statut !== "repondu") {
+    if (fiche.statut !== "repondu") {
       return NextResponse.json(
-        { error: "Le besoin doit être à l'état 'repondu' pour générer un devis (statut actuel : " + besoin.statut + ")" },
+        { error: "La fiche doit être à l'état 'repondu' pour générer un devis (statut actuel : " + fiche.statut + ")" },
         { status: 422 },
       );
     }
-    if (!besoin.entrepriseId) {
-      return NextResponse.json({ error: "Pas d'entreprise rattachée au besoin" }, { status: 422 });
+    if (!fiche.entrepriseId) {
+      return NextResponse.json({ error: "Pas d'entreprise rattachée à la fiche" }, { status: 422 });
     }
-    if (!besoin.session?.formation) {
+    if (!fiche.session?.formation) {
       return NextResponse.json({ error: "Session ou formation introuvable" }, { status: 422 });
     }
 
-    const formation = besoin.session.formation;
-    const quantite = Math.max(1, besoin.effectifConcerne ?? 1);
+    const formation = fiche.session.formation;
+    const quantite = Math.max(1, fiche.effectifConcerne ?? 1);
     const tarifUnitaire = formation.tarif ?? 0;
     const ligneMontant = tarifUnitaire * quantite;
 
@@ -79,8 +79,8 @@ export const POST = withErrorHandlerParams(
         dateEmission: new Date(),
         dateValidite: validite,
         statut: "brouillon",
-        entrepriseId: besoin.entrepriseId,
-        notes: `Devis généré automatiquement depuis le besoin client #${besoin.id} (réponse du ${besoin.dateReponse?.toLocaleDateString("fr-FR") ?? "—"}).`,
+        entrepriseId: fiche.entrepriseId,
+        notes: `Devis généré automatiquement depuis la fiche pré-formation entreprise #${fiche.id} (réponse du ${fiche.dateReponse?.toLocaleDateString("fr-FR") ?? "—"}).`,
         lignes: {
           create: [
             {
@@ -98,7 +98,7 @@ export const POST = withErrorHandlerParams(
     try {
       await logAction({
         action: "devis_cree",
-        label: `Devis ${numero} généré depuis besoin client (${formatCurrency(montantTTC)})`,
+        label: `Devis ${numero} généré depuis fiche pré-formation entreprise (${formatCurrency(montantTTC)})`,
         lien: `/commercial/devis/${devis.id}`,
         entrepriseId: devis.entrepriseId ?? undefined,
         devisId: devis.id,

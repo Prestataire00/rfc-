@@ -1,13 +1,13 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { besoinClientReponseSchema } from "@/lib/validations/besoin-client";
+import { fichePreFormationEntrepriseReponseSchema } from "@/lib/validations/fiche-pre-formation-entreprise";
 import { sendEmail, ficheBesoinClientEmail } from "@/lib/email";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parsePartialBody } from "@/lib/validations/helpers";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  const fiche = await prisma.besoinClient.findUnique({
+  const fiche = await prisma.fichePreFormationEntreprise.findUnique({
     where: { id: params.id },
     include: { session: { include: { formation: true } }, entreprise: true },
   });
@@ -16,13 +16,13 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 });
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const data = await parsePartialBody(req, besoinClientReponseSchema);
-  const fiche = await prisma.besoinClient.update({ where: { id: params.id }, data });
+  const data = await parsePartialBody(req, fichePreFormationEntrepriseReponseSchema);
+  const fiche = await prisma.fichePreFormationEntreprise.update({ where: { id: params.id }, data });
   return NextResponse.json(fiche);
 });
 
 export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  await prisma.besoinClient.delete({ where: { id: params.id } });
+  await prisma.fichePreFormationEntreprise.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });
 });
 
@@ -31,7 +31,7 @@ export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params 
 export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
   const { action } = await req.json().catch(() => ({ action: "" }));
   if (action === "envoyer") {
-    const fiche = await prisma.besoinClient.findUnique({
+    const fiche = await prisma.fichePreFormationEntreprise.findUnique({
       where: { id: params.id },
       include: { session: { include: { formation: true } }, entreprise: true },
     });
@@ -50,7 +50,7 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
     });
     await sendEmail({ to: fiche.destinataireEmail, subject: email.subject, html: email.html });
 
-    const updated = await prisma.besoinClient.update({
+    const updated = await prisma.fichePreFormationEntreprise.update({
       where: { id: params.id },
       data: { statut: fiche.statut === "en_attente" ? "envoye" : fiche.statut, dateEnvoi: new Date() },
     });

@@ -61,8 +61,8 @@ model Entreprise {
   factures      Facture[]
   users         User[]
   documents     Document[]
-  besoins       BesoinFormation[]
-  besoinsClient BesoinClient[]
+  demandes           Demande[]
+  fichesPreFormation FichePreFormationEntreprise[]
   financements  Financement[]
   historique    HistoriqueAction[]
   tags          EntrepriseTag[]
@@ -108,8 +108,8 @@ model Contact {
   devis              Devis[]
   attestations       Attestation[]
   evaluations        Evaluation[]
-  besoins            BesoinFormation[]
-  besoinsStagiaire   BesoinStagiaire[]
+  demandes                    Demande[]
+  fichesPreFormationStagiaire FichePreFormationStagiaire[]
   feuillesPresence   FeuillePresence[]
   emargementTokens   EmargementToken[]
   historique         HistoriqueAction[]
@@ -181,7 +181,7 @@ model Formation {
   image              String?  // URL image de couverture
 
   sessions       Session[]
-  besoins        BesoinFormation[]
+  demandes       Demande[]
   certifications CertificationStagiaire[]
   badgeTemplates DigitalBadge[] @relation("BadgeFormation")
   parcoursModules ParcoursModule[]
@@ -260,8 +260,8 @@ model Session {
   evaluations        Evaluation[]
   feedbacks          FeedbackFormateur[]
   documents          Document[]
-  besoinsClient      BesoinClient[]
-  besoinsStagiaire   BesoinStagiaire[]
+  fichesPreFormation          FichePreFormationEntreprise[]
+  fichesPreFormationStagiaire FichePreFormationStagiaire[]
   automations        SessionAutomation[]
   emargementTokens   EmargementToken[]
   forumTopics        ForumTopic[]
@@ -304,7 +304,7 @@ model Inscription {
 
 // ==================== COMMERCIAL ====================
 
-model BesoinFormation {
+model Demande {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -340,6 +340,7 @@ model BesoinFormation {
   projetId String?
   projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
 
+  @@map("BesoinFormation")
   @@index([statut])
   @@index([entrepriseId])
   @@index([contactId])
@@ -372,7 +373,7 @@ model Devis {
 
   lignes   LigneDevis[]
   factures Facture[]
-  besoins  BesoinFormation[]
+  demandes Demande[]
   sessions Session[]
 
   // Rattachement projet (agrégat racine)
@@ -1238,7 +1239,7 @@ model AutomationExecutionV2 {
 // ==================== QUESTIONNAIRES D'ADAPTATION PEDAGOGIQUE ====================
 
 // Fiche besoin envoyee a l'entreprise cliente pour adapter la formation au contexte metier
-model BesoinClient {
+model FichePreFormationEntreprise {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1279,13 +1280,14 @@ model BesoinClient {
   aStagiairesHandicap Boolean @default(false)
   detailsHandicap     String?
 
+  @@map("BesoinClient")
   @@index([sessionId])
   @@index([entrepriseId])
   @@index([statut])
 }
 
 // Fiche besoin individuelle envoyee a chaque stagiaire (Qualiopi + Passeport Prevention)
-model BesoinStagiaire {
+model FichePreFormationStagiaire {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1321,6 +1323,7 @@ model BesoinStagiaire {
   consentementRGPD Boolean @default(false)
   consentementBPF  Boolean @default(false)
 
+  @@map("BesoinStagiaire")
   @@unique([sessionId, contactId])
   @@index([sessionId])
   @@index([contactId])
@@ -2161,7 +2164,7 @@ model Projet {
 
   // Agrégats
   formateurs ProjetFormateur[]
-  besoins    BesoinFormation[]
+  demandes   Demande[]
   devis      Devis[]
   sessions   Session[]
   factures   Facture[]

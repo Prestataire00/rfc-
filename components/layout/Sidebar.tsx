@@ -36,10 +36,7 @@ const adminGroups: NavGroup[] = [
     label: "CRM",
     icon: Users,
     items: [
-      { href: "/prospects/nouveau", label: "Nouveau prospect", icon: UserPlus },
-      // "Prospects" (filtre Contacts) fusionné dans le pipeline "Demandes &
-      // prospects" sous Commercial — un prospect sans demande exprimée n'a
-      // pas d'intérêt opérationnel.
+      { href: "/prospects", label: "Prospects", icon: UserPlus },
       { href: "/entreprises", label: "Entreprises", icon: Building2 },
       { href: "/contacts", label: "Tous contacts", icon: Users },
       { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
@@ -83,10 +80,9 @@ const adminGroups: NavGroup[] = [
       // /commercial?tab=devis : page commerciale, onglet Devis (par défaut).
       // /commercial?tab=factures = même page, onglet Factures → exposé dans Finance.
       { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
-      // /demandes = pipeline commercial (statuts nouveau→qualifie→devis…)
+      // /prospects = pipeline commercial (statuts nouveau→qualifie→devis…) — entrée CRM>Prospects
       // /qualiopi/fiches-pre-formation = fiches Qualiopi à envoyer aux clients/stagiaires
-      // Pages distinctes mais liées : depuis /demandes on peut envoyer une fiche.
-      { href: "/demandes", label: "Demandes", icon: ClipboardList },
+      // Pages distinctes mais liées : depuis /prospects on peut envoyer une fiche.
       { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
       { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
     ],

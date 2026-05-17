@@ -198,17 +198,20 @@ export default function ModifierDemandePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Entreprise</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Entreprise <span className="text-gray-500 font-normal text-xs">(optionnel)</span>
+              </label>
               <select
                 value={form.entrepriseId}
                 onChange={(e) => setForm({ ...form, entrepriseId: e.target.value })}
                 className="w-full h-10 rounded-md border border-gray-600 bg-gray-900 px-3 text-sm text-gray-100"
               >
-                <option value="">-- Aucune --</option>
+                <option value="">-- Aucune (stagiaire individuel) --</option>
                 {entreprises.map((e) => (
                   <option key={e.id} value={e.id}>{e.nom}</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-1">Laisser vide pour une demande d&apos;un stagiaire individuel.</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Formation</label>

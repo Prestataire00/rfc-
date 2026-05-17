@@ -7,7 +7,9 @@ export const demandeSchema = z.object({
   titre: z.string().min(1, "Titre requis"),
   description: z.string().optional().nullable(),
   origine: z.enum(["client", "stagiaire", "centre"]).default("client"),
-  statut: z.enum(["nouveau", "qualifie", "devis_envoye", "accepte", "refuse", "archive"]).default("nouveau"),
+  // Pipeline 5 étapes + clés legacy "qualifie" et "archive" tolérées pour
+  // les demandes pré-existantes (cf. lib/constants.ts BESOIN_STATUTS).
+  statut: z.enum(["nouveau", "devis_envoye", "en_negociation", "accepte", "refuse", "qualifie", "archive"]).default("nouveau"),
   priorite: z.enum(["basse", "normale", "haute", "urgente"]).default("normale"),
   nbStagiaires: z.coerce.number().int().positive().optional().nullable(),
   datesSouhaitees: z.string().optional().nullable(),

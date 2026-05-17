@@ -65,29 +65,9 @@ const PROSPECT_TYPES = [
 
 type ProspectType = "entreprise" | "stagiaire" | "organisme";
 
-const ORIGINES = [
-  {
-    value: "client",
-    label: "Client / Entreprise",
-    icon: Building2,
-    description: "La demande vient d'une entreprise cliente",
-    color: "border-blue-600 bg-blue-900/10",
-  },
-  {
-    value: "stagiaire",
-    label: "Stagiaire / Individu",
-    icon: User,
-    description: "La demande vient d'un individu",
-    color: "border-green-600 bg-green-900/10",
-  },
-  {
-    value: "centre",
-    label: "Centre de formation",
-    icon: GraduationCap,
-    description: "Initiative interne du centre",
-    color: "border-red-600 bg-red-900/10",
-  },
-];
+// Mapping prospectType → origine (envoyé en payload, plus saisi à la main) :
+//   entreprise → "client" · stagiaire → "stagiaire" · organisme → "client"
+// Cf. useEffect [prospectType] qui synchronise form.origine.
 
 const SOURCE_CONTACT = [
   { value: "telephone", label: "Telephone", icon: Phone },
@@ -600,38 +580,9 @@ export default function NouveauProspectPage() {
           </div>
         </div>
 
-        {/* SECTION ORIGINE DE LA DEMANDE */}
-        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">
-          <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Origine de la demande *</h2>
-          <div className="grid grid-cols-3 gap-3">
-            {ORIGINES.map((o) => {
-              const Icon = o.icon;
-              const selected = form.origine === o.value;
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => setF("origine", o.value)}
-                  className={`rounded-lg border-2 p-4 text-left transition-all ${
-                    selected
-                      ? o.color
-                      : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 hover:border-gray-400 dark:hover:border-gray-500"
-                  }`}
-                >
-                  <Icon
-                    className={`h-5 w-5 mb-2 ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}
-                  />
-                  <p
-                    className={`text-sm font-semibold ${selected ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}
-                  >
-                    {o.label}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{o.description}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Origine de la demande : auto-déduit du type de prospect en haut.
+            entreprise → client · stagiaire → stagiaire · organisme → client.
+            Cf. useEffect [prospectType] qui synchronise form.origine. */}
 
         {/* SECTION PRISE DE CONTACT */}
         <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-3">

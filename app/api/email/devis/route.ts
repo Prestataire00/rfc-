@@ -25,10 +25,33 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: "Le contact du devis n'a pas d'email" }, { status: 400 });
   }
 
+  // URL absolue vers le PDF du devis (pas la facture !).
+  // Lien public sans auth — le devis est consultable par le destinataire via le lien.
+  const baseUrl = process.env.NEXTAUTH_URL ?? "https://projetrfc.netlify.app";
+  const pdfUrl = `${baseUrl}/api/pdf/devis/${devisId}`;
+
+  // Email expéditeur RFC pour le retour signé (depuis Parametres si défini).
+  const parametres = await prisma.parametres.findUnique({
+    where: { id: "default" },
+    select: { email: true },
+  });
+  const retourEmail = parametres?.email ?? undefined;
+
+  const dateValidite = devis.dateValidite
+    ? devis.dateValidite.toLocaleDateString("fr-FR")
+    : undefined;
+
   const emailContent = devisEmail({
     contact: { prenom: devis.contact.prenom, nom: devis.contact.nom },
     entreprise: { nom: devis.entreprise?.nom || "Client" },
-    devis: { numero: devis.numero, objet: devis.objet, montantTTC: devis.montantTTC },
+    devis: {
+      numero: devis.numero,
+      objet: devis.objet,
+      montantTTC: devis.montantTTC,
+      dateValidite,
+    },
+    pdfUrl,
+    retourEmail,
   });
 
   const result = await sendEmail({

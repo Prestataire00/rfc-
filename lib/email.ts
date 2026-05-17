@@ -91,26 +91,47 @@ export function convocationEmail(data: {
 export function devisEmail(data: {
   contact: { prenom: string; nom: string };
   entreprise: { nom: string };
-  devis: { numero: string; objet: string; montantTTC: number };
+  devis: { numero: string; objet: string; montantTTC: number; dateValidite?: string };
+  pdfUrl: string;
+  retourEmail?: string;
 }) {
+  const validiteText = data.devis.dateValidite
+    ? ` Ce devis est valable jusqu'au ${data.devis.dateValidite}.`
+    : "";
+  const retourText = data.retourEmail
+    ? `Une fois signé, vous pouvez nous le retourner à <a href="mailto:${data.retourEmail}" style="color: #dc2626;">${data.retourEmail}</a>.`
+    : "Une fois signé, vous pouvez nous le retourner par email en réponse.";
+
   return {
-    subject: `Devis ${data.devis.numero} - ${data.devis.objet}`,
+    subject: `Devis ${data.devis.numero} à signer — ${data.devis.objet}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
           <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
-          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Nouveau devis</p>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Devis à examiner</p>
         </div>
         <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
           <p>Bonjour <strong>${data.contact.prenom} ${data.contact.nom}</strong>,</p>
-          <p>Veuillez trouver ci-joint le devis <strong>${data.devis.numero}</strong> pour :</p>
+          <p>Veuillez trouver ci-dessous notre devis <strong>${data.devis.numero}</strong> pour :</p>
           <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <p style="margin: 0; font-weight: bold; font-size: 16px;">${data.devis.objet}</p>
-            <p style="margin: 8px 0 0; color: #2563eb; font-size: 20px; font-weight: bold;">
+            <p style="margin: 8px 0 0; color: #dc2626; font-size: 20px; font-weight: bold;">
               ${data.devis.montantTTC.toFixed(2)} EUR TTC
             </p>
           </div>
-          <p>N'hésitez pas à nous contacter pour toute question.</p>
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="${data.pdfUrl}"
+               style="display: inline-block; background: #dc2626; color: white; text-decoration: none;
+                      padding: 12px 28px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+              📄 Examiner le devis (PDF)
+            </a>
+          </div>
+          <p style="color: #475569; font-size: 13px; line-height: 1.5;">
+            Merci d'examiner ce devis attentivement.${validiteText}<br><br>
+            <strong>Pour l'accepter</strong> : imprimez-le, datez et signez à l'endroit prévu, puis retournez-le par email.
+            ${retourText}
+          </p>
+          <p>N'hésitez pas à nous contacter pour toute question ou demande de modification.</p>
           <p style="color: #64748b; font-size: 12px; margin-top: 24px;">
             Cordialement,<br>L'équipe RFC
           </p>

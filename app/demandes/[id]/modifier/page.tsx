@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
 import { useApi, useApiMutation } from "@/hooks/useApi";
 import { ApiError } from "@/lib/fetcher";
-import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_MANUEL } from "@/lib/constants";
 
 type Option = { id: string; nom: string; titre?: string };
 
@@ -190,7 +190,7 @@ export default function ModifierDemandePage() {
               onChange={(e) => setForm({ ...form, statut: e.target.value })}
               className="w-full h-10 rounded-md border border-gray-600 bg-gray-900 px-3 text-sm text-gray-100"
             >
-              {BESOIN_STATUTS_PIPELINE.map((key) => (
+              {BESOIN_STATUTS_MANUEL.map((key) => (
                 <option key={key} value={key}>{BESOIN_STATUTS[key].label}</option>
               ))}
             </select>

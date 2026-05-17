@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, ExternalLink, XCircle, ChevronRight } from "lucide-react";
-import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_MANUEL } from "@/lib/constants";
 import { notify } from "@/lib/toast";
 
 const STATUS_DOT: Record<string, string> = {
@@ -42,12 +42,8 @@ export function RowActions({ demandeId, currentStatut, onRefresh }: RowActionsPr
   async function patchStatut(newStatut: string) {
     if (newStatut === currentStatut) { setOpen(false); return; }
 
-    if (currentStatut === "nouveau" && newStatut === "devis_envoye") {
-      const ok = window.confirm(
-        "Passer en 'Devis envoyé' va générer automatiquement un devis brouillon par l'IA. Continuer ?"
-      );
-      if (!ok) { setOpen(false); return; }
-    }
+    // Note : "devis_envoye" n'est plus sélectionnable manuellement
+    // (auto-set lors de l'envoi effectif du devis).
 
     setOpen(false);
     try {
@@ -100,7 +96,7 @@ export function RowActions({ demandeId, currentStatut, onRefresh }: RowActionsPr
             </button>
             {showStatuts && (
               <div className="absolute right-full top-0 mr-1 min-w-[160px] rounded-lg border border-gray-600 bg-gray-800 shadow-xl py-1">
-                {BESOIN_STATUTS_PIPELINE.map((key) => {
+                {BESOIN_STATUTS_MANUEL.map((key) => {
                   const val = BESOIN_STATUTS[key];
                   return (
                     <button

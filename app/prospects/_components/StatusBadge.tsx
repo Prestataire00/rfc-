@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_MANUEL } from "@/lib/constants";
 import { notify } from "@/lib/toast";
 
 const STATUS_DOT: Record<string, string> = {
@@ -41,13 +41,8 @@ export function StatusBadge({ demandeId, statut, onRefresh }: StatusBadgeProps) 
   async function changeStatut(newStatut: string) {
     if (newStatut === statut) { setOpen(false); return; }
 
-    // Confirm before triggering AI generation (Nouveau → Devis envoyé)
-    if (statut === "nouveau" && newStatut === "devis_envoye") {
-      const ok = window.confirm(
-        "Passer en 'Devis envoyé' va générer automatiquement un devis brouillon par l'IA. Continuer ?"
-      );
-      if (!ok) { setOpen(false); return; }
-    }
+    // Note : "devis_envoye" n'est plus sélectionnable manuellement
+    // (auto-set lors de l'envoi effectif du devis). Pas de confirmation IA ici.
 
     setOpen(false);
     setBusy(true);
@@ -93,7 +88,7 @@ export function StatusBadge({ demandeId, statut, onRefresh }: StatusBadgeProps) 
           data-testid="status-badge-dropdown"
           className="absolute left-0 top-full mt-1 z-50 min-w-[160px] rounded-lg border border-gray-600 bg-gray-800 shadow-xl py-1"
         >
-          {BESOIN_STATUTS_PIPELINE.map((key) => {
+          {BESOIN_STATUTS_MANUEL.map((key) => {
             const val = BESOIN_STATUTS[key];
             return (
               <button
@@ -107,6 +102,13 @@ export function StatusBadge({ demandeId, statut, onRefresh }: StatusBadgeProps) 
               </button>
             );
           })}
+          {/* Statut courant non manuel (devis_envoye auto, legacy qualifie/archive) */}
+          {!BESOIN_STATUTS_MANUEL.includes(statut as never) &&
+            BESOIN_STATUTS[statut as keyof typeof BESOIN_STATUTS] && (
+              <div className="px-3 py-1.5 text-xs text-gray-500 italic border-t border-gray-700 mt-1">
+                Actuel : {BESOIN_STATUTS[statut as keyof typeof BESOIN_STATUTS].label} (auto)
+              </div>
+            )}
         </div>
       )}
     </div>

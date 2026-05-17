@@ -54,11 +54,24 @@ export const BESOIN_STATUTS = {
   archive: { label: "Archivé (legacy)", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
 
-// Statuts visibles dans le pipeline (dropdowns, Kanban, etc.).
+// Statuts visibles dans le pipeline (Kanban, badges, filtres).
 // Exclut "qualifie" et "archive" (valeurs legacy de fallback uniquement).
 export const BESOIN_STATUTS_PIPELINE = [
   "nouveau",
   "devis_envoye",
+  "en_negociation",
+  "accepte",
+  "refuse",
+] as const;
+
+// Statuts sélectionnables manuellement dans les dropdowns.
+// "devis_envoye" est exclu : il se met à jour automatiquement quand
+// l'admin envoie le devis (Devis.statut → "envoye"). Les statuts "accepte"
+// et "refuse" restent manuellement choisissables pour les cas offline
+// (signature papier, refus téléphonique) en plus de la sync auto via
+// signature électronique.
+export const BESOIN_STATUTS_MANUEL = [
+  "nouveau",
   "en_negociation",
   "accepte",
   "refuse",

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { StatutBadge } from "@/components/shared/StatutBadge";
-import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE, BESOIN_ORIGINES } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_MANUEL, BESOIN_STATUTS_PIPELINE, BESOIN_ORIGINES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { notify } from "@/lib/toast";
 
@@ -213,10 +213,34 @@ export default function ProspectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [updatingStatut, setUpdatingStatut] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [generatingDevis, setGeneratingDevis] = useState(false);
 
   const { data, isLoading, error, mutate } = useApi<ProspectData>(
     id ? `/api/prospects/${id}` : null
   );
+
+  async function handleGenerateDevisIA() {
+    if (!data?.demande) return;
+    const ok = window.confirm(
+      "Cela va générer un devis brouillon avec l'IA. Continuer ?",
+    );
+    if (!ok) return;
+    setGeneratingDevis(true);
+    try {
+      const res = await fetch(`/api/prospects/${data.demande.id}/generate-devis`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erreur génération");
+      await mutate();
+      notify.success("Devis brouillon généré par l'IA");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Impossible de générer le devis";
+      notify.error(msg);
+    } finally {
+      setGeneratingDevis(false);
+    }
+  }
 
   async function handleConvertToClient() {
     if (!data?.demande) return;
@@ -248,16 +272,13 @@ export default function ProspectDetailPage() {
     if (!data) return;
     const { demande } = data;
 
-    // Confirmation IA :
-    //   - nouveau → devis_envoye sans devis (workflow standard)
-    //   - n'importe quel statut → accepte sans devis (fast-track Gagné)
+    // Confirmation IA : transition vers "Gagné" sans devis attaché
+    // (cas fast-track signature offline → on génère le brouillon).
     const willGenerateDevis =
-      !demande.devisId &&
-      ((demande.statut === "nouveau" && newStatut === "devis_envoye") ||
-        (demande.statut !== "accepte" && newStatut === "accepte"));
+      !demande.devisId && demande.statut !== "accepte" && newStatut === "accepte";
     if (willGenerateDevis) {
       const ok = window.confirm(
-        "Cela va générer un devis brouillon avec l'IA. Continuer ?",
+        "Aucun devis n'est rattaché. Cela va générer un devis brouillon avec l'IA. Continuer ?",
       );
       if (!ok) return;
     }
@@ -356,16 +377,17 @@ export default function ProspectDetailPage() {
               onChange={(e) => handleStatutChange(e.target.value)}
               className="rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 disabled:opacity-50 cursor-pointer"
             >
-              {BESOIN_STATUTS_PIPELINE.map((key) => (
+              {BESOIN_STATUTS_MANUEL.map((key) => (
                 <option key={key} value={key}>
                   {BESOIN_STATUTS[key].label}
                 </option>
               ))}
-              {/* Fallback : si la demande a un statut legacy (archive), l'afficher quand même */}
-              {!BESOIN_STATUTS_PIPELINE.includes(demande.statut as never) &&
+              {/* Fallback : si la demande a un statut non manuel (devis_envoye auto,
+                  ou legacy qualifie/archive), on l'affiche en option désactivée */}
+              {!BESOIN_STATUTS_MANUEL.includes(demande.statut as never) &&
                 BESOIN_STATUTS[demande.statut as keyof typeof BESOIN_STATUTS] && (
-                  <option value={demande.statut}>
-                    {BESOIN_STATUTS[demande.statut as keyof typeof BESOIN_STATUTS].label}
+                  <option value={demande.statut} disabled>
+                    {BESOIN_STATUTS[demande.statut as keyof typeof BESOIN_STATUTS].label} (auto)
                   </option>
                 )}
             </select>
@@ -541,17 +563,22 @@ export default function ProspectDetailPage() {
                 <p className="text-gray-300 text-xs whitespace-pre-wrap">{demande.notes}</p>
               </div>
             )}
-            {/* Bouton génération devis IA si pas de devis et statut nouveau */}
-            {!devis && demande.statut === "nouveau" && (
+            {/* Bouton génération devis IA — sans changement de statut.
+                Le statut bascule auto en "Devis envoyé" quand l'admin envoie
+                effectivement le devis depuis sa fiche /commercial/devis/[id]. */}
+            {!devis && (
               <div className="pt-3 border-t border-gray-700">
                 <button
-                  onClick={() => handleStatutChange("devis_envoye")}
-                  disabled={updatingStatut}
+                  onClick={handleGenerateDevisIA}
+                  disabled={generatingDevis}
                   className="inline-flex items-center gap-2 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Générer le devis brouillon (IA)
+                  {generatingDevis ? "Génération…" : "Générer le devis brouillon (IA)"}
                 </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Le statut passera automatiquement en « Devis envoyé » dès l&apos;envoi effectif au client.
+                </p>
               </div>
             )}
           </div>

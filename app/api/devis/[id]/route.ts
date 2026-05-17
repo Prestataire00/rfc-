@@ -53,6 +53,36 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
     if (oldDevis && oldDevis.statut !== body.statut) {
       const label = devis.entreprise?.nom || (devis.contact ? `${devis.contact.prenom} ${devis.contact.nom}` : "Client");
 
+      // Mapping Devis.statut → Demande.statut (auto-sync, idempotent).
+      // Une demande peut référencer ce devis via Demande.devisId.
+      const demandeStatutMap: Record<string, string | undefined> = {
+        envoye: "devis_envoye",
+        signe: "accepte",
+        refuse: "refuse",
+      };
+      const newDemandeStatut = demandeStatutMap[body.statut as string];
+      if (newDemandeStatut) {
+        try {
+          const demandesAff = await prisma.demande.findMany({
+            where: { devisId: params.id, statut: { not: newDemandeStatut } },
+            select: { id: true, contactId: true, contact: { select: { type: true } } },
+          });
+          for (const d of demandesAff) {
+            await prisma.demande.update({ where: { id: d.id }, data: { statut: newDemandeStatut } });
+            // Auto-conversion prospect → client si passage à Gagné
+            if (
+              newDemandeStatut === "accepte" &&
+              d.contactId &&
+              d.contact?.type === "prospect"
+            ) {
+              await prisma.contact.update({ where: { id: d.contactId }, data: { type: "client" } });
+            }
+          }
+        } catch (err) {
+          logger.warn("devis-route.demande-sync-failed", { error: String(err), devisId: params.id });
+        }
+      }
+
       if (body.statut === "envoye") {
         triggerAutomation("devis_sent", { devisId: devis.id, entrepriseId: devis.entrepriseId ?? undefined, contactId: devis.contactId ?? undefined }).catch(() => {});
         notifyAdmins({ titre: "Devis envoye", message: `${label} — ${devis.numero}`, type: "info", lien: `/commercial/devis/${devis.id}` }).catch(() => {});

@@ -43,6 +43,23 @@ export async function syncDevisOnSignature(
     },
   });
 
+  // Sync Demande.statut → "accepte" (Gagné) + Contact.type → "client"
+  // pour toutes les demandes liées à ce devis (1-N en pratique : généralement 1).
+  try {
+    const demandes = await prisma.demande.findMany({
+      where: { devisId, statut: { not: "accepte" } },
+      select: { id: true, contactId: true, contact: { select: { type: true } } },
+    });
+    for (const d of demandes) {
+      await prisma.demande.update({ where: { id: d.id }, data: { statut: "accepte" } });
+      if (d.contactId && d.contact?.type === "prospect") {
+        await prisma.contact.update({ where: { id: d.contactId }, data: { type: "client" } });
+      }
+    }
+  } catch (err) {
+    logger.warn("devis-sync.demande-sync-failed", { error: String(err) });
+  }
+
   const label = devis.entreprise?.nom
     || (devis.contact ? `${devis.contact.prenom} ${devis.contact.nom}` : "Client");
 

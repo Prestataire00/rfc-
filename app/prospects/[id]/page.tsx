@@ -56,6 +56,7 @@ type ProspectData = {
     email: string;
     telephone: string | null;
     poste: string | null;
+    type: string;
   } | null;
   entreprise: {
     id: string;
@@ -211,10 +212,37 @@ function actionColor(action: string) {
 export default function ProspectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [updatingStatut, setUpdatingStatut] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   const { data, isLoading, error, mutate } = useApi<ProspectData>(
     id ? `/api/prospects/${id}` : null
   );
+
+  async function handleConvertToClient() {
+    if (!data?.demande) return;
+    const ok = window.confirm(
+      "Convertir ce prospect en client ? Il apparaîtra dans la liste 'Clients'.",
+    );
+    if (!ok) return;
+    setConverting(true);
+    try {
+      const res = await fetch(`/api/prospects/${data.demande.id}/convert-to-client`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Erreur serveur");
+      const json = await res.json();
+      await mutate();
+      if (json.alreadyClient) {
+        notify.success("Déjà marqué comme client");
+      } else {
+        notify.success("Prospect converti en client");
+      }
+    } catch {
+      notify.error("Impossible de convertir en client");
+    } finally {
+      setConverting(false);
+    }
+  }
 
   async function handleStatutChange(newStatut: string) {
     if (!data) return;
@@ -341,19 +369,46 @@ export default function ProspectDetailPage() {
             icon={User}
             title="Contact"
             action={
-              <Link
-                href={`/contacts/${contact.id}`}
-                className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1"
-              >
-                Voir <ExternalLink className="h-3 w-3" />
-              </Link>
+              <div className="flex items-center gap-2">
+                {contact.type !== "client" ? (
+                  <button
+                    onClick={handleConvertToClient}
+                    disabled={converting}
+                    className="inline-flex items-center gap-1 rounded-md border border-emerald-700 bg-emerald-900/30 px-2.5 py-1 text-xs font-medium text-emerald-300 hover:bg-emerald-900/50 disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {converting ? "Conversion…" : "Convertir en client"}
+                  </button>
+                ) : null}
+                <Link
+                  href={`/contacts/${contact.id}`}
+                  className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1"
+                >
+                  Voir <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
             }
           >
             <div className="space-y-2 text-sm">
-              <p className="font-semibold text-gray-100">
-                {contact.prenom} {contact.nom}
+              <p className="font-semibold text-gray-100 flex items-center gap-2 flex-wrap">
+                <span>{contact.prenom} {contact.nom}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    contact.type === "client"
+                      ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700"
+                      : contact.type === "stagiaire"
+                      ? "bg-violet-900/40 text-violet-300 border border-violet-700"
+                      : "bg-sky-900/40 text-sky-300 border border-sky-700"
+                  }`}
+                >
+                  {contact.type === "client"
+                    ? "Client"
+                    : contact.type === "stagiaire"
+                    ? "Stagiaire"
+                    : "Prospect"}
+                </span>
                 {contact.poste && (
-                  <span className="ml-2 text-xs text-gray-400 font-normal">— {contact.poste}</span>
+                  <span className="ml-1 text-xs text-gray-400 font-normal">— {contact.poste}</span>
                 )}
               </p>
               <div className="flex flex-wrap gap-4 text-gray-400">

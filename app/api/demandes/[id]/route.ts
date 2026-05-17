@@ -52,16 +52,25 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
   if (body.devisId !== undefined) data.devisId = body.devisId || null;
   if (body.statut !== undefined) data.statut = body.statut;
 
-  // Charger la demande AVANT la mise à jour pour capturer l'ancien statut et devisId
+  // Charger la demande AVANT la mise à jour pour capturer l'ancien statut, devisId et contactId
   const demandeBefore = await prisma.demande.findUnique({
     where: { id: params.id },
-    select: { statut: true, devisId: true },
+    select: { statut: true, devisId: true, contactId: true },
   });
 
   const oldStatut = demandeBefore?.statut;
   const newStatut = body.statut;
 
   const demande = await prisma.demande.update({ where: { id: params.id }, data });
+
+  // Auto-conversion prospect → client sur transition vers "accepte"
+  // Idempotent : si Contact.type est déjà "client", l'update est un no-op
+  if (newStatut === "accepte" && oldStatut !== "accepte" && demandeBefore?.contactId) {
+    await prisma.contact.update({
+      where: { id: demandeBefore.contactId },
+      data: { type: "client" },
+    });
+  }
 
   // Hook Phase 2 : génération auto devis IA sur transition nouveau→qualifie
   let aiResult: { generated: boolean; devisId?: string; error?: string } | undefined;

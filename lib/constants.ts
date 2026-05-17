@@ -1,7 +1,7 @@
 export const CONTACT_TYPES = {
   client: { label: "Client", color: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30" },
   prospect: { label: "Prospect", color: "bg-sky-500/20 text-sky-600 border-sky-500/30" },
-  stagiaire: { label: "Stagiaire", color: "bg-violet-500/20 text-violet-600 border-violet-500/30" },
+  stagiaire: { label: "Stagiaire", color: "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700" },
 } as const;
 
 export const SESSION_STATUTS = {

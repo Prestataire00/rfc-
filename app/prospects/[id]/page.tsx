@@ -428,12 +428,12 @@ export default function ProspectDetailPage() {
               <p className="font-semibold text-gray-100 flex items-center gap-2 flex-wrap">
                 <span>{contact.prenom} {contact.nom}</span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium border ${
                     contact.type === "client"
-                      ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700"
+                      ? "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700"
                       : contact.type === "stagiaire"
-                      ? "bg-violet-900/40 text-violet-300 border border-violet-700"
-                      : "bg-sky-900/40 text-sky-300 border border-sky-700"
+                      ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700"
+                      : "bg-sky-100 text-sky-900 border-sky-300 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-700"
                   }`}
                 >
                   {contact.type === "client"

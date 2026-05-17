@@ -249,11 +249,11 @@ export default function ProspectDetailPage() {
     const { demande } = data;
 
     // Confirmation IA :
-    //   - nouveau → qualifie sans devis (workflow standard)
+    //   - nouveau → devis_envoye sans devis (workflow standard)
     //   - n'importe quel statut → accepte sans devis (fast-track Gagné)
     const willGenerateDevis =
       !demande.devisId &&
-      ((demande.statut === "nouveau" && newStatut === "qualifie") ||
+      ((demande.statut === "nouveau" && newStatut === "devis_envoye") ||
         (demande.statut !== "accepte" && newStatut === "accepte"));
     if (willGenerateDevis) {
       const ok = window.confirm(
@@ -541,16 +541,16 @@ export default function ProspectDetailPage() {
                 <p className="text-gray-300 text-xs whitespace-pre-wrap">{demande.notes}</p>
               </div>
             )}
-            {/* Bouton qualifier si pas de devis et statut nouveau */}
+            {/* Bouton génération devis IA si pas de devis et statut nouveau */}
             {!devis && demande.statut === "nouveau" && (
               <div className="pt-3 border-t border-gray-700">
                 <button
-                  onClick={() => handleStatutChange("qualifie")}
+                  onClick={() => handleStatutChange("devis_envoye")}
                   disabled={updatingStatut}
-                  className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Qualifier ce prospect (génère un devis IA)
+                  Générer le devis brouillon (IA)
                 </button>
               </div>
             )}

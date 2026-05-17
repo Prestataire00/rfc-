@@ -36,28 +36,28 @@ export const FACTURE_STATUTS = {
   annulee: { label: "Annulée", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
 
-// Pipeline commercial demande — 6 étapes ordonnées.
+// Pipeline commercial demande — 5 étapes ordonnées.
 // Clés Prisma conservées pour compat données (accepte, refuse) ;
 // labels actualisés en vocabulaire commercial (Gagné / Perdu).
-// "archive" reste comme clé legacy pour les anciennes demandes,
-// mais n'est plus exposée dans le pipeline visible (PIPELINE_COLS).
+// "qualifie" et "archive" restent comme clés legacy pour les anciennes
+// demandes, mais ne sont plus exposées dans le pipeline visible.
+// Au passage Nouveau → Devis envoyé, l'IA génère un devis brouillon ;
+// l'envoi effectif au client reste une action manuelle séparée.
 export const BESOIN_STATUTS = {
   nouveau: { label: "Nouveau", color: "bg-sky-500/20 text-sky-500 border-sky-500/30" },
-  qualifie: { label: "Qualifié", color: "bg-violet-500/20 text-violet-500 border-violet-500/30" },
   devis_envoye: { label: "Devis envoyé", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
   en_negociation: { label: "En négociation", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" },
   accepte: { label: "Gagné", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
   refuse: { label: "Perdu", color: "bg-red-500/20 text-red-500 border-red-500/30" },
-  // Legacy — anciennes demandes pré-pipeline 6 étapes. Non sélectionnable dans l'UI.
-  archive: { label: "Archivé", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+  // Legacy — demandes pré-pipeline 5 étapes. Affichables mais non sélectionnables.
+  qualifie: { label: "Qualifié (legacy)", color: "bg-violet-500/20 text-violet-500 border-violet-500/30" },
+  archive: { label: "Archivé (legacy)", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
 
 // Statuts visibles dans le pipeline (dropdowns, Kanban, etc.).
-// Exclut "archive" qui devient une valeur legacy de fallback affichable
-// uniquement sur les demandes déjà archivées.
+// Exclut "qualifie" et "archive" (valeurs legacy de fallback uniquement).
 export const BESOIN_STATUTS_PIPELINE = [
   "nouveau",
-  "qualifie",
   "devis_envoye",
   "en_negociation",
   "accepte",

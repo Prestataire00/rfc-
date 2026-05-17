@@ -41,10 +41,10 @@ export function StatusBadge({ demandeId, statut, onRefresh }: StatusBadgeProps) 
   async function changeStatut(newStatut: string) {
     if (newStatut === statut) { setOpen(false); return; }
 
-    // Confirm before triggering AI generation
-    if (statut === "nouveau" && newStatut === "qualifie") {
+    // Confirm before triggering AI generation (Nouveau → Devis envoyé)
+    if (statut === "nouveau" && newStatut === "devis_envoye") {
       const ok = window.confirm(
-        "Qualifier ce prospect va déclencher la génération automatique d'un devis par l'IA. Continuer ?"
+        "Passer en 'Devis envoyé' va générer automatiquement un devis brouillon par l'IA. Continuer ?"
       );
       if (!ok) { setOpen(false); return; }
     }

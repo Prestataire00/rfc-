@@ -42,9 +42,9 @@ export function RowActions({ demandeId, currentStatut, onRefresh }: RowActionsPr
   async function patchStatut(newStatut: string) {
     if (newStatut === currentStatut) { setOpen(false); return; }
 
-    if (currentStatut === "nouveau" && newStatut === "qualifie") {
+    if (currentStatut === "nouveau" && newStatut === "devis_envoye") {
       const ok = window.confirm(
-        "Qualifier ce prospect va déclencher la génération automatique d'un devis par l'IA. Continuer ?"
+        "Passer en 'Devis envoyé' va générer automatiquement un devis brouillon par l'IA. Continuer ?"
       );
       if (!ok) { setOpen(false); return; }
     }

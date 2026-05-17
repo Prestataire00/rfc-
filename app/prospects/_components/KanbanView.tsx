@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, GraduationCap, Users as UsersIcon, Euro, User } from "lucide-react";
-import { AlertCircle, TrendingUp, Clock, MessageSquare, CheckCircle2, XCircle } from "lucide-react";
+import { AlertCircle, Clock, MessageSquare, CheckCircle2, XCircle } from "lucide-react";
 import { BESOIN_PRIORITES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -23,7 +23,6 @@ export type Besoin = {
 
 export const PIPELINE_COLS = [
   { key: "nouveau",        label: "Nouveau",        color: "border-sky-500/40",     dot: "bg-sky-500",     icon: AlertCircle },
-  { key: "qualifie",       label: "Qualifié",       color: "border-violet-500/40",  dot: "bg-violet-500",  icon: TrendingUp },
   { key: "devis_envoye",   label: "Devis envoyé",   color: "border-amber-500/40",   dot: "bg-amber-500",   icon: Clock },
   { key: "en_negociation", label: "En négociation", color: "border-orange-500/40",  dot: "bg-orange-500",  icon: MessageSquare },
   { key: "accepte",        label: "Gagné",          color: "border-emerald-500/40", dot: "bg-emerald-500", icon: CheckCircle2 },

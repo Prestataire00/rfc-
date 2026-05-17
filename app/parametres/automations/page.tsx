@@ -80,21 +80,21 @@ export default function AutomationsSettingsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link href="/parametres" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
+        <Link href="/parametres" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 mb-4">
           <ArrowLeft className="h-4 w-4" /> Retour Parametres
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <Zap className="h-6 w-6 text-red-500" /> Automatisations
             </h1>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Configurez quand envoyer automatiquement chaque document pour toutes vos sessions.
               Ces valeurs peuvent etre modifiees session par session.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {saveMsg && <span className={`text-xs ${saveMsg.includes("Erreur") ? "text-red-400" : "text-emerald-400"}`}>{saveMsg}</span>}
+            {saveMsg && <span className={`text-xs ${saveMsg.includes("Erreur") ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>{saveMsg}</span>}
             <button
               onClick={handleSave}
               disabled={saving}
@@ -106,12 +106,12 @@ export default function AutomationsSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-md bg-amber-900/20 border border-amber-600 px-4 py-3 text-sm text-amber-200 flex items-start gap-2 mb-6">
+      <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-600 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2 mb-6">
         <Info className="h-4 w-4 mt-0.5 shrink-0" />
         <div>
           <strong>Moteur V1 déprécié.</strong> Les règles ci-dessous ne sont plus exécutées par le cron.
           Utilisez le nouveau builder graphique :{" "}
-          <Link href="/parametres/automations-v2" className="underline hover:text-amber-100">
+          <Link href="/parametres/automations-v2" className="underline hover:text-amber-900 dark:hover:text-amber-100">
             Automations V2
           </Link>.
         </div>
@@ -124,7 +124,11 @@ export default function AutomationsSettingsPage() {
           return (
             <div
               key={rule.id}
-              className={`rounded-lg border p-4 ${rule.enabled ? "border-gray-700 bg-gray-800" : "border-gray-700/50 bg-gray-800/40 opacity-70"}`}
+              className={`rounded-lg border p-4 ${
+                rule.enabled
+                  ? "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  : "border-gray-200/70 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/40 opacity-70"
+              }`}
             >
               <div className="flex items-start gap-4">
                 <label className="flex items-center cursor-pointer shrink-0 mt-0.5">
@@ -132,27 +136,27 @@ export default function AutomationsSettingsPage() {
                     type="checkbox"
                     checked={rule.enabled}
                     onChange={(e) => updateRule(rule.id, { enabled: e.target.checked })}
-                    className="h-5 w-5 rounded"
+                    className="h-5 w-5 rounded accent-red-600"
                   />
                 </label>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-100">{rule.label}</h3>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-900 text-gray-300 border border-gray-700 px-2 py-0.5 text-[10px] font-medium">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{rule.label}</h3>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 px-2 py-0.5 text-[10px] font-medium">
                       <Icon className="h-2.5 w-2.5" /> {formatOffset(rule)}
                     </span>
                   </div>
-                  {rule.description && <p className="text-xs text-gray-400 mb-3">{rule.description}</p>}
+                  {rule.description && <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{rule.description}</p>}
 
                   {rule.enabled && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-gray-700">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                       <div>
-                        <label className="block text-[10px] uppercase text-gray-500 mb-1">Par rapport a</label>
+                        <label className="block text-[10px] uppercase text-gray-500 dark:text-gray-500 mb-1">Par rapport a</label>
                         <select
                           value={rule.relativeTo}
                           onChange={(e) => updateRule(rule.id, { relativeTo: e.target.value })}
-                          className="w-full h-8 rounded-md border border-gray-600 bg-gray-900 text-xs text-gray-200 px-2"
+                          className="w-full h-8 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-200 px-2"
                         >
                           <option value="dateDebut">Debut session</option>
                           <option value="dateFin">Fin session</option>
@@ -166,7 +170,7 @@ export default function AutomationsSettingsPage() {
                           type="number"
                           value={rule.offsetDays}
                           onChange={(e) => updateRule(rule.id, { offsetDays: parseInt(e.target.value) || 0 })}
-                          className="w-full h-8 rounded-md border border-gray-600 bg-gray-900 text-xs text-gray-200 px-2"
+                          className="w-full h-8 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-200 px-2"
                         />
                       </div>
                       <div>
@@ -175,7 +179,7 @@ export default function AutomationsSettingsPage() {
                           type="number"
                           value={rule.offsetHours}
                           onChange={(e) => updateRule(rule.id, { offsetHours: parseInt(e.target.value) || 0 })}
-                          className="w-full h-8 rounded-md border border-gray-600 bg-gray-900 text-xs text-gray-200 px-2"
+                          className="w-full h-8 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-200 px-2"
                         />
                       </div>
                       <div>
@@ -184,7 +188,7 @@ export default function AutomationsSettingsPage() {
                           type="time"
                           value={rule.timeOfDay || ""}
                           onChange={(e) => updateRule(rule.id, { timeOfDay: e.target.value || null })}
-                          className="w-full h-8 rounded-md border border-gray-600 bg-gray-900 text-xs text-gray-200 px-2"
+                          className="w-full h-8 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-xs text-gray-900 dark:text-gray-200 px-2"
                         />
                       </div>
                     </div>

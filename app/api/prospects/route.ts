@@ -122,29 +122,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       nbStagiairesValue = data.demande.nbStagiaires ?? null;
     }
 
-    // Création du Projet rattaché à la demande (1 demande = 1 projet).
-    // Cycle de vie projet indépendant de la demande : le projet permet de
-    // piloter l'exécution (tâches, documents, sessions, finance).
-    // Si la demande passe en "Perdu", le projet reste mais peut être archivé.
-    const year = new Date().getFullYear();
-    const yearStart = new Date(year, 0, 1);
-    const projetsCount = await tx.projet.count({
-      where: { createdAt: { gte: yearStart } },
-    });
-    const projetCode = `PROJ-${year}-${String(projetsCount + 1).padStart(3, "0")}`;
-
-    const projet = await tx.projet.create({
-      data: {
-        nom: data.demande.formationSouhaitee,
-        code: projetCode,
-        description: data.demande.formationSouhaitee,
-        statut: "brouillon",
-        priorite: "normale",
-        entrepriseId: entrepriseId || null,
-      },
-      select: { id: true, code: true },
-    });
-
+    // Note : le concept Projet a été retiré (architecture cible 4 modules
+    // Dashboard/Devis/Formation/BPF — sans Projet intermédiaire).
+    // L'agrégat client est désormais porté par la chaîne Devis → Formation
+    // → Session. Les colonnes projetId restent nullable en DB sans usage.
     const demande = await tx.demande.create({
       data: {
         titre: data.demande.formationSouhaitee,
@@ -157,7 +138,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         contactId: contact.id,
         entrepriseId: entrepriseId || null,
         formationId: data.demande.formationId || null,
-        projetId: projet.id,
         notes: notesParts.join("\n\n") || null,
       },
       select: { id: true },
@@ -201,8 +181,6 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       demandeId: demande.id,
       contactId: contact.id,
       entrepriseId: entrepriseId ?? undefined,
-      projetId: projet.id,
-      projetCode: projet.code,
       stagiairesCrees,
     };
   });

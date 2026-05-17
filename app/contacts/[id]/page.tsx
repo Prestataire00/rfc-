@@ -47,6 +47,49 @@ export default function ContactDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const [generatingDevisIA, setGeneratingDevisIA] = useState(false);
+
+  async function refreshContact() {
+    try {
+      const res = await fetch(`/api/contacts/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setContact(data);
+    } catch {
+      // silencieux : on garde l'état courant si refresh échoue
+    }
+  }
+
+  async function handleGenerateDevisIAFromContact() {
+    if (!contact) return;
+    const demande = contact.demandes.find((d) => !d.devisId);
+    if (!demande) {
+      notify.error("Aucun besoin sans devis pour générer");
+      return;
+    }
+    const ok = window.confirm(
+      `Générer un devis brouillon IA pour le besoin « ${demande.titre} » ?`,
+    );
+    if (!ok) return;
+    setGeneratingDevisIA(true);
+    try {
+      const res = await fetch(`/api/prospects/${demande.id}/generate-devis`, {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erreur génération");
+      notify.success("Devis brouillon généré par l'IA");
+      await refreshContact();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Impossible de générer le devis";
+      notify.error(msg);
+    } finally {
+      setGeneratingDevisIA(false);
+    }
+  }
+
+  const demandeSansDevis = contact?.demandes.find((d) => !d.devisId);
+
   const [convertOpen, setConvertOpen] = useState(false);
   const [convertMode, setConvertMode] = useState<"existante" | "nouvelle">("nouvelle");
   const [convertEntrepriseId, setConvertEntrepriseId] = useState("");
@@ -505,7 +548,18 @@ export default function ContactDetailPage() {
       {/* ============== TAB: Devis & Factures ============== */}
       {activeTab === "devis" && (
         <div>
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-2 mb-4">
+            {demandeSansDevis && (
+              <button
+                onClick={handleGenerateDevisIAFromContact}
+                disabled={generatingDevisIA}
+                className="inline-flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-3 py-2 text-sm font-medium text-white transition-colors"
+                title={`Génère un devis brouillon IA depuis le besoin « ${demandeSansDevis.titre} »`}
+              >
+                <Sparkles className="h-4 w-4" />
+                {generatingDevisIA ? "Génération…" : "Générer devis IA"}
+              </button>
+            )}
             <Link
               href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
               className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors"
@@ -518,13 +572,24 @@ export default function ContactDetailPage() {
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <Euro className="h-10 w-10 text-gray-600 mb-3" />
               <h3 className="text-base font-medium text-gray-300 mb-1">Aucun devis</h3>
-              <p className="text-sm text-gray-400 mb-4">Aucun devis associe a ce contact.</p>
-              <Link
-                href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
-                className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
-              >
-                <Plus className="h-4 w-4" /> Créer le premier devis
-              </Link>
+              <p className="text-sm text-gray-400 mb-4">Aucun devis associé à ce contact.</p>
+              {demandeSansDevis ? (
+                <button
+                  onClick={handleGenerateDevisIAFromContact}
+                  disabled={generatingDevisIA}
+                  className="inline-flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {generatingDevisIA ? "Génération…" : `Générer le devis IA depuis « ${demandeSansDevis.titre} »`}
+                </button>
+              ) : (
+                <Link
+                  href={`/commercial/devis/nouveau?contactId=${id}${contact.entreprise ? `&entrepriseId=${contact.entreprise.id}` : ""}`}
+                  className="inline-flex items-center gap-2 text-sm text-red-500 hover:underline"
+                >
+                  <Plus className="h-4 w-4" /> Créer le premier devis
+                </Link>
+              )}
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-700">

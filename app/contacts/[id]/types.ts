@@ -56,6 +56,7 @@ export interface Besoin {
   nbStagiaires: number | null;
   createdAt: string;
   formation: { id: string; titre: string } | null;
+  devisId: string | null;
 }
 
 export interface FeuillePresence {

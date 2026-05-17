@@ -31,7 +31,11 @@ export async function generateDevisFromDemandeWithAI(
   });
   if (!demande) return { error: "Demande introuvable" };
   if (demande.devisId) return { error: "Cette demande est déjà liée à un devis (id " + demande.devisId + ")" };
-  if (!demande.entrepriseId) return { error: "La demande n'a pas d'entreprise associée" };
+  // entrepriseId facultatif : un stagiaire individuel n'a pas d'entreprise rattachée.
+  // Dans ce cas, le devis sera lié uniquement au contact.
+  if (!demande.entrepriseId && !demande.contactId) {
+    return { error: "La demande n'a ni entreprise ni contact associé" };
+  }
 
   const formations = await prisma.formation.findMany({
     where: { actif: true },
@@ -115,7 +119,8 @@ export async function generateDevisFromDemandeWithAI(
         dateEmission: new Date(),
         dateValidite,
         statut: "brouillon",
-        entrepriseId: demande.entrepriseId,
+        // entrepriseId nullable : stagiaire individuel n'a pas d'entreprise
+        entrepriseId: demande.entrepriseId ?? null,
         contactId: demande.contactId,
         notes: `Devis brouillon généré par IA depuis la Demande #${demande.id}.\n\nJustification IA : ${aiOutput.rationale}`,
         lignes: {
@@ -149,7 +154,7 @@ export async function generateDevisFromDemandeWithAI(
     action: "devis_genere_ia",
     label: `Devis ${numero} généré par IA depuis demande #${demande.id}`,
     lien: `/commercial/devis/${result.devisId}`,
-    entrepriseId: demande.entrepriseId,
+    entrepriseId: demande.entrepriseId ?? undefined,
     contactId: demande.contactId ?? undefined,
     devisId: result.devisId,
   }).catch((err) => logger.warn("ai.generate-devis.log-failed", { error: String(err) }));
@@ -176,16 +181,26 @@ function buildPrompt(
     .map((f) => `- [${f.id}] ${f.titre} | durée ${f.duree}h | tarif ${f.tarif}€ HT par stagiaire | catégorie ${f.categorie ?? "—"} | ${f.certifiante ? "CERTIFIANTE" : "non certifiante"} | ${(f.description ?? "").slice(0, 200)}`)
     .join("\n");
 
+  // Adapte le bloc CLIENT selon B2B (entreprise) ou B2C (stagiaire individuel)
+  const clientBlock = ent
+    ? `CONTEXTE CLIENT (B2B) :
+- Entreprise: ${ent.nom}, secteur ${ent.secteur ?? "—"}, effectif ${ent.effectif ?? "—"}, type ${ent.typeEntreprise ?? "—"}
+- Contact décideur: ${ct ? `${ct.prenom} ${ct.nom}` : "—"}, poste ${ct?.poste ?? "—"}`
+    : `CONTEXTE CLIENT (B2C - stagiaire individuel, pas d'entreprise rattachée) :
+- Stagiaire: ${ct ? `${ct.prenom} ${ct.nom}` : "—"}${ct?.poste ? ` (employeur indiqué : ${ct.poste})` : ""}`;
+
+  const defaultStagiaires = ent ? "non précisé" : "1 (stagiaire individuel)";
+
   return `Tu es un assistant pour un organisme de formation (sécurité, incendie, premiers secours).
 Un prospect demande une formation. Voici le contexte :
 
-ENTREPRISE: ${ent?.nom ?? "—"}, secteur ${ent?.secteur ?? "—"}, effectif ${ent?.effectif ?? "—"}, type ${ent?.typeEntreprise ?? "—"}
-CONTACT: ${ct ? `${ct.prenom} ${ct.nom}` : "—"}, poste ${ct?.poste ?? "—"}
+${clientBlock}
+
 DEMANDE:
 - Titre: ${demande.titre}
 - Description: ${demande.description ?? "—"}
 - Notes: ${demande.notes ?? "—"}
-- Nombre de stagiaires souhaité: ${demande.nbStagiaires ?? "non précisé"}
+- Nombre de stagiaires souhaité: ${demande.nbStagiaires ?? defaultStagiaires}
 - Budget envisagé: ${demande.budget ? demande.budget + " € HT" : "non précisé"}
 - Source du contact: ${demande.sourceContact ?? "—"}
 
@@ -193,9 +208,9 @@ CATALOGUE DISPONIBLE (${formations.length} formations actives) :
 ${catalogueLines}
 
 TÂCHE : identifie la meilleure formation du catalogue pour cette demande, et propose un devis structuré.
-- Si le nombre de stagiaires n'est pas précisé, utilise 1.
+- Si le nombre de stagiaires n'est pas précisé : 1 par défaut.
 - Si le budget est précisé et incompatible avec le tarif catalogue × nbStagiaires, propose la formation quand même au tarif standard (l'admin négociera).
-
+${ent ? "" : "- Cas stagiaire individuel : le devis est nominatif, quantité = 1 sur la ligne principale.\n"}
 Retourne UNIQUEMENT un JSON valide avec cette structure (pas de markdown, pas de commentaire, pas de texte autour) :
 {
   "formationId": "<id exact de la formation choisie depuis le catalogue>",

@@ -40,7 +40,7 @@ const nextConfig = {
 
     // CSP — démarre permissive (compatibilité Next 14 App Router + Tailwind +
     // shadcn/ui). À durcir via nonce middleware dans un sprint dédié.
-    const connectSrc = ["'self'"];
+    const connectSrc = ["'self'", "https://recherche-entreprises.api.gouv.fr"];
     if (supabaseHost) {
       connectSrc.push(`https://${supabaseHost}`, `wss://${supabaseHost}`);
     }

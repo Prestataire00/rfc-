@@ -49,6 +49,17 @@ const besoinsParticulierssSchema = z.object({
   materielSurPlace: z.string().optional(),
 });
 
+// Stagiaire nominal rattaché à une demande entreprise — optionnel à la création.
+// Si fourni : on crée N Contact(type=stagiaire) liés à l'entreprise.
+// Si vide : on conserve juste demande.nbStagiaires (compteur), les noms
+// seront saisis plus tard à l'inscription en session.
+const stagiaireNominalSchema = z.object({
+  prenom: z.string().min(1, "Prénom requis"),
+  nom: z.string().min(1, "Nom requis"),
+  email: z.string().email("Email invalide").optional().or(z.literal("")),
+  telephone: z.string().optional(),
+});
+
 export const prospectCreationSchema = z
   .object({
     contact: contactSchema,
@@ -61,6 +72,9 @@ export const prospectCreationSchema = z
     demande: demandeSchema,
     besoinsParticuliers: besoinsParticulierssSchema.optional(),
     notesInternes: z.string().optional(),
+    // Stagiaires nominaux à rattacher à l'entreprise (uniquement pour
+    // prospectType=entreprise). Ignoré pour stagiaire individuel/organisme.
+    stagiaires: z.array(stagiaireNominalSchema).optional(),
   })
   .refine(
     (data) => {

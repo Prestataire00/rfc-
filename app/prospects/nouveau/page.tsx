@@ -13,6 +13,8 @@ import {
   Search,
   X,
   ChevronDown,
+  Plus,
+  Users,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
@@ -172,6 +174,21 @@ export default function NouveauProspectPage() {
     telephone: "",
     poste: "",
   });
+
+  // ---- Stagiaires nominaux (uniquement pour type entreprise) ----
+  type StagiaireRow = { prenom: string; nom: string; email: string; telephone: string };
+  const [stagiaires, setStagiaires] = useState<StagiaireRow[]>([]);
+  const [showStagiairesNominal, setShowStagiairesNominal] = useState(false);
+
+  function addStagiaire() {
+    setStagiaires((s) => [...s, { prenom: "", nom: "", email: "", telephone: "" }]);
+  }
+  function updateStagiaire(idx: number, field: keyof StagiaireRow, value: string) {
+    setStagiaires((s) => s.map((row, i) => (i === idx ? { ...row, [field]: value } : row)));
+  }
+  function removeStagiaire(idx: number) {
+    setStagiaires((s) => s.filter((_, i) => i !== idx));
+  }
 
   // ---- Mode entreprise ----
   const [entrepriseMode, setEntrepriseMode] = useState<"existante" | "nouvelle">("existante");
@@ -419,11 +436,29 @@ export default function NouveauProspectPage() {
         materielSurPlace: form.materielSurPlace.length > 0 ? form.materielSurPlace.join(", ") : undefined,
       },
       notesInternes,
+      // Stagiaires nominaux : envoyés uniquement pour type entreprise, filtrés
+      // sur les lignes ayant au moins prénom + nom.
+      ...(prospectType === "entreprise" && stagiaires.length > 0
+        ? {
+            stagiaires: stagiaires
+              .filter((s) => s.prenom.trim() && s.nom.trim())
+              .map((s) => ({
+                prenom: s.prenom.trim(),
+                nom: s.nom.trim(),
+                email: s.email.trim() || undefined,
+                telephone: s.telephone.trim() || undefined,
+              })),
+          }
+        : {}),
     };
 
     try {
-      const result = await createProspect(payload);
-      notify.success("Prospect créé", `${contact.prenom} ${contact.nom}`);
+      const result = await createProspect(payload) as ProspectResult & { stagiairesCrees?: number };
+      const stagiairesMsg =
+        result.stagiairesCrees && result.stagiairesCrees > 0
+          ? ` · ${result.stagiairesCrees} stagiaire${result.stagiairesCrees > 1 ? "s" : ""} rattaché${result.stagiairesCrees > 1 ? "s" : ""}`
+          : "";
+      notify.success("Prospect créé", `${contact.prenom} ${contact.nom}${stagiairesMsg}`);
       router.push(`/prospects/${result.demandeId}`);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -869,36 +904,117 @@ export default function NouveauProspectPage() {
               </>
             )}
 
+            {/* Nb stagiaires : compteur pour entreprise/organisme, désactivé si
+                stagiaires nominaux saisis (auto-sync sur stagiaires.length). */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nb de stagiaires (à former)
+                Nb de stagiaires {prospectType === "entreprise" ? "(à former)" : "(à former par l'organisme)"}
               </label>
               <input
                 type="number"
-                value={form.nbStagiaires}
+                min="1"
+                value={
+                  prospectType === "entreprise" && stagiaires.length > 0
+                    ? String(stagiaires.length)
+                    : form.nbStagiaires
+                }
                 onChange={(e) => setF("nbStagiaires", e.target.value)}
-                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                disabled={prospectType === "entreprise" && stagiaires.length > 0}
+                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:text-gray-500"
               />
+              {prospectType === "entreprise" && stagiaires.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">Auto-rempli depuis la liste nominale ci-dessous.</p>
+              )}
             </div>
           </div>
         )}
 
-        {/* Nb de stagiaires pour type Stagiaire individuel */}
-        {prospectType === "stagiaire" && (
+        {/* Liste des stagiaires nominaux — uniquement pour type Entreprise */}
+        {prospectType === "entreprise" && (
           <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
-            <h2 className="text-base font-semibold text-red-600 dark:text-red-500">Informations formation</h2>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nb de stagiaires
-              </label>
-              <input
-                type="number"
-                value={form.nbStagiaires}
-                onChange={(e) => setF("nbStagiaires", e.target.value)}
-                defaultValue="1"
-                className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
-              />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-red-600" />
+                <h2 className="text-base font-semibold text-red-600 dark:text-red-500">
+                  Stagiaires à former <span className="text-xs text-gray-500 font-normal">(optionnel)</span>
+                </h2>
+              </div>
+              {!showStagiairesNominal && stagiaires.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => { setShowStagiairesNominal(true); addStagiaire(); }}
+                  className="inline-flex items-center gap-1 rounded-md border border-red-600 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Saisir nominalement
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={addStagiaire}
+                  className="inline-flex items-center gap-1 rounded-md border border-red-600 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Ajouter
+                </button>
+              )}
             </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Si l&apos;entreprise a fourni la liste, saisis-la maintenant. Sinon laisse vide et indique juste le nombre — les noms seront saisis plus tard à l&apos;inscription en session.
+            </p>
+
+            {stagiaires.length > 0 && (
+              <div className="space-y-3">
+                {stagiaires.map((s, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
+                    <div className="md:col-span-3">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Prénom *</label>
+                      <input
+                        type="text"
+                        value={s.prenom}
+                        onChange={(e) => updateStagiaire(idx, "prenom", e.target.value)}
+                        className="w-full h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nom *</label>
+                      <input
+                        type="text"
+                        value={s.nom}
+                        onChange={(e) => updateStagiaire(idx, "nom", e.target.value)}
+                        className="w-full h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={s.email}
+                        onChange={(e) => updateStagiaire(idx, "email", e.target.value)}
+                        className="w-full h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Téléphone</label>
+                      <input
+                        type="tel"
+                        value={s.telephone}
+                        onChange={(e) => updateStagiaire(idx, "telephone", e.target.value)}
+                        className="w-full h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 text-sm"
+                      />
+                    </div>
+                    <div className="md:col-span-1 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removeStagiaire(idx)}
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        title="Retirer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

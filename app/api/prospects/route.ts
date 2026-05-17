@@ -109,29 +109,75 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       }
     }
 
+    // Calcul nbStagiaires :
+    //   - stagiaire individuel : forcé à 1 (lui-même)
+    //   - entreprise : nb stagiaires nominaux si fournis, sinon compteur saisi
+    //   - organisme : compteur saisi
+    let nbStagiairesValue: number | null;
+    if (data.prospectType === "stagiaire") {
+      nbStagiairesValue = 1;
+    } else if (data.prospectType === "entreprise" && data.stagiaires && data.stagiaires.length > 0) {
+      nbStagiairesValue = data.stagiaires.length;
+    } else {
+      nbStagiairesValue = data.demande.nbStagiaires ?? null;
+    }
+
     const demande = await tx.demande.create({
       data: {
         titre: data.demande.formationSouhaitee,
         description: data.demande.formationSouhaitee,
         origine: data.demande.origine,
         sourceContact: data.demande.sourceContact || null,
-        // Champs réels du modèle Demande (différents des noms du plan) :
-        nbStagiaires: data.demande.nbStagiaires ?? null,   // plan: nbStagiairesSouhaite
-        budget: data.demande.budgetEnvisage ?? null,        // plan: budgetEnvisage
+        nbStagiaires: nbStagiairesValue,
+        budget: data.demande.budgetEnvisage ?? null,
         statut: "nouveau",
         contactId: contact.id,
         entrepriseId: entrepriseId || null,
-        // Lier à une formation du catalogue si fourni
         formationId: data.demande.formationId || null,
         notes: notesParts.join("\n\n") || null,
       },
       select: { id: true },
     });
 
+    // Création des stagiaires nominaux (uniquement pour prospectType=entreprise
+    // avec une entreprise rattachée). Skip silencieusement les doublons par
+    // email (un stagiaire peut déjà exister en DB).
+    let stagiairesCrees = 0;
+    if (
+      data.prospectType === "entreprise" &&
+      entrepriseId &&
+      data.stagiaires &&
+      data.stagiaires.length > 0
+    ) {
+      for (const s of data.stagiaires) {
+        const emailNorm = s.email ? s.email.trim().toLowerCase() : null;
+        // Skip si email déjà utilisé (évite collision sur unique constraint)
+        if (emailNorm) {
+          const exists = await tx.contact.findUnique({
+            where: { email: emailNorm },
+            select: { id: true },
+          });
+          if (exists) continue;
+        }
+        await tx.contact.create({
+          data: {
+            prenom: s.prenom,
+            nom: s.nom,
+            email: emailNorm || `stagiaire-${demande.id}-${stagiairesCrees}@placeholder.local`,
+            telephone: s.telephone || null,
+            type: "stagiaire",
+            entrepriseId,
+          },
+        });
+        stagiairesCrees++;
+      }
+    }
+
     return {
       demandeId: demande.id,
       contactId: contact.id,
       entrepriseId: entrepriseId ?? undefined,
+      stagiairesCrees,
     };
   });
 

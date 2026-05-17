@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Briefcase,
+  Building2,
   Calendar,
   Users as UsersIcon,
   FileText,
@@ -19,16 +20,9 @@ import {
   PauseCircle,
   Archive,
   PlayCircle,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Info,
-  ClipboardList,
-  AlertCircle,
-  Clock,
-  Tag,
 } from "lucide-react";
 
+import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
@@ -127,23 +121,15 @@ type ProjetDetail = {
   kpis: Kpis;
 };
 
-// Onglets principaux : Wizard (parcours 5 étapes) + Sessions + Finance.
 const TABS = [
-  { id: "wizard", label: "Détail projet", icon: Activity },
+  { id: "overview", label: "Vue d'ensemble", icon: Activity },
   { id: "sessions", label: "Sessions", icon: CalendarDays },
+  { id: "taches", label: "Tâches", icon: ListChecks },
+  { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "finance", label: "Finance", icon: Banknote },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
-
-// Étapes du wizard interne.
-const WIZARD_STEPS = [
-  { num: 1, key: "informations", label: "Informations", icon: Info },
-  { num: 2, key: "description", label: "Description", icon: FileText },
-  { num: 3, key: "taches", label: "Tâches", icon: ListChecks },
-  { num: 4, key: "documents", label: "Documents", icon: FolderOpen },
-  { num: 5, key: "progression", label: "Progression", icon: Activity },
-] as const;
 
 const STATUT_COLOR: Record<string, string> = {
   brouillon: "bg-slate-500/15 text-slate-700 dark:text-slate-300",
@@ -170,9 +156,7 @@ function fmtDate(value: string | null | undefined): string {
 export default function ProjetDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const [tab, setTab] = useState<TabId>("wizard");
-  const [step, setStep] = useState<number>(1);
-  const [duplicating, setDuplicating] = useState(false);
+  const [tab, setTab] = useState<TabId>("overview");
 
   const { data: projet, isLoading, error, mutate } = useApi<ProjetDetail>(
     `/api/projets/${params.id}`,
@@ -184,27 +168,8 @@ export default function ProjetDetailPage() {
       await api.put(`/api/projets/${projet.id}`, { statut });
       notify.success(`Statut → ${statut}`);
       mutate();
-    } catch {
+    } catch (err) {
       notify.error("Impossible de changer le statut");
-    }
-  }
-
-  async function handleDuplicate() {
-    if (!projet) return;
-    const ok = window.confirm(`Dupliquer le projet « ${projet.nom} » ?`);
-    if (!ok) return;
-    setDuplicating(true);
-    try {
-      const copy = await api.post<{ id: string; nom: string }>(
-        `/api/projets/${projet.id}/duplicate`,
-        {},
-      );
-      notify.success(`Projet dupliqué : « ${copy.nom} »`);
-      router.push(`/projets/${copy.id}`);
-    } catch {
-      notify.error("Impossible de dupliquer le projet");
-    } finally {
-      setDuplicating(false);
     }
   }
 
@@ -225,72 +190,65 @@ export default function ProjetDetailPage() {
   const statutColor = STATUT_COLOR[projet.statut] ?? STATUT_COLOR.brouillon;
 
   return (
-    <div className="space-y-6 p-6 pb-24">
-      {/* HEADER : titre, sous-titre client, badge statut + actions */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-2 min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push("/projets")}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" /> Retour
-            </button>
-            <span className="text-xs text-muted-foreground">·</span>
-            <p className="text-xs text-muted-foreground">{projet.code ?? "—"}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
-              <Briefcase className="h-6 w-6" /> {projet.nom}
-            </h1>
-            <span className={`rounded-full px-2.5 py-1 text-xs ${statutColor}`}>
-              {projet.statut}
+    <div className="space-y-6 p-6">
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          {projet.code ?? "—"}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="flex items-center gap-2 text-2xl font-bold">
+            <Briefcase className="h-6 w-6" /> {projet.nom}
+          </h1>
+          <span className={`rounded-full px-2.5 py-1 text-xs ${statutColor}`}>
+            {projet.statut}
+          </span>
+          {projet.kpis.enRetard ? (
+            <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-xs text-red-700 dark:text-red-300">
+              <AlertTriangle className="h-3 w-3" /> En retard
             </span>
-            {projet.kpis.enRetard ? (
-              <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-xs text-red-700 dark:text-red-300">
-                <AlertTriangle className="h-3 w-3" /> En retard
-              </span>
-            ) : null}
-          </div>
-          {projet.entreprise ? (
-            <p className="text-sm text-muted-foreground">
-              <Link href={`/entreprises/${projet.entreprise.id}`} className="hover:underline">
-                {projet.entreprise.nom}
-              </Link>
-            </p>
           ) : null}
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDuplicate}
-          disabled={duplicating}
-        >
-          <Copy className="mr-1 h-4 w-4" />
-          {duplicating ? "Duplication…" : "Dupliquer"}
-        </Button>
+        {projet.description ? (
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            {projet.description}
+          </p>
+        ) : null}
       </div>
 
-      {/* Actions statut */}
       <div className="flex flex-wrap gap-2">
         {projet.statut !== "en_cours" ? (
-          <Button variant="outline" size="sm" onClick={() => changeStatut("en_cours")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => changeStatut("en_cours")}
+          >
             <PlayCircle className="mr-1 h-4 w-4" /> Démarrer
           </Button>
         ) : null}
         {projet.statut === "en_cours" ? (
-          <Button variant="outline" size="sm" onClick={() => changeStatut("en_pause")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => changeStatut("en_pause")}
+          >
             <PauseCircle className="mr-1 h-4 w-4" /> Mettre en pause
           </Button>
         ) : null}
         {!["termine", "archive"].includes(projet.statut) ? (
-          <Button variant="outline" size="sm" onClick={() => changeStatut("termine")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => changeStatut("termine")}
+          >
             <CheckCircle2 className="mr-1 h-4 w-4" /> Terminer
           </Button>
         ) : null}
         {projet.statut !== "archive" ? (
-          <Button variant="outline" size="sm" onClick={() => changeStatut("archive")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => changeStatut("archive")}
+          >
             <Archive className="mr-1 h-4 w-4" /> Archiver
           </Button>
         ) : null}
@@ -303,7 +261,6 @@ export default function ProjetDetailPage() {
         </Button>
       </div>
 
-      {/* Onglets principaux : Wizard | Sessions | Finance */}
       <nav className="flex gap-1 border-b border-border">
         {TABS.map((t) => {
           const active = t.id === tab;
@@ -325,123 +282,84 @@ export default function ProjetDetailPage() {
         })}
       </nav>
 
-      {tab === "wizard" ? (
-        <WizardContainer projet={projet} step={step} onStepChange={setStep} />
-      ) : null}
+      {tab === "overview" ? <OverviewTab projet={projet} /> : null}
       {tab === "sessions" ? <SessionsTab projet={projet} /> : null}
+      {tab === "taches" ? <TachesTab projetId={projet.id} /> : null}
+      {tab === "documents" ? <DocumentsTab projet={projet} /> : null}
       {tab === "finance" ? <FinanceTab projet={projet} /> : null}
     </div>
   );
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Wizard 5 étapes : Informations / Description / Tâches / Documents / Progression
-// ────────────────────────────────────────────────────────────────────────────
-
-function WizardContainer({
-  projet,
-  step,
-  onStepChange,
-}: {
-  projet: ProjetDetail;
-  step: number;
-  onStepChange: (n: number) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      {/* Contenu de l'étape courante */}
-      {step === 1 ? <Step1Informations projet={projet} /> : null}
-      {step === 2 ? <Step2Description projet={projet} /> : null}
-      {step === 3 ? <TachesTab projetId={projet.id} /> : null}
-      {step === 4 ? <Step4Documents projet={projet} /> : null}
-      {step === 5 ? <Step5Progression projet={projet} /> : null}
-
-      {/* Stepper bottom bar */}
-      <div className="flex items-center justify-between gap-4 border-t border-border pt-4 mt-8">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onStepChange(Math.max(1, step - 1))}
-          disabled={step === 1}
-        >
-          <ChevronLeft className="mr-1 h-4 w-4" /> Précédent
-        </Button>
-
-        <div className="flex items-center gap-3">
-          {WIZARD_STEPS.map((s) => {
-            const active = step === s.num;
-            return (
-              <button
-                key={s.num}
-                onClick={() => onStepChange(s.num)}
-                className={`flex flex-col items-center gap-1 transition-opacity ${
-                  active ? "" : "opacity-60 hover:opacity-100"
-                }`}
-              >
-                <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                    active
-                      ? "bg-red-600 text-white"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {s.num}
-                </span>
-                <span className={`text-xs ${active ? "font-medium" : "text-muted-foreground"}`}>
-                  {s.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <Button
-          size="sm"
-          onClick={() => onStepChange(Math.min(5, step + 1))}
-          disabled={step === 5}
-        >
-          Étape suivante <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
+function TachesTab({ projetId }: { projetId: string }) {
+  return <ProjetTachesPanel projetId={projetId} />;
 }
 
-// ──── Étape 1 : Informations ────────────────────────────────────────────────
-function Step1Informations({ projet }: { projet: ProjetDetail }) {
+function OverviewTab({ projet }: { projet: ProjetDetail }) {
+  const { kpis } = projet;
   return (
-    <div className="space-y-5">
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Panel title="Dates de la mission">
-          <Row icon={Calendar} label="Date de début" value={fmtDate(projet.dateDebut)} />
-          <Row icon={Calendar} label="Date de fin prévue" value={fmtDate(projet.dateFinPrevue)} />
-          <Row icon={Calendar} label="Date de fin réelle" value={fmtDate(projet.dateFinReelle)} />
-        </Panel>
-
-        <Panel title="Pilotage">
-          <Row icon={UsersIcon} label="Chef de projet" value={projet.chefProjet ?? "—"} />
-          <Row icon={Tag} label="Priorité" value={projet.priorite} />
-          <Row icon={Euro} label="Budget" value={fmtEur(projet.budget)} />
-        </Panel>
+    <div className="space-y-6">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Kpi
+          icon={Activity}
+          label="Avancement"
+          value={`${Math.round(kpis.avancement * 100)} %`}
+          hint={`${kpis.nbSessionsTerminees}/${kpis.nbSessions} sessions terminées`}
+        />
+        <Kpi
+          icon={CalendarDays}
+          label="Sessions à venir"
+          value={String(kpis.nbSessionsAVenir)}
+          hint={`${kpis.nbSessions} sessions au total`}
+        />
+        <Kpi
+          icon={Euro}
+          label="CA encaissé"
+          value={fmtEur(kpis.caEncaisse)}
+          hint={`${kpis.nbFacturesPayees}/${kpis.nbFactures} factures payées`}
+          tone={kpis.nbFacturesEnRetard > 0 ? "warn" : undefined}
+        />
+        <Kpi
+          icon={Calendar}
+          label="Jours avant fin"
+          value={kpis.joursAvantFin == null ? "—" : `${kpis.joursAvantFin} j`}
+          hint={fmtDate(projet.dateFinPrevue)}
+          tone={kpis.enRetard ? "bad" : undefined}
+        />
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Panel title="Client">
-          {projet.entreprise ? (
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium">
-                <Link href={`/entreprises/${projet.entreprise.id}`} className="hover:underline">
+        <Panel title="Client & pilotage">
+          <Row
+            icon={Building2}
+            label="Entreprise"
+            value={
+              projet.entreprise ? (
+                <Link
+                  href={`/entreprises/${projet.entreprise.id}`}
+                  className="underline"
+                >
                   {projet.entreprise.nom}
                 </Link>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {projet.entreprise.ville ?? "—"} ·{" "}
-                {projet.entreprise.email ?? projet.entreprise.telephone ?? "—"}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Aucun client rattaché.</p>
-          )}
+              ) : (
+                "—"
+              )
+            }
+          />
+          <Row icon={UsersIcon} label="Chef de projet" value={projet.chefProjet ?? "—"} />
+          <Row icon={Calendar} label="Date de début" value={fmtDate(projet.dateDebut)} />
+          <Row icon={Calendar} label="Date de fin prévue" value={fmtDate(projet.dateFinPrevue)} />
+          <Row icon={Calendar} label="Date de fin réelle" value={fmtDate(projet.dateFinReelle)} />
+          <Row
+            icon={Euro}
+            label="Budget"
+            value={fmtEur(projet.budget)}
+            hint={
+              kpis.budgetRestant != null
+                ? `Reste : ${fmtEur(kpis.budgetRestant)}`
+                : undefined
+            }
+          />
         </Panel>
 
         <Panel title={`Équipe formateurs (${projet.formateurs.length})`}>
@@ -476,228 +394,47 @@ function Step1Informations({ projet }: { projet: ProjetDetail }) {
           )}
         </Panel>
       </section>
-    </div>
-  );
-}
 
-// ──── Étape 2 : Description ─────────────────────────────────────────────────
-function Step2Description({ projet }: { projet: ProjetDetail }) {
-  const router = useRouter();
-  return (
-    <div className="space-y-5">
-      <section className="rounded-lg border border-border bg-card p-5">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Description / Cadrage
-          </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/projets/${projet.id}/editer`)}
-          >
-            Modifier
-          </Button>
-        </div>
-        {projet.description ? (
-          <p className="whitespace-pre-wrap text-sm">{projet.description}</p>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <ClipboardList className="mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Aucune description renseignée</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={() => router.push(`/projets/${projet.id}/editer`)}
-            >
-              Ajouter une description
-            </Button>
-          </div>
-        )}
-      </section>
-
-      {projet.objectifs ? (
-        <Panel title="Objectifs">
-          <p className="whitespace-pre-wrap text-sm">{projet.objectifs}</p>
-        </Panel>
+      {projet.objectifs || projet.livrables ? (
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {projet.objectifs ? (
+            <Panel title="Objectifs">
+              <p className="whitespace-pre-wrap text-sm">{projet.objectifs}</p>
+            </Panel>
+          ) : null}
+          {projet.livrables ? (
+            <Panel title="Livrables">
+              <p className="whitespace-pre-wrap text-sm">{projet.livrables}</p>
+            </Panel>
+          ) : null}
+        </section>
       ) : null}
-      {projet.livrables ? (
-        <Panel title="Livrables">
-          <p className="whitespace-pre-wrap text-sm">{projet.livrables}</p>
+
+      {projet.demandes.length > 0 ? (
+        <Panel title={`Demandes (${projet.demandes.length})`}>
+          <ul className="divide-y divide-border">
+            {projet.demandes.map((b) => (
+              <li key={b.id} className="flex items-center justify-between py-2 text-sm">
+                <Link
+                  href={`/demandes/${b.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {b.titre}
+                </Link>
+                <div className="flex gap-2 text-xs text-muted-foreground">
+                  <span>{b.statut}</span>
+                  <span>·</span>
+                  <span>
+                    {b.nbStagiaires ? `${b.nbStagiaires} stagiaires` : "—"}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Panel>
       ) : null}
     </div>
   );
-}
-
-// ──── Étape 4 : Documents ───────────────────────────────────────────────────
-function Step4Documents({ projet }: { projet: ProjetDetail }) {
-  return (
-    <Panel
-      title="Documents du projet"
-      action={
-        <Link
-          href={`/projets/${projet.id}/documents`}
-          className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
-        >
-          Ouvrir la gestion des documents →
-        </Link>
-      }
-    >
-      <p className="text-sm text-muted-foreground mb-4">
-        La page dédiée permet d&apos;ajouter des documents (livrables, contrats,
-        briefs, rapports…) et de choisir <strong>qui peut les voir</strong> : le
-        client uniquement, le(s) formateur(s) uniquement, les deux, ou personne.
-      </p>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <DocCard
-          icon={FileText}
-          label="Conventions (devis signés)"
-          href={`/documents?projetId=${projet.id}&type=convention`}
-          count={projet.devis.filter((d) => d.statut === "signe").length}
-        />
-        <DocCard
-          icon={FileText}
-          label="Attestations (sessions terminées)"
-          href={`/documents?projetId=${projet.id}&type=attestation`}
-          count={projet.kpis.nbSessionsTerminees}
-        />
-        <DocCard
-          icon={FileText}
-          label="Feuilles de présence"
-          href={`/emargement?projetId=${projet.id}`}
-          count={projet.sessions.length}
-        />
-      </div>
-    </Panel>
-  );
-}
-
-// ──── Étape 5 : Progression (KPIs tâches + résumé par statut) ───────────────
-function Step5Progression({ projet }: { projet: ProjetDetail }) {
-  type TacheRow = {
-    id: string;
-    completed: boolean;
-    dueDate: string | null;
-    priorite: string | null;
-  };
-  type TachesResp = {
-    lists: Array<{ items: TacheRow[] }>;
-    stats: { totalItems: number; completedItems: number; percent: number };
-  };
-  const { data: taches } = useApi<TachesResp>(`/api/projets/${projet.id}/taches`);
-
-  const allItems: TacheRow[] = taches?.lists.flatMap((l) => l.items) ?? [];
-  const now = Date.now();
-  const total = allItems.length;
-  const completed = allItems.filter((t) => t.completed).length;
-  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-  const enRetard = allItems.filter(
-    (t) => !t.completed && t.dueDate && new Date(t.dueDate).getTime() < now,
-  ).length;
-  const prioritaire = allItems.filter(
-    (t) => !t.completed && (t.priorite === "haute" || t.priorite === "urgente"),
-  ).length;
-  const aFaire = allItems.filter(
-    (t) =>
-      !t.completed &&
-      !(t.dueDate && new Date(t.dueDate).getTime() < now) &&
-      !(t.priorite === "haute" || t.priorite === "urgente"),
-  ).length;
-  const sansObjet = total === 0 ? 1 : 0; // placeholder visuel quand aucune tâche
-
-  const participantsPrevus = projet.sessions.reduce(
-    (acc, s) => acc + (s._count?.inscriptions ?? 0),
-    0,
-  );
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Progression de la mission</h2>
-
-      {/* KPI cards */}
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-3xl font-bold text-blue-600">{percent}%</p>
-          <p className="mt-1 text-sm text-muted-foreground">Progression globale</p>
-          <div className="mt-3 h-1.5 w-full rounded-full bg-muted">
-            <div
-              className="h-1.5 rounded-full bg-blue-600 transition-all"
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-3xl font-bold">{completed}/{total}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Tâches complétées</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-5">
-          <p className="text-3xl font-bold">{participantsPrevus}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Participants prévus</p>
-        </div>
-      </section>
-
-      {/* Statut */}
-      <section className="rounded-lg border border-border bg-card p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Statut de la mission
-            </h3>
-            <p className="mt-1 text-sm">{projet.statut}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Résumé des tâches */}
-      <section>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Résumé des tâches
-        </h3>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          <SummaryCard count={aFaire} label="À faire" tone="neutral" icon={ListChecks} />
-          <SummaryCard count={prioritaire} label="Prioritaire" tone="warn" icon={AlertCircle} />
-          <SummaryCard count={enRetard} label="En retard" tone="bad" icon={Clock} />
-          <SummaryCard count={completed} label="Terminé" tone="good" icon={CheckCircle2} />
-          <SummaryCard count={sansObjet} label="Sans objet" tone="muted" icon={Archive} />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function SummaryCard({
-  count,
-  label,
-  tone,
-  icon: Icon,
-}: {
-  count: number;
-  label: string;
-  tone: "neutral" | "warn" | "bad" | "good" | "muted";
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  const toneClass =
-    tone === "good"
-      ? "border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-950/30"
-      : tone === "warn"
-        ? "border-amber-300 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-950/30"
-        : tone === "bad"
-          ? "border-red-300 dark:border-red-700/50 bg-red-50 dark:bg-red-950/30"
-          : tone === "muted"
-            ? "border-border bg-muted/30"
-            : "border-border bg-background";
-  return (
-    <div className={`rounded-lg border p-4 text-center ${toneClass}`}>
-      <Icon className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
-      <p className="text-2xl font-bold">{count}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function TachesTab({ projetId }: { projetId: string }) {
-  return <ProjetTachesPanel projetId={projetId} />;
 }
 
 function SessionsTab({ projet }: { projet: ProjetDetail }) {
@@ -774,6 +511,51 @@ function SessionsTab({ projet }: { projet: ProjetDetail }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function DocumentsTab({ projet }: { projet: ProjetDetail }) {
+  return (
+    <div className="space-y-4">
+      <Panel
+        title="Documents du projet"
+        action={
+          <Link
+            href={`/projets/${projet.id}/documents`}
+            className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
+          >
+            Ouvrir la gestion des documents →
+          </Link>
+        }
+      >
+        <p className="text-sm text-muted-foreground mb-4">
+          La page dédiée permet d&apos;ajouter des documents (livrables, contrats,
+          briefs, rapports…) et de choisir <strong>qui peut les voir</strong> : le
+          client uniquement, le(s) formateur(s) uniquement, les deux, ou personne
+          (interne admin).
+        </p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <DocCard
+            icon={FileText}
+            label="Conventions (devis signés)"
+            href={`/documents?projetId=${projet.id}&type=convention`}
+            count={projet.devis.filter((d) => d.statut === "signe").length}
+          />
+          <DocCard
+            icon={FileText}
+            label="Attestations (sessions terminées)"
+            href={`/documents?projetId=${projet.id}&type=attestation`}
+            count={projet.kpis.nbSessionsTerminees}
+          />
+          <DocCard
+            icon={FileText}
+            label="Feuilles de présence"
+            href={`/emargement?projetId=${projet.id}`}
+            count={projet.sessions.length}
+          />
+        </div>
+      </Panel>
     </div>
   );
 }

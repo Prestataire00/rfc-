@@ -84,9 +84,15 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
     });
   }
 
-  // Hook Phase 2 : génération auto devis IA sur transition nouveau→qualifie
+  // Génération auto devis IA :
+  //   - sur transition nouveau→qualifie (workflow standard)
+  //   - sur passage direct à "Gagné" sans devis (fast-track : signature offline)
   let aiResult: { generated: boolean; devisId?: string; error?: string } | undefined;
-  if (oldStatut === "nouveau" && newStatut === "qualifie" && !demandeBefore?.devisId) {
+  const shouldGenerateOnQualif =
+    oldStatut === "nouveau" && newStatut === "qualifie" && !demandeBefore?.devisId;
+  const shouldGenerateOnWon =
+    newStatut === "accepte" && oldStatut !== "accepte" && !demandeBefore?.devisId;
+  if (shouldGenerateOnQualif || shouldGenerateOnWon) {
     const { generateDevisFromDemandeWithAI } = await import("@/lib/ai/generate-devis-from-demande");
     const generation = await generateDevisFromDemandeWithAI(params.id);
     if ("devisId" in generation) {

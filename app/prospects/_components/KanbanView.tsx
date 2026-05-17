@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, GraduationCap, Users as UsersIcon, Euro, User } from "lucide-react";
-import { AlertCircle, TrendingUp, Clock, CheckCircle2, XCircle, Archive } from "lucide-react";
+import { AlertCircle, TrendingUp, Clock, MessageSquare, CheckCircle2, XCircle } from "lucide-react";
 import { BESOIN_PRIORITES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
@@ -22,12 +22,12 @@ export type Besoin = {
 };
 
 export const PIPELINE_COLS = [
-  { key: "nouveau",      label: "Nouveau",      color: "border-blue-500/40",    dot: "bg-blue-500",    icon: AlertCircle },
-  { key: "qualifie",     label: "Qualifié",     color: "border-indigo-500/40",  dot: "bg-indigo-500",  icon: TrendingUp },
-  { key: "devis_envoye", label: "Devis envoyé", color: "border-amber-500/40",   dot: "bg-amber-500",   icon: Clock },
-  { key: "accepte",      label: "Accepté",      color: "border-emerald-500/40", dot: "bg-emerald-500", icon: CheckCircle2 },
-  { key: "refuse",       label: "Refusé",       color: "border-red-500/40",     dot: "bg-red-500",     icon: XCircle },
-  { key: "archive",      label: "Archivé",      color: "border-gray-500/40",    dot: "bg-gray-500",    icon: Archive },
+  { key: "nouveau",        label: "Nouveau",        color: "border-sky-500/40",     dot: "bg-sky-500",     icon: AlertCircle },
+  { key: "qualifie",       label: "Qualifié",       color: "border-violet-500/40",  dot: "bg-violet-500",  icon: TrendingUp },
+  { key: "devis_envoye",   label: "Devis envoyé",   color: "border-amber-500/40",   dot: "bg-amber-500",   icon: Clock },
+  { key: "en_negociation", label: "En négociation", color: "border-orange-500/40",  dot: "bg-orange-500",  icon: MessageSquare },
+  { key: "accepte",        label: "Gagné",          color: "border-emerald-500/40", dot: "bg-emerald-500", icon: CheckCircle2 },
+  { key: "refuse",         label: "Perdu",          color: "border-red-500/40",     dot: "bg-red-500",     icon: XCircle },
 ];
 
 const ORIGINE_STYLE: Record<string, { icon: React.ElementType; label: string; color: string }> = {

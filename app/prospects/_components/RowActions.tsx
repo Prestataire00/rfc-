@@ -2,17 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, ExternalLink, Archive, ChevronRight } from "lucide-react";
-import { BESOIN_STATUTS } from "@/lib/constants";
+import { MoreHorizontal, ExternalLink, XCircle, ChevronRight } from "lucide-react";
+import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE } from "@/lib/constants";
 import { notify } from "@/lib/toast";
 
 const STATUS_DOT: Record<string, string> = {
-  nouveau:      "bg-sky-500",
-  qualifie:     "bg-indigo-500",
-  devis_envoye: "bg-amber-500",
-  accepte:      "bg-emerald-500",
-  refuse:       "bg-red-500",
-  archive:      "bg-slate-500",
+  nouveau:        "bg-sky-500",
+  qualifie:       "bg-violet-500",
+  devis_envoye:   "bg-amber-500",
+  en_negociation: "bg-orange-500",
+  accepte:        "bg-emerald-500",
+  refuse:         "bg-red-500",
+  archive:        "bg-slate-500",
 };
 
 interface RowActionsProps {
@@ -99,17 +100,20 @@ export function RowActions({ demandeId, currentStatut, onRefresh }: RowActionsPr
             </button>
             {showStatuts && (
               <div className="absolute right-full top-0 mr-1 min-w-[160px] rounded-lg border border-gray-600 bg-gray-800 shadow-xl py-1">
-                {Object.entries(BESOIN_STATUTS).map(([key, val]) => (
-                  <button
-                    key={key}
-                    onClick={(e) => { e.stopPropagation(); patchStatut(key); }}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-700 ${key === currentStatut ? "text-gray-300 font-medium" : "text-gray-400"}`}
-                  >
-                    <span className={`h-2 w-2 rounded-full ${STATUS_DOT[key] ?? "bg-gray-500"}`} />
-                    {val.label}
-                    {key === currentStatut && <span className="ml-auto text-gray-500">✓</span>}
-                  </button>
-                ))}
+                {BESOIN_STATUTS_PIPELINE.map((key) => {
+                  const val = BESOIN_STATUTS[key];
+                  return (
+                    <button
+                      key={key}
+                      onClick={(e) => { e.stopPropagation(); patchStatut(key); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-700 ${key === currentStatut ? "text-gray-300 font-medium" : "text-gray-400"}`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${STATUS_DOT[key] ?? "bg-gray-500"}`} />
+                      {val.label}
+                      {key === currentStatut && <span className="ml-auto text-gray-500">✓</span>}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -117,10 +121,10 @@ export function RowActions({ demandeId, currentStatut, onRefresh }: RowActionsPr
           <div className="border-t border-gray-700 my-1" />
 
           <button
-            onClick={(e) => { e.stopPropagation(); patchStatut("archive"); }}
+            onClick={(e) => { e.stopPropagation(); patchStatut("refuse"); }}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-gray-700 text-left"
           >
-            <Archive className="h-3.5 w-3.5" /> Archiver
+            <XCircle className="h-3.5 w-3.5" /> Marquer comme perdu
           </button>
         </div>
       )}

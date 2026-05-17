@@ -36,14 +36,33 @@ export const FACTURE_STATUTS = {
   annulee: { label: "Annulée", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
 
+// Pipeline commercial demande — 6 étapes ordonnées.
+// Clés Prisma conservées pour compat données (accepte, refuse) ;
+// labels actualisés en vocabulaire commercial (Gagné / Perdu).
+// "archive" reste comme clé legacy pour les anciennes demandes,
+// mais n'est plus exposée dans le pipeline visible (PIPELINE_COLS).
 export const BESOIN_STATUTS = {
   nouveau: { label: "Nouveau", color: "bg-sky-500/20 text-sky-500 border-sky-500/30" },
-  qualifie: { label: "Qualifié", color: "bg-indigo-500/20 text-indigo-500 border-indigo-500/30" },
+  qualifie: { label: "Qualifié", color: "bg-violet-500/20 text-violet-500 border-violet-500/30" },
   devis_envoye: { label: "Devis envoyé", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
-  accepte: { label: "Accepté", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
-  refuse: { label: "Refusé", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+  en_negociation: { label: "En négociation", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" },
+  accepte: { label: "Gagné", color: "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" },
+  refuse: { label: "Perdu", color: "bg-red-500/20 text-red-500 border-red-500/30" },
+  // Legacy — anciennes demandes pré-pipeline 6 étapes. Non sélectionnable dans l'UI.
   archive: { label: "Archivé", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
 } as const;
+
+// Statuts visibles dans le pipeline (dropdowns, Kanban, etc.).
+// Exclut "archive" qui devient une valeur legacy de fallback affichable
+// uniquement sur les demandes déjà archivées.
+export const BESOIN_STATUTS_PIPELINE = [
+  "nouveau",
+  "qualifie",
+  "devis_envoye",
+  "en_negociation",
+  "accepte",
+  "refuse",
+] as const;
 
 export const BESOIN_ORIGINES = {
   client: { label: "Client" },

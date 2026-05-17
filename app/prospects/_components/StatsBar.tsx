@@ -2,24 +2,27 @@
 
 interface StatsBarProps {
   total: number;
-  aQualifier: number;
+  nouveaux: number;
   enCours: number;
-  acceptes: number;
+  gagnes: number;
+  perdus: number;
   tauxConversion: number;
 }
 
-export function StatsBar({ total, aQualifier, enCours, acceptes, tauxConversion }: StatsBarProps) {
+export function StatsBar({ total, nouveaux, enCours, gagnes, perdus, tauxConversion }: StatsBarProps) {
   return (
     <div className="flex items-center gap-4 px-1 py-2 text-sm flex-wrap">
       <StatItem dot="bg-gray-400" label="Total" value={total} />
       <Separator />
-      <StatItem dot="bg-sky-500" label="À qualifier" value={aQualifier} />
+      <StatItem dot="bg-sky-500" label="Nouveaux" value={nouveaux} />
       <Separator />
       <StatItem dot="bg-amber-500" label="En cours" value={enCours} />
       <Separator />
-      <StatItem dot="bg-emerald-500" label="Acceptés" value={acceptes} />
+      <StatItem dot="bg-emerald-500" label="Gagnés" value={gagnes} />
       <Separator />
-      <StatItem dot="bg-red-500" label="Taux conv." value={`${tauxConversion}%`} />
+      <StatItem dot="bg-red-500" label="Perdus" value={perdus} />
+      <Separator />
+      <StatItem dot="bg-gray-400" label="Taux conv." value={`${tauxConversion}%`} />
     </div>
   );
 }

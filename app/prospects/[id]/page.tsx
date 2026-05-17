@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
 import { StatutBadge } from "@/components/shared/StatutBadge";
-import { BESOIN_STATUTS, BESOIN_ORIGINES } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE, BESOIN_ORIGINES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { notify } from "@/lib/toast";
 
@@ -248,10 +248,16 @@ export default function ProspectDetailPage() {
     if (!data) return;
     const { demande } = data;
 
-    // Hook Phase 2 : confirmation sur nouveau → qualifie sans devis
-    if (demande.statut === "nouveau" && newStatut === "qualifie" && !demande.devisId) {
+    // Confirmation IA :
+    //   - nouveau → qualifie sans devis (workflow standard)
+    //   - n'importe quel statut → accepte sans devis (fast-track Gagné)
+    const willGenerateDevis =
+      !demande.devisId &&
+      ((demande.statut === "nouveau" && newStatut === "qualifie") ||
+        (demande.statut !== "accepte" && newStatut === "accepte"));
+    if (willGenerateDevis) {
       const ok = window.confirm(
-        "Cela va générer un devis brouillon avec l'IA. Continuer ?"
+        "Cela va générer un devis brouillon avec l'IA. Continuer ?",
       );
       if (!ok) return;
     }
@@ -350,11 +356,18 @@ export default function ProspectDetailPage() {
               onChange={(e) => handleStatutChange(e.target.value)}
               className="rounded-md border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 disabled:opacity-50 cursor-pointer"
             >
-              {Object.entries(BESOIN_STATUTS).map(([key, val]) => (
+              {BESOIN_STATUTS_PIPELINE.map((key) => (
                 <option key={key} value={key}>
-                  {val.label}
+                  {BESOIN_STATUTS[key].label}
                 </option>
               ))}
+              {/* Fallback : si la demande a un statut legacy (archive), l'afficher quand même */}
+              {!BESOIN_STATUTS_PIPELINE.includes(demande.statut as never) &&
+                BESOIN_STATUTS[demande.statut as keyof typeof BESOIN_STATUTS] && (
+                  <option value={demande.statut}>
+                    {BESOIN_STATUTS[demande.statut as keyof typeof BESOIN_STATUTS].label}
+                  </option>
+                )}
             </select>
           </div>
         </div>

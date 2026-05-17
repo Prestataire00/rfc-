@@ -2,16 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { BESOIN_STATUTS } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE } from "@/lib/constants";
 import { notify } from "@/lib/toast";
 
 const STATUS_DOT: Record<string, string> = {
-  nouveau:      "bg-sky-500",
-  qualifie:     "bg-indigo-500",
-  devis_envoye: "bg-amber-500",
-  accepte:      "bg-emerald-500",
-  refuse:       "bg-red-500",
-  archive:      "bg-slate-500",
+  nouveau:        "bg-sky-500",
+  qualifie:       "bg-violet-500",
+  devis_envoye:   "bg-amber-500",
+  en_negociation: "bg-orange-500",
+  accepte:        "bg-emerald-500",
+  refuse:         "bg-red-500",
+  archive:        "bg-slate-500",
 };
 
 interface StatusBadgeProps {
@@ -92,17 +93,20 @@ export function StatusBadge({ demandeId, statut, onRefresh }: StatusBadgeProps) 
           data-testid="status-badge-dropdown"
           className="absolute left-0 top-full mt-1 z-50 min-w-[160px] rounded-lg border border-gray-600 bg-gray-800 shadow-xl py-1"
         >
-          {Object.entries(BESOIN_STATUTS).map(([key, val]) => (
-            <button
-              key={key}
-              onClick={(e) => { e.stopPropagation(); changeStatut(key); }}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-700 transition-colors ${key === statut ? "text-gray-300 font-medium" : "text-gray-400"}`}
-            >
-              <span className={`h-2 w-2 rounded-full shrink-0 ${STATUS_DOT[key] ?? "bg-gray-500"}`} />
-              {val.label}
-              {key === statut && <span className="ml-auto text-gray-500">✓</span>}
-            </button>
-          ))}
+          {BESOIN_STATUTS_PIPELINE.map((key) => {
+            const val = BESOIN_STATUTS[key];
+            return (
+              <button
+                key={key}
+                onClick={(e) => { e.stopPropagation(); changeStatut(key); }}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-gray-700 transition-colors ${key === statut ? "text-gray-300 font-medium" : "text-gray-400"}`}
+              >
+                <span className={`h-2 w-2 rounded-full shrink-0 ${STATUS_DOT[key] ?? "bg-gray-500"}`} />
+                {val.label}
+                {key === statut && <span className="ml-auto text-gray-500">✓</span>}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

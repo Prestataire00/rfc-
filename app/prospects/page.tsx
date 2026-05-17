@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserPlus, Plus, Search, LayoutGrid, Table } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { BESOIN_STATUTS, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
+import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
 import { useApi } from "@/hooks/useApi";
 import { StatsBar } from "./_components/StatsBar";
 import { TableView } from "./_components/TableView";
@@ -63,12 +63,16 @@ export default function ProspectsPage() {
     }, {} as Record<string, Besoin[]>);
   }, [filtered]);
 
-  // Stats
+  // Stats — pipeline 6 étapes
   const nbNouveau = besoins.filter((b) => b.statut === "nouveau").length;
-  const nbEnCours = besoins.filter((b) => ["qualifie", "devis_envoye"].includes(b.statut)).length;
-  const nbAcceptes = besoins.filter((b) => b.statut === "accepte").length;
-  const tauxConversion =
-    besoins.length > 0 ? Math.round((nbAcceptes / besoins.length) * 100) : 0;
+  const nbEnCours = besoins.filter((b) =>
+    ["qualifie", "devis_envoye", "en_negociation"].includes(b.statut),
+  ).length;
+  const nbGagnes = besoins.filter((b) => b.statut === "accepte").length;
+  const nbPerdus = besoins.filter((b) => b.statut === "refuse").length;
+  // Taux conv. = gagnés / (gagnés + perdus) — opportunités traitées
+  const nbTraitees = nbGagnes + nbPerdus;
+  const tauxConversion = nbTraitees > 0 ? Math.round((nbGagnes / nbTraitees) * 100) : 0;
 
   const hasFilters = !!(search || origineFilter || statutFilter || prioriteFilter);
 
@@ -95,9 +99,10 @@ export default function ProspectsPage() {
       {/* Stats compactes (1 ligne) */}
       <StatsBar
         total={besoins.length}
-        aQualifier={nbNouveau}
+        nouveaux={nbNouveau}
         enCours={nbEnCours}
-        acceptes={nbAcceptes}
+        gagnes={nbGagnes}
+        perdus={nbPerdus}
         tauxConversion={tauxConversion}
       />
 
@@ -119,8 +124,8 @@ export default function ProspectsPage() {
           className="h-9 rounded-md border border-gray-600 bg-gray-800 px-3 text-sm text-gray-200"
         >
           <option value="">Statut</option>
-          {Object.entries(BESOIN_STATUTS).map(([k, v]) => (
-            <option key={k} value={k}>{v.label}</option>
+          {BESOIN_STATUTS_PIPELINE.map((k) => (
+            <option key={k} value={k}>{BESOIN_STATUTS[k].label}</option>
           ))}
         </select>
         <select

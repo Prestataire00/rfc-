@@ -694,9 +694,9 @@ export default function SessionDetailPage() {
       {tab === "automatisations" && (
         <div className="space-y-4">
           {/* Automatisations */}
-          <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Zap className="h-4 w-4 text-red-500" /> Automatisations
               </h2>
               <Link href="/parametres/automations" className="text-xs text-red-500 hover:underline">Defauts</Link>
@@ -717,32 +717,43 @@ export default function SessionDetailPage() {
                       ? `${a.offsetDays < 0 ? "J-" : "J+"}${Math.abs(a.offsetDays)} ${rel}`
                       : `${Math.abs(a.offsetHours)}h ${a.offsetHours < 0 ? "avant" : "apres"} ${rel}`;
                   return (
-                    <details key={a.type} className="group rounded-md border border-gray-700 bg-gray-900/50">
+                    <details
+                      key={a.type}
+                      className={`group rounded-md border ${
+                        a.enabled
+                          ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
+                          : "border-gray-200 dark:border-gray-700 bg-gray-100/60 dark:bg-gray-900/30 opacity-70"
+                      }`}
+                    >
                       <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs list-none">
                         <input
                           type="checkbox"
                           checked={a.enabled}
                           onChange={(e) => { e.stopPropagation(); saveAutomation(a.type, { enabled: e.target.checked }); }}
                           onClick={(e) => e.stopPropagation()}
-                          className="h-3.5 w-3.5 shrink-0"
+                          className="h-3.5 w-3.5 shrink-0 accent-red-600"
                         />
-                        <span className={`flex-1 min-w-0 truncate ${a.enabled ? "text-gray-200" : "text-gray-500 line-through"}`}>
+                        <span className={`flex-1 min-w-0 truncate ${
+                          a.enabled
+                            ? "text-gray-800 dark:text-gray-200"
+                            : "text-gray-500 dark:text-gray-500 line-through"
+                        }`}>
                           {a.label}
                         </span>
-                        <span className={`shrink-0 text-[10px] ${done ? "text-emerald-400" : "text-gray-500"}`}>
+                        <span className={`shrink-0 text-[10px] ${done ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500"}`}>
                           {done ? "✓ Fait" : offsetLabel}
                         </span>
                         {a.isOverride && !done && (
-                          <span className="shrink-0 text-[9px] text-amber-400" title="Surcharge pour cette session">●</span>
+                          <span className="shrink-0 text-[9px] text-amber-600 dark:text-amber-400" title="Surcharge pour cette session">●</span>
                         )}
                       </summary>
-                      <div className="px-3 pb-3 pt-1 border-t border-gray-700 space-y-2">
-                        {a.description && <p className="text-[10px] text-gray-500">{a.description}</p>}
+                      <div className="px-3 pb-3 pt-1 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                        {a.description && <p className="text-[10px] text-gray-600 dark:text-gray-500">{a.description}</p>}
                         <div className="grid grid-cols-4 gap-1.5">
                           <select
                             value={a.relativeTo}
                             onChange={(e) => saveAutomation(a.type, { relativeTo: e.target.value })}
-                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                            className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-[10px] text-gray-900 dark:text-gray-200 px-1"
                           >
                             <option value="dateDebut">Debut</option>
                             <option value="dateFin">Fin</option>
@@ -755,7 +766,7 @@ export default function SessionDetailPage() {
                             onChange={(e) => saveAutomation(a.type, { offsetDays: parseInt(e.target.value) || 0 })}
                             placeholder="Jours"
                             title="Jours (negatif=avant)"
-                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                            className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-[10px] text-gray-900 dark:text-gray-200 px-1"
                           />
                           <input
                             type="number"
@@ -763,18 +774,18 @@ export default function SessionDetailPage() {
                             onChange={(e) => saveAutomation(a.type, { offsetHours: parseInt(e.target.value) || 0 })}
                             placeholder="Heures"
                             title="Heures (negatif=avant)"
-                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                            className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-[10px] text-gray-900 dark:text-gray-200 px-1"
                           />
                           <input
                             type="time"
                             value={a.timeOfDay || ""}
                             onChange={(e) => saveAutomation(a.type, { timeOfDay: e.target.value || null })}
-                            className="h-7 rounded border border-gray-600 bg-gray-900 text-[10px] text-gray-200 px-1"
+                            className="h-7 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-[10px] text-gray-900 dark:text-gray-200 px-1"
                           />
                         </div>
                         {done && (
-                          <div className="text-[10px] text-gray-400 flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                          <div className="text-[10px] text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                             Execute le {formatDate(a.executedAt!)} — {a.executionLog || "OK"}
                           </div>
                         )}
@@ -782,7 +793,7 @@ export default function SessionDetailPage() {
                           <button
                             onClick={() => resetAutomation(a.type)}
                             disabled={autoSaving === a.type}
-                            className="text-[10px] text-amber-400 hover:underline"
+                            className="text-[10px] text-amber-600 dark:text-amber-400 hover:underline"
                           >
                             ← Revenir au defaut global
                           </button>

@@ -8,17 +8,34 @@ import { parseBody } from "@/lib/validations/helpers";
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") ?? "";
+  // type=client → entreprises ayant au moins un contact type=client
+  // type=organisme → entreprises marquées comme organisme tier (notes/secteur)
+  const type = searchParams.get("type");
+
+  const whereClauses: Record<string, unknown>[] = [];
+  if (search) {
+    whereClauses.push({
+      OR: [
+        { nom: { contains: search } },
+        { ville: { contains: search } },
+        { secteur: { contains: search } },
+      ],
+    });
+  }
+  if (type === "client") {
+    whereClauses.push({ contacts: { some: { type: "client" } } });
+  } else if (type === "organisme") {
+    // Marqueur historique posé par POST /api/prospects quand prospectType=organisme
+    whereClauses.push({
+      OR: [
+        { notes: { contains: "[Type: Organisme" } },
+        { secteur: { startsWith: "Organisme :" } },
+      ],
+    });
+  }
 
   const entreprises = await prisma.entreprise.findMany({
-    where: search
-      ? {
-          OR: [
-            { nom: { contains: search } },
-            { ville: { contains: search } },
-            { secteur: { contains: search } },
-          ],
-        }
-      : {},
+    where: whereClauses.length > 0 ? { AND: whereClauses } : {},
     include: { _count: { select: { contacts: true } } },
     orderBy: { createdAt: "desc" },
   });

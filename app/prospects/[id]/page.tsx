@@ -370,7 +370,7 @@ export default function ProspectDetailPage() {
             title="Contact"
             action={
               <div className="flex items-center gap-2">
-                {contact.type !== "client" ? (
+                {contact.type === "prospect" ? (
                   <button
                     onClick={handleConvertToClient}
                     disabled={converting}

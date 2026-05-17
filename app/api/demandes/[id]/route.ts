@@ -52,10 +52,15 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
   if (body.devisId !== undefined) data.devisId = body.devisId || null;
   if (body.statut !== undefined) data.statut = body.statut;
 
-  // Charger la demande AVANT la mise à jour pour capturer l'ancien statut, devisId et contactId
+  // Charger la demande AVANT la mise à jour pour capturer l'ancien statut, devisId et contact
   const demandeBefore = await prisma.demande.findUnique({
     where: { id: params.id },
-    select: { statut: true, devisId: true, contactId: true },
+    select: {
+      statut: true,
+      devisId: true,
+      contactId: true,
+      contact: { select: { type: true } },
+    },
   });
 
   const oldStatut = demandeBefore?.statut;
@@ -63,9 +68,16 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
 
   const demande = await prisma.demande.update({ where: { id: params.id }, data });
 
-  // Auto-conversion prospect → client sur transition vers "accepte"
-  // Idempotent : si Contact.type est déjà "client", l'update est un no-op
-  if (newStatut === "accepte" && oldStatut !== "accepte" && demandeBefore?.contactId) {
+  // Auto-classification sur transition vers "accepte" :
+  //   - Contact.type "prospect"  → "client"     (prospect entreprise/organisme accepté)
+  //   - Contact.type "stagiaire" → reste "stagiaire" (prospect individuel accepté)
+  //   - Contact.type "client"    → no-op (idempotent)
+  if (
+    newStatut === "accepte" &&
+    oldStatut !== "accepte" &&
+    demandeBefore?.contactId &&
+    demandeBefore.contact?.type === "prospect"
+  ) {
     await prisma.contact.update({
       where: { id: demandeBefore.contactId },
       data: { type: "client" },

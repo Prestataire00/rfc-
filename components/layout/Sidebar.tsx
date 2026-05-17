@@ -36,10 +36,9 @@ const adminGroups: NavGroup[] = [
     label: "CRM",
     icon: Users,
     items: [
-      { href: "/prospects", label: "Nouvelle demande", icon: UserPlus },
-      { href: "/entreprises", label: "Entreprises", icon: Building2 },
-      { href: "/contacts", label: "Tous contacts", icon: Users },
-      { href: "/contacts?type=client", label: "Clients", icon: UserCheck },
+      { href: "/prospects", label: "Demandes", icon: UserPlus },
+      { href: "/entreprises?type=client", label: "Entreprises clientes", icon: Building2 },
+      { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: UserCheck },
       { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
     ],

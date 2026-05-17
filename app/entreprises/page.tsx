@@ -6,14 +6,34 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Building2, Search, Plus, MapPin, FileText, Receipt } from "lucide-react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Building2, Search, MapPin, FileText, Receipt } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Pagination } from "@/components/shared/Pagination";
 import { SkeletonTable } from "@/components/shared/Skeleton";
 import { Input } from "@/components/ui/input";
 import { useApi } from "@/hooks/useApi";
-import { formatCurrency } from "@/lib/utils";
+
+type EntrepriseType = "" | "client" | "organisme";
+
+const TYPE_LABELS: Record<EntrepriseType, { title: string; description: (n: number) => string; empty: string }> = {
+  "": {
+    title: "Entreprises",
+    description: (n) => `${n} entreprise${n > 1 ? "s" : ""}`,
+    empty: "Créez votre première entreprise",
+  },
+  client: {
+    title: "Entreprises clientes",
+    description: (n) => `${n} entreprise${n > 1 ? "s" : ""} cliente${n > 1 ? "s" : ""} (≥ 1 contact qualifié client)`,
+    empty: "Aucune entreprise cliente — un prospect devient client quand sa demande passe au statut « Accepté »",
+  },
+  organisme: {
+    title: "Organismes tiers",
+    description: (n) => `${n} organisme${n > 1 ? "s" : ""} tier${n > 1 ? "s" : ""} (OPCO, sous-traitants, partenaires)`,
+    empty: "Aucun organisme — créez-en un via Nouvelle demande > Type Organisme/société tierce",
+  },
+};
 
 interface Entreprise {
   id: string;
@@ -36,6 +56,12 @@ interface Entreprise {
 type ApiResponse = { data: Entreprise[]; total: number; totalPages: number } | Entreprise[];
 
 export default function EntreprisesPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const typeParam = (searchParams.get("type") ?? "") as EntrepriseType;
+  const activeType: EntrepriseType = typeParam === "client" || typeParam === "organisme" ? typeParam : "";
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -45,8 +71,14 @@ export default function EntreprisesPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Reset pagination quand le filtre type change
+  useEffect(() => {
+    setPage(1);
+  }, [activeType]);
+
   const params = new URLSearchParams();
   if (debouncedSearch) params.set("search", debouncedSearch);
+  if (activeType) params.set("type", activeType);
   params.set("page", String(page));
   params.set("limit", "25");
 
@@ -56,14 +88,44 @@ export default function EntreprisesPage() {
   const total = Array.isArray(data) ? entreprises.length : data?.total ?? entreprises.length;
   const totalPages = Array.isArray(data) ? 1 : data?.totalPages ?? 1;
 
+  const meta = TYPE_LABELS[activeType];
+
+  function switchType(t: EntrepriseType) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (t) next.set("type", t);
+    else next.delete("type");
+    router.replace(`${pathname}?${next.toString()}`);
+  }
+
   return (
     <div className="p-6">
       <PageHeader
-        title="Entreprises"
-        description={`${total} entreprise${total > 1 ? "s" : ""} cliente${total > 1 ? "s" : ""}`}
+        title={meta.title}
+        description={meta.description(total)}
         actionLabel="Nouvelle entreprise"
         actionHref="/entreprises/nouveau"
       />
+
+      {/* Onglets de filtre type entreprise */}
+      <div className="flex items-center gap-1 mb-4 border-b border-gray-700">
+        {([
+          { v: "client" as const, label: "Clientes" },
+          { v: "organisme" as const, label: "Organismes tiers" },
+          { v: "" as const, label: "Toutes" },
+        ]).map((tab) => (
+          <button
+            key={tab.v || "all"}
+            onClick={() => switchType(tab.v)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeType === tab.v
+                ? "border-red-500 text-red-500"
+                : "border-transparent text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-md">
@@ -87,7 +149,7 @@ export default function EntreprisesPage() {
         <EmptyState
           icon={Building2}
           title={debouncedSearch ? "Aucune entreprise trouvée" : "Aucune entreprise"}
-          description={debouncedSearch ? "Essayez avec d'autres mots-clés" : "Créez votre première entreprise cliente"}
+          description={debouncedSearch ? "Essayez avec d'autres mots-clés" : meta.empty}
           actionLabel="Nouvelle entreprise"
           actionHref="/entreprises/nouveau"
         />

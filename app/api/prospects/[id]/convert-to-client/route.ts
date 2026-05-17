@@ -37,6 +37,15 @@ export const POST = withErrorHandlerParams(
         alreadyClient: true,
       });
     }
+    if (demande.contact.type === "stagiaire") {
+      return NextResponse.json(
+        {
+          error:
+            "Ce contact est un stagiaire — la conversion en client ne s'applique qu'aux prospects entreprise/organisme.",
+        },
+        { status: 422 },
+      );
+    }
 
     const updated = await prisma.contact.update({
       where: { id: demande.contactId },

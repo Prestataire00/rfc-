@@ -3,7 +3,19 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2, Star, BarChart3, ArrowRight } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2, Star, BarChart3, ArrowRight, Info as InfoIcon } from "lucide-react";
+
+// Onglets de la fiche session — réorganisation en sous-pages (cliquables).
+// Layout précédent : grid 2 colonnes mélangeant info / fiches / docs / participants.
+const SESSION_TABS = [
+  { id: "informations", label: "Informations", icon: InfoIcon },
+  { id: "participants", label: "Participants", icon: Users },
+  { id: "fiches", label: "Fiches besoin", icon: ClipboardList },
+  { id: "automatisations", label: "Automatisations", icon: Zap },
+  { id: "documents", label: "Documents", icon: FileText },
+  { id: "evaluations", label: "Évaluations", icon: Star },
+] as const;
+type SessionTabId = (typeof SESSION_TABS)[number]["id"];
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -69,6 +81,7 @@ export default function SessionDetailPage() {
   const [batchConvocOpen, setBatchConvocOpen] = useState(false);
   const [batchConvocLoading, setBatchConvocLoading] = useState(false);
   const [batchConvocResult, setBatchConvocResult] = useState<{ sent: number; failed: number; errors: Array<{ nom: string; error: string }> } | null>(null);
+  const [tab, setTab] = useState<SessionTabId>("informations");
 
   // Synthese evaluations (visible si session terminee)
   type SyntheseBlock = {
@@ -565,9 +578,31 @@ export default function SessionDetailPage() {
         );
       })()}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Info + Documents column */}
-        <div className="lg:col-span-1 space-y-4">
+      {/* Barre d'onglets — réorganisation en sous-pages cliquables */}
+      <nav className="flex gap-1 border-b border-gray-700 mb-6 overflow-x-auto">
+        {SESSION_TABS.map((t) => {
+          const active = t.id === tab;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm whitespace-nowrap transition-colors ${
+                active
+                  ? "border-red-600 text-gray-100"
+                  : "border-transparent text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {t.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ===== Onglet INFORMATIONS ===== */}
+      {tab === "informations" && (
+        <div className="space-y-4">
           {/* Info card */}
           <div className="rounded-lg border bg-gray-800 p-4 space-y-4">
             <h2 className="font-semibold text-gray-100">Informations</h2>
@@ -636,7 +671,12 @@ export default function SessionDetailPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
 
+      {/* ===== Onglet FICHES BESOIN ===== */}
+      {tab === "fiches" && (
+        <div className="space-y-4">
           {/* Fiches besoin (client + stagiaires) */}
           <FichesBesoinSection
             besoinsClient={besoinsClient}
@@ -647,7 +687,12 @@ export default function SessionDetailPage() {
             onSendFiches={() => handleSendFichesBesoin()}
             onResendFiche={handleResendFiche}
           />
+        </div>
+      )}
 
+      {/* ===== Onglet AUTOMATISATIONS ===== */}
+      {tab === "automatisations" && (
+        <div className="space-y-4">
           {/* Automatisations */}
           <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -749,7 +794,12 @@ export default function SessionDetailPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
 
+      {/* ===== Onglet DOCUMENTS — Passeport Prévention + Documents PDF ===== */}
+      {tab === "documents" && (
+        <div className="space-y-4">
           {/* Passeport Prevention (formations certifiantes uniquement) */}
           {session.formation.certifiante && (
             <div className="rounded-lg border bg-gray-800 p-4 space-y-2">
@@ -770,7 +820,12 @@ export default function SessionDetailPage() {
               )}
             </div>
           )}
+        </div>
+      )}
 
+      {/* ===== Onglet INFORMATIONS — Devis associé ===== */}
+      {tab === "informations" && (
+        <div className="space-y-4 mt-4">
           {/* Devis associé */}
           {session.devis && (
             <div className="rounded-lg border bg-gray-800 p-4 space-y-2">
@@ -793,7 +848,12 @@ export default function SessionDetailPage() {
               })()}
             </div>
           )}
+        </div>
+      )}
 
+      {/* ===== Onglet DOCUMENTS — Documents PDF ===== */}
+      {tab === "documents" && (
+        <div className="space-y-4 mt-4">
           {/* Documents PDF */}
           <div className="rounded-lg border bg-gray-800 p-4">
             <h2 className="font-semibold text-gray-100 mb-3">Documents</h2>
@@ -904,7 +964,12 @@ export default function SessionDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
 
+      {/* ===== Onglet ÉVALUATIONS — Boutons d'envoi ===== */}
+      {tab === "evaluations" && (
+        <div className="space-y-4">
           {/* Evaluations */}
           <div className="rounded-lg border bg-gray-800 p-4">
             <h2 className="font-semibold text-gray-100 mb-3 flex items-center gap-2">
@@ -952,9 +1017,12 @@ export default function SessionDetailPage() {
             </div>
           </div>
         </div>
+      )}
 
-        {/* Inscriptions */}
-        <div className="lg:col-span-2">
+      {/* ===== Onglet PARTICIPANTS — Inscriptions ===== */}
+      {tab === "participants" && (
+        <div className="space-y-4">
+          {/* Inscriptions */}
           <div className="rounded-lg border bg-gray-800 overflow-hidden">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b">
               <h2 className="font-semibold text-gray-100 flex items-center gap-2">
@@ -1114,10 +1182,10 @@ export default function SessionDetailPage() {
             )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Resultats evaluations (session terminee) ─────────────────────── */}
-      {session.statut === "terminee" && synthese && (
+      {/* ── Resultats evaluations (session terminee) — onglet ÉVALUATIONS ── */}
+      {tab === "evaluations" && session.statut === "terminee" && synthese && (
         <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
             <h2 className="font-semibold text-gray-100 flex items-center gap-2">
@@ -1207,8 +1275,8 @@ export default function SessionDetailPage() {
         </div>
       )}
 
-      {/* ── Feuille de présence / Emargement V2 ─────────────────────────── */}
-      {["confirmee", "en_cours", "terminee"].includes(session.statut) &&
+      {/* ── Feuille de présence / Emargement V2 — onglet PARTICIPANTS ──── */}
+      {tab === "participants" && ["confirmee", "en_cours", "terminee"].includes(session.statut) &&
         session.inscriptions.length > 0 && (
           <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-700">

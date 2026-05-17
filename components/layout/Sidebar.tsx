@@ -8,8 +8,8 @@ import {
   LayoutDashboard, Users, BookOpen, CalendarDays, GraduationCap,
   TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
-  UserPlus, MapPin, UserCheck, AlertTriangle, Zap, Mail, Receipt,
-  ListChecks, Briefcase, History, Wallet, Building2,
+  UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
+  ListChecks, Wallet, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,118 +24,53 @@ type NavGroup = {
   items?: NavItemWithSub[];
 };
 
-// ── Admin : Accueil + 8 groupes orientés flux métier ────────────────────────
-// Ordre : acquisition → catalogue → projets → commercial → finance → qualité
-// → reporting → admin. Pas de sous-niveau (children) pour simplifier le scan.
+// ── Admin : 4 modules métier + Admin minimal ────────────────────────────────
+// Cible architecture (cf. schémas Claude.ai 2026-05-17) :
+//   Dashboard → Devis → Formation → BPF, plus un groupe Admin pour les
+//   pages outils (Utilisateurs / Paramètres / Automatisations).
+//
+// Toutes les pages historiques (Projets, Tâches, Notes de frais, Paiements,
+// Campagnes, Messagerie, Lieux, Reporting analytics, Documents centralisé,
+// Indicateurs Qualiopi, Factures formateur) restent sur disque et atteignables
+// par URL directe, mais ne sont plus dans la nav top-level.
 const adminGroups: NavGroup[] = [
-  { key: "accueil", label: "Accueil", icon: LayoutDashboard, href: "/dashboard" },
+  // 1. Dashboard — KPIs + Planning
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
 
-  // 1. CRM : qui (contacts + formateurs + comm directe)
+  // 2. Devis — pipeline commercial + clients (entrée du flux métier)
   {
-    key: "crm",
-    label: "CRM",
-    icon: Users,
+    key: "devis",
+    label: "Devis",
+    icon: FileText,
     items: [
-      { href: "/prospects", label: "Demandes", icon: UserPlus },
-      { href: "/entreprises?type=client", label: "Entreprises clientes", icon: Building2 },
-      { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: UserCheck },
-      { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
-      { href: "/messagerie", label: "Messagerie", icon: MessageSquare },
+      { href: "/prospects", label: "Demandes (pipeline)", icon: UserPlus },
+      { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
+      { href: "/commercial?tab=factures", label: "Factures", icon: Receipt },
+      { href: "/entreprises?type=client", label: "Clients", icon: Building2 },
     ],
   },
 
-  // 2. Pédagogie : offre de formation
+  // 3. Formation — cycle de vie complet (sessions + acteurs + qualité)
   {
-    key: "pedagogie",
-    label: "Pédagogie",
+    key: "formation",
+    label: "Formation",
     icon: BookOpen,
     items: [
-      { href: "/formations", label: "Catalogue formations", icon: BookOpen },
-      { href: "/lieux-formation", label: "Lieux de formation", icon: MapPin },
       { href: "/sessions", label: "Sessions", icon: CalendarDays },
       { href: "/dashboard/planning", label: "Planning", icon: Calendar },
-    ],
-  },
-
-  // 3. Projets : exécution opérationnelle
-  {
-    key: "projets",
-    label: "Projets",
-    icon: Briefcase,
-    items: [
-      { href: "/projets", label: "Projets", icon: Briefcase },
-      { href: "/tasks", label: "Tâches", icon: ListChecks },
-    ],
-  },
-
-  // 4. Commercial : cycle de vente (avant facturation)
-  // BPF retiré → groupe Qualité (c'est de la conformité réglementaire,
-  // pas du commercial).
-  {
-    key: "commercial",
-    label: "Commercial",
-    icon: TrendingUp,
-    items: [
-      // /commercial?tab=devis : page commerciale, onglet Devis (par défaut).
-      // /commercial?tab=factures = même page, onglet Factures → exposé dans Finance.
-      { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
-      // /prospects = pipeline commercial (statuts nouveau→qualifie→devis…) — entrée CRM>Prospects
-      // /qualiopi/fiches-pre-formation = fiches Qualiopi à envoyer aux clients/stagiaires
-      // Pages distinctes mais liées : depuis /prospects on peut envoyer une fiche.
+      { href: "/formations", label: "Catalogue", icon: BookOpen },
+      { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
+      { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: UserCheck },
       { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
-      { href: "/commercial/campagnes", label: "Campagnes", icon: Mail },
-    ],
-  },
-
-  // 5. Finance : facturation + paiement
-  {
-    key: "finance",
-    label: "Finance",
-    icon: CreditCard,
-    items: [
-      // /commercial?tab=factures : même page que Commercial.Devis mais onglet
-      // pré-sélectionné sur Factures (cf. activeTab dans app/commercial/page.tsx).
-      { href: "/commercial?tab=factures", label: "Factures", icon: Receipt },
-      { href: "/formateurs/factures", label: "Factures formateur", icon: Receipt },
-      { href: "/admin/notes-frais", label: "Notes de frais", icon: Wallet },
-      { href: "/finance/paiements", label: "Paiements", icon: CreditCard },
-    ],
-  },
-
-  // 6. Qualité : conformité Qualiopi + évaluations + documents + certifications + BPF
-  // BPF déplacé ici (depuis Commercial) : c'est une obligation réglementaire
-  // Qualiopi (Bilan Pédagogique et Financier annuel obligatoire pour OF).
-  // Certifications ajoutée : suivi des formations certifiantes + stats annuelles
-  // (créée dans la PR contract-compliance #98).
-  {
-    key: "qualite",
-    label: "Qualité",
-    icon: Award,
-    items: [
-      { href: "/evaluations", label: "Questionnaires de satisfaction", icon: ClipboardList },
-      { href: "/qualiopi/indicateurs", label: "Indicateurs Qualiopi", icon: BadgeCheck },
+      { href: "/evaluations", label: "Évaluations", icon: ClipboardList },
       { href: "/certifications", label: "Certifications", icon: Award },
-      { href: "/bpf", label: "BPF", icon: BarChart3 },
-      { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },
 
-  // 7. Reporting : pilotage stratégique
-  {
-    key: "reporting",
-    label: "Reporting",
-    icon: BarChart3,
-    items: [
-      // 3 vues complémentaires : reporting synthétique (catalogue/financier),
-      // analytics détaillées (deep-dive), historique KPI (évolution dans le temps).
-      // Labels renommés pour clarifier les usages distincts.
-      { href: "/reporting", label: "Synthèse activité", icon: TrendingUp },
-      { href: "/dashboard/analytics", label: "Analyses détaillées", icon: BarChart3 },
-      { href: "/admin/kpi-history", label: "Évolution KPI", icon: History },
-    ],
-  },
+  // 4. BPF — agrégation annuelle Qualiopi (sortie réglementaire du flux)
+  { key: "bpf", label: "BPF", icon: BarChart3, href: "/bpf" },
 
-  // 8. Admin : outils système
+  // 5. Admin — outils système (paramètres, utilisateurs, automatisations)
   {
     key: "admin",
     label: "Admin",

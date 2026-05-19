@@ -70,6 +70,11 @@ model Entreprise {
   historique    HistoriqueAction[]
   tags          EntrepriseTag[]
   projets       Projet[]
+
+  // Audit 2026-05-19 §4.11 : recherche LIKE sur nom/ville fréquente.
+  @@index([nom])
+  @@index([ville])
+  @@index([createdAt])
 }
 
 model Contact {
@@ -121,6 +126,12 @@ model Contact {
   badges             BadgeAward[]
   aiDocuments        AiDocumentAnalysis[]
   prospects          Prospect[]
+
+  // Audit 2026-05-19 §4.11 : index sur les filtres fréquents
+  // (sidebar /contacts?type=client filtre 100% du trafic Stagiaires)
+  @@index([entrepriseId])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model Formateur {
@@ -435,6 +446,12 @@ model Facture {
   projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
 
   @@index([projetId])
+  // Audit 2026-05-19 §4.11 : index sur filtres factures fréquents
+  // (dashboard impayés, liste par client, échéances cron).
+  @@index([statut])
+  @@index([entrepriseId])
+  @@index([dateEcheance])
+  @@index([createdAt])
 }
 
 // ==================== FORMATEUR ====================

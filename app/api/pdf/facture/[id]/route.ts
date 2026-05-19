@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { facturePdf } from "@/lib/pdf/templates";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
@@ -85,11 +86,5 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
   });
 
   const buffer = await generatePdfBuffer(docDef);
-
-  return new NextResponse(buffer as unknown as BodyInit, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="facture-${facture.numero}.pdf"`,
-    },
-  });
+  return pdfResponse(Buffer.from(buffer), `facture-${facture.numero}`);
 });

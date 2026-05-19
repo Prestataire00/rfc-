@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import { convocationPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
@@ -58,12 +59,6 @@ export const GET = withErrorHandlerParams<{ sessionId: string; contactId: string
     }, { branding, template: template || undefined });
 
     const buffer = await generatePdfBuffer(docDef);
-
-    return new NextResponse(buffer as unknown as BodyInit, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="convocation-${contact.prenom}-${contact.nom}.pdf"`,
-      },
-    });
+    return pdfResponse(Buffer.from(buffer), `convocation-${contact.prenom}-${contact.nom}`, "attachment");
   }
 );

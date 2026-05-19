@@ -1,8 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const evalTemplateCreateSchema = z.object({
+  nom: z.string().min(1, "Nom requis").max(200),
+  description: z.string().max(2000).optional().nullable(),
+  type: z.string().max(60).optional().nullable(),
+  questions: z.unknown().optional(),
+  icon: z.string().max(50).optional().nullable(),
+});
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -22,9 +31,15 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
-  const { nom, description, type, questions, icon } = body;
-  if (!nom) return NextResponse.json({ error: "Nom requis" }, { status: 400 });
+  const raw = await req.json().catch(() => null);
+  const parsed = evalTemplateCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { nom, description, type, questions, icon } = parsed.data;
 
   const template = await prisma.evaluationTemplate.create({
     data: {

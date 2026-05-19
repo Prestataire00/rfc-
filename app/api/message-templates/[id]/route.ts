@@ -1,8 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { MESSAGE_TEMPLATE_DEFAULTS } from "@/lib/message-templates";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+
+const messageTemplateUpdateSchema = z.object({
+  nom: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional().nullable(),
+  objet: z.string().min(1).max(300).optional(),
+  contenu: z.string().min(1).max(50000).optional(),
+  actif: z.boolean().optional(),
+});
 
 // GET /api/message-templates/[id]
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
@@ -13,7 +22,15 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 
 // PUT /api/message-templates/[id]
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = messageTemplateUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const tpl = await prisma.messageTemplate.update({
     where: { id: params.id },
     data: {

@@ -1,8 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const evaluationCreateSchema = z.object({
+  type: z.string().min(1, "type requis").max(60),
+  cible: z.string().min(1, "cible requis").max(40),
+  sessionId: z.string().min(1, "sessionId requis"),
+  contactId: z.string().optional().nullable(),
+});
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -31,16 +39,23 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = evaluationCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
 
   const token = randomBytes(32).toString("hex");
 
   const evaluation = await prisma.evaluation.create({
     data: {
-      type: body.type,
-      cible: body.cible,
-      sessionId: body.sessionId,
-      contactId: body.contactId || null,
+      type: parsed.data.type,
+      cible: parsed.data.cible,
+      sessionId: parsed.data.sessionId,
+      contactId: parsed.data.contactId || null,
       tokenAcces: token,
     },
   });

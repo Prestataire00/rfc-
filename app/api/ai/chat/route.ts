@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { checkAIKey, streamClaude, cleanAIResponse, askClaude } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
@@ -8,6 +9,16 @@ import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+
+const chatMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(20000),
+});
+
+const aiChatSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1, "Aucun message"),
+  stream: z.boolean().optional(),
+});
 
 function buildSystemPrompt(stats: {
   contacts: number; formations: number; sessions: number; devis: number; factures: number; besoins: number;
@@ -30,12 +41,18 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return new Response(JSON.stringify({ error: "Cle Anthropic manquante" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 
-  const body = await req.json();
-  const { messages, stream: shouldStream } = body as { messages: ChatMessage[]; stream?: boolean };
-
-  if (!messages?.length) {
-    return new Response(JSON.stringify({ error: "Aucun message" }), { status: 400 });
+  const raw = await req.json().catch(() => null);
+  const parsed = aiChatSchema.safeParse(raw);
+  if (!parsed.success) {
+    return new Response(
+      JSON.stringify({
+        error: "Validation échouée",
+        issues: parsed.error.flatten().fieldErrors,
+      }),
+      { status: 422, headers: { "Content-Type": "application/json" } },
+    );
   }
+  const { messages, stream: shouldStream } = parsed.data as { messages: ChatMessage[]; stream?: boolean };
 
   const [contacts, formations, sessions, devis, factures, besoins] = await Promise.all([
     prisma.contact.count().catch(() => 0), prisma.formation.count().catch(() => 0),

@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { AIButton } from "@/components/shared/AIButton";
 import { useApi, useApiMutation } from "@/hooks/useApi";
 import { ApiError } from "@/lib/fetcher";
@@ -106,6 +107,13 @@ export default function ModifierDemandePage() {
 
   return (
     <div>
+      <Breadcrumb
+        items={[
+          { label: "Demandes", href: "/demandes" },
+          { label: "Modifier" },
+        ]}
+      />
+
       <Link href={`/demandes/${id}`} className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
         <ArrowLeft className="h-4 w-4" /> Retour à la demande
       </Link>

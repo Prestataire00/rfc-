@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, convocationEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
@@ -10,8 +11,21 @@ import { fr } from "date-fns/locale";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
 
+const convocationSchema = z.object({
+  sessionId: z.string().min(1, "sessionId requis"),
+  contactId: z.string().min(1, "contactId requis"),
+});
+
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const { sessionId, contactId } = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = convocationSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { sessionId, contactId } = parsed.data;
 
   const [session, contact] = await Promise.all([
     prisma.session.findUnique({

@@ -1,9 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { askClaudeVision, checkAIKey, normalizeVisionMediaType } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const aiDocAnalysisSchema = z.object({
+  contactId: z.string().min(1, "contactId requis"),
+  documentUrl: z.string().url("documentUrl invalide"),
+  documentNom: z.string().max(300).optional().nullable(),
+});
 
 const VISION_PROMPT = `Analyse ce document professionnel/formation. Reponds en JSON strict (pas de markdown) avec ces champs :
 {
@@ -25,10 +32,15 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle API Anthropic non configuree" }, { status: 500 });
 
-  const { contactId, documentUrl, documentNom } = await req.json();
-  if (!contactId || !documentUrl) {
-    return NextResponse.json({ error: "contactId et documentUrl requis" }, { status: 400 });
+  const raw = await req.json().catch(() => null);
+  const parsedBody = aiDocAnalysisSchema.safeParse(raw);
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsedBody.error.flatten().fieldErrors },
+      { status: 422 },
+    );
   }
+  const { contactId, documentUrl, documentNom } = parsedBody.data;
 
   const imgRes = await fetch(documentUrl);
   if (!imgRes.ok) return NextResponse.json({ error: "Impossible de telecharger le document" }, { status: 400 });

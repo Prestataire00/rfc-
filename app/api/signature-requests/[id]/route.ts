@@ -1,5 +1,6 @@
 // Spec §"Phase 1". GET détail, PATCH (placement zones + signataire), DELETE.
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -9,20 +10,26 @@ import { generateToken } from "@/lib/signatures/token";
 
 export const dynamic = "force-dynamic";
 
-type ZoneInput = {
-  page: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  type?: string;
-  label?: string;
-};
+const zoneSchema = z.object({
+  page: z.number().int().min(0),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  type: z.string().max(40).optional(),
+  label: z.string().max(200).optional().nullable(),
+});
 
-type SignataireInput = {
-  email: string;
-  nom: string;
-};
+const signataireSchema = z.object({
+  email: z.string().email(),
+  nom: z.string().min(1).max(200),
+});
+
+const signatureRequestPatchSchema = z.object({
+  zones: z.array(zoneSchema).max(200).optional(),
+  signataire: signataireSchema.optional(),
+});
+
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -58,7 +65,15 @@ export const PATCH = withErrorHandlerParams<{ id: string }>(async (req: NextRequ
     );
   }
 
-  const body = (await req.json()) as { zones?: ZoneInput[]; signataire?: SignataireInput };
+  const raw = await req.json().catch(() => null);
+  const parsedBody = signatureRequestPatchSchema.safeParse(raw);
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsedBody.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsedBody.data;
 
   // Met à jour les zones (replace all) si fournies.
   if (Array.isArray(body.zones)) {

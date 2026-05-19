@@ -1,7 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+
+const classeVirtuelleSchema = z.object({
+  lienVisio: z.string().max(500).optional().nullable(),
+  plateformeVisio: z.string().max(60).optional().nullable(),
+  enregistrementUrl: z.string().max(500).optional().nullable(),
+  enregistrementDisponibleJusqua: z.string().optional().nullable(),
+  ressources: z.unknown().optional(),
+  notes: z.string().max(5000).optional().nullable(),
+});
 
 // GET /api/classes-virtuelles/[sessionId]
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { sessionId: string } }) => {
@@ -12,7 +22,15 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 
 // PUT /api/classes-virtuelles/[sessionId] — creer ou mettre a jour
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { sessionId: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = classeVirtuelleSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const cv = await prisma.classeVirtuelle.upsert({
     where: { sessionId: params.sessionId },
     create: {

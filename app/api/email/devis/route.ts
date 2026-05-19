@@ -1,13 +1,26 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, devisEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
 
+const emailDevisSchema = z.object({
+  devisId: z.string().min(1, "devisId requis"),
+});
+
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const { devisId } = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = emailDevisSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { devisId } = parsed.data;
 
   const devis = await prisma.devis.findUnique({
     where: { id: devisId },

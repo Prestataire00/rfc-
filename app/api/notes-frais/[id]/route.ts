@@ -1,11 +1,32 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
+const noteFraisUpdateSchema = z.object({
+  statut: z.string().max(60).optional().nullable(),
+  commentaireAdmin: z.string().max(2000).optional().nullable(),
+  categorie: z.string().max(60).optional().nullable(),
+  description: z.string().max(2000).optional().nullable(),
+  montant: z.number().optional().nullable(),
+  date: z.string().optional().nullable(),
+  lieu: z.string().max(200).optional().nullable(),
+  justificatifUrl: z.string().max(500).optional().nullable(),
+  justificatifNom: z.string().max(300).optional().nullable(),
+});
+
 // PUT /api/notes-frais/[id] — mise a jour (admin: changer statut, formateur: editer)
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = noteFraisUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const note = await prisma.noteFrais.update({
     where: { id: params.id },
     data: {

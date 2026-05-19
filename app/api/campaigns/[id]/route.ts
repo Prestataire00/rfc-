@@ -1,7 +1,20 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+
+const campaignUpdateSchema = z.object({
+  nom: z.string().max(200).optional().nullable(),
+  description: z.string().max(2000).optional().nullable(),
+  type: z.string().max(60).optional().nullable(),
+  objet: z.string().max(300).optional().nullable(),
+  contenu: z.string().max(50000).optional().nullable(),
+  templateId: z.string().optional().nullable(),
+  segmentConfig: z.unknown().optional(),
+  dateEnvoi: z.string().optional().nullable(),
+  statut: z.string().max(60).optional().nullable(),
+});
 
 // GET /api/campaigns/[id]
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
@@ -20,7 +33,15 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 
 // PUT /api/campaigns/[id]
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = campaignUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const campaign = await prisma.marketingCampaign.update({
     where: { id: params.id },
     data: {

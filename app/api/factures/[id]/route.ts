@@ -1,10 +1,24 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { logAction } from "@/lib/historique";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
 import { notifyAllAdmins } from "@/lib/notifications";
+
+const factureUpdateSchema = z
+  .object({
+    statut: z.string().max(60).optional(),
+    dateEcheance: z.string().optional(),
+    datePaiement: z.string().optional(),
+    montantHT: z.number().optional(),
+    montantTTC: z.number().optional(),
+    tauxTVA: z.number().optional(),
+    numero: z.string().max(60).optional(),
+    notes: z.string().max(5000).optional().nullable(),
+  })
+  .passthrough();
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
   const facture = await prisma.facture.findUnique({
@@ -16,15 +30,24 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
 });
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = factureUpdateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const factureAvant = await prisma.facture.findUnique({
     where: { id: params.id },
     select: { statut: true },
   });
+  const { dateEcheance: _de, datePaiement: _dp, ...bodyRest } = body;
   const facture = await prisma.facture.update({
     where: { id: params.id },
     data: {
-      ...body,
+      ...bodyRest,
       ...(body.dateEcheance ? { dateEcheance: new Date(body.dateEcheance) } : {}),
       ...(body.datePaiement ? { datePaiement: new Date(body.datePaiement) } : {}),
     },

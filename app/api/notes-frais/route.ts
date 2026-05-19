@@ -1,10 +1,23 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { ensureFormateurId } from "@/lib/formateur/ensure-formateur";
+
+const noteFraisCreateSchema = z.object({
+  formateurId: z.string().optional().nullable(),
+  sessionId: z.string().optional().nullable(),
+  categorie: z.string().max(60).optional().nullable(),
+  description: z.string().max(2000).optional().nullable(),
+  montant: z.number().optional().nullable(),
+  date: z.string().optional().nullable(),
+  lieu: z.string().max(200).optional().nullable(),
+  justificatifUrl: z.string().max(500).optional().nullable(),
+  justificatifNom: z.string().max(300).optional().nullable(),
+});
 
 // GET /api/notes-frais — liste les notes (formateur: les siennes, admin: toutes)
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -37,7 +50,15 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsedBody = noteFraisCreateSchema.safeParse(raw);
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsedBody.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsedBody.data;
   // RBAC : un formateur ne peut JAMAIS créer une note pour un autre que
   // lui-même. On force le formateurId depuis la session (et on auto-crée
   // la fiche si manquante). Pour admin, on trust le body.

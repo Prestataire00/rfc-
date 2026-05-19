@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Send, Mail, Users, CheckCircle2, Tag, Plus, X } from "lucide-react";
 import { notify } from "@/lib/toast";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 
@@ -112,6 +113,14 @@ export default function CampaignDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <Breadcrumb
+        items={[
+          { label: "Commercial", href: "/commercial" },
+          { label: "Campagnes", href: "/commercial/campagnes" },
+          { label: campaign.nom || "Campagne" },
+        ]}
+      />
+
       <Link href="/commercial/campagnes" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
         <ArrowLeft className="h-4 w-4" /> Retour campagnes
       </Link>

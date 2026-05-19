@@ -1,17 +1,29 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const aiQualiopiSchema = z.object({
+  action: z.enum(["synthese_qualite", "plan_amelioration", "preparer_audit"]).optional(),
+});
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const guard = await aiGuard(req);
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
 
-  const body = await req.json();
-  const { action } = body;
+  const raw = await req.json().catch(() => null);
+  const parsed = aiQualiopiSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { action } = parsed.data;
   // action: "synthese_qualite" | "plan_amelioration" | "preparer_audit"
 
   // Collecte donnees reelles

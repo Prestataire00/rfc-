@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, CalendarDays, MapPin, Users, ClipboardList } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
@@ -62,6 +63,13 @@ export default function FormateurSessionDetailPage() {
 
   return (
     <div>
+      <Breadcrumb
+        items={[
+          { label: "Mes sessions", href: "/espace-formateur/sessions" },
+          { label: session.formation?.titre || "Session" },
+        ]}
+      />
+
       <Link
         href="/espace-formateur/sessions"
         className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200 mb-4"

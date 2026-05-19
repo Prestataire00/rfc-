@@ -25,6 +25,7 @@ import {
   BadgeAlert,
 } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { BESOIN_STATUTS, BESOIN_STATUTS_MANUEL, BESOIN_STATUTS_PIPELINE, BESOIN_ORIGINES } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/utils";
@@ -346,8 +347,20 @@ export default function ProspectDetailPage() {
 
   const fichesRepondues = fichesStagiaire.filter((f) => f.statut === "repondu").length;
 
+  const breadcrumbLabel = contact
+    ? `${contact.prenom} ${contact.nom}`
+    : demande.titre || "Prospect";
+
   return (
     <div className="min-h-screen">
+      <div className="px-4 pt-4">
+        <Breadcrumb
+          items={[
+            { label: "Demandes", href: "/prospects" },
+            { label: breadcrumbLabel },
+          ]}
+        />
+      </div>
       {/* ——— HEADER STICKY ——— */}
       <div className="sticky top-0 z-20 border-b border-gray-700 bg-gray-900 px-4 py-3">
         <div className="flex items-center gap-4 flex-wrap">

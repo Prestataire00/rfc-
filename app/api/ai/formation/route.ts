@@ -1,16 +1,45 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const aiFormationSchema = z.object({
+  field: z.enum([
+    "description",
+    "objectifs",
+    "contenuProgramme",
+    "publicCible",
+    "prerequis",
+    "methodesPedagogiques",
+    "methodesEvaluation",
+    "moyensTechniques",
+    "accessibilite",
+  ]),
+  titre: z.string().max(300).optional().nullable(),
+  categorie: z.string().max(200).optional().nullable(),
+  niveau: z.string().max(50).optional().nullable(),
+  duree: z.union([z.number(), z.string()]).optional().nullable(),
+  modalite: z.string().max(50).optional().nullable(),
+  description: z.string().max(5000).optional().nullable(),
+  objectifs: z.string().max(5000).optional().nullable(),
+});
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const guard = await aiGuard(req);
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante (ANTHROPIC_API_KEY)" }, { status: 500 });
 
-  const body = await req.json();
-  const { field, titre, categorie, niveau, duree, modalite, description, objectifs } = body;
+  const raw = await req.json().catch(() => null);
+  const parsed = aiFormationSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { field, titre, categorie, niveau, duree, modalite, description, objectifs } = parsed.data;
 
   const contexte = `
 Titre : ${titre || "Non precise"}

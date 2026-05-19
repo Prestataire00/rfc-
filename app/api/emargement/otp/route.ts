@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { renderMessageTemplate } from "@/lib/message-templates";
@@ -7,16 +8,27 @@ import { randomBytes } from "crypto";
 import { addHours } from "date-fns";
 import { withErrorHandler } from "@/lib/api-wrapper";
 
+const emargementOtpSchema = z.object({
+  sessionId: z.string().min(1, "sessionId requis"),
+  contactId: z.string().min(1, "contactId requis"),
+  date: z.string().min(1, "date requise"),
+  creneau: z.enum(["matin", "apres_midi"]),
+});
+
 // POST /api/emargement/otp
 // Envoie un lien OTP par email a un stagiaire pour qu'il signe a distance.
 // Body: { sessionId, contactId, date, creneau }
 // Note : token cree avant l'envoi email — pas dans la meme tx que l'email.
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const { sessionId, contactId, date, creneau } = await req.json();
-
-  if (!sessionId || !contactId || !date || !creneau) {
-    return NextResponse.json({ error: "sessionId, contactId, date et creneau requis" }, { status: 400 });
+  const raw = await req.json().catch(() => null);
+  const parsed = emargementOtpSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
   }
+  const { sessionId, contactId, date, creneau } = parsed.data;
 
   const [session, contact] = await Promise.all([
     prisma.session.findUnique({

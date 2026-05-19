@@ -1,17 +1,35 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const aiEmailSchema = z.object({
+  type: z
+    .enum(["prise_contact", "relance_devis", "relance_facture", "suivi_prospect", "custom"])
+    .optional(),
+  contactId: z.string().optional().nullable(),
+  devisId: z.string().optional().nullable(),
+  factureId: z.string().optional().nullable(),
+  context: z.string().max(5000).optional().nullable(),
+});
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const guard = await aiGuard(req);
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
 
-  const body = await req.json();
-  const { type, contactId, devisId, factureId, context } = body;
+  const raw = await req.json().catch(() => null);
+  const parsed = aiEmailSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { type, contactId, devisId, factureId, context } = parsed.data;
   // type: "prise_contact" | "relance_devis" | "relance_facture" | "suivi_prospect" | "custom"
 
   let contexte = context || "";
@@ -63,7 +81,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     custom: `Redige un email professionnel en francais.\n\n${contexte}`,
   };
 
-  const prompt = `${prompts[type] || prompts.custom}
+  const prompt = `${(type && prompts[type]) || prompts.custom}
 
 Format : objet + corps d'email, en francais, pret a envoyer.
 Structure :

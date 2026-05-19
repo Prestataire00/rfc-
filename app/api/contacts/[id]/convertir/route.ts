@@ -1,16 +1,41 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { triggerAutomation } from "@/lib/automations-trigger";
 import { notifyAdmins } from "@/lib/notifications";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
 
+const convertirContactSchema = z.object({
+  entrepriseExistanteId: z.string().optional().nullable(),
+  nouvelleEntreprise: z
+    .object({
+      nom: z.string().min(1, "nom entreprise requis").max(200),
+      siret: z.string().max(20).optional().nullable(),
+      adresse: z.string().max(300).optional().nullable(),
+      ville: z.string().max(100).optional().nullable(),
+      codePostal: z.string().max(10).optional().nullable(),
+      email: z.string().email().optional().nullable(),
+      telephone: z.string().max(40).optional().nullable(),
+    })
+    .optional()
+    .nullable(),
+});
+
 // POST /api/contacts/[id]/convertir
 // Convertit un prospect en client : cree/lie entreprise, passe type -> "client".
 // La transaction interne est preservee (creation entreprise + update contact atomiques).
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = convertirContactSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const contact = await prisma.contact.findUnique({ where: { id: params.id } });
   if (!contact) return NextResponse.json({ error: "Contact introuvable" }, { status: 404 });
   if (contact.type !== "prospect") {

@@ -1,12 +1,31 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
+
+const sessionAutomationSchema = z.object({
+  enabled: z.boolean().optional().nullable(),
+  relativeTo: z.string().max(60).optional().nullable(),
+  offsetDays: z.union([z.number(), z.string()]).optional().nullable(),
+  offsetHours: z.union([z.number(), z.string()]).optional().nullable(),
+  timeOfDay: z.string().max(20).optional().nullable(),
+  canalEmail: z.boolean().optional().nullable(),
+  templateId: z.string().optional().nullable(),
+});
 
 // PUT /api/sessions/[id]/automations/[type]
 // Cree/maj un override de la regle globale pour cette session.
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string; type: string } }) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = sessionAutomationSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const data = {
     sessionId: params.id,
     type: params.type,

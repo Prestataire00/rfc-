@@ -1,13 +1,26 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail, factureEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { withErrorHandler } from "@/lib/api-wrapper";
 
+const emailFactureSchema = z.object({
+  factureId: z.string().min(1, "factureId requis"),
+});
+
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const { factureId } = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = emailFactureSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { factureId } = parsed.data;
 
   const facture = await prisma.facture.findUnique({
     where: { id: factureId },

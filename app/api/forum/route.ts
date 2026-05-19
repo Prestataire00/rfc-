@@ -1,9 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const forumTopicCreateSchema = z.object({
+  titre: z.string().min(1, "Titre requis").max(300),
+  contenu: z.string().min(1, "Contenu requis").max(20000),
+  sessionId: z.string().optional().nullable(),
+  categorie: z.string().max(60).optional().nullable(),
+});
 
 // GET /api/forum?sessionId=xxx — liste les topics (d'une session ou generaux)
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -24,7 +32,15 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = forumTopicCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
 
   // Lookup auteur depuis la DB pour le nom (session.user.name peut être vide)
   const auteur = await prisma.user.findUnique({

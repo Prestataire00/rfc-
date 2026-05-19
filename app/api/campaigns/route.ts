@@ -1,7 +1,19 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const campaignCreateSchema = z.object({
+  nom: z.string().max(200).optional().nullable(),
+  description: z.string().max(2000).optional().nullable(),
+  type: z.string().max(60).optional().nullable(),
+  objet: z.string().max(300).optional().nullable(),
+  contenu: z.string().max(50000).optional().nullable(),
+  templateId: z.string().optional().nullable(),
+  segmentConfig: z.unknown().optional(),
+  dateEnvoi: z.string().optional().nullable(),
+});
 
 // GET /api/campaigns — liste toutes les campagnes
 export const GET = withErrorHandler(async () => {
@@ -14,7 +26,15 @@ export const GET = withErrorHandler(async () => {
 
 // POST /api/campaigns — creer une campagne
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
+  const raw = await req.json().catch(() => null);
+  const parsed = campaignCreateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const body = parsed.data;
   const campaign = await prisma.marketingCampaign.create({
     data: {
       nom: body.nom || "Nouvelle campagne",

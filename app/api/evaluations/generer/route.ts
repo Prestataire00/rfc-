@@ -1,8 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const evalGenererSchema = z.object({
+  sessionId: z.string().min(1, "sessionId requis"),
+  type: z.string().min(1, "type requis").max(60),
+  cible: z.enum(["stagiaire", "client", "formateur"]).optional(),
+  templateId: z.string().optional().nullable(),
+});
 
 // Generate evaluation tokens for participants, client, or formateur of a session
 // Optionally accepts a templateId (preset or custom) whose questions are snapshotted
@@ -13,16 +21,15 @@ import { withErrorHandler } from "@/lib/api-wrapper";
 // apres echec partiel doit pouvoir reprendre la ou il en etait sans dupliquer
 // les tokens deja crees.
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
-  const { sessionId, type, cible = "stagiaire", templateId } = body as { sessionId?: string; type?: string; cible?: string; templateId?: string };
-
-  if (!sessionId || !type) {
-    return NextResponse.json({ error: "sessionId et type requis" }, { status: 400 });
+  const raw = await req.json().catch(() => null);
+  const parsedBody = evalGenererSchema.safeParse(raw);
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsedBody.error.flatten().fieldErrors },
+      { status: 422 },
+    );
   }
-
-  if (!["stagiaire", "client", "formateur"].includes(cible)) {
-    return NextResponse.json({ error: "cible doit être stagiaire, client ou formateur" }, { status: 400 });
-  }
+  const { sessionId, type, cible = "stagiaire", templateId } = parsedBody.data;
 
   // Load template questions for snapshot — either explicit templateId, or default preset for type
   let questionsSnapshot: string | null = null;

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Zap, CheckCircle2, XCircle, Clock, AlertTriangle, Play } from "lucide-react";
 import { RuleForm } from "@/components/automations/RuleForm";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 
@@ -130,6 +131,14 @@ export default function AutomationV2DetailPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      <Breadcrumb
+        items={[
+          { label: "Paramètres", href: "/parametres" },
+          { label: "Automatisations", href: "/parametres/automations-v2" },
+          { label: isNew ? "Nouvelle règle" : rule?.nom || "Règle" },
+        ]}
+      />
+
       <Link href="/parametres/automations-v2" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
         <ArrowLeft className="h-4 w-4" /> Retour liste
       </Link>

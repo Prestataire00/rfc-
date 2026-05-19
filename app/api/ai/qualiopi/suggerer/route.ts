@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
+
+const aiQualiopiSuggererSchema = z.object({
+  type: z.enum(["amelioration", "incident", "audit"]),
+  count: z.number().int().min(1).max(10).optional(),
+});
 
 // POST /api/ai/qualiopi/suggerer
 // Body: { type: "amelioration" | "incident" | "audit", count?: number }
@@ -14,13 +20,16 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
 
-  const body = await req.json();
-    const type = body.type as "amelioration" | "incident" | "audit";
-    const count = Math.min(10, Math.max(1, body.count || 3));
-
-    if (!["amelioration", "incident", "audit"].includes(type)) {
-      return NextResponse.json({ error: "Type invalide" }, { status: 400 });
-    }
+  const raw = await req.json().catch(() => null);
+  const parsedBody = aiQualiopiSuggererSchema.safeParse(raw);
+  if (!parsedBody.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsedBody.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const type = parsedBody.data.type;
+  const count = Math.min(10, Math.max(1, parsedBody.data.count || 3));
 
     // Donnees qualite pour contextualiser
     const evaluations = await prisma.evaluation.findMany({

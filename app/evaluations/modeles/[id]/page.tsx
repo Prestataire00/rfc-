@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Copy, Send, Eye, Pencil, Info } from "lucide-react";
 import TemplateBuilder, { Question } from "../TemplateBuilder";
 import { QuestionRenderer, QuestionItem } from "@/components/shared/QuestionRenderer";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 
@@ -71,22 +72,34 @@ export default function TemplatePage() {
     );
   }
 
+  const breadcrumbItems = [
+    { label: "Évaluations", href: "/evaluations" },
+    { label: "Modèles", href: "/evaluations/modeles" },
+    { label: template.nom || "Modèle" },
+  ];
+
   // Mode EDITION : custom template (non preset)
   if (!template.preset) {
     return (
-      <TemplateBuilder
-        templateId={id}
-        initialNom={template.nom}
-        initialDescription={template.description || ""}
-        initialType={template.type}
-        initialQuestions={questions}
-      />
+      <div>
+        <div className="px-6 pt-6">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+        <TemplateBuilder
+          templateId={id}
+          initialNom={template.nom}
+          initialDescription={template.description || ""}
+          initialType={template.type}
+          initialQuestions={questions}
+        />
+      </div>
     );
   }
 
   // Mode APERCU : preset template (read-only)
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      <Breadcrumb items={breadcrumbItems} />
       <div className="mb-6">
         <Link href="/evaluations/modeles" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
           <ArrowLeft className="h-4 w-4" /> Retour aux modeles

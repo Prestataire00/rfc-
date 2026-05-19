@@ -1,17 +1,32 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { askClaude, checkAIKey } from "@/lib/ai";
 import { aiGuard } from "@/lib/ai-guard";
 import { withErrorHandler } from "@/lib/api-wrapper";
+
+const aiDevisSchema = z.object({
+  action: z.enum(["objet", "notes", "proposition"]).optional(),
+  formationId: z.string().optional().nullable(),
+  nbStagiaires: z.number().int().positive().optional().nullable(),
+  entrepriseId: z.string().optional().nullable(),
+});
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const guard = await aiGuard(req);
   if (!guard.ok) return guard.response;
   if (!checkAIKey()) return NextResponse.json({ error: "Cle Anthropic manquante" }, { status: 500 });
 
-  const body = await req.json();
-  const { action, formationId, nbStagiaires, entrepriseId } = body;
+  const raw = await req.json().catch(() => null);
+  const parsed = aiDevisSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const { action, formationId, nbStagiaires, entrepriseId } = parsed.data;
   // action: "objet" | "notes" | "proposition"
 
   let contexte = "";

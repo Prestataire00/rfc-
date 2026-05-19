@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
@@ -12,6 +12,7 @@ import {
   type BpfCerfaProduits,
 } from "@/lib/pdf/templates";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 
 /**
  * GET /api/bpf/export-cerfa?annee=2026
@@ -111,12 +112,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const docDef = bpfCerfaPdf(input);
   const buffer = await generatePdfBuffer(docDef);
 
-  return new NextResponse(buffer as unknown as BodyInit, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="BPF-Cerfa-10443-17-${annee}.pdf"`,
-    },
-  });
+  return pdfResponse(Buffer.from(buffer), `BPF-Cerfa-10443-17-${annee}`);
 });
 
 type FinancementRow = { type: string; montant: number };

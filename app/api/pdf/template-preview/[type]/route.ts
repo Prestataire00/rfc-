@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import {
   conventionPdf,
   convocationPdf,
@@ -205,11 +206,5 @@ export const GET = withErrorHandlerParams<{ type: string }>(async (req: NextRequ
   }
 
   const buffer = await generatePdfBuffer(docDef);
-  return new NextResponse(buffer as unknown as BodyInit, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="preview-${params.type}.pdf"`,
-      "Cache-Control": "no-store",
-    },
-  });
+  return pdfResponse(Buffer.from(buffer), `preview-${params.type}`);
 });

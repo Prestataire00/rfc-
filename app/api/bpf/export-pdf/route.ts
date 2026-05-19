@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bpfPdf } from "@/lib/pdf/templates";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import { withErrorHandler } from "@/lib/api-wrapper";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -58,10 +59,5 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   const buffer = await generatePdfBuffer(docDef);
 
-  return new NextResponse(buffer as unknown as BodyInit, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="BPF-${annee}.pdf"`,
-    },
-  });
+  return pdfResponse(Buffer.from(buffer), `BPF-${annee}`);
 });

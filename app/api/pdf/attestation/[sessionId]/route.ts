@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import { attestationPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
@@ -103,10 +104,5 @@ export const GET = withErrorHandlerParams<{ sessionId: string }>(async (_req: Ne
 
   const slug = session.formation.titre.replace(/\s+/g, "-").toLowerCase().slice(0, 30);
 
-  return new NextResponse(buffer as unknown as BodyInit, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="attestations-${slug}.pdf"`,
-    },
-  });
+  return pdfResponse(Buffer.from(buffer), `attestations-${slug}`, "attachment");
 });

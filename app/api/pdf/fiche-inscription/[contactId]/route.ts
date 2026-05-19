@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import { ficheInscriptionPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
@@ -92,11 +93,6 @@ export const GET = withErrorHandlerParams<{ contactId: string }>(
     const buffer = await generatePdfBuffer(docDef);
     const safeName = `${contact.nom}-${contact.prenom}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    return new NextResponse(buffer as unknown as BodyInit, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="fiche-inscription-${safeName}.pdf"`,
-      },
-    });
+    return pdfResponse(Buffer.from(buffer), `fiche-inscription-${safeName}`);
   }
 );

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
+import { pdfResponse } from "@/lib/pdf/response";
 import { conventionPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
@@ -111,10 +112,5 @@ export const GET = withErrorHandlerParams<{ sessionId: string }>(async (req: Nex
   const buffer = await generatePdfBuffer(docDef);
   const slug = entreprise?.nom.replace(/\s+/g, "-").toLowerCase().slice(0, 20) || "client";
 
-  return new NextResponse(buffer as unknown as BodyInit, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="convention-${slug}.pdf"`,
-    },
-  });
+  return pdfResponse(Buffer.from(buffer), `convention-${slug}`, "attachment");
 });

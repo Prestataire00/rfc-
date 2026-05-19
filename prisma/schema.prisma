@@ -24,10 +24,13 @@ model User {
   actif    Boolean @default(true)
 
   formateurId  String?  @unique
-  formateur    Formateur? @relation(fields: [formateurId], references: [id])
+  // Audit 2026-05-19 §4.10 : onDelete explicite. SetNull pour conserver
+  // le compte User si le formateur ou l'entreprise est supprimé (admin
+  // peut le réassigner).
+  formateur    Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
 
   entrepriseId String?
-  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id])
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
   notifications Notification[]
   conversationParticipations ConversationParticipant[]

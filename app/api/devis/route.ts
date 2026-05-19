@@ -16,13 +16,28 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   const where = statut ? { statut } : {};
 
+  // Audit 2026-05-19 §4.12 : select explicite, on n'inclut PAS les lignes
+  // ni signatureUrl/notes sur la liste (charge inutile + leak). La fiche
+  // détail /api/devis/[id] les expose.
   const [devis, total] = await Promise.all([
     prisma.devis.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        numero: true,
+        objet: true,
+        montantHT: true,
+        montantTTC: true,
+        tauxTVA: true,
+        dateEmission: true,
+        dateValidite: true,
+        dateSigne: true,
+        statut: true,
+        createdAt: true,
+        entrepriseId: true,
+        contactId: true,
         entreprise: { select: { id: true, nom: true } },
         contact: { select: { id: true, nom: true, prenom: true } },
-        lignes: true,
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,

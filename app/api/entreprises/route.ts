@@ -11,6 +11,9 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   // type=client → entreprises ayant au moins un contact type=client
   // type=organisme → entreprises marquées comme organisme tier (notes/secteur)
   const type = searchParams.get("type");
+  // Audit 2026-05-19 §4.7 : pagination ajoutée pour éviter findMany complet.
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50")));
 
   const whereClauses: Record<string, unknown>[] = [];
   if (search) {
@@ -34,13 +37,41 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     });
   }
 
-  const entreprises = await prisma.entreprise.findMany({
-    where: whereClauses.length > 0 ? { AND: whereClauses } : {},
-    include: { _count: { select: { contacts: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const where = whereClauses.length > 0 ? { AND: whereClauses } : {};
 
-  return NextResponse.json(entreprises);
+  // Audit §4.12 : select explicite (exclure notes qui peut être volumineux).
+  const [entreprises, total] = await Promise.all([
+    prisma.entreprise.findMany({
+      where,
+      select: {
+        id: true,
+        nom: true,
+        siret: true,
+        secteur: true,
+        adresse: true,
+        ville: true,
+        codePostal: true,
+        telephone: true,
+        email: true,
+        site: true,
+        effectif: true,
+        typeEntreprise: true,
+        createdAt: true,
+        _count: { select: { contacts: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.entreprise.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    data: entreprises,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {

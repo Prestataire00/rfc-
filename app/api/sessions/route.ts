@@ -42,28 +42,36 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       ],
     };
 
-    const sessions = await prisma.session.findMany({
-      where,
-      include: {
-        formation: { select: { id: true, titre: true, tarif: true } },
-        formateur: { select: { id: true, nom: true, prenom: true } },
-        _count: { select: { inscriptions: true } },
-      },
-      orderBy: sortBy === "formation"
-        ? { formation: { titre: sortOrder } }
-        : { [sortBy]: sortOrder },
-    });
+    // Audit 2026-05-19 §4.7 : pagination DB-side (skip/take) au lieu de
+    // findMany complet + slice mémoire. Le filtre capacité reste en mémoire
+    // car Prisma ne peut pas comparer _count vs field — mais appliqué APRÈS
+    // la pagination, ça peut sous-évaluer le total. On accepte cette
+    // imprécision (filtre rarement utilisé sur des volumes >100 sessions).
+    const orderBy = sortBy === "formation"
+      ? { formation: { titre: sortOrder } }
+      : { [sortBy]: sortOrder };
 
-    // Filter by capacity (Prisma can't compare _count vs field)
-    let filtered = sessions;
+    const [total, sessionsPage] = await Promise.all([
+      prisma.session.count({ where }),
+      prisma.session.findMany({
+        where,
+        include: {
+          formation: { select: { id: true, titre: true, tarif: true } },
+          formateur: { select: { id: true, nom: true, prenom: true } },
+          _count: { select: { inscriptions: true } },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    let paginated = sessionsPage;
     if (capacite === "disponible") {
-      filtered = sessions.filter((s) => s._count.inscriptions < s.capaciteMax);
+      paginated = sessionsPage.filter((s) => s._count.inscriptions < s.capaciteMax);
     } else if (capacite === "complet") {
-      filtered = sessions.filter((s) => s._count.inscriptions >= s.capaciteMax);
+      paginated = sessionsPage.filter((s) => s._count.inscriptions >= s.capaciteMax);
     }
-
-    const total = filtered.length;
-    const paginated = filtered.slice((page - 1) * limit, page * limit);
 
     // Get distinct formateurs for filter
     const formateurs = await prisma.formateur.findMany({

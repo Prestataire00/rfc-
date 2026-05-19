@@ -12,10 +12,23 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   const where = statut ? { statut } : {};
 
+  // Audit 2026-05-19 §4.12 : select explicite — on n'inclut pas paiements
+  // (JSON volumineux) ni notes sur la liste. /api/factures/[id] les expose.
   const [factures, total] = await Promise.all([
     prisma.facture.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        numero: true,
+        montantHT: true,
+        montantTTC: true,
+        tauxTVA: true,
+        dateEmission: true,
+        dateEcheance: true,
+        statut: true,
+        createdAt: true,
+        devisId: true,
+        entrepriseId: true,
         entreprise: { select: { id: true, nom: true } },
         devis: { select: { id: true, numero: true } },
       },

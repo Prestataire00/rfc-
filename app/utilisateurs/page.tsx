@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Shield, UserCheck, UserX, KeyRound } from "lucide-react";
+import { Search, Users, UserCheck, UserX, KeyRound } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 
@@ -77,19 +78,12 @@ export default function UtilisateursPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100">Gestion des utilisateurs</h1>
-          <p className="text-sm text-gray-400 mt-1">{users.length} compte(s)</p>
-        </div>
-        <Link
-          href="/utilisateurs/nouveau"
-          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
-        >
-          <Plus className="h-4 w-4" />
-          Nouveau compte
-        </Link>
-      </div>
+      <PageHeader
+        title="Gestion des utilisateurs"
+        description={`${users.length} compte(s)`}
+        actionLabel="Nouveau compte"
+        actionHref="/utilisateurs/nouveau"
+      />
 
       {/* Filters */}
       <div className="flex gap-3">
@@ -199,8 +193,17 @@ export default function UtilisateursPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
-                  Aucun utilisateur trouve
+                <td colSpan={6} className="px-4 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="h-8 w-8 text-gray-500" />
+                    <p className="text-sm text-gray-400">Aucun utilisateur trouve</p>
+                    <Link
+                      href="/utilisateurs/nouveau"
+                      className="text-sm text-red-500 hover:text-red-400 font-medium"
+                    >
+                      Creer un compte
+                    </Link>
+                  </div>
                 </td>
               </tr>
             )}

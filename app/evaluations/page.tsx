@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessageSquare, Star, BarChart3, CheckCircle, Clock, ArrowRight, Send, Download, FileText, X, ClipboardList, Flame, Snowflake, GraduationCap, ArrowLeft } from "lucide-react";
 import { EVALUATION_TYPES } from "@/lib/constants";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useApi } from "@/hooks/useApi";
 
 const TYPE_TABS = [
@@ -97,7 +98,11 @@ export default function EvaluationsPage() {
           </Link>
         </div>
         {liste.length === 0 ? (
-          <p className="text-gray-400 text-center py-12">Aucune évaluation</p>
+          <EmptyState
+            icon={ClipboardList}
+            title="Aucune évaluation"
+            description={filtre === "attente" ? "Aucune évaluation n'est en attente de réponse." : "Aucune évaluation complétée pour le moment."}
+          />
         ) : (
           <div className="space-y-2">
             {liste.map((ev) => (

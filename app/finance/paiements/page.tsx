@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, CreditCard, Calendar, Building2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, CreditCard, Calendar, Building2, ArrowDownToLine, ArrowUpFromLine, FileBarChart } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -239,7 +240,20 @@ export default function FinancePaiementsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {(paiements ?? []).length === 0 ? (
-                  <tr><td colSpan={5} className="text-center text-gray-500 py-12">Aucun paiement</td></tr>
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <CreditCard className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Aucun paiement enregistre</p>
+                        <button
+                          onClick={() => setOpenPaiement(true)}
+                          className="text-sm text-red-500 hover:text-red-400 font-medium"
+                        >
+                          Enregistrer un paiement
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ) : (
                   (paiements ?? []).map((p) => (
                     <tr key={p.id} className="hover:bg-gray-750">
@@ -273,7 +287,11 @@ export default function FinancePaiementsPage() {
             {Object.keys(echGrouped).length} facture(s) avec echeancier
           </h2>
           {Object.keys(echGrouped).length === 0 ? (
-            <p className="text-center text-gray-500 py-12">Aucun echeancier</p>
+            <EmptyState
+              icon={FileBarChart}
+              title="Aucun echeancier"
+              description="Aucune facture n'a d'echeancier configure pour le moment."
+            />
           ) : (
             <div className="space-y-3">
               {Object.entries(echGrouped).map(([factureId, items]) => (
@@ -368,7 +386,20 @@ export default function FinancePaiementsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {(transactions ?? []).length === 0 ? (
-                  <tr><td colSpan={5} className="text-center text-gray-500 py-12">Aucune transaction</td></tr>
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <ArrowDownToLine className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Aucune transaction</p>
+                        <button
+                          onClick={() => setOpenTx(true)}
+                          className="text-sm text-red-500 hover:text-red-400 font-medium"
+                        >
+                          Ajouter une transaction
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ) : (
                   (transactions ?? []).map((t) => (
                     <tr key={t.id} className="hover:bg-gray-750">

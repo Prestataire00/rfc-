@@ -3,6 +3,9 @@
 import Link from "next/link";
 import useSWR from "swr";
 import { useState } from "react";
+import { FileSignature } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { SignatureStatusBadge } from "@/components/signatures/SignatureStatusBadge";
 
 interface ListItem {
@@ -48,15 +51,11 @@ export default function SignaturesPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Signatures électroniques</h1>
-        <Link
-          href="/signatures/nouveau"
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          + Nouvelle demande
-        </Link>
-      </div>
+      <PageHeader
+        title="Signatures électroniques"
+        actionLabel="Nouvelle demande"
+        actionHref="/signatures/nouveau"
+      />
 
       <div className="flex gap-2 mb-4">
         <input
@@ -89,7 +88,13 @@ export default function SignaturesPage() {
       {isLoading && <p className="text-gray-500">Chargement…</p>}
 
       {data && data.items.length === 0 && (
-        <p className="text-gray-500 py-12 text-center">Aucune demande.</p>
+        <EmptyState
+          icon={FileSignature}
+          title="Aucune demande"
+          description="Creez votre premiere demande de signature electronique."
+          actionLabel="Nouvelle demande"
+          actionHref="/signatures/nouveau"
+        />
       )}
 
       {data && data.items.length > 0 && (

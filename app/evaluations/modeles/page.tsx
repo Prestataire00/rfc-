@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Plus, Pencil, Trash2, FileText, Copy, Eye, Send, Search,
+  Pencil, Trash2, FileText, Copy, Eye, Send, Search,
   ThumbsUp, Clock, Target, GraduationCap, UserCheck, Briefcase, Landmark,
   CheckCircle2, Flame, Snowflake,
 } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 
@@ -119,20 +121,12 @@ export default function ModelesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100">Modeles de questionnaires</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{templates.length} modele{templates.length > 1 ? "s" : ""} disponible{templates.length > 1 ? "s" : ""}</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={handleReseed} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300 hover:bg-gray-700">
-            <CheckCircle2 className="h-3.5 w-3.5" /> {seedMsg || "Recharger"}
-          </button>
-          <Link href="/evaluations/modeles/nouveau" className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white">
-            <Plus className="h-4 w-4" /> Nouveau
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Modeles de questionnaires"
+        description={`${templates.length} modele${templates.length > 1 ? "s" : ""} disponible${templates.length > 1 ? "s" : ""}`}
+        actionLabel="Nouveau"
+        actionHref="/evaluations/modeles/nouveau"
+      />
 
       {/* Filtres */}
       <div className="flex items-center justify-between gap-3 mb-5">
@@ -147,9 +141,14 @@ export default function ModelesPage() {
             );
           })}
         </div>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full h-9 rounded-lg border border-gray-700 bg-gray-800 pl-9 pr-3 text-sm text-gray-200" />
+        <div className="flex items-center gap-2">
+          <button onClick={handleReseed} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-300 hover:bg-gray-700">
+            <CheckCircle2 className="h-3.5 w-3.5" /> {seedMsg || "Recharger"}
+          </button>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." className="w-full h-9 rounded-lg border border-gray-700 bg-gray-800 pl-9 pr-3 text-sm text-gray-200" />
+          </div>
         </div>
       </div>
 
@@ -169,10 +168,13 @@ export default function ModelesPage() {
       <section>
         <h2 className="text-xs uppercase font-semibold text-gray-500 tracking-wider mb-3">Mes modeles</h2>
         {customs.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-700 p-10 text-center">
-            <FileText className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">Dupliquez un preset ou creez un modele vierge</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Aucun modele personnel"
+            description="Dupliquez un preset Qualiopi ou creez un modele vierge."
+            actionLabel="Nouveau modele"
+            actionHref="/evaluations/modeles/nouveau"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {customs.map((t) => (

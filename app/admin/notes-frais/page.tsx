@@ -5,6 +5,7 @@ import useSWR from "swr";
 import {
   Receipt, Clock, CheckCircle2, XCircle, CreditCard, MessageCircleQuestion,
 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { notify } from "@/lib/toast";
 
 interface NoteFrais {
@@ -244,10 +245,11 @@ export default function AdminNotesFraisPage() {
       {error && <p className="text-sm text-red-600">Erreur de chargement</p>}
 
       {notes && notes.length === 0 ? (
-        <div className="text-center py-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40">
-          <Receipt className="h-10 w-10 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Aucune note de frais</p>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title="Aucune note de frais"
+          description="Aucune note n'a encore ete soumise par les formateurs."
+        />
       ) : notes && notes.length > 0 ? (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/40 overflow-hidden">
           <table className="w-full text-sm">

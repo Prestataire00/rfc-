@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, ListChecks, Trash2, Calendar, Loader2, X } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -258,10 +259,11 @@ export default function TasksPage() {
         {/* Main items */}
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 min-h-[400px]">
           {!selectedListId || !selectedList ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 dark:text-gray-400">
-              <ListChecks className="h-10 w-10 mb-3 text-gray-500" />
-              <p className="text-sm">Selectionnez ou creez une liste pour commencer</p>
-            </div>
+            <EmptyState
+              icon={ListChecks}
+              title="Aucune liste selectionnee"
+              description="Selectionnez une liste dans le menu ou creez-en une nouvelle pour commencer."
+            />
           ) : (
             <>
               <div className="flex items-center gap-3 mb-4">

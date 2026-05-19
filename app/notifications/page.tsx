@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { cn, formatRelative, formatDatetime } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
@@ -125,17 +126,17 @@ export default function NotificationsPage() {
 
       {/* Notification list */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-600 bg-gray-800 py-16 text-center">
-          <Bell className="h-12 w-12 text-gray-300 mb-3" />
-          <p className="text-sm font-medium text-gray-100">Aucune notification</p>
-          <p className="text-sm text-gray-400 mt-1">
-            {filter === "non_lues"
+        <EmptyState
+          icon={Bell}
+          title="Aucune notification"
+          description={
+            filter === "non_lues"
               ? "Toutes vos notifications ont ete lues"
               : filter === "lues"
               ? "Aucune notification lue"
-              : "Vous n'avez pas encore de notifications"}
-          </p>
-        </div>
+              : "Vous n'avez pas encore de notifications"
+          }
+        />
       ) : (
         <div className="space-y-2">
           {filtered.map((notif) => {

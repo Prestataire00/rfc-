@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Pencil, KeyRound, UserCheck, UserX, Building2, GraduationCap, Mail, Shield, Calendar } from "lucide-react";
 import { useApi, useApiMutation } from "@/hooks/useApi";
 import { ApiError } from "@/lib/fetcher";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 type User = {
   id: string;
@@ -93,6 +94,11 @@ export default function UtilisateurDetailPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
+            {/* Audit 2026-05-19 §1.7 : Breadcrumb ajouté */}
+            <Breadcrumb items={[
+              { label: "Utilisateurs", href: "/utilisateurs" },
+              { label: `${user.prenom} ${user.nom}` },
+            ]} />
             <h1 className="text-2xl font-bold text-gray-100">
               {user.prenom} {user.nom}
             </h1>

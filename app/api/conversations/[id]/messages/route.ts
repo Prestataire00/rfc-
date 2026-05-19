@@ -17,6 +17,17 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     return NextResponse.json({ error: "Non authentifie" }, { status: 401 });
   }
 
+  // Audit 2026-05-19 §2.5 : vérifier que l'utilisateur est participant
+  // à la conversation avant d'autoriser l'envoi (sinon IDOR : un user peut
+  // poster dans n'importe quelle conversation en connaissant son id).
+  const participant = await prisma.conversationParticipant.findFirst({
+    where: { conversationId: params.id, userId: session.user.id },
+    select: { id: true },
+  });
+  if (!participant) {
+    return NextResponse.json({ error: "Non autorisé sur cette conversation" }, { status: 403 });
+  }
+
   const body = await parseBody(req, createSchema);
 
   const result = await prisma.$transaction(async (tx) => {

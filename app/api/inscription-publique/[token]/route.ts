@@ -1,10 +1,40 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { enforceRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 import { encryptNSS } from "@/lib/encryption";
+
+// Audit 2026-05-19 §2.7 : Zod + regex NSS française (15 chiffres exactement,
+// avec ou sans espaces qu'on strip avant validation).
+const inscriptionSchema = z.object({
+  nom: z.string().min(1, "Nom requis"),
+  prenom: z.string().min(1, "Prénom requis"),
+  email: z.string().email("Email invalide"),
+  telephone: z.string().optional(),
+  entreprise: z.string().optional(),
+  entrepriseSiret: z.string().regex(/^\d{14}$/, "SIRET = 14 chiffres").optional().or(z.literal("")),
+  entrepriseAdresse: z.string().optional(),
+  entrepriseCodePostal: z.string().optional(),
+  entrepriseVille: z.string().optional(),
+  adressePerso: z.string().optional(),
+  codePostalPerso: z.string().optional(),
+  villePerso: z.string().optional(),
+  profession: z.string().optional(),
+  numeroDiplome: z.string().optional(),
+  dateNaissance: z.string().optional(),
+  numeroSecuriteSociale: z
+    .string()
+    .transform((s) => s.replace(/\s/g, ""))
+    .pipe(
+      z.string().regex(/^\d{15}$/, "NSS = 15 chiffres").optional().or(z.literal("")),
+    )
+    .optional(),
+  besoinsAdaptation: z.string().optional(),
+  consentementRGPD: z.boolean().refine((v) => v === true, "Consentement RGPD obligatoire"),
+});
 
 // GET: session info for public form
 export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { token: string } }) => {
@@ -54,7 +84,14 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     return NextResponse.json({ error: "Plus de places disponibles" }, { status: 400 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  const parsed = inscriptionSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation échouée", issues: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
   const {
     nom,
     prenom,
@@ -73,15 +110,7 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     dateNaissance,
     numeroSecuriteSociale,
     besoinsAdaptation,
-    consentementRGPD,
-  } = body;
-
-  if (!nom || !prenom || !email) {
-    return NextResponse.json({ error: "Nom, prenom et email requis" }, { status: 400 });
-  }
-  if (!consentementRGPD) {
-    return NextResponse.json({ error: "Le consentement RGPD est obligatoire" }, { status: 400 });
-  }
+  } = parsed.data;
 
   // Find or create entreprise — priorité au SIRET (clé unique fiable) sur le nom
   let entrepriseId: string | null = null;

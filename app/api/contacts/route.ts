@@ -28,10 +28,27 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     ],
   };
 
+  // Audit 2026-05-19 §4.4 : select explicite excluant les champs sensibles
+  // (numeroSecuriteSociale chiffré + numeroPasseportPrevention) sur la liste.
+  // La fiche détail /api/contacts/[id] décrypte/expose au cas par cas.
   const [contacts, total] = await Promise.all([
     prisma.contact.findMany({
       where,
-      include: { entreprise: { select: { id: true, nom: true } } },
+      select: {
+        id: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        telephone: true,
+        poste: true,
+        type: true,
+        notes: true,
+        createdAt: true,
+        updatedAt: true,
+        entrepriseId: true,
+        entreprise: { select: { id: true, nom: true } },
+        // numeroSecuriteSociale + numeroPasseportPrevention exclus ici
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,

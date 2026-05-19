@@ -8,6 +8,13 @@ import { getClientIp } from "@/lib/get-client-ip";
 
 type PresetConfig = { max: number; window: UpstashWindow };
 
+// Audit 2026-05-19 §3.3 : accepte aussi { headers: Headers } pour les
+// callers Server Components (cf. /sign/[token]/page.tsx). Évite le cast
+// "as unknown as NextRequest" qui crasherait si enforceRateLimit accédait
+// à req.ip ou req.nextUrl. Aujourd'hui on n'utilise que req.headers donc
+// le narrower type suffit.
+type RateLimitReq = NextRequest | Request | { headers: Headers };
+
 /**
  * Vérifie le rate-limit pour cette requête. Retourne une 429 si bloqué, null sinon.
  *
@@ -21,7 +28,7 @@ type PresetConfig = { max: number; window: UpstashWindow };
  *   if (limited) return limited;
  */
 export async function enforceRateLimit(
-  req: NextRequest | Request,
+  req: RateLimitReq,
   preset: PresetConfig,
   keyPrefix: string,
   identifier?: string,

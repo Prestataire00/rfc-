@@ -7,7 +7,6 @@ import { RATE_LIMIT_PRESETS } from "@/lib/rate-limit-presets";
 import { appendEvent } from "@/lib/signatures/audit-chain";
 import { BUCKETS, getSignedUrl } from "@/lib/signatures/bucket";
 import { SignViewClient } from "@/components/signatures/SignViewClient";
-import type { NextRequest } from "next/server";
 
 /**
  * Vue publique signataire — Sprint 3 = lecture seule (PDF rendu + zones surlignées).
@@ -44,10 +43,10 @@ export default async function SignPage({ params }: Props) {
   const ua = h.get("user-agent") ?? "unknown";
 
   // Rate-limit avec preset publicToken (30/5min/IP) — réutilise l'infra du sprint C.
-  // On passe un faux NextRequest puisque enforceRateLimit veut juste les headers IP.
-  const fakeReq = { headers: h } as unknown as NextRequest;
+  // Audit 2026-05-19 §3.3 : enforceRateLimit accepte { headers: Headers } directement,
+  // plus besoin du cast "as unknown as NextRequest".
   const limited = await enforceRateLimit(
-    fakeReq,
+    { headers: h },
     RATE_LIMIT_PRESETS.publicToken,
     `signature-sign:${tokenPrefix(token)}`,
   );

@@ -8,6 +8,15 @@ export const ligneDevisSchema = z.object({
   montant: z.coerce.number(),
 });
 
+// Audit 2026-05-19 §4.8 : alignement Zod ↔ Prisma — statuts Devis officiels.
+export const DEVIS_STATUT_ENUM = [
+  "brouillon",
+  "envoye",
+  "signe",
+  "refuse",
+  "expire",
+] as const;
+
 export const devisSchema = z
   .object({
     objet: z.string().min(1, "Objet requis"),
@@ -18,6 +27,11 @@ export const devisSchema = z
     contactId: z.string().optional().nullable(),
     // Rattachement projet (bilatéralité projet ↔ devis)
     projetId: z.string().optional().nullable(),
+    // Audit 2026-05-19 §4.8 : alignement Zod ↔ Prisma
+    // (statut, dateSigne, signatureUrl présents en base).
+    statut: z.enum(DEVIS_STATUT_ENUM).optional().default("brouillon"),
+    dateSigne: z.union([z.string(), z.date()]).optional().nullable(),
+    signatureUrl: z.string().optional().nullable(),
     lignes: z.array(ligneDevisSchema).min(1, "Au moins une ligne requise"),
   })
   .refine((data) => data.entrepriseId || data.contactId, {

@@ -12,6 +12,8 @@ export const sessionSchema = z.object({
     .default("planifiee"),
   notes: z.string().optional().nullable(),
   coutFormateur: z.coerce.number().optional().nullable(),
+  // Audit 2026-05-19 §4.8 : alignement Zod ↔ Prisma (lieuFormationId: String?).
+  lieuFormationId: z.string().cuid().optional().nullable(),
   devisId: z.string().cuid().optional().nullable(),
   projetId: z.string().cuid().optional().nullable(),
   modeExpress: z.boolean().optional().default(false),

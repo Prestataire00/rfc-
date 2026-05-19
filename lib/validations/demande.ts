@@ -18,6 +18,8 @@ export const demandeSchema = z.object({
   entrepriseId: z.string().cuid().optional().nullable(),
   contactId: z.string().cuid().optional().nullable(),
   formationId: z.string().cuid().optional().nullable(),
+  // Audit 2026-05-19 §4.8 : alignement Zod ↔ Prisma (devisId: String?).
+  devisId: z.string().cuid().optional().nullable(),
   // Champs ajoutes pour l'analyse des besoins client papier
   sourceContact: z.enum(SOURCE_CONTACT).optional().nullable(),
   materielSurPlace: z.string().optional().default("[]"),

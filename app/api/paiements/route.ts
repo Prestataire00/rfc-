@@ -1,18 +1,10 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
-
-const createSchema = z.object({
-  factureId: z.string().min(1),
-  montant: z.number().positive(),
-  datePaiement: z.string(),
-  mode: z.string().min(1),
-  reference: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-});
+// Audit 2026-05-19 §4.9 : schéma Zod centralisé (validations/paiement.ts).
+import { paiementSchema } from "@/lib/validations/paiement";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -29,7 +21,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await parseBody(req, createSchema);
+  const body = await parseBody(req, paiementSchema);
   const item = await prisma.paiement.create({
     data: {
       factureId: body.factureId,

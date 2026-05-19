@@ -8,16 +8,21 @@ import { notifyAdmins } from "@/lib/notifications";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
 import { logger } from "@/lib/logger";
+// Audit 2026-05-19 §4.9 : schéma Zod centralisé (validations/inscription.ts).
+// sessionId vient de l'URL → on l'omet du body et on valide le reste.
+import { inscriptionSchema } from "@/lib/validations/inscription";
+import { INSCRIPTION_STATUTS } from "@/lib/constants";
 
-const inscriptionPostSchema = z.object({
-  contactId: z.string().min(1, "contactId requis"),
-  statut: z.string().optional().default("en_attente"),
-  notes: z.string().optional().nullable(),
-});
+const inscriptionPostSchema = inscriptionSchema.omit({ sessionId: true });
+
+const INSCRIPTION_STATUT_KEYS = Object.keys(INSCRIPTION_STATUTS) as [
+  keyof typeof INSCRIPTION_STATUTS,
+  ...Array<keyof typeof INSCRIPTION_STATUTS>,
+];
 
 const inscriptionPatchSchema = z.object({
   inscriptionId: z.string().min(1, "inscriptionId requis"),
-  statut: z.string().min(1, "statut requis"),
+  statut: z.enum(INSCRIPTION_STATUT_KEYS),
 });
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {

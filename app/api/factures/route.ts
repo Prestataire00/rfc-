@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateNumero } from "@/lib/utils";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { parseBody } from "@/lib/validations/helpers";
+import { factureSchema } from "@/lib/validations/facture";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
@@ -48,7 +50,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 });
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
+  // Audit 2026-05-19 §4.9 : validation Zod du body (factureSchema).
+  const body = await parseBody(req, factureSchema);
   const allFactures = await prisma.facture.findMany({ select: { numero: true } });
   const maxNum = allFactures.reduce((max, f) => {
     const n = parseInt(f.numero.split("-").pop() || "0");
@@ -62,7 +65,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       montantHT: body.montantHT,
       tauxTVA: body.tauxTVA ?? 20,
       montantTTC: body.montantTTC,
-      dateEmission: new Date(),
+      dateEmission: body.dateEmission ? new Date(body.dateEmission) : new Date(),
       dateEcheance: new Date(body.dateEcheance),
       notes: body.notes || null,
       statut: body.statut || "en_attente",

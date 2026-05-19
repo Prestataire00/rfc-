@@ -40,6 +40,17 @@ const nextConfig = {
 
     // CSP — démarre permissive (compatibilité Next 14 App Router + Tailwind +
     // shadcn/ui). À durcir via nonce middleware dans un sprint dédié.
+    //
+    // Audit 2026-05-19 §P2 ROADMAP — Migration vers CSP nonce-based :
+    // 1. Générer un nonce cryptographique par requête dans middleware.ts
+    //    (crypto.randomUUID() ou randomBytes(16).toString("base64"))
+    // 2. Stocker le nonce dans un header (ex: x-nonce) lu côté Server Components
+    //    pour l'injecter dans tous les <Script>/<style> inline
+    // 3. Remplacer 'unsafe-inline' par 'nonce-XXX' dans script-src + style-src
+    // 4. Audit côté codebase : repérer les <script> sans nonce qui casseraient
+    // 5. Pour 'unsafe-eval' : audit shadcn/ui + react-pdf si possible le retirer
+    //
+    // Sources : https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
     const connectSrc = ["'self'", "https://recherche-entreprises.api.gouv.fr"];
     if (supabaseHost) {
       connectSrc.push(`https://${supabaseHost}`, `wss://${supabaseHost}`);

@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { logger } from "@/lib/logger";
 
 // Chiffrement applicatif des champs sensibles (NSS Contact, RGPD).
 // AES-256-GCM avec auth tag (intégrité + confidentialité).
@@ -9,6 +10,17 @@ const ALGO = "aes-256-gcm";
 const IV_LEN = 12; // 96 bits, recommandé pour GCM
 const KEY_LEN = 32; // 256 bits
 const PREFIX = "enc::v1::";
+
+// Compteur de NSS legacy (plaintext) rencontrés pendant le décodage.
+// Audit 2026-05-19 §P2 : on monitore pour piloter la migration de tous
+// les NSS vers le format chiffré. À surveiller via les logs Sentry/Datadog.
+let _legacyDecryptCount = 0;
+export function getLegacyDecryptCount(): number {
+  return _legacyDecryptCount;
+}
+export function resetLegacyDecryptCount(): void {
+  _legacyDecryptCount = 0;
+}
 
 function getKey(): Buffer {
   const raw = process.env.NSS_ENCRYPTION_KEY;
@@ -40,7 +52,19 @@ export function encryptNSS(value: string | null | undefined): string | null {
 
 export function decryptNSS(value: string | null | undefined): string | null {
   if (value == null || value === "") return null;
-  if (!isEncryptedNSS(value)) return value; // legacy plaintext, returned as-is
+  if (!isEncryptedNSS(value)) {
+    // Audit 2026-05-19 §P2 : fallback legacy plaintext silencieux → désormais
+    // tracé pour piloter la migration. À chaque NSS rencontré en clair en DB,
+    // on incrémente un compteur + log warn (échantillonné pour éviter le spam).
+    _legacyDecryptCount++;
+    if (_legacyDecryptCount === 1 || _legacyDecryptCount % 100 === 0) {
+      logger.warn("nss.legacy_plaintext_detected", {
+        count: _legacyDecryptCount,
+        hint: "Run scripts/migrate-legacy-nss.ts to encrypt remaining plaintext NSS",
+      });
+    }
+    return value;
+  }
 
   const stripped = value.slice(PREFIX.length);
   const parts = stripped.split(":");

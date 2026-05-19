@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, Users, BookOpen, CalendarDays, GraduationCap,
-  TrendingUp, FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
+  FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
   ListChecks, Wallet, Building2,
@@ -162,7 +162,8 @@ const clientGroups: NavGroup[] = [
     items: [
       { href: "/espace-client/devis", label: "Devis", icon: FileText },
       { href: "/espace-client/paiement", label: "Paiements", icon: CreditCard },
-      { href: "/espace-client/roi", label: "ROI formation", icon: TrendingUp },
+      // "ROI formation" retiré (audit 2026-05-19 §1.4) : /espace-client/roi
+      // n'existe pas encore. Réintégrer quand la page sera livrée.
       { href: "/espace-client/evaluations", label: "Évaluations", icon: Award },
     ],
   },

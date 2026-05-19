@@ -779,11 +779,14 @@ export default function ProspectDetailPage() {
             icon={Users}
             title={`Inscriptions (${inscriptions.length})`}
             action={
+              // Audit 2026-05-19 §1.3 : /sessions/[id]/inscriptions/new n'existait
+              // pas. On envoie sur la fiche session (onglet Participants) qui a
+              // déjà un bouton "Ajouter" inline avec Dialog multi-select.
               <Link
-                href={`/sessions/${session.id}/inscriptions/new`}
+                href={`/sessions/${session.id}`}
                 className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1"
               >
-                <UserPlus className="h-3.5 w-3.5" /> Ajouter
+                <UserPlus className="h-3.5 w-3.5" /> Ouvrir la session
               </Link>
             }
           >

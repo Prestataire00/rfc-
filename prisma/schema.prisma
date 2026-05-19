@@ -243,7 +243,9 @@ model Session {
   datePasseportPrevention        DateTime?
 
   formationId String
-  formation   Formation  @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.3 : Restrict pour préserver l'historique pédagogique
+  // (sessions passées) en cas de suppression d'une formation.
+  formation   Formation  @relation(fields: [formationId], references: [id], onDelete: Restrict)
 
   formateurId String?
   formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
@@ -289,7 +291,9 @@ model Inscription {
   notes           String?
 
   contactId String
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.1 : Restrict pour préserver les preuves Qualiopi
+  // (Inscription = preuve d'inscription stagiaire, conservation 3 ans).
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
 
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -552,7 +556,9 @@ model Attestation {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   contactId String
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.1 : Restrict pour préserver les attestations
+  // (preuve de fin de formation Qualiopi, conservation 3 ans).
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
 
   @@unique([sessionId, contactId, type])
 }
@@ -587,7 +593,9 @@ model FeuillePresence {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   contactId String
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.1 : Restrict pour préserver les feuilles de présence
+  // (preuve d'émargement Qualiopi 7.1, conservation 3 ans légale).
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Restrict)
 
   @@unique([sessionId, contactId, date])
 }
@@ -612,7 +620,9 @@ model EmargementToken {
   usedAt    DateTime? // rempli quand le token OTP est utilise
 
   contactId String?   // null = QR general, set = OTP individuel
-  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.1 : SetNull (contactId déjà nullable) pour préserver
+  // le token (preuve technique d'émargement) si le contact est supprimé.
+  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
   @@index([token])
   @@index([sessionId])
@@ -809,10 +819,13 @@ model CertificationStagiaire {
   updatedAt DateTime @updatedAt
 
   contactId   String
-  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.1/4.3 : Restrict pour préserver les certifications
+  // RNCP/Qualiopi (validité 3-5 ans). Suppression contact/formation bloquée
+  // tant qu'une certif existe — éviter perte preuves légales.
+  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
 
   formationId String
-  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Restrict)
 
   sessionId   String?  // session d'obtention (si connue)
 
@@ -1369,7 +1382,9 @@ model ParcoursModule {
   parcours    Parcours  @relation(fields: [parcoursId], references: [id], onDelete: Cascade)
 
   formationId String
-  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.3 : Restrict pour empêcher la suppression d'une
+  // formation utilisée dans un parcours existant.
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Restrict)
 
   ordre       Int     @default(0)
   obligatoire Boolean @default(true)
@@ -1587,7 +1602,9 @@ model Paiement {
   createdAt DateTime @default(now())
 
   factureId    String
-  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.2 : Restrict pour respecter CGI art. 286 — conservation
+  // 10 ans des pièces comptables. Faire un avoir au lieu de supprimer.
+  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Restrict)
 
   montant      Float
   datePaiement DateTime
@@ -1605,7 +1622,8 @@ model EcheancierPaiement {
   createdAt DateTime @default(now())
 
   factureId    String
-  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  // Audit 2026-05-19 §4.2 : Restrict — l'échéancier est une pièce comptable.
+  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Restrict)
 
   montant       Float
   dateEcheance  DateTime

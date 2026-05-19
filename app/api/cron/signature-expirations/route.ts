@@ -2,9 +2,10 @@
 // expiresAt < now et statut ∈ (sent, viewed). Append event "expired".
 // Purge SignatureTokenAttempt > 30 jours.
 // Spec §"Cas d'erreur" (Expiration). Auth Bearer CRON_SECRET.
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { appendEvent } from "@/lib/signatures/audit-chain";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -57,14 +58,14 @@ async function run() {
   };
 }
 
-export async function GET(req: Request) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const u = await authCheck(req);
   if (u) return u;
   return NextResponse.json(await run());
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const u = await authCheck(req);
   if (u) return u;
   return NextResponse.json(await run());
-}
+});

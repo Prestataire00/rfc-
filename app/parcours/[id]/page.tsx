@@ -14,6 +14,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { useApi, useApiMutation, invalidate } from "@/hooks/useApi";
 import { notify } from "@/lib/toast";
 import { ApiError } from "@/lib/fetcher";
@@ -207,6 +208,12 @@ export default function ParcoursDetailPage() {
 
   return (
     <div>
+      <Breadcrumb
+        items={[
+          { label: "Parcours", href: "/parcours" },
+          { label: parcours.nom || "Parcours" },
+        ]}
+      />
       <Link
         href="/parcours"
         className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-4"

@@ -2,9 +2,10 @@
 // Tente le retry de la finalisation Phase 4 (PDF stamp + TSA + certif + emails).
 // Spec §"Phase 4" + §"Cas d'erreur" (FreeTSA injoignable, fire-and-forget tué).
 // Auth via Bearer CRON_SECRET — appelé par .github/workflows/cron.yml.
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { finalizeSignatureRequest } from "@/lib/signatures/finalize";
+import { withErrorHandler } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -48,14 +49,14 @@ async function processStuckRequests(): Promise<{
 }
 
 // Accept GET (manual debug) et POST (GitHub Actions Scheduled standard).
-export async function GET(req: Request) {
+export const GET = withErrorHandler(async (req: NextRequest) => {
   const unauthorized = await authCheck(req);
   if (unauthorized) return unauthorized;
   return NextResponse.json(await processStuckRequests());
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withErrorHandler(async (req: NextRequest) => {
   const unauthorized = await authCheck(req);
   if (unauthorized) return unauthorized;
   return NextResponse.json(await processStuckRequests());
-}
+});

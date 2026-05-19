@@ -7,6 +7,7 @@ import { ArrowLeft, Star, User, BookOpen, Calendar, MessageSquare, CheckCircle, 
 import { EVALUATION_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { useApi, useApiMutation } from "@/hooks/useApi";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 type Evaluation = {
   id: string;
@@ -150,6 +151,12 @@ export default function EvaluationDetailPage() {
 
   return (
     <div className="max-w-4xl">
+      <Breadcrumb
+        items={[
+          { label: "Évaluations", href: "/evaluations" },
+          { label: typeLabel || "Évaluation" },
+        ]}
+      />
       <Link
         href="/evaluations"
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200 mb-6"

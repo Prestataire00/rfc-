@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { StatutBadge } from "@/components/shared/StatutBadge";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SESSION_STATUTS } from "@/lib/constants";
@@ -70,6 +71,12 @@ export default function LieuDetailPage() {
 
   return (
     <div className="p-6">
+      <Breadcrumb
+        items={[
+          { label: "Lieux de formation", href: "/lieux-formation" },
+          { label: lieu.nom || "Lieu" },
+        ]}
+      />
       <div className="mb-6">
         <Link href="/lieux-formation" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
           <ArrowLeft className="h-4 w-4" /> Retour aux lieux

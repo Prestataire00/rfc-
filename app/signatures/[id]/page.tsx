@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SignatureStatusBadge } from "@/components/signatures/SignatureStatusBadge";
 import { AuditLogViewer } from "@/components/signatures/AuditLogViewer";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 
 interface RequestDetail {
   id: string;
@@ -67,6 +68,12 @@ export default function DetailPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
+      <Breadcrumb
+        items={[
+          { label: "Signatures", href: "/signatures" },
+          { label: r.titre || "Demande" },
+        ]}
+      />
       <div className="mb-4">
         <Link href="/signatures" className="text-blue-600 text-sm">
           ← Liste des signatures

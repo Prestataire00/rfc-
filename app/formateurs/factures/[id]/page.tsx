@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { useApi, useApiMutation, invalidate } from "@/hooks/useApi";
 import { notify } from "@/lib/toast";
 import { ApiError } from "@/lib/fetcher";
@@ -136,6 +137,12 @@ export default function FactureFormateurDetailPage() {
 
   return (
     <div>
+      <Breadcrumb
+        items={[
+          { label: "Factures formateur", href: "/formateurs/factures" },
+          { label: facture.numero || "Facture" },
+        ]}
+      />
       <Link
         href="/formateurs/factures"
         className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mb-4"

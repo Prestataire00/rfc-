@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AIButton } from "@/components/shared/AIButton";
+import {
+  EntrepriseAutocomplete,
+  type EntrepriseGouv,
+} from "@/components/shared/EntrepriseAutocomplete";
 import { notify } from "@/lib/toast";
 import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
@@ -81,47 +85,6 @@ const MATERIEL = [
   { key: "videoprojecteur", label: "Videoprojecteur" },
   { key: "paperboard", label: "Paperboard" },
 ];
-
-// ---------------------------------------------------------------------------
-// Types API gouv (amélioration #4)
-// ---------------------------------------------------------------------------
-
-type EntrepriseGouv = {
-  siren: string;
-  nom_raison_sociale: string;
-  siege: {
-    siret: string;
-    adresse: string;
-    code_postal: string;
-    libelle_commune: string;
-    activite_principale: string;
-  };
-  tranche_effectif_salarie?: string;
-};
-
-// Debounce hook
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
-
-// Recherche entreprise API gouv (amélioration #4)
-async function searchEntrepriseGouv(query: string): Promise<EntrepriseGouv[]> {
-  if (!query || query.trim().length < 2) return [];
-  try {
-    const url = `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(query.trim())}&page=1&per_page=8`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.results || [];
-  } catch {
-    return [];
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -214,13 +177,8 @@ export default function NouveauProspectPage() {
   const [selectedFormationLabel, setSelectedFormationLabel] = useState("");
   const formationRef = useRef<HTMLDivElement>(null);
 
-  // ---- SIRET / Entreprise gouv search (amélioration #4) ----
-  const [siretSearchQuery, setSiretSearchQuery] = useState("");
-  const [siretResults, setSiretResults] = useState<EntrepriseGouv[]>([]);
-  const [siretLoading, setSiretLoading] = useState(false);
-  const [siretDropdownOpen, setSiretDropdownOpen] = useState(false);
-  const siretRef = useRef<HTMLDivElement>(null);
-  const debouncedSiretQuery = useDebounce(siretSearchQuery, 300);
+  // Note : la recherche SIRET / nom via API gouv est encapsulée dans le
+  // composant <EntrepriseAutocomplete>. Voir handleEntrepriseGouvSelect.
 
   // ---- APIs ----
   const { data: entreprisesRaw } = useApi<EntrepriseOption[] | { entreprises: EntrepriseOption[] }>("/api/entreprises");
@@ -262,28 +220,11 @@ export default function NouveauProspectPage() {
     }));
   }, [entrepriseDetail]);
 
-  // Recherche API gouv au debounce (amélioration #4)
-  useEffect(() => {
-    if (!debouncedSiretQuery || debouncedSiretQuery.trim().length < 2) {
-      setSiretResults([]);
-      return;
-    }
-    setSiretLoading(true);
-    searchEntrepriseGouv(debouncedSiretQuery).then((results) => {
-      setSiretResults(results);
-      setSiretDropdownOpen(results.length > 0);
-      setSiretLoading(false);
-    });
-  }, [debouncedSiretQuery]);
-
-  // Fermer dropdowns au clic extérieur
+  // Fermer dropdown formation au clic extérieur
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (formationRef.current && !formationRef.current.contains(e.target as Node)) {
         setFormationDropdownOpen(false);
-      }
-      if (siretRef.current && !siretRef.current.contains(e.target as Node)) {
-        setSiretDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -334,7 +275,8 @@ export default function NouveauProspectPage() {
     setFormationDropdownOpen(false);
   }
 
-  // Auto-fill depuis API gouv (amélioration #4)
+  // Auto-fill depuis API gouv (amélioration #4) — callback du composant
+  // <EntrepriseAutocomplete>, qui gère lui-même la fermeture du dropdown.
   function handleEntrepriseGouvSelect(ent: EntrepriseGouv) {
     setForm((f) => ({
       ...f,
@@ -346,9 +288,6 @@ export default function NouveauProspectPage() {
       entrepriseSecteur: ent.siege?.activite_principale || f.entrepriseSecteur,
       entrepriseEffectif: f.entrepriseEffectif, // pas dans l'API gouv de manière fiable
     }));
-    setSiretSearchQuery("");
-    setSiretResults([]);
-    setSiretDropdownOpen(false);
   }
 
   // ---- Submit ----
@@ -705,55 +644,12 @@ export default function NouveauProspectPage() {
               /* Nouvelle entreprise/organisme */
               <>
                 {/* Recherche SIRET / nom API gouv (amélioration #4) */}
-                <div ref={siretRef} className="relative">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Rechercher par nom ou SIRET
                     <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">(auto-fill via API gouvernement)</span>
                   </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={siretSearchQuery}
-                      onChange={(e) => {
-                        setSiretSearchQuery(e.target.value);
-                        if (!e.target.value) setSiretDropdownOpen(false);
-                      }}
-                      placeholder="Ex : Bouygues, 12345678901234..."
-                      className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 pl-9 pr-8 text-sm"
-                    />
-                    {siretSearchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => { setSiretSearchQuery(""); setSiretResults([]); setSiretDropdownOpen(false); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                  {siretLoading && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Recherche en cours...</p>
-                  )}
-                  {siretDropdownOpen && siretResults.length > 0 && (
-                    <ul className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {siretResults.map((ent) => (
-                        <li key={ent.siren}>
-                          <button
-                            type="button"
-                            onClick={() => handleEntrepriseGouvSelect(ent)}
-                            className="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
-                          >
-                            <span className="font-medium text-gray-900 dark:text-gray-100">{ent.nom_raison_sociale}</span>
-                            <span className="text-gray-500 dark:text-gray-400 ml-2 text-xs">
-                              {ent.siege?.siret && `SIRET: ${ent.siege.siret}`}
-                              {ent.siege?.libelle_commune && ` — ${ent.siege.libelle_commune}`}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  <EntrepriseAutocomplete onSelect={handleEntrepriseGouvSelect} />
                 </div>
 
                 <div>

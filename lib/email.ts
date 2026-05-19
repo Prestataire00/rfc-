@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { escapeHtml } from "@/lib/html-escape";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -95,11 +96,19 @@ export function devisEmail(data: {
   pdfUrl: string;
   retourEmail?: string;
 }) {
-  const validiteText = data.devis.dateValidite
-    ? ` Ce devis est valable jusqu'au ${data.devis.dateValidite}.`
-    : "";
-  const retourText = data.retourEmail
-    ? `Une fois signé, vous pouvez nous le retourner à <a href="mailto:${data.retourEmail}" style="color: #dc2626;">${data.retourEmail}</a>.`
+  // Audit 2026-05-19 §P2 : escape HTML pour toutes les interpolations
+  // de données (nom/prénom/objet peuvent contenir < > & " '). URL et
+  // montant restent en raw (URL maîtrisée par notre code, montant = number).
+  const prenom = escapeHtml(data.contact.prenom);
+  const nom = escapeHtml(data.contact.nom);
+  const numero = escapeHtml(data.devis.numero);
+  const objet = escapeHtml(data.devis.objet);
+  const dateValidite = data.devis.dateValidite ? escapeHtml(data.devis.dateValidite) : "";
+  const retourEmail = data.retourEmail ? escapeHtml(data.retourEmail) : "";
+
+  const validiteText = dateValidite ? ` Ce devis est valable jusqu'au ${dateValidite}.` : "";
+  const retourText = retourEmail
+    ? `Une fois signé, vous pouvez nous le retourner à <a href="mailto:${retourEmail}" style="color: #dc2626;">${retourEmail}</a>.`
     : "Une fois signé, vous pouvez nous le retourner par email en réponse.";
 
   return {
@@ -111,10 +120,10 @@ export function devisEmail(data: {
           <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Devis à examiner</p>
         </div>
         <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-          <p>Bonjour <strong>${data.contact.prenom} ${data.contact.nom}</strong>,</p>
-          <p>Veuillez trouver ci-dessous notre devis <strong>${data.devis.numero}</strong> pour :</p>
+          <p>Bonjour <strong>${prenom} ${nom}</strong>,</p>
+          <p>Veuillez trouver ci-dessous notre devis <strong>${numero}</strong> pour :</p>
           <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 0; font-weight: bold; font-size: 16px;">${data.devis.objet}</p>
+            <p style="margin: 0; font-weight: bold; font-size: 16px;">${objet}</p>
             <p style="margin: 8px 0 0; color: #dc2626; font-size: 20px; font-weight: bold;">
               ${data.devis.montantTTC.toFixed(2)} EUR TTC
             </p>
@@ -146,6 +155,12 @@ export function factureEmail(data: {
   entreprise: { nom: string };
   facture: { numero: string; montantTTC: number; dateEcheance: string };
 }) {
+  // Audit 2026-05-19 §P2 : escape HTML interpolations
+  const destinataire = escapeHtml(data.destinataire.nom);
+  const entreprise = escapeHtml(data.entreprise.nom);
+  const numero = escapeHtml(data.facture.numero);
+  const dateEcheance = escapeHtml(data.facture.dateEcheance);
+
   return {
     subject: `Facture ${data.facture.numero} - ${data.entreprise.nom}`,
     html: `
@@ -155,15 +170,15 @@ export function factureEmail(data: {
           <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Nouvelle facture</p>
         </div>
         <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
-          <p>Bonjour <strong>${data.destinataire.nom}</strong>,</p>
-          <p>Veuillez trouver ci-joint la facture <strong>${data.facture.numero}</strong> :</p>
+          <p>Bonjour <strong>${destinataire}</strong>,</p>
+          <p>Veuillez trouver ci-joint la facture <strong>${numero}</strong> :</p>
           <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="margin: 0; font-weight: bold; font-size: 16px;">${data.entreprise.nom}</p>
+            <p style="margin: 0; font-weight: bold; font-size: 16px;">${entreprise}</p>
             <p style="margin: 8px 0 0; color: #2563eb; font-size: 20px; font-weight: bold;">
               ${data.facture.montantTTC.toFixed(2)} EUR TTC
             </p>
             <p style="margin: 8px 0 0; color: #64748b; font-size: 14px;">
-              À régler avant le ${data.facture.dateEcheance}
+              À régler avant le ${dateEcheance}
             </p>
           </div>
           <p>N'hésitez pas à nous contacter pour toute question.</p>

@@ -67,7 +67,9 @@ export default function DevisDetailPage() {
   const { trigger: deleteDevis, isMutating: deleting } = useApiMutation(`/api/devis/${id}`, "DELETE");
   const { trigger: updateDevis, isMutating: updatingStatut } = useApiMutation<{ statut: string }>(`/api/devis/${id}`, "PUT");
   const { trigger: dupliquerDevis, isMutating: duplicating } = useApiMutation<undefined, { id: string; numero: string }>(`/api/devis/${id}/dupliquer`, "POST");
-  const { trigger: sendEmail, isMutating: sending } = useApiMutation<{ devisId: string }, { skipped?: boolean }>("/api/email/devis", "POST");
+  // Workflow signature électronique : crée SignatureRequest auto + envoie
+  // lien magique /sign/[token] au contact du devis.
+  const { trigger: sendForSignature, isMutating: sending } = useApiMutation<undefined, { signatureRequestId: string; sentTo: string }>(`/api/devis/${id}/send-for-signature`, "POST");
   const { trigger: genererFacture, isMutating: generatingFacture } = useApiMutation<undefined, { id: string }>(`/api/devis/${id}/generer-facture`, "POST");
 
   const handleDelete = async () => {
@@ -100,10 +102,10 @@ export default function DevisDetailPage() {
 
   const handleSendEmail = async () => {
     try {
-      const data = await sendEmail({ devisId: id });
+      const data = await sendForSignature();
       setEmailOpen(false);
-      if (data?.skipped) { setEmailMsg("SMTP non configure"); notify.info("SMTP non configure"); }
-      else { setEmailMsg("Email envoye !"); notify.success("Devis envoye par email"); }
+      setEmailMsg(`Envoyé pour signature à ${data?.sentTo ?? "le contact"}`);
+      notify.success("Devis envoyé pour signature", `Lien envoyé à ${data?.sentTo ?? "le contact"}`);
       await mutate();
     } catch (err) {
       setEmailOpen(false);
@@ -190,7 +192,7 @@ export default function DevisDetailPage() {
                 onClick={() => setEmailOpen(true)}
                 className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
               >
-                <Mail className="h-4 w-4" /> Envoyer par email
+                <Mail className="h-4 w-4" /> Envoyer pour signature
               </button>
             )}
             <a
@@ -453,8 +455,8 @@ export default function DevisDetailPage() {
       <ConfirmDialog
         open={emailOpen}
         onOpenChange={setEmailOpen}
-        title={`Envoyer le devis ${devis.numero} ?`}
-        description={`Un email sera envoyé à ${devis.contact?.email}. Le statut passera automatiquement à "Envoyé".`}
+        title={`Envoyer le devis ${devis.numero} pour signature ?`}
+        description={`Un lien de signature électronique sera envoyé à ${devis.contact?.email}. Le statut passera à "Envoyé" et la demande liée se synchronisera automatiquement.`}
         onConfirm={handleSendEmail}
         loading={sending}
       />

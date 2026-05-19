@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { triggerAutomation } from "@/lib/automations-trigger";
 import { notifyAdmins } from "@/lib/notifications";
 import { logAction } from "@/lib/historique";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, generateNumero } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 
 /**
@@ -43,6 +43,40 @@ export async function syncDevisOnSignature(
     },
   });
 
+  // Auto-création facture brouillon depuis le devis signé.
+  // Cycle de vie : devis signé = engagement contractuel → la facture
+  // est l'étape suivante naturelle (à éditer/envoyer ensuite par l'admin).
+  // Idempotent : si une facture existe déjà sur ce devis, on ne refait rien.
+  let factureGeneree: { id: string; numero: string } | null = null;
+  try {
+    const existingFactures = await prisma.facture.findMany({
+      where: { devisId },
+      select: { id: true },
+    });
+    if (existingFactures.length === 0) {
+      const count = await prisma.facture.count();
+      const numero = generateNumero("FAC", count);
+      const dateEcheance = new Date();
+      dateEcheance.setDate(dateEcheance.getDate() + 30);
+      const created = await prisma.facture.create({
+        data: {
+          numero,
+          montantHT: devis.montantHT,
+          tauxTVA: devis.tauxTVA,
+          montantTTC: devis.montantTTC,
+          dateEcheance,
+          statut: "en_attente",
+          devisId: devis.id,
+          entrepriseId: devis.entrepriseId,
+        },
+        select: { id: true, numero: true },
+      });
+      factureGeneree = created;
+    }
+  } catch (err) {
+    logger.warn("devis-sync.auto-facture-failed", { error: String(err), devisId });
+  }
+
   // Sync Demande.statut → "accepte" (Gagné) + Contact.type → "client"
   // pour toutes les demandes liées à ce devis (1-N en pratique : généralement 1).
   try {
@@ -64,12 +98,30 @@ export async function syncDevisOnSignature(
     || (devis.contact ? `${devis.contact.prenom} ${devis.contact.nom}` : "Client");
 
   // Notification admin in-app
+  const factureMsg = factureGeneree
+    ? ` · Facture ${factureGeneree.numero} créée auto`
+    : "";
   await notifyAdmins({
     titre: "Devis signé électroniquement",
-    message: `${label} a signé ${devis.numero} (${formatCurrency(devis.montantTTC)})`,
+    message: `${label} a signé ${devis.numero} (${formatCurrency(devis.montantTTC)})${factureMsg}`,
     type: "success",
-    lien: `/commercial/devis/${devis.id}`,
+    lien: factureGeneree
+      ? `/commercial/factures/${factureGeneree.id}`
+      : `/commercial/devis/${devis.id}`,
   }).catch((err) => logger.warn("devis-sync.notify-failed", { error: String(err) }));
+
+  // Historique facture auto (séparé du log devis signé)
+  if (factureGeneree) {
+    await logAction({
+      action: "facture_generee_auto",
+      label: `Facture ${factureGeneree.numero} créée auto depuis devis ${devis.numero} signé`,
+      lien: `/commercial/factures/${factureGeneree.id}`,
+      entrepriseId: devis.entrepriseId ?? undefined,
+      contactId: devis.contactId ?? undefined,
+      devisId: devis.id,
+      factureId: factureGeneree.id,
+    }).catch((err) => logger.warn("devis-sync.log-facture-failed", { error: String(err) }));
+  }
 
   // Historique
   await logAction({

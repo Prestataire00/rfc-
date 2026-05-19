@@ -73,9 +73,18 @@ const adminApiPrefixes = [
   "/api/classes-virtuelles",
   "/api/competences",
   "/api/signature-requests",
+  "/api/signatures",
   "/api/pdf/template-preview",
-  "/api/projets",
   "/api/prospects",
+  // Routes financières (audit 2026-05-19 §2.1) — sinon un compte client/formateur
+  // peut lire/écrire des données financières d'autres entreprises (cross-tenant).
+  "/api/paiements",
+  "/api/transactions-bancaires",
+  "/api/echeanciers",
+  // /api/historique : accepte entrepriseId/contactId en query → admin-only
+  // pour empêcher l'énumération cross-tenant.
+  "/api/historique",
+  // "/api/projets" retiré : module Projet supprimé (commit 5fe601c).
   // "/api/pdf" (sauf template-preview) — accessible aux clients et formateurs authentifiés
 ];
 

@@ -48,23 +48,26 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: `Capacite insuffisante : ${capaciteRestante} places restantes` }, { status: 400 });
   }
 
-  // Creer les inscriptions (skip si deja inscrit)
-  const results = await Promise.all(
-    contactIds.map(async (contactId: string) => {
-      const existing = await prisma.inscription.findFirst({
-        where: { sessionId, contactId },
-      });
-      if (existing) return { contactId, status: "already_enrolled" };
+  // Creer les inscriptions (skip si deja inscrit) — 2 requetes au lieu de 2N.
+  // skipDuplicates s'appuie sur @@unique([contactId, sessionId]).
+  const dejaInscrits = await prisma.inscription.findMany({
+    where: { sessionId, contactId: { in: contactIds } },
+    select: { contactId: true },
+  });
+  const dejaInscritsSet = new Set(dejaInscrits.map((i) => i.contactId));
+  const aCreer = (contactIds as string[]).filter((id) => !dejaInscritsSet.has(id));
 
-      await prisma.inscription.create({
-        data: { sessionId, contactId, statut: "confirmee" },
-      });
-      return { contactId, status: "enrolled" };
-    })
-  );
+  const { count: enrolled } = await prisma.inscription.createMany({
+    data: aCreer.map((contactId) => ({ sessionId, contactId, statut: "confirmee" })),
+    skipDuplicates: true,
+  });
 
-  const enrolled = results.filter((r) => r.status === "enrolled").length;
-  const skipped = results.filter((r) => r.status === "already_enrolled").length;
+  // Statut par contact best-effort sur l'etat avant insertion (cf. sessions/[id]/inscriptions/lot).
+  const results = (contactIds as string[]).map((contactId) => ({
+    contactId,
+    status: dejaInscritsSet.has(contactId) ? "already_enrolled" : "enrolled",
+  }));
+  const skipped = contactIds.length - enrolled;
 
   return NextResponse.json({ enrolled, skipped, results });
 });

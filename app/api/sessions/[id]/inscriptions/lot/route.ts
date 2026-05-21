@@ -4,7 +4,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
-import { logger } from "@/lib/logger";
 
 const lotSchema = z.object({
   contactIds: z.array(z.string().min(1)).min(1, "Au moins un contact requis"),
@@ -35,28 +34,30 @@ export const POST = withErrorHandlerParams(async (
     );
   }
 
-  const results = await Promise.all(
-    contactIds.map(async (contactId) => {
-      const existing = await prisma.inscription.findFirst({
-        where: { sessionId: params.id, contactId },
-      });
-      if (existing) return { contactId, status: "already_enrolled" as const };
+  // 2 requêtes au total (au lieu de 2N) : 1 findMany pour l'état avant,
+  // 1 createMany pour insérer. skipDuplicates s'appuie sur @@unique([contactId, sessionId]).
+  const dejaInscrits = await prisma.inscription.findMany({
+    where: { sessionId: params.id, contactId: { in: contactIds } },
+    select: { contactId: true },
+  });
+  const dejaInscritsSet = new Set(dejaInscrits.map((i) => i.contactId));
+  const aCreer = contactIds.filter((id) => !dejaInscritsSet.has(id));
 
-      try {
-        await prisma.inscription.create({
-          data: { sessionId: params.id, contactId, statut },
-        });
-        return { contactId, status: "enrolled" as const };
-      } catch (err) {
-        logger.warn("inscription.lot_create_failed", { sessionId: params.id, contactId, error: String(err) });
-        return { contactId, status: "error" as const };
-      }
-    })
-  );
+  const { count: enrolled } = await prisma.inscription.createMany({
+    data: aCreer.map((contactId) => ({ sessionId: params.id, contactId, statut })),
+    skipDuplicates: true,
+  });
 
-  const enrolled = results.filter((r) => r.status === "enrolled").length;
-  const skipped = results.filter((r) => r.status === "already_enrolled").length;
-  const errors = results.filter((r) => r.status === "error").length;
+  // `enrolled` = vrai nombre inséré (createMany.count). Le statut par contact
+  // est best-effort sur l'état avant : une insertion concurrente entre les
+  // deux requêtes serait labellisée "enrolled" ici mais skippée par la base.
+  const results = contactIds.map((contactId) => ({
+    contactId,
+    status: dejaInscritsSet.has(contactId)
+      ? ("already_enrolled" as const)
+      : ("enrolled" as const),
+  }));
+  const skipped = contactIds.length - enrolled;
 
-  return NextResponse.json({ enrolled, skipped, errors, total: contactIds.length, results });
+  return NextResponse.json({ enrolled, skipped, errors: 0, total: contactIds.length, results });
 });

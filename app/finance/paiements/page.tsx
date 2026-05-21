@@ -227,6 +227,13 @@ export default function FinancePaiementsPage() {
               <Plus className="h-4 w-4" /> Enregistrer un paiement
             </Button>
           </div>
+          {(paiements ?? []).length === 0 ? (
+            <EmptyState
+              icon={CreditCard}
+              title="Aucun paiement enregistre"
+              description="Aucun paiement n'a encore ete enregistre. Utilisez le bouton ci-dessus pour en ajouter un."
+            />
+          ) : (
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -239,23 +246,7 @@ export default function FinancePaiementsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {(paiements ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <CreditCard className="h-8 w-8 text-gray-400 dark:text-gray-500" />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Aucun paiement enregistre</p>
-                        <button
-                          onClick={() => setOpenPaiement(true)}
-                          className="text-sm text-red-500 hover:text-red-400 font-medium"
-                        >
-                          Enregistrer un paiement
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  (paiements ?? []).map((p) => (
+                {(paiements ?? []).map((p) => (
                     <tr key={p.id} className="hover:bg-gray-750">
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(p.datePaiement)}</td>
                       <td className="px-4 py-3">
@@ -273,11 +264,11 @@ export default function FinancePaiementsPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500">{p.reference ?? "-"}</td>
                     </tr>
-                  ))
-                )}
+                  ))}
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 
@@ -373,6 +364,13 @@ export default function FinancePaiementsPage() {
           <p className="text-[11px] text-gray-500 mb-3">
             Note : la synchronisation Qonto sera disponible en Phase 4.
           </p>
+          {(transactions ?? []).length === 0 ? (
+            <EmptyState
+              icon={ArrowDownToLine}
+              title="Aucune transaction"
+              description="Aucune transaction bancaire enregistree. Utilisez le bouton ci-dessus pour en ajouter une."
+            />
+          ) : (
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -385,23 +383,7 @@ export default function FinancePaiementsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {(transactions ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <ArrowDownToLine className="h-8 w-8 text-gray-400 dark:text-gray-500" />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Aucune transaction</p>
-                        <button
-                          onClick={() => setOpenTx(true)}
-                          className="text-sm text-red-500 hover:text-red-400 font-medium"
-                        >
-                          Ajouter une transaction
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  (transactions ?? []).map((t) => (
+                {(transactions ?? []).map((t) => (
                     <tr key={t.id} className="hover:bg-gray-750">
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">
                         <Calendar className="h-3 w-3 inline mr-1 text-gray-500" />
@@ -432,11 +414,11 @@ export default function FinancePaiementsPage() {
                         )}
                       </td>
                     </tr>
-                  ))
-                )}
+                  ))}
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 

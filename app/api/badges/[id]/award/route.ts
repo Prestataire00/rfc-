@@ -4,14 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { escapeHtml } from "@/lib/html-escape";
+import { parseBody } from "@/lib/validations/helpers";
+import { badgeAwardSchema } from "@/lib/validations/badge";
 
 // POST /api/badges/[id]/award — attribuer le badge a un ou plusieurs contacts
 // Body: { contactIds: string[], sessionId?: string }
 export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const { contactIds, sessionId } = await req.json();
-  if (!Array.isArray(contactIds) || contactIds.length === 0) {
-    return NextResponse.json({ error: "contactIds requis" }, { status: 400 });
-  }
+  // Audit 2026-05-19 §2.6 : validation Zod du body (badgeAwardSchema).
+  const { contactIds, sessionId } = await parseBody(req, badgeAwardSchema);
 
   const badge = await prisma.digitalBadge.findUnique({ where: { id: params.id } });
   if (!badge) return NextResponse.json({ error: "Badge introuvable" }, { status: 404 });

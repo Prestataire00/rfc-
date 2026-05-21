@@ -1133,6 +1133,29 @@ model DocumentTemplate {
   generatedDocuments GeneratedDocument[]
 }
 
+// Modèles de documents générés par IA — l'admin décrit le document voulu
+// en langage naturel, Claude génère titre/introduction/corps/mentions +
+// détecte les variables {{xxx}}. Contrairement à DocumentTemplate (1 par
+// type figé), on peut en créer autant qu'on veut (courriers, attestations
+// custom, etc.). Rendu PDF via le template générique document-libre.
+model ModeleDocumentIA {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  nom         String   // libellé court du modèle
+  description String?  // description / prompt source ayant servi à la génération
+  titre       String   // titre affiché en haut du document
+  introduction String? // paragraphe d'intro (variables {{}} OK)
+  corps       String   // corps principal (variables {{}} OK, \n = saut de ligne)
+  mentions    String?  // pied de page / mentions légales
+  variables   String   @default("[]") // JSON : [{ nom, description }]
+  actif       Boolean  @default(true)
+
+  @@index([actif])
+  @@index([createdAt])
+}
+
 // ==================== MODELES DE MESSAGES ====================
 
 // Templates d'emails / documents parametrables. Chaque type a un template par defaut

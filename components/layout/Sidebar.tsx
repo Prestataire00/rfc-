@@ -9,7 +9,7 @@ import {
   FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
-  ListChecks, Wallet, Building2,
+  ListChecks, Wallet, Building2, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +65,7 @@ const adminGroups: NavGroup[] = [
       { href: "/evaluations", label: "Évaluations", icon: ClipboardList },
       { href: "/certifications", label: "Certifications", icon: Award },
       { href: "/documents", label: "Documents", icon: FolderOpen },
+      { href: "/documents/modeles", label: "Modèles IA", icon: Sparkles },
     ],
   },
 

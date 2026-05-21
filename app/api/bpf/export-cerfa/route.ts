@@ -13,6 +13,8 @@ import {
 } from "@/lib/pdf/templates";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { pdfResponse } from "@/lib/pdf/response";
+import { resolveBranding } from "@/lib/pdf/branding";
+import { getParametres } from "@/lib/parametres";
 
 /**
  * GET /api/bpf/export-cerfa?annee=2026
@@ -109,7 +111,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     pedagogique,
   };
 
-  const docDef = bpfCerfaPdf(input);
+  const docDef = bpfCerfaPdf(input, { branding: await resolveBranding(await getParametres()) });
   const buffer = await generatePdfBuffer(docDef);
 
   return pdfResponse(Buffer.from(buffer), `BPF-Cerfa-10443-17-${annee}`);

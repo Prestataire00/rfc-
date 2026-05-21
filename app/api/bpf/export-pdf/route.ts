@@ -5,6 +5,8 @@ import { bpfPdf } from "@/lib/pdf/templates";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { pdfResponse } from "@/lib/pdf/response";
 import { withErrorHandler } from "@/lib/api-wrapper";
+import { resolveBranding } from "@/lib/pdf/branding";
+import { getParametres } from "@/lib/parametres";
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const annee = Number(req.nextUrl.searchParams.get("annee")) || new Date().getFullYear();
@@ -55,7 +57,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       sessions: val.sessions,
       stagiaires: val.stagiaires,
     })),
-  });
+  }, { branding: await resolveBranding(await getParametres()) });
 
   const buffer = await generatePdfBuffer(docDef);
 

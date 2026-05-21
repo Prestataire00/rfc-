@@ -10,7 +10,7 @@
  * Réf : https://www.formulaires.service-public.fr/gf/cerfa_10443.do
  */
 
-import { COLORS, defaultStyles, fmtCurrency, footer, header } from "./shared";
+import { COLORS, defaultStyles, fmtCurrency, footer, header, type PdfBranding } from "./shared";
 
 export type BpfCerfaProduits = {
   // Cadre B (recettes) — montants HT
@@ -125,10 +125,10 @@ function pedRow(label: string, hStag: number) {
   ];
 }
 
-export function bpfCerfaPdf(data: BpfCerfaInput): any {
+export function bpfCerfaPdf(data: BpfCerfaInput, opts?: { branding?: PdfBranding }): any {
   return {
     content: [
-      ...header(`Cerfa 10443*17 — Année ${data.annee}`),
+      ...header(`Cerfa 10443*17 — Année ${data.annee}`, opts?.branding),
 
       {
         text: "Bilan Pédagogique et Financier",

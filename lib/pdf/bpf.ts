@@ -6,6 +6,7 @@ import {
   fmtDate,
   footer,
   header,
+  type PdfBranding,
 } from "./shared";
 
 // ==================== BILAN PEDAGOGIQUE ET FINANCIER ====================
@@ -26,10 +27,10 @@ export function bpfPdf(data: {
     ca: number;
   }[];
   parCategorie: { categorie: string; sessions: number; stagiaires: number }[];
-}): any {
+}, opts?: { branding?: PdfBranding }): any {
   return {
     content: [
-      ...header(`BPF ${data.annee}`),
+      ...header(`BPF ${data.annee}`, opts?.branding),
       { text: `Bilan Pédagogique et Financier - Année ${data.annee}`, style: "sectionTitle" },
       {
         columns: [

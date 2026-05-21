@@ -12,6 +12,10 @@ export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: 
       contacts: true,
       devis: { orderBy: { createdAt: "desc" }, include: { sessions: { select: { id: true } }, contact: { select: { email: true } } } },
       factures: { orderBy: { createdAt: "desc" } },
+      demandes: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, titre: true, statut: true, priorite: true, createdAt: true, nbStagiaires: true, devisId: true },
+      },
     },
   });
 
@@ -33,6 +37,8 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
     ville: parsed.ville || null,
     codePostal: parsed.codePostal || null,
     notes: parsed.notes || null,
+    effectif: parsed.effectif ?? null,
+    typeEntreprise: parsed.typeEntreprise ?? null,
   };
 
   const entreprise = await prisma.entreprise.update({

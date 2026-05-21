@@ -64,25 +64,57 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   if (shouldStream) {
     const encoder = new TextEncoder();
+    // Audit §P2 : timeout serveur sur le stream SSE. Sans borne, une connexion
+    // longue (ou un upstream qui ne se termine jamais) reste ouverte
+    // indéfiniment → risque DoS. Au-delà de 60s on abort l'appel SDK underlying
+    // et on ferme proprement le stream. Le timer est annulé dès que le cas
+    // nominal se termine, pour ne pas pénaliser les réponses courtes.
+    const STREAM_TIMEOUT_MS = 60_000;
     const stream = new ReadableStream({
       async start(controller) {
+        let timedOut = false;
+        let claudeStream: Awaited<ReturnType<typeof streamClaude>> | undefined;
+        const timeout = setTimeout(() => {
+          timedOut = true;
+          logger.warn("ai.chat.stream_timeout", { timeoutMs: STREAM_TIMEOUT_MS });
+          // Interrompt la requête HTTP underlying vers Anthropic.
+          try {
+            claudeStream?.abort();
+          } catch {
+            /* abort best-effort */
+          }
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Délai dépassé" })}\n\n`));
+            controller.close();
+          } catch {
+            /* stream déjà fermé */
+          }
+        }, STREAM_TIMEOUT_MS);
         try {
-          const claudeStream = await streamClaude(messages, systemPrompt);
+          claudeStream = await streamClaude(messages, systemPrompt);
           let buffer = "";
           for await (const event of claudeStream) {
+            if (timedOut) break;
             if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
               buffer += event.delta.text;
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: cleanAIResponse(buffer) })}\n\n`));
             }
           }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
+          if (!timedOut) {
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          }
         } catch (err) {
           // SSE error reporting : on enqueue un message d'erreur structure plutot que throw
           // (le throw casserait le stream sans atteindre le client).
-          logger.error("ai.chat.stream_failed", err);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Erreur" })}\n\n`));
-          controller.close();
+          // Si le timeout a déjà fermé le stream, on ne ré-enqueue rien.
+          if (!timedOut) {
+            logger.error("ai.chat.stream_failed", err);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Erreur" })}\n\n`));
+            controller.close();
+          }
+        } finally {
+          clearTimeout(timeout);
         }
       },
     });

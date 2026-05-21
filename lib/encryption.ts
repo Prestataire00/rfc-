@@ -58,7 +58,7 @@ export function decryptNSS(value: string | null | undefined): string | null {
     // on incrémente un compteur + log warn (échantillonné pour éviter le spam).
     _legacyDecryptCount++;
     if (_legacyDecryptCount === 1 || _legacyDecryptCount % 100 === 0) {
-      logger.warn("nss.legacy_plaintext_detected", {
+      logger.warn("encryption.nss_legacy_plaintext_read", {
         count: _legacyDecryptCount,
         hint: "Run scripts/migrate-legacy-nss.ts to encrypt remaining plaintext NSS",
       });

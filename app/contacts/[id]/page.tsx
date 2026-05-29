@@ -78,7 +78,7 @@ export default function ContactDetailPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Erreur génération");
-      notify.success("Devis brouillon généré par l'IA");
+      notify.success("Devis brouillon généré");
       await refreshContact();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Impossible de générer le devis";

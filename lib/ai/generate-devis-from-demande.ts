@@ -122,7 +122,7 @@ export async function generateDevisFromDemandeWithAI(
         // entrepriseId nullable : stagiaire individuel n'a pas d'entreprise
         entrepriseId: demande.entrepriseId ?? null,
         contactId: demande.contactId,
-        notes: `Devis brouillon généré par IA depuis la Demande #${demande.id}.\n\nJustification IA : ${aiOutput.rationale}`,
+        notes: `Devis brouillon généré depuis la Demande #${demande.id}.\n\nJustification : ${aiOutput.rationale}`,
         lignes: {
           create: aiOutput.lignes.map((l) => ({
             designation: l.designation,
@@ -144,7 +144,7 @@ export async function generateDevisFromDemandeWithAI(
   // Notif + log (hors transaction)
   const clientLabel = demande.entreprise?.nom || (demande.contact ? `${demande.contact.prenom} ${demande.contact.nom}` : "Client");
   await notifyAdmins({
-    titre: "Devis brouillon généré par IA",
+    titre: "Devis brouillon généré",
     message: `${clientLabel} — ${numero} (${formatCurrency(montantTTC)}) à réviser avant envoi`,
     type: "info",
     lien: `/commercial/devis/${result.devisId}`,
@@ -152,7 +152,7 @@ export async function generateDevisFromDemandeWithAI(
 
   await logAction({
     action: "devis_genere_ia",
-    label: `Devis ${numero} généré par IA depuis demande #${demande.id}`,
+    label: `Devis ${numero} généré depuis demande #${demande.id}`,
     lien: `/commercial/devis/${result.devisId}`,
     entrepriseId: demande.entrepriseId ?? undefined,
     contactId: demande.contactId ?? undefined,

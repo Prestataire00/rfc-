@@ -234,7 +234,7 @@ export default function ProspectDetailPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Erreur génération");
       await mutate();
-      notify.success("Devis brouillon généré par l'IA");
+      notify.success("Devis brouillon généré");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Impossible de générer le devis";
       notify.error(msg);
@@ -296,7 +296,7 @@ export default function ProspectDetailPage() {
       await mutate();
 
       if (json.ai?.generated === true) {
-        notify.success("Devis brouillon généré par l'IA");
+        notify.success("Devis brouillon généré");
       } else if (json.ai?.generated === false) {
         notify.error("Statut mis à jour, mais l'IA n'a pas pu générer le devis", json.ai.error);
       } else {

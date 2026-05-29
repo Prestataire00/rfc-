@@ -29,7 +29,7 @@ const PRIO_OPTIONS = ["basse", "moyenne", "haute", "urgente"] as const;
 export function GenerateTasksModal({ projetId, onClose, onCreated }: Props) {
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<EditableSuggestion[]>([]);
-  const [listNom, setListNom] = useState("Tâches générées par IA");
+  const [listNom, setListNom] = useState("Tâches générées");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -91,7 +91,7 @@ export function GenerateTasksModal({ projetId, onClose, onCreated }: Props) {
       const res = await fetch(`/api/projets/${projetId}/taches/generate/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listNom: listNom.trim() || "Tâches générées par IA", items }),
+        body: JSON.stringify({ listNom: listNom.trim() || "Tâches générées", items }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

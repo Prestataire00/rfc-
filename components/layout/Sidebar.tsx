@@ -9,20 +9,35 @@ import {
   FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
-  ListChecks, Wallet, Building2, Sparkles,
+  ListChecks, Wallet, Building2, Sparkles, Layers, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NavItem = { href: string; label: string; icon: React.ElementType };
-type NavItemWithSub = NavItem & { children?: NavItem[] };
+type NavLink = { href: string; label: string; icon: React.ElementType };
+
+// Sous-section non cliquable utilisée pour regrouper plusieurs NavLink
+// au sein d'un même flyout (ex: Formation > Qualiopi). Permet d'introduire
+// un niveau hiérarchique sans imposer un href au regroupement.
+type NavSection = {
+  kind: "section";
+  label: string;
+  icon: React.ElementType;
+  items: NavLink[];
+};
+
+type NavGroupItem = NavLink | NavSection;
 
 type NavGroup = {
   key: string;
   label: string;
   icon: React.ElementType;
   href?: string;
-  items?: NavItemWithSub[];
+  items?: NavGroupItem[];
 };
+
+function isSection(item: NavGroupItem): item is NavSection {
+  return "kind" in item && item.kind === "section";
+}
 
 // ── Admin : 4 modules métier + Admin minimal ────────────────────────────────
 // Cible architecture (cf. schémas Claude.ai 2026-05-17) :
@@ -50,22 +65,52 @@ const adminGroups: NavGroup[] = [
     ],
   },
 
-  // 3. Formation — cycle de vie complet (sessions + acteurs + qualité)
+  // 3. Formation — cycle de vie complet, 4 sous-sections pour découper les
+  // 10 items sans cognitive overload : Planification (quand/quoi) → Acteurs
+  // (qui) → Qualiopi (preuves conformité) → Documents (ressources produites).
   {
     key: "formation",
     label: "Formation",
     icon: BookOpen,
     items: [
-      { href: "/sessions", label: "Sessions", icon: CalendarDays },
-      { href: "/dashboard/planning", label: "Planning", icon: Calendar },
-      { href: "/formations", label: "Catalogue", icon: BookOpen },
-      { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
-      { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: UserCheck },
-      { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
-      { href: "/evaluations", label: "Évaluations", icon: ClipboardList },
-      { href: "/certifications", label: "Certifications", icon: Award },
-      { href: "/documents", label: "Documents", icon: FolderOpen },
-      { href: "/documents/modeles", label: "Modèles IA", icon: Sparkles },
+      {
+        kind: "section",
+        label: "Planification",
+        icon: CalendarDays,
+        items: [
+          { href: "/sessions", label: "Sessions", icon: CalendarDays },
+          { href: "/dashboard/planning", label: "Planning", icon: Calendar },
+          { href: "/formations", label: "Catalogue", icon: BookOpen },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Acteurs",
+        icon: Users,
+        items: [
+          { href: "/formateurs", label: "Formateurs", icon: GraduationCap },
+          { href: "/contacts?type=stagiaire", label: "Stagiaires", icon: UserCheck },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Qualiopi",
+        icon: ShieldCheck,
+        items: [
+          { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
+          { href: "/evaluations", label: "Évaluations", icon: ClipboardList },
+          { href: "/certifications", label: "Certifications", icon: Award },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Documents",
+        icon: FolderOpen,
+        items: [
+          { href: "/documents", label: "Documents", icon: FolderOpen },
+          { href: "/documents/modeles", label: "Modèles IA", icon: Sparkles },
+        ],
+      },
     ],
   },
 
@@ -89,16 +134,31 @@ const adminGroups: NavGroup[] = [
 const formateurGroups: NavGroup[] = [
   { key: "accueil", label: "Accueil", icon: LayoutDashboard, href: "/espace-formateur" },
 
-  // Activité pédagogique (mes interventions)
+  // Activité pédagogique (mes interventions) — 2 sous-sections : ce qui
+  // structure ma semaine (Planning) vs ce que j'exécute (Pédagogie).
   {
     key: "activite",
     label: "Activité",
     icon: Calendar,
     items: [
-      { href: "/espace-formateur/planning", label: "Mon planning", icon: Calendar },
-      { href: "/espace-formateur/disponibilites", label: "Disponibilités", icon: CalendarDays },
-      { href: "/espace-formateur/sessions", label: "Mes sessions", icon: BookOpen },
-      { href: "/espace-formateur/taches", label: "Mes tâches", icon: ListChecks },
+      {
+        kind: "section",
+        label: "Planning",
+        icon: Calendar,
+        items: [
+          { href: "/espace-formateur/planning", label: "Mon planning", icon: Calendar },
+          { href: "/espace-formateur/disponibilites", label: "Disponibilités", icon: CalendarDays },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Pédagogie",
+        icon: Layers,
+        items: [
+          { href: "/espace-formateur/sessions", label: "Mes sessions", icon: BookOpen },
+          { href: "/espace-formateur/taches", label: "Mes tâches", icon: ListChecks },
+        ],
+      },
     ],
   },
 
@@ -185,6 +245,17 @@ const roleLabels: Record<string, string> = {
 
 const DASHBOARDS = new Set(["/dashboard", "/espace-formateur", "/espace-client"]);
 
+// Aplatit les items d'un groupe en NavLink, en dépliant les NavSection.
+function flattenLinks(items: NavGroupItem[] | undefined): NavLink[] {
+  if (!items) return [];
+  const out: NavLink[] = [];
+  for (const it of items) {
+    if (isSection(it)) out.push(...it.items);
+    else out.push(it);
+  }
+  return out;
+}
+
 export function Sidebar({
   role,
   userName,
@@ -217,23 +288,22 @@ export function Sidebar({
       return pathname === basePath && currentType === linkType;
     }
 
-    // Si l'item a des children avec query params, il n'est actif que si AUCUN type n'est filtré
-    const allItems = groups.flatMap((g) => g.items ?? []);
-    const hasQueryChildren = allItems.some(
-      (i) => i.children?.some((c) => c.href === href) && i.children?.some((c) => c.href.includes("?")),
+    // Si un autre lien du même basePath filtre par ?type=, cet item "sans query"
+    // n'est actif que si AUCUN type n'est filtré (ex: /contacts vs /contacts?type=stagiaire).
+    const allLinks = groups.flatMap((g) => flattenLinks(g.items));
+    const hasQuerySibling = allLinks.some(
+      (l) => l.href !== href && l.href.startsWith(basePath + "?type="),
     );
-    if (hasQueryChildren) return pathname === basePath && !currentType;
+    if (hasQuerySibling) return pathname === basePath && !currentType;
 
     return pathname === basePath || pathname.startsWith(basePath + "/");
   };
 
-  // Groupe actif = celui dont une de ses entrées (ou children) match
+  // Groupe actif = celui dont au moins un lien (déplié) match l'URL courante.
   const activeGroupKey =
     groups.find((g) => {
       if (g.href) return isLinkActive(g.href);
-      return g.items?.some(
-        (i) => isLinkActive(i.href) || i.children?.some((c) => isLinkActive(c.href)),
-      );
+      return flattenLinks(g.items).some((l) => isLinkActive(l.href));
     })?.key ?? null;
 
   // Memo du dernier flyout pour éviter le flicker pendant l'animation de fermeture
@@ -438,65 +508,27 @@ function DesktopRail({
             </h3>
           </div>
 
-          {/* Sous-items */}
-          <ul className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto scrollbar-thin">
-            {flyoutGroup?.items?.map((item) => {
-              const Icon = item.icon;
-              const itemActive = isLinkActive(item.href);
-              return (
-                <li key={item.href + item.label}>
-                  <a
-                    href={item.href}
-                    onClick={(e) => handleNav(item.href, e)}
-                    className={cn(
-                      "group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition whitespace-nowrap",
-                      itemActive
-                        ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-medium"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition",
-                        itemActive
-                          ? "bg-red-600 text-white shadow-sm"
-                          : "bg-red-100/70 dark:bg-red-950/50 text-red-600 dark:text-red-400 group-hover:scale-105",
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="flex-1 truncate">{item.label}</span>
-                  </a>
-
-                  {/* Children indentés */}
-                  {item.children && (
-                    <ul className="ml-7 pl-3 border-l border-gray-200 dark:border-gray-800 space-y-0.5 mt-0.5 mb-1">
-                      {item.children.map((child) => {
-                        const ChildIcon = child.icon;
-                        const childActive = isLinkActive(child.href);
-                        return (
-                          <li key={child.href + child.label}>
-                            <a
-                              href={child.href}
-                              onClick={(e) => handleNav(child.href, e)}
-                              className={cn(
-                                "flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition whitespace-nowrap",
-                                childActive
-                                  ? "text-red-700 dark:text-red-300 font-medium"
-                                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800",
-                              )}
-                            >
-                              <ChildIcon className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{child.label}</span>
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
+          {/* Sous-items — sections (NavSection) ou liens directs (NavLink) */}
+          <ul className="flex-1 px-2 py-3 overflow-y-auto scrollbar-thin">
+            {flyoutGroup?.items?.map((item, idx) =>
+              isSection(item) ? (
+                <li key={`sec-${idx}-${item.label}`} className="pt-3 first:pt-0 mb-1">
+                  <div className="px-3 pb-1 flex items-center gap-1.5 text-[10px] tracking-wider uppercase text-gray-400 dark:text-gray-500 font-semibold">
+                    <item.icon className="w-3 h-3 opacity-70" />
+                    {item.label}
+                  </div>
+                  <ul className="space-y-0.5">
+                    {item.items.map((link) => (
+                      <FlyoutLink key={link.href + link.label} link={link} isLinkActive={isLinkActive} handleNav={handleNav} />
+                    ))}
+                  </ul>
                 </li>
-              );
-            })}
+              ) : (
+                <li key={item.href + item.label} className="space-y-0.5">
+                  <FlyoutLink link={item} isLinkActive={isLinkActive} handleNav={handleNav} />
+                </li>
+              ),
+            )}
           </ul>
 
           {/* Footer flyout — profil */}
@@ -590,59 +622,25 @@ function MobileDrawer({
                 {g.label}
               </p>
               <ul className="space-y-0.5">
-                {g.items?.map((item) => {
-                  const Icon = item.icon;
-                  const active = isLinkActive(item.href);
-                  return (
-                    <li key={item.href + item.label}>
-                      <a
-                        href={item.href}
-                        onClick={(e) => handleNav(item.href, e)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                          active
-                            ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-medium"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-                            active ? "bg-red-600 text-white" : "bg-red-100/70 dark:bg-red-950/50 text-red-600 dark:text-red-400",
-                          )}
-                        >
-                          <Icon className="w-3.5 h-3.5" />
-                        </span>
+                {g.items?.map((item, idx) =>
+                  isSection(item) ? (
+                    <li key={`sec-${idx}-${item.label}`} className="pt-2 first:pt-0">
+                      <div className="px-3 pb-1 flex items-center gap-1.5 text-[10px] tracking-wider uppercase text-gray-400 dark:text-gray-500 font-semibold">
+                        <item.icon className="w-3 h-3 opacity-70" />
                         {item.label}
-                      </a>
-                      {item.children && (
-                        <ul className="ml-7 pl-3 border-l border-gray-200 dark:border-gray-700 space-y-0.5 mt-0.5 mb-1">
-                          {item.children.map((c) => {
-                            const ChildIcon = c.icon;
-                            const ca = isLinkActive(c.href);
-                            return (
-                              <li key={c.href + c.label}>
-                                <a
-                                  href={c.href}
-                                  onClick={(e) => handleNav(c.href, e)}
-                                  className={cn(
-                                    "flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] transition-colors",
-                                    ca
-                                      ? "text-red-700 dark:text-red-300 font-medium"
-                                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800",
-                                  )}
-                                >
-                                  <ChildIcon className="w-3 h-3 shrink-0" />
-                                  <span>{c.label}</span>
-                                </a>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+                      </div>
+                      <ul className="space-y-0.5">
+                        {item.items.map((link) => (
+                          <MobileLink key={link.href + link.label} link={link} isLinkActive={isLinkActive} handleNav={handleNav} />
+                        ))}
+                      </ul>
                     </li>
-                  );
-                })}
+                  ) : (
+                    <li key={item.href + item.label}>
+                      <MobileLink link={item} isLinkActive={isLinkActive} handleNav={handleNav} />
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           );
@@ -663,5 +661,70 @@ function MobileDrawer({
         {/* Bouton de déconnexion retiré : disponible dans le header en haut à droite */}
       </div>
     </aside>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FlyoutLink / MobileLink — rendu d'un NavLink, factorisé pour gérer NavSection
+// ──────────────────────────────────────────────────────────────────────────────
+type LinkRenderProps = {
+  link: NavLink;
+  isLinkActive: (href: string) => boolean;
+  handleNav: (href: string, e: React.MouseEvent) => void;
+};
+
+function FlyoutLink({ link, isLinkActive, handleNav }: LinkRenderProps) {
+  const Icon = link.icon;
+  const active = isLinkActive(link.href);
+  return (
+    <a
+      href={link.href}
+      onClick={(e) => handleNav(link.href, e)}
+      className={cn(
+        "group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition whitespace-nowrap",
+        active
+          ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-medium"
+          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
+      )}
+    >
+      <span
+        className={cn(
+          "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition",
+          active
+            ? "bg-red-600 text-white shadow-sm"
+            : "bg-red-100/70 dark:bg-red-950/50 text-red-600 dark:text-red-400 group-hover:scale-105",
+        )}
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </span>
+      <span className="flex-1 truncate">{link.label}</span>
+    </a>
+  );
+}
+
+function MobileLink({ link, isLinkActive, handleNav }: LinkRenderProps) {
+  const Icon = link.icon;
+  const active = isLinkActive(link.href);
+  return (
+    <a
+      href={link.href}
+      onClick={(e) => handleNav(link.href, e)}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+        active
+          ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-medium"
+          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
+      )}
+    >
+      <span
+        className={cn(
+          "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+          active ? "bg-red-600 text-white" : "bg-red-100/70 dark:bg-red-950/50 text-red-600 dark:text-red-400",
+        )}
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </span>
+      {link.label}
+    </a>
   );
 }

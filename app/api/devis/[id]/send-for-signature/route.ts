@@ -180,9 +180,17 @@ export const POST = withErrorHandlerParams<{ id: string }>(
       },
     });
 
-    // 5. Upload le PDF dans le bucket
+    // 5. Upload le PDF dans le bucket — catché explicitement pour exposer
+    // le message en prod (le wrapper masque sinon en « Erreur serveur »).
+    // Si l'upload échoue, on nettoie la SignatureRequest orpheline créée à l'étape 4.
     const pdfPath = `${request.id}/original.pdf`;
-    await uploadSignatureFile(BUCKETS.ORIGINAL, pdfPath, pdfBuffer);
+    try {
+      await uploadSignatureFile(BUCKETS.ORIGINAL, pdfPath, pdfBuffer);
+    } catch (e) {
+      await prisma.signatureRequest.delete({ where: { id: request.id } }).catch(() => {});
+      const msg = e instanceof Error ? e.message : "Échec upload Supabase";
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
     request = await prisma.signatureRequest.update({
       where: { id: request.id },
       data: { originalFileUrl: pdfPath },

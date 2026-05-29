@@ -6,6 +6,39 @@ import { ArrowLeft, Save, Mail, RotateCcw, Eye, Pencil, CheckCircle2 } from "luc
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
 
+// ── HTML <-> texte simple ────────────────────────────────────────────────────
+// L'utilisateur édite en texte normal (paragraphes vides = saut de ligne).
+// On stocke en HTML en base pour compatibilité avec l'envoi email existant.
+// Le formatting riche (gras, italique, listes, liens stylés) n'est pas
+// préservé : ces templates restent volontairement simples — privilégier
+// la lisibilité du contenu sur la richesse typographique.
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<\/p\s*>/gi, "\n\n")
+    .replace(/<p[^>]*>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(div|h[1-6]|li|tr)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function textToHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const paragraphs = escaped.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  return paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br />")}</p>`).join("\n");
+}
+
 type Variable = { nom: string; description: string };
 type Template = {
   id: string;
@@ -49,7 +82,7 @@ export default function TemplatesMessagesPage() {
   useEffect(() => {
     if (selected) {
       setObjet(selected.objet);
-      setContenu(selected.contenu);
+      setContenu(htmlToText(selected.contenu));
     }
   }, [selectedId, selected]);
 
@@ -62,7 +95,7 @@ export default function TemplatesMessagesPage() {
         nom: selected.nom,
         description: selected.description,
         objet,
-        contenu,
+        contenu: textToHtml(contenu),
         actif: selected.actif,
       });
       setSaveMsg("Enregistré");
@@ -80,7 +113,7 @@ export default function TemplatesMessagesPage() {
     try {
       const tpl = await api.post<Template>(`/api/message-templates/${selected.id}`, { action: "reset" });
       setObjet(tpl.objet);
-      setContenu(tpl.contenu);
+      setContenu(htmlToText(tpl.contenu));
       setSaveMsg("Reinitialise");
       await mutateTemplates();
       setTimeout(() => setSaveMsg(""), 2500);
@@ -95,7 +128,8 @@ export default function TemplatesMessagesPage() {
     setContenu((prev) => prev + " " + tag);
   };
 
-  // Sample preview with placeholder values
+  // Sample preview with placeholder values — convertit d'abord le texte
+  // en HTML (même chemin qu'au save) puis substitue les variables.
   const previewHtml = useMemo(() => {
     if (!selected) return "";
     const sampleVars: Record<string, string> = {
@@ -108,7 +142,7 @@ export default function TemplatesMessagesPage() {
       "session.lieu": "12 avenue de la division Leclerc, 93350 Le Bourget",
       "lien": "https://exemple.com/lien-personnel",
     };
-    let html = contenu;
+    let html = textToHtml(contenu);
     html = html.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => sampleVars[k] ?? `[${k}]`);
     return html;
   }, [contenu, selected]);
@@ -226,16 +260,16 @@ export default function TemplatesMessagesPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Corps du message (HTML)</label>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Corps du message</label>
                     <textarea
                       value={contenu}
                       onChange={(e) => setContenu(e.target.value)}
                       rows={20}
-                      spellCheck={false}
-                      className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-xs text-gray-100 font-mono"
+                      className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-gray-100 leading-relaxed"
+                      placeholder="Écrivez votre message comme un email normal.&#10;&#10;Sautez une ligne pour commencer un nouveau paragraphe.&#10;Les variables {{xxx}} listées à droite seront remplacées à l'envoi."
                     />
                     <p className="text-[10px] text-gray-500 mt-1">
-                      HTML autorise. Utilisez les variables <code className="bg-gray-800 px-1 rounded">{"{{xxx}}"}</code> listees a droite.
+                      Texte normal — une ligne vide entre les paragraphes. Utilisez les variables <code className="bg-gray-800 px-1 rounded">{"{{xxx}}"}</code> listees a droite.
                     </p>
                   </div>
                 </div>

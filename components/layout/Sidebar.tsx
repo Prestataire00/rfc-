@@ -9,7 +9,7 @@ import {
   FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
-  ListChecks, Wallet, Building2, Layers, ShieldCheck,
+  ListChecks, Wallet, Building2, Layers, ShieldCheck, Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -108,7 +108,19 @@ const adminGroups: NavGroup[] = [
     ],
   },
 
-  // 4. BPF — agrégation annuelle Qualiopi (sortie réglementaire du flux)
+  // 4. Communication — modèles éditables (messages emails + documents PDF)
+  // historiquement enfouis dans /parametres ; surfacés ici car édités fréquemment.
+  {
+    key: "communication",
+    label: "Communication",
+    icon: MessageSquare,
+    items: [
+      { href: "/parametres/templates-messages", label: "Modèles de messages", icon: Mail },
+      { href: "/parametres/templates-documents", label: "Modèles de documents PDF", icon: FileText },
+    ],
+  },
+
+  // 5. BPF — agrégation annuelle Qualiopi (sortie réglementaire du flux)
   { key: "bpf", label: "BPF", icon: BarChart3, href: "/bpf" },
 
   // 5. Admin — outils système (paramètres, utilisateurs, automatisations)

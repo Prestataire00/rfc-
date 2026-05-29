@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus, ShieldCheck, Award, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus, ShieldCheck, Award, XCircle, Clock, Send } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { notify } from "@/lib/toast";
@@ -170,6 +170,23 @@ export default function DevisDetailPage() {
     }
   };
 
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const handleResendSignature = async (sigId: string) => {
+    if (!confirm("Renvoyer le lien de signature ? L'ancien lien sera invalidé et un nouveau message sera envoyé au signataire.")) return;
+    setResendingId(sigId);
+    try {
+      const res = await fetch(`/api/signature-requests/${sigId}/resend`, { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Échec du renvoi");
+      notify.success("Lien renvoyé", `Nouveau lien envoyé à ${json.sentTo}`);
+      await mutate();
+    } catch (err) {
+      notify.error("Erreur", err instanceof Error ? err.message : "Renvoi impossible");
+    } finally {
+      setResendingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -198,6 +215,13 @@ export default function DevisDetailPage() {
     (devis.statut === "signe" || devis.statut === "accepte") && !hasSession;
 
   const nextStatuts = Object.keys(DEVIS_STATUTS).filter((k) => k !== devis.statut);
+  // Si une demande de signature est déjà en cours (sent/viewed) on cache le
+  // bouton « Envoyer pour signature » du header — l'admin utilise « Renvoyer »
+  // sur la card Suivi signature (ne crée pas un doublon, juste un nouveau
+  // token pour le même signataire).
+  const hasActiveSignature = (devis.signatureRequests ?? []).some((s) =>
+    ["sent", "viewed"].includes(s.statut),
+  );
 
   return (
     <div>
@@ -230,7 +254,7 @@ export default function DevisDetailPage() {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex gap-2 flex-wrap justify-end">
-            {devis.contact?.email && (devis.statut === "brouillon" || devis.statut === "envoye") && (
+            {devis.contact?.email && !hasActiveSignature && (devis.statut === "brouillon" || devis.statut === "envoye") && (
               <button
                 onClick={() => setEmailOpen(true)}
                 className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
@@ -316,7 +340,13 @@ export default function DevisDetailPage() {
                   <Link href={`/contacts/${devis.contact.id}`} className="font-medium text-red-600 hover:underline">
                     {devis.contact.prenom} {devis.contact.nom}
                   </Link>
-                  <p className="text-gray-400 text-xs">{devis.contact.email}</p>
+                  <a
+                    href={`mailto:${devis.contact.email}`}
+                    className="block text-red-400 text-xs hover:underline"
+                    title={`Envoyer un email à ${devis.contact.email}`}
+                  >
+                    {devis.contact.email}
+                  </a>
                 </div>
               )}
               {devis.notes && (
@@ -362,7 +392,9 @@ export default function DevisDetailPage() {
                     color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
                   };
                   const canCancel = !["signed", "completed", "cancelled", "expired", "rejected"].includes(sig.statut);
+                  const canResend = ["sent", "viewed"].includes(sig.statut);
                   const isFinal = sig.statut === "signed" || sig.statut === "completed";
+                  const isResending = resendingId === sig.id;
                   return (
                     <div key={sig.id} className="rounded-md border border-gray-700 bg-gray-900/50 p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
@@ -375,8 +407,15 @@ export default function DevisDetailPage() {
                         </Link>
                       </div>
                       {sig.signataire && (
-                        <p className="text-xs text-gray-300 truncate" title={sig.signataire.email}>
-                          {sig.signataire.nom} <span className="text-gray-500">·</span> {sig.signataire.email}
+                        <p className="text-xs text-gray-300 truncate">
+                          {sig.signataire.nom} <span className="text-gray-500">·</span>{" "}
+                          <a
+                            href={`mailto:${sig.signataire.email}`}
+                            className="text-red-400 hover:underline"
+                            title={`Envoyer un email à ${sig.signataire.email}`}
+                          >
+                            {sig.signataire.email}
+                          </a>
                         </p>
                       )}
                       <ul className="text-[11px] text-gray-400 space-y-0.5">
@@ -401,7 +440,7 @@ export default function DevisDetailPage() {
                           </li>
                         )}
                       </ul>
-                      {(isFinal || canCancel) && (
+                      {(isFinal || canCancel || canResend) && (
                         <div className="flex flex-wrap gap-2 pt-1">
                           {isFinal && sig.signedFileUrl && (
                             <a
@@ -420,6 +459,15 @@ export default function DevisDetailPage() {
                             >
                               <ShieldCheck className="h-3 w-3" /> Certificat
                             </Link>
+                          )}
+                          {canResend && (
+                            <button
+                              onClick={() => handleResendSignature(sig.id)}
+                              disabled={isResending}
+                              className="inline-flex items-center gap-1 rounded-md border border-sky-700/50 bg-sky-900/20 px-2 py-1 text-[11px] text-sky-300 hover:bg-sky-900/40 disabled:opacity-50"
+                            >
+                              <Send className="h-3 w-3" /> {isResending ? "Renvoi…" : "Renvoyer"}
+                            </button>
                           )}
                           {canCancel && (
                             <button

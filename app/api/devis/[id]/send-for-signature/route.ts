@@ -230,14 +230,17 @@ async function handle(devisId: string, adminUserId: string): Promise<NextRespons
       payload: { originalFileSha256: sha256, originalPageCount: pageCount, sizeBytes: pdfBuffer.length },
     });
 
-    // 7. Zone signature par défaut : bas droite de la dernière page
+    // 7. Zone signature par défaut : bas droite de la dernière page.
     //    A4 portrait = 595×842 points (72 dpi). Zone 200×60 points.
+    //    Coords stockées en TOP-LEFT (cf. lib/signatures/zones.ts) :
+    //    y = pageHeight (842) − marge bas (60) − hauteur zone (60) = 722
+    //    → zone à 60 pts du bas, hors zone d'entête « DEVIS / Numéro / Date ».
     await prisma.signatureZone.create({
       data: {
         requestId: request.id,
         page: pageCount,
         x: 350,
-        y: 80,
+        y: 722,
         width: 200,
         height: 60,
         type: "signature",

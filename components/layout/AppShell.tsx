@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   "/legal/",
   "/rgpd/demande",
   "/qualite/share/",
+  "/sign/",                     // signature électronique publique (lien magique)
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

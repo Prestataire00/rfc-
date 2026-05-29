@@ -2,6 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 
+// Memoize pdfjs entre les mounts — évite de re-télécharger le bundle (~500 Ko)
+// si l'utilisateur navigue puis revient sur une vue contenant un PDF.
+let pdfjsPromise: Promise<typeof import("pdfjs-dist")> | null = null;
+async function loadPdfjs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import("pdfjs-dist").then((mod) => {
+      mod.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      return mod;
+    });
+  }
+  return pdfjsPromise;
+}
+
 /**
  * Rend un PDF page par page comme <canvas> via pdfjs-dist.
  *
@@ -30,16 +43,25 @@ interface Props {
 
 export function PdfViewer({ fileUrl, scale = 1.5, onPagesLoaded, children }: Props) {
   const [pages, setPages] = useState<PageInfo[]>([]);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cellRefs = useRef<Array<HTMLDivElement | null>>([]);
+  // Stocke onPagesLoaded en ref pour ne pas relancer toute la pipeline de
+  // render PDF à chaque re-render du parent qui changerait l'identité du callback.
+  const onPagesLoadedRef = useRef(onPagesLoaded);
+  onPagesLoadedRef.current = onPagesLoaded;
 
   useEffect(() => {
     let cancelled = false;
+    setPages([]);
+    setTotalPages(null);
+    setError(null);
     (async () => {
       try {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        const pdfjs = await loadPdfjs();
         const doc = await pdfjs.getDocument(fileUrl).promise;
+        if (cancelled) return;
+        setTotalPages(doc.numPages);
         const out: PageInfo[] = [];
         for (let i = 1; i <= doc.numPages; i++) {
           if (cancelled) return;
@@ -49,6 +71,7 @@ export function PdfViewer({ fileUrl, scale = 1.5, onPagesLoaded, children }: Pro
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           await page.render({ canvas, viewport }).promise;
+          if (cancelled) return;
           out.push({
             pageNumber: i,
             canvas,
@@ -56,11 +79,11 @@ export function PdfViewer({ fileUrl, scale = 1.5, onPagesLoaded, children }: Pro
             pageWidth: viewport.width,
             pageHeight: viewport.height,
           });
+          // Render progressif : l'utilisateur voit la page dès qu'elle est prête
+          // (copie pour ne pas muter le state précédent).
+          setPages([...out]);
         }
-        if (!cancelled) {
-          setPages(out);
-          onPagesLoaded?.(out.length, out);
-        }
+        if (!cancelled) onPagesLoadedRef.current?.(out.length, out);
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
       }
@@ -68,7 +91,7 @@ export function PdfViewer({ fileUrl, scale = 1.5, onPagesLoaded, children }: Pro
     return () => {
       cancelled = true;
     };
-  }, [fileUrl, scale, onPagesLoaded]);
+  }, [fileUrl, scale]);
 
   // Mount les canvases dans le DOM (impératif, car ils sont créés en JS).
   useEffect(() => {
@@ -110,7 +133,16 @@ export function PdfViewer({ fileUrl, scale = 1.5, onPagesLoaded, children }: Pro
         </div>
       ))}
       {pages.length === 0 && !error && (
-        <div className="p-8 text-gray-400 text-sm">Chargement du PDF…</div>
+        <div className="p-8 text-gray-400 text-sm flex items-center gap-3">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+          {totalPages ? `Chargement du PDF (0 / ${totalPages} pages)…` : "Chargement du PDF…"}
+        </div>
+      )}
+      {pages.length > 0 && totalPages !== null && pages.length < totalPages && (
+        <div className="p-2 text-center text-gray-500 text-xs flex items-center justify-center gap-2">
+          <div className="h-3 w-3 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+          Page {pages.length + 1} / {totalPages}…
+        </div>
       )}
     </div>
   );

@@ -557,13 +557,13 @@ export default function SessionDetailPage() {
         return (
           <div className="mb-6 space-y-2">
             {session.modeExpress && (
-              <div className="flex items-center gap-2 rounded-md border border-amber-700 bg-amber-900/20 px-4 py-2.5 text-sm text-amber-300">
+              <div className="flex items-center gap-2 rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-300">
                 <Zap className="h-4 w-4" />
                 <span>Session express : les automatisations temporelles sont desactivees, les fiches besoin sont marquees optionnelles.</span>
               </div>
             )}
             {hasRQTH && (
-              <div className="flex items-center gap-2 rounded-md border border-orange-700 bg-orange-900/20 px-4 py-2.5 text-sm text-orange-300">
+              <div className="flex items-center gap-2 rounded-md border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 px-4 py-2.5 text-sm text-orange-900 dark:text-orange-300">
                 <Accessibility className="h-4 w-4" />
                 <span><strong>Stagiaires RQTH</strong> identifies. Prevoir les amenagements pedagogiques dans la convention.</span>
               </div>

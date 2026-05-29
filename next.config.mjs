@@ -62,7 +62,10 @@ const nextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       `connect-src ${connectSrc.join(" ")}`,
-      "frame-ancestors 'none'",
+      // 'self' (au lieu de 'none') autorise les iframes same-origin —
+      // requis pour la preview PDF dans /documents et /commercial/devis.
+      // Clickjacking par tiers reste bloqué.
+      "frame-ancestors 'self'",
       "form-action 'self'",
       "base-uri 'self'",
       "object-src 'none'",
@@ -78,7 +81,9 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          { key: "X-Frame-Options", value: "DENY" },
+          // SAMEORIGIN (au lieu de DENY) : équivalent legacy de frame-ancestors 'self'
+          // — autorise les iframes same-origin pour les previews PDF.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {

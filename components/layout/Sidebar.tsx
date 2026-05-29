@@ -9,7 +9,7 @@ import {
   FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
-  ListChecks, Wallet, Building2, Layers, ShieldCheck, Mail,
+  ListChecks, Wallet, Building2, Layers, ShieldCheck, Mail, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -115,8 +115,24 @@ const adminGroups: NavGroup[] = [
     label: "Communication",
     icon: MessageSquare,
     items: [
-      { href: "/parametres/templates-messages", label: "Modèles de messages", icon: Mail },
-      { href: "/parametres/templates-documents", label: "Modèles de documents PDF", icon: FileText },
+      {
+        kind: "section",
+        label: "Modèles",
+        icon: FileText,
+        items: [
+          { href: "/parametres/templates-messages", label: "Messages email", icon: Mail },
+          { href: "/parametres/templates-documents", label: "Documents PDF", icon: FileText },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Historique",
+        icon: Clock,
+        items: [
+          { href: "/logs/emails", label: "Emails envoyés", icon: Mail },
+          { href: "/signatures", label: "Signatures", icon: ShieldCheck },
+        ],
+      },
     ],
   },
 

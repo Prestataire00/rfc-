@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { escapeHtml } from "@/lib/html-escape";
+import { prisma } from "@/lib/prisma";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -18,28 +19,90 @@ type EmailOptions = {
   subject: string;
   html: string;
   attachments?: { filename: string; content: Buffer | Uint8Array }[];
+  // Métadonnées optionnelles pour enrichir l'entrée LogEmail (rattachement
+  // aux fiches contact / session / template d'origine).
+  log?: {
+    templateId?: string | null;
+    sessionId?: string | null;
+    contactId?: string | null;
+  };
 };
 
-export async function sendEmail({ to, subject, html, attachments }: EmailOptions): Promise<{ skipped: boolean }> {
-  // Skip if SMTP not configured
+export async function sendEmail({ to, subject, html, attachments, log }: EmailOptions): Promise<{ skipped: boolean }> {
+  const meta = log ?? {};
+
+  // Skip if SMTP not configured — on logge quand même un essai pour traçabilité
+  // ("envoye" avec erreur explicite), sinon l'historique resterait vide en dev.
   if (!process.env.SMTP_USER) {
     console.log(`[EMAIL SKIP] SMTP non configure. To: ${to}, Subject: ${subject}`);
+    await logEmailEntry({
+      destinataire: to,
+      sujet: subject,
+      statut: "envoye",
+      messageId: null,
+      erreur: "SMTP non configuré (skip dev)",
+      ...meta,
+    });
     return { skipped: true };
   }
 
-  const result = await transporter.sendMail({
-    from: FROM,
-    to,
-    subject,
-    html,
-    attachments: attachments?.map((a) => ({
-      filename: a.filename,
-      content: Buffer.from(a.content),
-    })),
-  });
+  try {
+    const result = await transporter.sendMail({
+      from: FROM,
+      to,
+      subject,
+      html,
+      attachments: attachments?.map((a) => ({
+        filename: a.filename,
+        content: Buffer.from(a.content),
+      })),
+    });
 
-  console.log(`[EMAIL SENT] To: ${to}, Subject: ${subject}, MessageId: ${result.messageId}`);
-  return { skipped: false };
+    console.log(`[EMAIL SENT] To: ${to}, Subject: ${subject}, MessageId: ${result.messageId}`);
+    await logEmailEntry({
+      destinataire: to,
+      sujet: subject,
+      statut: "envoye",
+      messageId: result.messageId ?? null,
+      erreur: null,
+      ...meta,
+    });
+    return { skipped: false };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erreur SMTP inconnue";
+    console.error(`[EMAIL ERROR] To: ${to}, Subject: ${subject}, Error: ${message}`);
+    await logEmailEntry({
+      destinataire: to,
+      sujet: subject,
+      statut: "bounce",
+      messageId: null,
+      erreur: message,
+      ...meta,
+    });
+    throw err;
+  }
+}
+
+// Helper interne : crée une entrée LogEmail sans casser le flow d'envoi
+// si Prisma est indisponible. Le statut final peut être mis à jour
+// ultérieurement par le webhook Resend (livre / ouvert / clique / bounce).
+async function logEmailEntry(data: {
+  destinataire: string;
+  sujet: string;
+  statut: string;
+  messageId: string | null;
+  erreur: string | null;
+  templateId?: string | null;
+  sessionId?: string | null;
+  contactId?: string | null;
+}): Promise<void> {
+  try {
+    await prisma.logEmail.create({ data });
+  } catch (err) {
+    // Logging défensif : un échec d'écriture LogEmail ne doit jamais
+    // empêcher l'envoi de l'email.
+    console.warn("[EMAIL LOG WARN] Impossible d'écrire LogEmail :", err);
+  }
 }
 
 // ==================== EMAIL TEMPLATES ====================

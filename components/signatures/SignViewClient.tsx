@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PdfViewer } from "./PdfViewer";
 import { ZoneFiller } from "./ZoneFiller";
@@ -63,6 +63,18 @@ export function SignViewClient({
   const [cgvOk, setCgvOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Préchargement du PDF dès le mount : déclenche un fetch HTTP en parallèle
+  // au chargement de pdfjs-dist et au mount de PdfViewer. Quand PdfViewer
+  // appelle pdfjs.getDocument(fileUrl), la réponse est déjà en cache HTTP
+  // du navigateur (gain typique : 200-500ms sur lien magique froid).
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(fileUrl, { signal: ctrl.signal, cache: "force-cache" }).catch(() => {
+      // Échec silencieux : PdfViewer refera le fetch lui-même au pire.
+    });
+    return () => ctrl.abort();
+  }, [fileUrl]);
 
   const allRequiredFilled = zones
     .filter((z) => z.required)

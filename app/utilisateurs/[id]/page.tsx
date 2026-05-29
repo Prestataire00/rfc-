@@ -41,8 +41,19 @@ export default function UtilisateurDetailPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetMsg, setResetMsg] = useState("");
 
+  // Règles serveur (audit §2.4) : 12+ caractères avec min/maj/chiffre/spécial.
+  // Dupliquées ici pour validation live (UX) ; la source de vérité reste l'API.
+  const passwordChecks = [
+    { key: "len", label: "12 caractères ou plus", test: (p: string) => p.length >= 12 },
+    { key: "low", label: "au moins une minuscule", test: (p: string) => /[a-z]/.test(p) },
+    { key: "up", label: "au moins une majuscule", test: (p: string) => /[A-Z]/.test(p) },
+    { key: "num", label: "au moins un chiffre", test: (p: string) => /\d/.test(p) },
+    { key: "sym", label: "au moins un caractère spécial (!@#$…)", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+  ] as const;
+  const passwordValid = passwordChecks.every((c) => c.test(newPassword));
+
   const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 6) return;
+    if (!passwordValid) return;
     setResetMsg("");
     try {
       await resetPasswordTrigger({ password: newPassword });
@@ -54,7 +65,13 @@ export default function UtilisateurDetailPage() {
       }, 2000);
     } catch (err) {
       if (err instanceof ApiError) {
-        setResetMsg(err.message || "Erreur lors de la réinitialisation");
+        // L'API renvoie issues.password = string[] avec un message par règle violée.
+        const issues = (err.issues as { password?: string[] } | undefined)?.password;
+        if (issues && issues.length > 0) {
+          setResetMsg(issues.join(" · "));
+        } else {
+          setResetMsg(err.message || "Erreur lors de la réinitialisation");
+        }
       } else {
         setResetMsg("Erreur réseau");
       }
@@ -238,38 +255,60 @@ export default function UtilisateurDetailPage() {
 
       {/* Reset Password Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-red-600" />
               Réinitialiser le mot de passe
             </h3>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Pour {user.prenom} {user.nom}
             </p>
             <input
               type="password"
-              placeholder="Nouveau mot de passe (min. 6 car.)"
+              autoFocus
+              placeholder="Nouveau mot de passe"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border border-gray-600 bg-gray-700 text-gray-100 rounded-lg px-3 py-2 text-sm placeholder-gray-500"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500"
             />
+            {/* Checklist live des règles serveur — chaque ligne devient verte quand satisfaite */}
+            <ul className="space-y-1 text-xs">
+              {passwordChecks.map((c) => {
+                const ok = c.test(newPassword);
+                return (
+                  <li
+                    key={c.key}
+                    className={`flex items-center gap-2 ${
+                      newPassword === ""
+                        ? "text-gray-500 dark:text-gray-400"
+                        : ok
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    <span className="font-mono">{newPassword === "" ? "·" : ok ? "✓" : "✗"}</span>
+                    {c.label}
+                  </li>
+                );
+              })}
+            </ul>
             {resetMsg && (
-              <p className={`text-sm ${resetMsg.includes("succès") ? "text-green-400" : "text-red-400"}`}>
+              <p className={`text-sm ${resetMsg.includes("succès") ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
                 {resetMsg}
               </p>
             )}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowResetModal(false)}
-                className="px-4 py-2 text-sm text-gray-400 hover:bg-gray-700 rounded-lg"
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
                 Annuler
               </button>
               <button
                 onClick={handleResetPassword}
-                disabled={newPassword.length < 6 || resetting}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                disabled={!passwordValid || resetting}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resetting ? "En cours..." : "Confirmer"}
               </button>

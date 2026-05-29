@@ -163,8 +163,8 @@ export default function TemplatesMessagesPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <Link href="/parametres" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
-          <ArrowLeft className="h-4 w-4" /> Retour Parametres
+        <Link href="/documents" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
+          <ArrowLeft className="h-4 w-4" /> Retour Documents
         </Link>
         <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
           <Mail className="h-6 w-6 text-red-500" /> Modeles de messages

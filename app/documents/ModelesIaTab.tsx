@@ -8,7 +8,7 @@
 // la gestion documentaire en deux pages.
 
 import { useState } from "react";
-import { Sparkles, FileText, Download, Trash2, Save, Wand2 } from "lucide-react";
+import { Sparkles, FileText, Download, Trash2, Save, Wand2, Pencil, X, Send } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,40 @@ export function ModelesIaTab() {
   const [draft, setDraft] = useState<AiOutput | null>(null);
   const [nom, setNom] = useState("");
   const [saving, setSaving] = useState(false);
+  // editingId !== null → on édite un modèle existant (PUT au save) au lieu d'en créer un nouveau.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Modal « Générer pour un client » — id du modèle ciblé, null = fermé.
+  const [generatingForClientId, setGeneratingForClientId] = useState<string | null>(null);
+
+  const resetEditor = () => {
+    setDraft(null);
+    setNom("");
+    setDescription("");
+    setEditingId(null);
+  };
+
+  const handleEdit = (m: ModeleDocument) => {
+    setEditingId(m.id);
+    setNom(m.nom);
+    setDescription(m.description ?? "");
+    let parsedVars: Variable[] = [];
+    try {
+      parsedVars = JSON.parse(m.variables) as Variable[];
+    } catch {
+      parsedVars = [];
+    }
+    setDraft({
+      titre: m.titre,
+      introduction: m.introduction ?? "",
+      corps: m.corps,
+      mentions: m.mentions ?? "",
+      variables: parsedVars,
+    });
+    // Scroll vers le haut pour rendre l'éditeur visible
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   const handleGenerate = async () => {
     if (description.trim().length < 10) {
@@ -85,7 +119,7 @@ export function ModelesIaTab() {
     }
     setSaving(true);
     try {
-      await api.post("/api/modeles-document", {
+      const payload = {
         nom: nom.trim(),
         description: description.trim() || undefined,
         titre: draft.titre,
@@ -93,11 +127,15 @@ export function ModelesIaTab() {
         corps: draft.corps,
         mentions: draft.mentions || undefined,
         variables: draft.variables,
-      });
-      notify.success("Modele enregistre");
-      setDraft(null);
-      setNom("");
-      setDescription("");
+      };
+      if (editingId) {
+        await api.put(`/api/modeles-document/${editingId}`, payload);
+        notify.success("Modele mis a jour");
+      } else {
+        await api.post("/api/modeles-document", payload);
+        notify.success("Modele enregistre");
+      }
+      resetEditor();
       await mutate();
     } catch (err) {
       notify.error("Enregistrement impossible", err instanceof Error ? err.message : undefined);
@@ -186,15 +224,23 @@ export function ModelesIaTab() {
               <div className="mt-3 flex flex-wrap gap-3">
                 <Button onClick={handleSave} disabled={saving} className="gap-2">
                   <Save className="h-4 w-4" />
-                  {saving ? "Enregistrement..." : "Enregistrer le modele"}
+                  {saving ? "Enregistrement..." : editingId ? "Mettre a jour" : "Enregistrer le modele"}
                 </Button>
-                <Button variant="outline" onClick={() => { setDraft(null); setNom(""); }}>
-                  Annuler
+                <Button variant="outline" onClick={resetEditor}>
+                  <X className="h-4 w-4" /> Annuler
                 </Button>
               </div>
             </div>
           </div>
         </section>
+      )}
+
+      {/* Modal : générer le modèle pour un client précis */}
+      {generatingForClientId && (
+        <GenerateForClientModal
+          modele={modeles.find((m) => m.id === generatingForClientId) ?? null}
+          onClose={() => setGeneratingForClientId(null)}
+        />
       )}
 
       {/* Liste modeles */}
@@ -217,18 +263,33 @@ export function ModelesIaTab() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{m.titre}</p>
                 {m.description && <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-2 mb-2">{m.description}</p>}
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">Cree le {formatDate(m.createdAt)}</p>
-                <div className="mt-auto flex gap-2">
+                <div className="mt-auto flex flex-wrap gap-2">
                   <a
                     href={`/api/pdf/modele-document/${m.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1.5 transition-colors"
+                    className="inline-flex items-center justify-center gap-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1.5 transition-colors"
+                    title="Telecharger le modele en PDF (variables non substituees)"
                   >
-                    <Download className="h-3 w-3" /> Telecharger PDF
+                    <Download className="h-3 w-3" /> PDF
                   </a>
                   <button
+                    onClick={() => handleEdit(m)}
+                    className="inline-flex items-center justify-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs px-2 py-1.5 transition-colors"
+                    title="Modifier le modele"
+                  >
+                    <Pencil className="h-3 w-3" /> Modifier
+                  </button>
+                  <button
+                    onClick={() => setGeneratingForClientId(m.id)}
+                    className="inline-flex items-center justify-center gap-1 rounded-md border border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-950/30 text-xs px-2 py-1.5 transition-colors"
+                    title="Generer ce modele pour un client (substitution des variables)"
+                  >
+                    <Send className="h-3 w-3" /> Pour client
+                  </button>
+                  <button
                     onClick={() => handleDelete(m.id)}
-                    className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1.5 transition-colors"
+                    className="ml-auto inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 px-2 py-1.5 transition-colors"
                     title="Supprimer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -239,6 +300,158 @@ export function ModelesIaTab() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GenerateForClientModal — sélection d'un contact et téléchargement PDF
+// avec substitution des variables {{client.*}} / {{societe.*}} / {{entreprise.*}}.
+// ──────────────────────────────────────────────────────────────────────────────
+type ContactLite = {
+  id: string;
+  prenom: string;
+  nom: string;
+  email: string;
+  entreprise: { nom: string } | null;
+};
+
+function GenerateForClientModal({
+  modele,
+  onClose,
+}: {
+  modele: ModeleDocument | null;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const { data: contactsData, isLoading } = useApi<ContactLite[] | { data: ContactLite[] }>(
+    "/api/contacts?limit=200",
+  );
+
+  const contacts: ContactLite[] = Array.isArray(contactsData)
+    ? contactsData
+    : contactsData?.data ?? [];
+
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? contacts.filter((c) => {
+        const haystack = `${c.prenom} ${c.nom} ${c.email} ${c.entreprise?.nom ?? ""}`.toLowerCase();
+        return haystack.includes(q);
+      })
+    : contacts;
+
+  const handleGenerate = async (contactId: string) => {
+    if (!modele) return;
+    setGeneratingId(contactId);
+    try {
+      const res = await fetch(`/api/modeles-document/${modele.id}/render-for-contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Génération impossible");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const contact = contacts.find((c) => c.id === contactId);
+      const slug = contact ? `${contact.prenom}-${contact.nom}`.toLowerCase().replace(/\s+/g, "-") : "client";
+      a.download = `${modele.nom.toLowerCase().replace(/\s+/g, "-")}-${slug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      notify.success("PDF généré", `Document pour ${contact?.prenom} ${contact?.nom}`);
+      onClose();
+    } catch (err) {
+      notify.error("Erreur", err instanceof Error ? err.message : "Génération impossible");
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  if (!modele) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl flex flex-col max-h-[80vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            Générer « {modele.nom} » pour un client
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Les variables <code className="px-1 bg-gray-100 dark:bg-gray-900 rounded">{"{{client.*}}"}</code> /
+            {" "}<code className="px-1 bg-gray-100 dark:bg-gray-900 rounded">{"{{societe.*}}"}</code> seront remplies
+            depuis le contact sélectionné.
+          </p>
+        </div>
+        <div className="p-4">
+          <Input
+            type="search"
+            placeholder="Rechercher par nom, email ou entreprise…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
+          {isLoading ? (
+            <div className="py-8 text-center text-sm text-gray-500">Chargement des contacts…</div>
+          ) : filtered.length === 0 ? (
+            <div className="py-8 text-center text-sm text-gray-500">
+              {q ? "Aucun contact correspondant" : "Aucun contact disponible"}
+            </div>
+          ) : (
+            filtered.slice(0, 50).map((c) => {
+              const busy = generatingId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleGenerate(c.id)}
+                  disabled={!!generatingId}
+                  className="w-full text-left rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {c.prenom} {c.nom}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {c.email}
+                        {c.entreprise && <span className="text-gray-400"> · {c.entreprise.nom}</span>}
+                      </p>
+                    </div>
+                    <span className="text-xs text-red-500 shrink-0">
+                      {busy ? "Génération…" : "Télécharger"}
+                    </span>
+                  </div>
+                </button>
+              );
+            })
+          )}
+          {!isLoading && filtered.length > 50 && (
+            <p className="text-[11px] text-center text-gray-400 pt-2">
+              {filtered.length - 50} résultats supplémentaires — affinez la recherche.
+            </p>
+          )}
+        </div>
+        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Fermer
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

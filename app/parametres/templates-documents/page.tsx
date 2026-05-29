@@ -292,8 +292,8 @@ export default function TemplatesDocumentsPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <Link href="/parametres" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
-          <ArrowLeft className="h-4 w-4" /> Retour Parametres
+        <Link href="/documents" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 mb-4">
+          <ArrowLeft className="h-4 w-4" /> Retour Documents
         </Link>
         <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
           <FileText className="h-6 w-6 text-red-500" /> Modeles de documents PDF
@@ -301,6 +301,9 @@ export default function TemplatesDocumentsPage() {
         <p className="text-sm text-gray-400 mt-1">
           Personnalisez les textes des documents generes (convocation, convention, attestation, etc.).
           Le logo et les couleurs sont repris automatiquement des parametres entreprise.
+          <br />
+          Pour les modeles cr&eacute;&eacute;s avec l&apos;assistant g&eacute;n&eacute;ratif (courriers libres, factures de relance, etc.),
+          voir <Link href="/documents?tab=ia" className="text-red-500 hover:underline">Documents &rarr; Mod&egrave;les IA</Link>.
         </p>
       </div>
 

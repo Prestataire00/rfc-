@@ -43,7 +43,22 @@ export const POST = withErrorHandlerParams<{ id: string }>(
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const devisId = params.id;
+    // Route admin only → on expose le message d'erreur au lieu de laisser
+    // le wrapper le masquer en "Erreur serveur" générique. Le log structuré
+    // garde la stack trace côté serveur pour les logs Netlify.
+    try {
+      return await handle(params.id, session.user.id);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Erreur inconnue lors de l'envoi pour signature";
+      console.error("[send-for-signature]", { devisId: params.id, error: message, stack: e instanceof Error ? e.stack : undefined });
+      return NextResponse.json({ error: `Envoi pour signature : ${message}` }, { status: 500 });
+    }
+  },
+);
+
+async function handle(devisId: string, adminUserId: string): Promise<NextResponse> {
+    // Note : la fonction handle() conserve la logique d'origine — seule la
+    // récupération de adminUserId est passée en paramètre adminUserId.
 
     // 1. Charger le devis + ses dépendances
     const [devis, parametres] = await Promise.all([
@@ -187,7 +202,7 @@ export const POST = withErrorHandlerParams<{ id: string }>(
         originalFileSha256: sha256,
         originalFileSize: pdfBuffer.length,
         originalPageCount: pageCount,
-        createdByUserId: session.user.id,
+        createdByUserId: adminUserId,
       },
     });
 
@@ -211,7 +226,7 @@ export const POST = withErrorHandlerParams<{ id: string }>(
     await appendEvent(request.id, {
       type: "created",
       actorType: "admin",
-      actorId: session.user.id,
+      actorId: adminUserId,
       payload: { originalFileSha256: sha256, originalPageCount: pageCount, sizeBytes: pdfBuffer.length },
     });
 
@@ -258,15 +273,15 @@ export const POST = withErrorHandlerParams<{ id: string }>(
     const baseUrl = process.env.NEXTAUTH_URL ?? "https://projetrfc.netlify.app";
     const signUrl = `${baseUrl}/sign/${fullToken}`;
 
-    // session.user expose name + email (typage NextAuth). On résout les
-    // prénom/nom complets via la DB pour l'affichage expéditeur.
+    // Résout les prénom/nom complets via la DB pour l'affichage expéditeur ;
+    // fallback sur l'email puis sur le nom de l'organisation.
     const expediteurUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: adminUserId },
       select: { nom: true, prenom: true, email: true },
     });
     const expediteurNom = expediteurUser
       ? [expediteurUser.prenom, expediteurUser.nom].filter(Boolean).join(" ") || expediteurUser.email
-      : session.user.email || "Rescue Formation Conseil";
+      : "Rescue Formation Conseil";
 
     const html = await render(
       SignatureRequestEmail({
@@ -292,7 +307,7 @@ export const POST = withErrorHandlerParams<{ id: string }>(
     await appendEvent(request.id, {
       type: "sent",
       actorType: "admin",
-      actorId: session.user.id,
+      actorId: adminUserId,
       payload: { signataireEmail: signataire.email, expiresAt: expiresAt.toISOString() },
     });
 
@@ -333,5 +348,4 @@ export const POST = withErrorHandlerParams<{ id: string }>(
       sentTo: signataire.email,
       expiresAt,
     });
-  },
-);
+}

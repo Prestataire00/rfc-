@@ -70,20 +70,31 @@ export const POST = withErrorHandlerParams<{ id: string }>(
       );
     }
 
-    // Garde-fou : si une SignatureRequest non-finalisée existe déjà sur ce devis,
-    // on évite d'en créer une seconde. L'admin doit annuler la précédente d'abord.
-    const existing = await prisma.signatureRequest.findFirst({
+    // Garde-fou : on bloque uniquement si une SignatureRequest ACTIVE existe
+    // (envoyée au client, vue, etc.) — on ne veut pas créer un doublon en
+    // attente côté signataire. Les "draft" sont des orphelines d'essais
+    // n'ayant pas abouti à un upload : on les nettoie automatiquement.
+    const drafts = await prisma.signatureRequest.findMany({
+      where: { devisId, statut: "draft" },
+      select: { id: true },
+    });
+    if (drafts.length > 0) {
+      await prisma.signatureRequest.deleteMany({
+        where: { id: { in: drafts.map((d) => d.id) } },
+      });
+    }
+    const active = await prisma.signatureRequest.findFirst({
       where: {
         devisId,
-        statut: { in: ["draft", "ready", "sent", "viewed"] },
+        statut: { in: ["ready", "sent", "viewed"] },
       },
       select: { id: true, statut: true },
     });
-    if (existing) {
+    if (active) {
       return NextResponse.json(
         {
-          error: `Une demande de signature est déjà en cours pour ce devis (statut: ${existing.statut}). Annulez-la avant d'en créer une nouvelle.`,
-          existingRequestId: existing.id,
+          error: `Une demande de signature est déjà active pour ce devis (statut: ${active.statut}). Annulez-la avant d'en créer une nouvelle.`,
+          existingRequestId: active.id,
         },
         { status: 409 },
       );

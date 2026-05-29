@@ -590,6 +590,8 @@ export default function DevisDetailPage() {
         onOpenChange={setEmailOpen}
         title={`Envoyer le devis ${devis.numero} pour signature ?`}
         description={`Un lien de signature électronique sera envoyé à ${devis.contact?.email}. Le statut passera à "Envoyé" et la demande liée se synchronisera automatiquement.`}
+        confirmLabel="Envoyer"
+        variant="default"
         onConfirm={handleSendEmail}
         loading={sending}
       />

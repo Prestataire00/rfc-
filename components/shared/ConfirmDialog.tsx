@@ -11,6 +11,9 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   onConfirm: () => void;
   loading?: boolean;
+  // "destructive" (par défaut) pour les suppressions ; "default" pour les
+  // actions positives type envoyer/valider/confirmer (bouton non-rouge).
+  variant?: "destructive" | "default";
 }
 
 export function ConfirmDialog({
@@ -21,6 +24,7 @@ export function ConfirmDialog({
   confirmLabel = "Supprimer",
   onConfirm,
   loading,
+  variant = "destructive",
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,7 +38,7 @@ export function ConfirmDialog({
             Annuler
           </Button>
           <Button
-            variant="destructive"
+            variant={variant}
             onClick={onConfirm}
             disabled={loading}
           >

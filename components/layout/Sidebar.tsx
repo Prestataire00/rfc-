@@ -9,7 +9,7 @@ import {
   FileText, ClipboardList, BarChart3, Calendar, FolderOpen,
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
-  ListChecks, Wallet, Building2, Sparkles, Layers, ShieldCheck,
+  ListChecks, Wallet, Building2, Layers, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -102,15 +102,9 @@ const adminGroups: NavGroup[] = [
           { href: "/certifications", label: "Certifications", icon: Award },
         ],
       },
-      {
-        kind: "section",
-        label: "Documents",
-        icon: FolderOpen,
-        items: [
-          { href: "/documents", label: "Documents", icon: FolderOpen },
-          { href: "/documents/modeles", label: "Modèles IA", icon: Sparkles },
-        ],
-      },
+      // Documents = item plat : tout est unifié sur /documents (3 onglets :
+      // Uploadés / Modèles système / Modèles IA), pas besoin d'une sous-section.
+      { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },
 

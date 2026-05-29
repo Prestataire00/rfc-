@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { FolderOpen, FileText, Plus, Download, Trash2, Pencil, X, Check, Upload, Mail, Eye, LayoutTemplate } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { FolderOpen, FileText, Plus, Download, Trash2, Pencil, X, Check, Upload, Mail, Eye, LayoutTemplate, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,9 @@ import { Label } from "@/components/ui/label";
 import { formatDate } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
+import { ModelesIaTab } from "./ModelesIaTab";
+
+type DocsTab = "uploads" | "modeles" | "ia";
 
 type MessageTemplate = {
   id: string;
@@ -58,7 +62,14 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function DocumentsPage() {
-  const [tab, setTab] = useState<"uploads" | "modeles">("uploads");
+  // Onglet initial pilotable via ?tab=ia|modeles|uploads — utilisé par
+  // l'ancienne route /documents/modeles qui redirige vers ?tab=ia.
+  const searchParams = useSearchParams();
+  const initialTab: DocsTab = (() => {
+    const t = searchParams.get("tab");
+    return t === "ia" || t === "modeles" ? t : "uploads";
+  })();
+  const [tab, setTab] = useState<DocsTab>(initialTab);
   const [filterType, setFilterType] = useState("");
 
   const [preview, setPreview] = useState<
@@ -173,29 +184,18 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <PageHeader title="Documents" description="Gestion centralisée des documents et des modeles" />
+      <PageHeader title="Documents" description="Gestion centralisée des documents, modèles système et modèles IA" />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-700 mb-6">
-        <button
-          onClick={() => setTab("uploads")}
-          className={`flex items-center gap-1.5 px-4 pb-2 pt-1 text-sm font-medium border-b-2 transition-colors ${
-            tab === "uploads" ? "border-red-600 text-red-500" : "border-transparent text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          <FolderOpen className="h-4 w-4" /> Documents uploades
-        </button>
-        <button
-          onClick={() => setTab("modeles")}
-          className={`flex items-center gap-1.5 px-4 pb-2 pt-1 text-sm font-medium border-b-2 transition-colors ${
-            tab === "modeles" ? "border-red-600 text-red-500" : "border-transparent text-gray-400 hover:text-gray-300"
-          }`}
-        >
-          <LayoutTemplate className="h-4 w-4" /> Modeles
-        </button>
+      <div className="flex gap-1 border-b border-gray-700 mb-6 overflow-x-auto">
+        <TabButton active={tab === "uploads"} onClick={() => setTab("uploads")} icon={FolderOpen} label="Documents uploadés" />
+        <TabButton active={tab === "modeles"} onClick={() => setTab("modeles")} icon={LayoutTemplate} label="Modèles système" />
+        <TabButton active={tab === "ia"} onClick={() => setTab("ia")} icon={Sparkles} label="Modèles IA" />
       </div>
 
-      {tab === "modeles" ? (
+      {tab === "ia" ? (
+        <ModelesIaTab />
+      ) : tab === "modeles" ? (
         <ModelesView
           messageTemplates={messageTemplates}
           documentTemplates={documentTemplates}
@@ -489,6 +489,22 @@ export default function DocumentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ==================== TAB BUTTON ====================
+function TabButton({
+  active, onClick, icon: Icon, label,
+}: { active: boolean; onClick: () => void; icon: React.ElementType; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-4 pb-2 pt-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+        active ? "border-red-600 text-red-500" : "border-transparent text-gray-400 hover:text-gray-300"
+      }`}
+    >
+      <Icon className="h-4 w-4" /> {label}
+    </button>
   );
 }
 

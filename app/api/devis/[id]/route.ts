@@ -9,18 +9,40 @@ import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
-  const devis = await prisma.devis.findUnique({
-    where: { id: params.id },
-    include: {
-      lignes: true,
-      entreprise: true,
-      contact: true,
-      factures: true,
-      sessions: { select: { id: true, dateDebut: true, dateFin: true, statut: true } },
-    },
-  });
+  // SignatureRequest <-> Devis = FK soft (cf. prisma/schema.prisma) → 2 requêtes
+  // au lieu d'un include. Coût marginal (idx sur devisId), gain : pas de
+  // couplage Prisma agressif et fiche devis enrichie du suivi signature.
+  const [devis, signatureRequests] = await Promise.all([
+    prisma.devis.findUnique({
+      where: { id: params.id },
+      include: {
+        lignes: true,
+        entreprise: true,
+        contact: true,
+        factures: true,
+        sessions: { select: { id: true, dateDebut: true, dateFin: true, statut: true } },
+      },
+    }),
+    prisma.signatureRequest.findMany({
+      where: { devisId: params.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        statut: true,
+        createdAt: true,
+        sentAt: true,
+        viewedAt: true,
+        signedAt: true,
+        completedAt: true,
+        expiresAt: true,
+        signedFileUrl: true,
+        certificateUrl: true,
+        signataire: { select: { email: true, nom: true, statut: true } },
+      },
+    }),
+  ]);
   if (!devis) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
-  return NextResponse.json(devis);
+  return NextResponse.json({ ...devis, signatureRequests });
 });
 
 export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: { params: { id: string } }) => {

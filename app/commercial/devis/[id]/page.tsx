@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus, ShieldCheck, Award, XCircle, Clock } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { notify } from "@/lib/toast";
@@ -37,6 +37,20 @@ type Session = {
   statut: string;
 };
 
+type SignatureRequestSummary = {
+  id: string;
+  statut: string;
+  createdAt: string;
+  sentAt: string | null;
+  viewedAt: string | null;
+  signedAt: string | null;
+  completedAt: string | null;
+  expiresAt: string | null;
+  signedFileUrl: string | null;
+  certificateUrl: string | null;
+  signataire: { email: string; nom: string; statut: string } | null;
+};
+
 type Devis = {
   id: string;
   numero: string;
@@ -53,6 +67,20 @@ type Devis = {
   lignes: LigneDevis[];
   factures: Facture[];
   sessions: Session[];
+  signatureRequests: SignatureRequestSummary[];
+};
+
+// Badge couleur par statut SignatureRequest — aligné sur DEVIS_STATUTS visuel.
+const SIG_STATUT_BADGES: Record<string, { label: string; color: string }> = {
+  draft: { label: "Brouillon", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+  ready: { label: "Prêt", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+  sent: { label: "Envoyé", color: "bg-sky-500/20 text-sky-400 border-sky-500/30" },
+  viewed: { label: "Vu", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+  signed: { label: "Signé", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  completed: { label: "Finalisé", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+  expired: { label: "Expiré", color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+  cancelled: { label: "Annulé", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+  rejected: { label: "Refusé", color: "bg-red-500/20 text-red-400 border-red-500/30" },
 };
 
 export default function DevisDetailPage() {
@@ -124,6 +152,21 @@ export default function DevisDetailPage() {
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "Erreur lors de la génération de la facture";
       setGenError(msg);
+    }
+  };
+
+  const handleCancelSignature = async (sigId: string) => {
+    if (!confirm("Annuler cette demande de signature ? Le lien envoyé au signataire sera invalidé.")) return;
+    try {
+      const res = await fetch(`/api/signature-requests/${sigId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Échec de l'annulation");
+      }
+      notify.success("Demande de signature annulée");
+      await mutate();
+    } catch (err) {
+      notify.error("Erreur", err instanceof Error ? err.message : "Annulation impossible");
     }
   };
 
@@ -304,6 +347,96 @@ export default function DevisDetailPage() {
               })}
             </div>
           </div>
+
+          {/* Suivi signature électronique — affichée seulement si au moins une demande existe */}
+          {devis.signatureRequests && devis.signatureRequests.length > 0 && (
+            <div className="rounded-lg border bg-gray-800 p-4 space-y-3">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-red-500" />
+                Suivi signature
+              </h2>
+              <div className="space-y-3">
+                {devis.signatureRequests.map((sig) => {
+                  const badge = SIG_STATUT_BADGES[sig.statut] ?? {
+                    label: sig.statut,
+                    color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+                  };
+                  const canCancel = !["signed", "completed", "cancelled", "expired", "rejected"].includes(sig.statut);
+                  const isFinal = sig.statut === "signed" || sig.statut === "completed";
+                  return (
+                    <div key={sig.id} className="rounded-md border border-gray-700 bg-gray-900/50 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <StatutBadge label={badge.label} color={badge.color} />
+                        <Link
+                          href={`/signatures/${sig.id}`}
+                          className="text-[11px] text-gray-400 hover:text-red-400 hover:underline"
+                        >
+                          Voir détail
+                        </Link>
+                      </div>
+                      {sig.signataire && (
+                        <p className="text-xs text-gray-300 truncate" title={sig.signataire.email}>
+                          {sig.signataire.nom} <span className="text-gray-500">·</span> {sig.signataire.email}
+                        </p>
+                      )}
+                      <ul className="text-[11px] text-gray-400 space-y-0.5">
+                        {sig.sentAt && (
+                          <li className="flex items-center gap-1.5">
+                            <Mail className="h-3 w-3 text-sky-400" /> Envoyé {formatDate(sig.sentAt)}
+                          </li>
+                        )}
+                        {sig.viewedAt && (
+                          <li className="flex items-center gap-1.5">
+                            <Eye className="h-3 w-3 text-blue-400" /> Vu {formatDate(sig.viewedAt)}
+                          </li>
+                        )}
+                        {sig.signedAt && (
+                          <li className="flex items-center gap-1.5">
+                            <Award className="h-3 w-3 text-emerald-400" /> Signé {formatDate(sig.signedAt)}
+                          </li>
+                        )}
+                        {!isFinal && sig.expiresAt && (
+                          <li className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3 text-orange-400" /> Expire {formatDate(sig.expiresAt)}
+                          </li>
+                        )}
+                      </ul>
+                      {(isFinal || canCancel) && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {isFinal && sig.signedFileUrl && (
+                            <a
+                              href={`/api/signature-requests/${sig.id}/signed-pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded-md border border-emerald-700/50 bg-emerald-900/20 px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-900/40"
+                            >
+                              <Download className="h-3 w-3" /> PDF signé
+                            </a>
+                          )}
+                          {isFinal && sig.certificateUrl && (
+                            <Link
+                              href={`/api/signature-requests/${sig.id}/certificate`}
+                              className="inline-flex items-center gap-1 rounded-md border border-emerald-700/50 bg-emerald-900/20 px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-900/40"
+                            >
+                              <ShieldCheck className="h-3 w-3" /> Certificat
+                            </Link>
+                          )}
+                          {canCancel && (
+                            <button
+                              onClick={() => handleCancelSignature(sig.id)}
+                              className="inline-flex items-center gap-1 rounded-md border border-red-700/50 bg-red-900/20 px-2 py-1 text-[11px] text-red-300 hover:bg-red-900/40"
+                            >
+                              <XCircle className="h-3 w-3" /> Annuler
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Session planifiée */}
           {(hasSession || canPlanifierSession) && (

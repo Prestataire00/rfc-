@@ -6,11 +6,9 @@ import {
   ClipboardList, Building2, User, Send, CheckCircle2, Clock, Accessibility,
   Search, ExternalLink, Copy, Calendar, FileText,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/fetcher";
-import { notify } from "@/lib/toast";
 
 type FicheClient = {
   id: string;
@@ -53,12 +51,10 @@ const STATUT_LABELS: Record<string, string> = {
 };
 
 export default function FichesPreFormationPage() {
-  const router = useRouter();
   const [tab, setTab] = useState<"client" | "stagiaire">("client");
   const [statutFilter, setStatutFilter] = useState("");
   const [search, setSearch] = useState("");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
-  const [generatingDevisId, setGeneratingDevisId] = useState<string | null>(null);
 
   const { data: clientData, isLoading: clientLoading, mutate: mutateClient } = useApi<FicheClient[]>(
     "/api/qualiopi/fiches-entreprise"
@@ -88,25 +84,6 @@ export default function FichesPreFormationPage() {
     navigator.clipboard.writeText(url);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
-  };
-
-  // Génère un devis brouillon depuis un BesoinClient répondu (cahier des charges §2.2)
-  const handleGenerateDevis = async (besoinId: string) => {
-    if (generatingDevisId) return;
-    setGeneratingDevisId(besoinId);
-    try {
-      const res = await api.post<{ devisId: string; numero: string; redirectUrl: string }>(
-        `/api/qualiopi/fiches-entreprise/${besoinId}/generate-devis`,
-        {},
-      );
-      notify.success(`Devis ${res.numero} créé — redirection en cours…`);
-      router.push(res.redirectUrl);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur lors de la génération du devis";
-      notify.error(msg);
-    } finally {
-      setGeneratingDevisId(null);
-    }
   };
 
   const filterFiche = <T extends { statut: string }>(f: T, nom: string): boolean => {
@@ -241,8 +218,6 @@ export default function FichesPreFormationPage() {
           fiches={clientsFiltered}
           onResend={(id) => handleResend("client", id)}
           onCopy={(t) => handleCopyLink("client", t)}
-          onGenerateDevis={handleGenerateDevis}
-          generatingDevisId={generatingDevisId}
           copiedToken={copiedToken}
         />
       ) : (
@@ -257,12 +232,10 @@ export default function FichesPreFormationPage() {
   );
 }
 
-function ClientTable({ fiches, onResend, onCopy, onGenerateDevis, generatingDevisId, copiedToken }: {
+function ClientTable({ fiches, onResend, onCopy, copiedToken }: {
   fiches: FicheClient[];
   onResend: (id: string) => void;
   onCopy: (token: string) => void;
-  onGenerateDevis: (besoinId: string) => void;
-  generatingDevisId: string | null;
   copiedToken: string | null;
 }) {
   if (fiches.length === 0) {
@@ -335,17 +308,16 @@ function ClientTable({ fiches, onResend, onCopy, onGenerateDevis, generatingDevi
                       <Send className="h-3 w-3" />
                     </button>
                   )}
-                  {/* Génération devis depuis besoin client répondu (cahier des charges §2.2) */}
+                  {/* Workflow : fiche répondue → page d'édition guidée (admin fixe le prix) → signature */}
                   {f.statut === "repondu" && (
-                    <button
-                      onClick={() => onGenerateDevis(f.id)}
-                      disabled={generatingDevisId === f.id}
-                      className="inline-flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 text-xs text-white"
-                      title="Générer un devis brouillon à partir de cette fiche pré-formation"
+                    <Link
+                      href={`/qualiopi/fiches-pre-formation/${f.id}/generer-devis`}
+                      className="inline-flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-700 px-2 py-1 text-xs text-white"
+                      title="Préparer un devis (fixer le prix) à partir de cette fiche pré-formation"
                     >
                       <FileText className="h-3 w-3" />
-                      {generatingDevisId === f.id ? "…" : "Devis"}
-                    </button>
+                      Devis
+                    </Link>
                   )}
                 </div>
               </td>

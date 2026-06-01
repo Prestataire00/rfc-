@@ -1,6 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Timeout court : Netlify Functions free tier coupe à 10s. On veut échouer
+// proprement à 8s avec un message d'erreur clair plutôt que voir le socket
+// se fermer brutalement (qui produit le wording « socket connection was
+// closed unexpectedly » côté UI). Si Claude met trop de temps, le caller
+// reçoit un APIConnectionTimeoutError qu'on peut intercepter.
+// maxRetries: 0 — on ne veut PAS de retry automatique qui ferait exploser
+// le budget de 10s en cumulant les tentatives.
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 8000,
+  maxRetries: 0,
+});
 
 export const AI_MODEL = "claude-sonnet-4-6";
 
@@ -16,6 +27,16 @@ export const NO_MARKDOWN_INSTRUCTION = [
   "Tu restes concis, 3 a 6 phrases par section, sauf si on te demande un document long.",
 ].join(" ");
 
+// Erreur métier dédiée — permet aux routes API de catcher spécifiquement
+// les soucis d'appel Claude (timeout, indisponibilité) et de retourner
+// un message clair au lieu du wording brut du SDK.
+export class AIUnavailableError extends Error {
+  constructor(message: string, public cause?: unknown) {
+    super(message);
+    this.name = "AIUnavailableError";
+  }
+}
+
 export async function askClaude(
   prompt: string,
   maxTokens = 1500,
@@ -25,14 +46,27 @@ export async function askClaude(
     ? `${NO_MARKDOWN_INSTRUCTION}\n\n${prompt}`
     : prompt;
 
-  const message = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: maxTokens,
-    messages: [{ role: "user", content: finalPrompt }],
-  });
+  try {
+    const message = await client.messages.create({
+      model: AI_MODEL,
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: finalPrompt }],
+    });
 
-  const raw = message.content[0].type === "text" ? message.content[0].text : "";
-  return options.noMarkdown ? cleanAIResponse(raw) : raw;
+    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+    return options.noMarkdown ? cleanAIResponse(raw) : raw;
+  } catch (err) {
+    // Timeout SDK (8s) ou socket coupé → message utilisateur clair plutôt
+    // que de propager le « API Error: socket connection was closed ».
+    const msg = err instanceof Error ? err.message.toLowerCase() : "";
+    if (msg.includes("timeout") || msg.includes("socket") || msg.includes("aborted")) {
+      throw new AIUnavailableError(
+        "L'assistant IA met trop de temps à répondre (limite Netlify 10s). Réessayez dans un instant ou saisissez le texte manuellement.",
+        err,
+      );
+    }
+    throw err;
+  }
 }
 
 export function cleanAIResponse(text: string): string {

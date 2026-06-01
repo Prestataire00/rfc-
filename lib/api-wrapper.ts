@@ -11,6 +11,13 @@ type Handler = (req: NextRequest) => Promise<Response> | Response;
 type HandlerWithParams<P> = (req: NextRequest, ctx: { params: P }) => Promise<Response> | Response;
 
 function buildErrorResponse(err: unknown, route: string): NextResponse {
+  // Erreur d'appel IA (timeout Claude / socket coupé / quota) — message
+  // utilisateur explicite plutôt que le « Erreur serveur » générique.
+  if (err instanceof Error && err.name === "AIUnavailableError") {
+    logger.warn("api.ai_unavailable", { route, message: err.message });
+    return NextResponse.json({ error: err.message }, { status: 503 });
+  }
+
   if (err instanceof ZodError) {
     logger.warn("api.validation_error", { route, issues: err.issues });
     return NextResponse.json(

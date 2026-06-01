@@ -125,8 +125,22 @@ export default function ModifierDevisPage() {
   };
 
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
-  const montantTVA = montantHT * (TVA_RATE / 100);
+  // TVA par ligne (peut différer du taux global) — somme des TVA réelles.
+  const montantTVA = lignes.reduce(
+    (sum, l) => sum + l.montant * ((l.tauxTVA ?? TVA_RATE) / 100),
+    0,
+  );
   const montantTTC = montantHT + montantTVA;
+
+  // Détail par taux de TVA présent dans les lignes (pour affichage multi-taux).
+  const tvaParTaux = lignes.reduce<Record<number, number>>((acc, l) => {
+    const taux = l.tauxTVA ?? TVA_RATE;
+    acc[taux] = (acc[taux] ?? 0) + l.montant * (taux / 100);
+    return acc;
+  }, {});
+  const tauxDistincts = Object.keys(tvaParTaux)
+    .map(Number)
+    .sort((a, b) => a - b);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -438,12 +452,31 @@ export default function ModifierDevisPage() {
                     {formatCurrency(montantHT)}
                   </span>
                 </div>
-                <div className="flex gap-8">
-                  <span className="text-gray-400">TVA ({TVA_RATE}%)</span>
-                  <span className="font-medium text-gray-200 w-32 text-right">
-                    {formatCurrency(montantTVA)}
-                  </span>
-                </div>
+                {tauxDistincts.length <= 1 ? (
+                  <div className="flex gap-8">
+                    <span className="text-gray-400">TVA ({tauxDistincts[0] ?? TVA_RATE}%)</span>
+                    <span className="font-medium text-gray-200 w-32 text-right">
+                      {formatCurrency(montantTVA)}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    {tauxDistincts.map((taux) => (
+                      <div key={taux} className="flex gap-8">
+                        <span className="text-gray-400">TVA ({taux}%)</span>
+                        <span className="font-medium text-gray-200 w-32 text-right">
+                          {formatCurrency(tvaParTaux[taux])}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex gap-8">
+                      <span className="text-gray-400">Total TVA</span>
+                      <span className="font-medium text-gray-200 w-32 text-right">
+                        {formatCurrency(montantTVA)}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex gap-8 pt-2 border-t border-gray-700 mt-1">
                   <span className="font-semibold text-gray-100 text-base">Total TTC</span>
                   <span className="font-bold text-lg text-gray-100 w-32 text-right">

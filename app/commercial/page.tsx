@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileText, Plus, Receipt, Download, ArrowRight, List, LayoutGrid, Columns3 } from "lucide-react";
+import { FileText, Plus, Receipt, Download, ArrowRight, List, LayoutGrid, Columns3, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -12,6 +12,8 @@ import { SkeletonTable } from "@/components/shared/Skeleton";
 import { DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
+import { notify } from "@/lib/toast";
 
 type TunnelStats = {
   caPrevisionnel: number;
@@ -122,8 +124,8 @@ export default function CommercialPage() {
     return `/api/factures?${params.toString()}`;
   }, [filtreStatutFacture, facturePage]);
 
-  const { data: devisRaw, isLoading: loadingDevis } = useApi<DevisResponse>("/api/devis?limit=100");
-  const { data: facturesRaw, isLoading: loadingFactures } = useApi<FacturesResponse>(facturesUrl);
+  const { data: devisRaw, isLoading: loadingDevis, mutate: mutateDevis } = useApi<DevisResponse>("/api/devis?limit=100");
+  const { data: facturesRaw, isLoading: loadingFactures, mutate: mutateFactures } = useApi<FacturesResponse>(facturesUrl);
   // En vue Kanban, on a besoin de TOUTES les factures sans filtre statut
   // pour les ventiler dans les 5 colonnes. Fetch conditionnel pour ne pas
   // gaspiller de bande passante quand on est sur Liste/Cartes.
@@ -162,6 +164,50 @@ export default function CommercialPage() {
     () => devis.filter((d) => d.statut === activeDevisStatut),
     [devis, activeDevisStatut],
   );
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteDevis = async (e: React.MouseEvent, d: Devis) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (deletingId) return;
+    const confirmed = window.confirm(
+      `Supprimer le devis ${d.numero} (${formatCurrency(d.montantTTC)}) ?\n\nCette action est irréversible.`,
+    );
+    if (!confirmed) return;
+    setDeletingId(d.id);
+    try {
+      await api.delete(`/api/devis/${d.id}`);
+      notify.success(`Devis ${d.numero} supprimé`);
+      await mutateDevis();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Suppression impossible";
+      notify.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteFacture = async (e: React.MouseEvent, f: Facture) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (deletingId) return;
+    const confirmed = window.confirm(
+      `Supprimer la facture ${f.numero} (${formatCurrency(f.montantTTC)}) ?\n\nCette action est irréversible.`,
+    );
+    if (!confirmed) return;
+    setDeletingId(f.id);
+    try {
+      await api.delete(`/api/factures/${f.id}`);
+      notify.success(`Facture ${f.numero} supprimée`);
+      await mutateFactures();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Suppression impossible";
+      notify.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const getClientName = (d: Devis) => {
     if (d.entreprise) return d.entreprise.nom;
@@ -444,6 +490,7 @@ export default function CommercialPage() {
                     <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Montant TTC</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Validité</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400 w-12"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -462,6 +509,16 @@ export default function CommercialPage() {
                         <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{formatDate(d.dateValidite)}</td>
                         <td className="px-4 py-3">
                           {s && <StatutBadge label={s.label} color={s.color} />}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={(e) => handleDeleteDevis(e, d)}
+                            disabled={deletingId === d.id}
+                            className="text-gray-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            title="Supprimer ce devis"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -631,6 +688,7 @@ export default function CommercialPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Échéance</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Statut</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">Date paiement</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400 w-12"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -664,6 +722,16 @@ export default function CommercialPage() {
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 hidden sm:table-cell">
                           {f.datePaiement ? formatDate(f.datePaiement) : <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={(e) => handleDeleteFacture(e, f)}
+                            disabled={deletingId === f.id}
+                            className="text-gray-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            title="Supprimer cette facture"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     );

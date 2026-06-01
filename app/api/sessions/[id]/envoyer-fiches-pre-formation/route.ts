@@ -66,6 +66,7 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     ficheClient = await prisma.fichePreFormationEntreprise.create({
       data: {
         sessionId: session.id,
+        formationId: session.formationId, // formation directe pour cohérence avec fiches pré-session
         entrepriseId: entreprise?.id ?? null,
         tokenAcces: randomBytes(24).toString("hex"),
         statut: "en_attente",
@@ -127,6 +128,7 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       fiche = await prisma.fichePreFormationStagiaire.create({
         data: {
           sessionId: session.id,
+          formationId: session.formationId, // cohérence avec fiches pré-session
           contactId: contact.id,
           tokenAcces: randomBytes(24).toString("hex"),
           statut: "en_attente",

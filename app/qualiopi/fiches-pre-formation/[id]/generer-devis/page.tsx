@@ -37,10 +37,13 @@ type Fiche = {
   aStagiairesHandicap: boolean;
   detailsHandicap: string | null;
   entreprise: { id: string; nom: string } | null;
+  // session optionnelle : la fiche peut exister pré-session (créée à la naissance du prospect).
   session: {
     id: string;
     formation: { id: string; titre: string; duree: number; tarif: number; certifiante: boolean };
   } | null;
+  // formation directe (cas fiche pré-session). Au moins l'une des deux doit être présente.
+  formation: { id: string; titre: string; duree: number; tarif: number; certifiante: boolean } | null;
 };
 
 type Ligne = { designation: string; quantite: number; prixUnitaire: number };
@@ -63,26 +66,29 @@ export default function GenererDevisDepuisFichePage() {
   const [creating, setCreating] = useState(false);
   const [creatingSig, setCreatingSig] = useState(false);
 
+  // Formation effective : priorité session.formation (legacy), sinon formation directe.
+  const formationEff = fiche?.session?.formation ?? fiche?.formation ?? null;
+
   // Pré-remplir une fois la fiche chargée
   const lignesEff = useMemo<Ligne[]>(() => {
     if (lignes) return lignes;
-    if (!fiche?.session?.formation) return [];
-    const f = fiche.session.formation;
-    const qte = Math.max(1, fiche.effectifConcerne ?? 1);
+    if (!formationEff) return [];
+    const f = formationEff;
+    const qte = Math.max(1, fiche?.effectifConcerne ?? 1);
     return [{
       designation: `${f.titre}${f.duree ? ` (${f.duree} h)` : ""}`,
       quantite: qte,
       prixUnitaire: f.tarif ?? 0,
     }];
-  }, [fiche, lignes]);
+  }, [formationEff, fiche, lignes]);
 
   const objetEff = useMemo(() => {
     if (objet !== null) return objet;
-    if (!fiche?.session?.formation) return "";
-    const f = fiche.session.formation;
-    const qte = Math.max(1, fiche.effectifConcerne ?? 1);
+    if (!formationEff) return "";
+    const f = formationEff;
+    const qte = Math.max(1, fiche?.effectifConcerne ?? 1);
     return `Formation ${f.titre} - ${qte} stagiaire${qte > 1 ? "s" : ""}`;
-  }, [fiche, objet]);
+  }, [formationEff, fiche, objet]);
 
   const notesEff = notes ?? (fiche
     ? `Devis généré depuis la fiche pré-formation entreprise reçue le ${fiche.dateReponse ? new Date(fiche.dateReponse).toLocaleDateString("fr-FR") : "—"}.`
@@ -165,7 +171,7 @@ export default function GenererDevisDepuisFichePage() {
   }
 
   const blocked =
-    fiche.statut !== "repondu" || !fiche.entreprise || !fiche.session?.formation;
+    fiche.statut !== "repondu" || !fiche.entreprise || !formationEff;
 
   return (
     <div className="space-y-6 p-6 pb-24 max-w-5xl mx-auto">
@@ -186,7 +192,7 @@ export default function GenererDevisDepuisFichePage() {
             ? `Statut actuel : ${fiche.statut} (attendu : repondu).`
             : !fiche.entreprise
               ? "Pas d'entreprise rattachée à la fiche."
-              : "Pas de session/formation rattachée."}
+              : "Pas de formation rattachée à la fiche."}
         </div>
       )}
 
@@ -198,7 +204,7 @@ export default function GenererDevisDepuisFichePage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <RecapRow label="Entreprise" value={fiche.entreprise?.nom} />
-          <RecapRow label="Formation" value={fiche.session?.formation.titre} />
+          <RecapRow label="Formation" value={formationEff?.titre} />
           <RecapRow label="Effectif total" value={fiche.effectifTotal} />
           <RecapRow label="Effectif concerné" value={fiche.effectifConcerne} />
           <RecapRow label="Secteur d'activité" value={fiche.secteurActivite} />

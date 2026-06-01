@@ -33,18 +33,26 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
   if (action === "envoyer") {
     const fiche = await prisma.fichePreFormationEntreprise.findUnique({
       where: { id: params.id },
-      include: { session: { include: { formation: true } }, entreprise: true },
+      include: {
+        session: { include: { formation: true } },
+        formation: true, // fallback pour fiches créées pré-session
+        entreprise: true,
+      },
     });
     if (!fiche) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
     if (!fiche.destinataireEmail) return NextResponse.json({ error: "Email destinataire manquant" }, { status: 400 });
 
+    const formation = fiche.session?.formation ?? fiche.formation;
+    if (!formation) {
+      return NextResponse.json({ error: "Aucune formation rattachée à la fiche" }, { status: 422 });
+    }
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const link = `${baseUrl}/qualiopi/fiche-entreprise/${fiche.tokenAcces}`;
     const email = fichePreFormationEntrepriseEmail({
       destinataireNom: fiche.destinataireNom || fiche.entreprise?.nom || "",
       entreprise: { nom: fiche.entreprise?.nom || "" },
-      formation: { titre: fiche.session.formation.titre },
-      session: { dateDebut: fiche.session.dateDebut.toISOString() },
+      formation: { titre: formation.titre },
+      session: fiche.session ? { dateDebut: fiche.session.dateDebut.toISOString() } : null,
       link,
       optionnel: fiche.optionnel,
     });

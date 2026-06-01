@@ -63,6 +63,7 @@ export const POST = withErrorHandlerParams(
         session: {
           include: { formation: true },
         },
+        formation: true, // formation directe (fiche créée pré-session depuis prospect)
         entreprise: true,
       },
     });
@@ -79,11 +80,12 @@ export const POST = withErrorHandlerParams(
     if (!fiche.entrepriseId) {
       return NextResponse.json({ error: "Pas d'entreprise rattachée à la fiche" }, { status: 422 });
     }
-    if (!fiche.session?.formation) {
-      return NextResponse.json({ error: "Session ou formation introuvable" }, { status: 422 });
+    // Formation : priorité session.formation (cas legacy), sinon formation directe
+    // (cas fiche créée pré-session depuis le prospect).
+    const formation = fiche.session?.formation ?? fiche.formation;
+    if (!formation) {
+      return NextResponse.json({ error: "Aucune formation rattachée à la fiche (ni via session ni directement)" }, { status: 422 });
     }
-
-    const formation = fiche.session.formation;
     const defaultQuantite = Math.max(1, fiche.effectifConcerne ?? 1);
     const defaultTarif = formation.tarif ?? 0;
     const defaultDesignation = `${formation.titre}${formation.duree ? ` (${formation.duree} h)` : ""}`;

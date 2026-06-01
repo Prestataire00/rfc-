@@ -16,25 +16,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  email    String @unique
+  email    String  @unique
   password String
   nom      String
   prenom   String
-  role     String @default("admin") // admin, formateur, client
+  role     String  @default("admin") // admin, formateur, client
   actif    Boolean @default(true)
 
-  formateurId  String?  @unique
+  formateurId String?    @unique
   // Audit 2026-05-19 §4.10 : onDelete explicite. SetNull pour conserver
   // le compte User si le formateur ou l'entreprise est supprimé (admin
   // peut le réassigner).
-  formateur    Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
+  formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
-  notifications Notification[]
+  notifications              Notification[]
   conversationParticipations ConversationParticipant[]
-  taskComments  TaskComment[]
+  taskComments               TaskComment[]
 }
 
 // ==================== CORE MODELS ====================
@@ -49,7 +49,7 @@ model Entreprise {
   adresse    String?
   ville      String?
   codePostal String?
-  siret      String?  @unique
+  siret      String? @unique
   email      String?
   telephone  String?
   site       String?
@@ -57,19 +57,19 @@ model Entreprise {
 
   // Champs complementaires (Qualiopi / BPF)
   effectif       Int?
-  typeEntreprise String?  // TPE, PME, ETI, GE
+  typeEntreprise String? // TPE, PME, ETI, GE
 
-  contacts      Contact[]
-  devis         Devis[]
-  factures      Facture[]
-  users         User[]
-  documents     Document[]
+  contacts           Contact[]
+  devis              Devis[]
+  factures           Facture[]
+  users              User[]
+  documents          Document[]
   demandes           Demande[]
   fichesPreFormation FichePreFormationEntreprise[]
-  financements  Financement[]
-  historique    HistoriqueAction[]
-  tags          EntrepriseTag[]
-  projets       Projet[]
+  financements       Financement[]
+  historique         HistoriqueAction[]
+  tags               EntrepriseTag[]
+  projets            Projet[]
 
   // Audit 2026-05-19 §4.11 : recherche LIKE sur nom/ville fréquente.
   @@index([nom])
@@ -91,41 +91,41 @@ model Contact {
   type      String  @default("prospect") // prospect, client, stagiaire
 
   // Donnees stagiaire (Qualiopi / BPF / Passeport Prevention)
-  dateNaissance              DateTime?
-  numeroSecuriteSociale      String?  // chiffré AES-256-GCM via lib/encryption.ts (préfixe enc::v1::)
-  numeroPasseportPrevention  String?  // decret 2022-1434
-  besoinsAdaptation          String?  // RQTH / contraintes
-  niveauFormation            String?  // sans_diplome | cap | bac | bac+2 | autre
-  optOutMarketing            Boolean  @default(false) // RGPD : opt-out campagnes marketing
+  dateNaissance             DateTime?
+  numeroSecuriteSociale     String? // chiffré AES-256-GCM via lib/encryption.ts (préfixe enc::v1::)
+  numeroPasseportPrevention String? // decret 2022-1434
+  besoinsAdaptation         String? // RQTH / contraintes
+  niveauFormation           String? // sans_diplome | cap | bac | bac+2 | autre
+  optOutMarketing           Boolean   @default(false) // RGPD : opt-out campagnes marketing
 
   // Champs ajoutes pour la fiche d'inscription individuelle papier
-  sexe                String?  // "M" | "F"
+  sexe                String? // "M" | "F"
   lieuNaissance       String?
-  pays                String?  @default("France")
-  adressePerso        String?  // distincte de l'entreprise
+  pays                String? @default("France")
+  adressePerso        String? // distincte de l'entreprise
   codePostalPerso     String?
   villePerso          String?
-  numeroCartePro      String?  // N° carte pro CNAPS / autorisation prealable
-  numeroFranceTravail String?  // N° allocataire France Travail (ex Pole Emploi)
-  diplomeObtenu       String?  // diplome le plus eleve obtenu (libre)
+  numeroCartePro      String? // N° carte pro CNAPS / autorisation prealable
+  numeroFranceTravail String? // N° allocataire France Travail (ex Pole Emploi)
+  diplomeObtenu       String? // diplome le plus eleve obtenu (libre)
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
-  inscriptions       Inscription[]
-  devis              Devis[]
-  attestations       Attestation[]
-  evaluations        Evaluation[]
+  inscriptions                Inscription[]
+  devis                       Devis[]
+  attestations                Attestation[]
+  evaluations                 Evaluation[]
   demandes                    Demande[]
   fichesPreFormationStagiaire FichePreFormationStagiaire[]
-  feuillesPresence   FeuillePresence[]
-  emargementTokens   EmargementToken[]
-  historique         HistoriqueAction[]
-  tags               ContactTag[]
-  certifications     CertificationStagiaire[]
-  badges             BadgeAward[]
-  aiDocuments        AiDocumentAnalysis[]
-  prospects          Prospect[]
+  feuillesPresence            FeuillePresence[]
+  emargementTokens            EmargementToken[]
+  historique                  HistoriqueAction[]
+  tags                        ContactTag[]
+  certifications              CertificationStagiaire[]
+  badges                      BadgeAward[]
+  aiDocuments                 AiDocumentAnalysis[]
+  prospects                   Prospect[]
 
   // Audit 2026-05-19 §4.11 : index sur les filtres fréquents
   // (sidebar /contacts?type=client filtre 100% du trafic Stagiaires)
@@ -146,7 +146,7 @@ model Formateur {
   specialites     String  @default("[]")
   tarifJournalier Float?
   cv              String?
-  photo           String?  // URL photo de profil
+  photo           String? // URL photo de profil
   notes           String?
   actif           Boolean @default(true)
 
@@ -169,36 +169,38 @@ model Formation {
 
   titre       String
   description String?
-  duree       Int      // en heures
+  duree       Int // en heures
   tarif       Float
-  niveau      String   @default("tous")
+  niveau      String  @default("tous")
   prerequis   String?
   objectifs   String?
   categorie   String?
-  actif       Boolean  @default(true)
-  certifiante Boolean  @default(false)
+  actif       Boolean @default(true)
+  certifiante Boolean @default(false)
   codeRNCP    String?
 
   // Nouveaux champs inspirés SoSafe
-  modalite           String   @default("presentiel") // presentiel, distanciel, mixte
-  statut             String   @default("brouillon") // brouillon, publiee, archivee
-  publicCible        String?  // public visé
-  contenuProgramme   String?  // contenu détaillé du programme
+  modalite             String  @default("presentiel") // presentiel, distanciel, mixte
+  statut               String  @default("brouillon") // brouillon, publiee, archivee
+  publicCible          String? // public visé
+  contenuProgramme     String? // contenu détaillé du programme
   methodesPedagogiques String? // méthodes pédagogiques utilisées
-  methodesEvaluation String?  // méthodes d'évaluation
-  moyensTechniques   String?  // moyens techniques mis à disposition
-  accessibilite      String?  // informations sur l'accessibilité PMR
+  methodesEvaluation   String? // méthodes d'évaluation
+  moyensTechniques     String? // moyens techniques mis à disposition
+  accessibilite        String? // informations sur l'accessibilité PMR
   indicateursResultats String? // indicateurs de résultats
-  typesFinancement   String   @default("[]") // JSON array: opco, cpf, entreprise, etc.
-  dureeRecyclage     Int?     // durée de recyclage en mois (pour certifications)
-  misEnAvant         Boolean  @default(false) // formation featured
-  image              String?  // URL image de couverture
+  typesFinancement     String  @default("[]") // JSON array: opco, cpf, entreprise, etc.
+  dureeRecyclage       Int? // durée de recyclage en mois (pour certifications)
+  misEnAvant           Boolean @default(false) // formation featured
+  image                String? // URL image de couverture
 
-  sessions       Session[]
-  demandes       Demande[]
-  certifications CertificationStagiaire[]
-  badgeTemplates DigitalBadge[] @relation("BadgeFormation")
-  parcoursModules ParcoursModule[]
+  sessions                    Session[]
+  demandes                    Demande[]
+  certifications              CertificationStagiaire[]
+  badgeTemplates              DigitalBadge[]                @relation("BadgeFormation")
+  parcoursModules             ParcoursModule[]
+  fichesPreFormation          FichePreFormationEntreprise[]
+  fichesPreFormationStagiaire FichePreFormationStagiaire[]
 
   @@index([statut])
   @@index([categorie])
@@ -214,21 +216,21 @@ model LieuFormation {
   adresse          String?
   codePostal       String?
   ville            String?
-  pays             String   @default("France")
-  salles           String   @default("[]") // JSON array de noms de salles
+  pays             String  @default("France")
+  salles           String  @default("[]") // JSON array de noms de salles
   capacite         Int?
-  equipements      String?  // description des équipements
+  equipements      String? // description des équipements
   tarifJournee     Float?
   tarifDemiJournee Float?
   contactNom       String?
   contactTelephone String?
   contactEmail     String?
-  accessibilitePMR Boolean  @default(false)
-  consignesAcces   String?  // comment y accéder
+  accessibilitePMR Boolean @default(false)
+  consignesAcces   String? // comment y accéder
   infoParking      String?
   infoTransport    String?
   notes            String?
-  actif            Boolean  @default(true)
+  actif            Boolean @default(true)
 
   sessions Session[]
 
@@ -240,17 +242,17 @@ model Session {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  dateDebut     DateTime
-  dateFin       DateTime
-  lieu          String?
-  capaciteMax   Int     @default(10)
-  statut        String  @default("planifiee") // planifiee, confirmee, en_cours, terminee, annulee
-  tokenInscription String? @unique
-  notes         String?
-  coutFormateur Float?
+  dateDebut        DateTime
+  dateFin          DateTime
+  lieu             String?
+  capaciteMax      Int      @default(10)
+  statut           String   @default("planifiee") // planifiee, confirmee, en_cours, terminee, annulee
+  tokenInscription String?  @unique
+  notes            String?
+  coutFormateur    Float?
 
   // Chemin express (< 48h) : desactive les automatisations temporelles
-  modeExpress   Boolean @default(false)
+  modeExpress Boolean @default(false)
 
   // Conformite Passeport Prevention (decret 2022-1434) pour formations certifiantes
   declarationPasseportPrevention Boolean   @default(false)
@@ -259,7 +261,7 @@ model Session {
   formationId String
   // Audit 2026-05-19 §4.3 : Restrict pour préserver l'historique pédagogique
   // (sessions passées) en cas de suppression d'une formation.
-  formation   Formation  @relation(fields: [formationId], references: [id], onDelete: Restrict)
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Restrict)
 
   formateurId String?
   formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
@@ -270,23 +272,23 @@ model Session {
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
 
-  inscriptions       Inscription[]
-  feuillesPresence   FeuillePresence[]
-  attestations       Attestation[]
-  evaluations        Evaluation[]
-  feedbacks          FeedbackFormateur[]
-  documents          Document[]
+  inscriptions                Inscription[]
+  feuillesPresence            FeuillePresence[]
+  attestations                Attestation[]
+  evaluations                 Evaluation[]
+  feedbacks                   FeedbackFormateur[]
+  documents                   Document[]
   fichesPreFormation          FichePreFormationEntreprise[]
   fichesPreFormationStagiaire FichePreFormationStagiaire[]
-  automations        SessionAutomation[]
-  emargementTokens   EmargementToken[]
-  forumTopics        ForumTopic[]
-  classeVirtuelle    ClasseVirtuelle?
-  sessionParcours    SessionParcours[]
-  taskLists          TaskList[]
-  conversations      Conversation[]
-  facturesFormateur  FactureFormateur[]
-  evaluationsFormateur EvaluationFormateur[]
+  automations                 SessionAutomation[]
+  emargementTokens            EmargementToken[]
+  forumTopics                 ForumTopic[]
+  classeVirtuelle             ClasseVirtuelle?
+  sessionParcours             SessionParcours[]
+  taskLists                   TaskList[]
+  conversations               Conversation[]
+  facturesFormateur           FactureFormateur[]
+  evaluationsFormateur        EvaluationFormateur[]
 
   // Rattachement projet (agrégat racine — cf model Projet en fin de fichier)
   projetId String?
@@ -315,7 +317,7 @@ model Inscription {
   // Checklist "Documents remis" issue de la fiche d'inscription papier
   // JSON array of strings: ["piece_identite", "casier_b3", "test_b1", "diplome_ssiap",
   //   "diplome", "photos", "cnaps_preal", "cnaps_car", "cv", "titre_sejour", "justif_domicile"]
-  documentsRemis    String   @default("[]")
+  documentsRemis String @default("[]")
 
   @@unique([contactId, sessionId])
 }
@@ -327,43 +329,47 @@ model Demande {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  titre       String
-  description String?
-  origine     String  @default("client") // client, stagiaire, centre
-  statut      String  @default("nouveau") // nouveau, qualifie, devis_envoye, accepte, refuse, archive
-  priorite    String  @default("normale") // basse, normale, haute, urgente
-  nbStagiaires Int?
+  titre           String
+  description     String?
+  origine         String  @default("client") // client, stagiaire, centre
+  statut          String  @default("nouveau") // nouveau, qualifie, devis_envoye, accepte, refuse, archive
+  priorite        String  @default("normale") // basse, normale, haute, urgente
+  nbStagiaires    Int?
   datesSouhaitees String?
-  budget      Float?
-  notes       String?
+  budget          Float?
+  notes           String?
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
-  contactId    String?
-  contact      Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
-  formationId  String?
-  formation    Formation?  @relation(fields: [formationId], references: [id], onDelete: SetNull)
+  formationId String?
+  formation   Formation? @relation(fields: [formationId], references: [id], onDelete: SetNull)
 
-  devisId      String?
-  devis        Devis?      @relation(fields: [devisId], references: [id], onDelete: SetNull)
+  devisId String?
+  devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
 
   // Champs ajoutes pour l'analyse des besoins client papier
-  sourceContact     String?  // "telephone" | "mail" | "agence" | "site_internet"
-  materielSurPlace  String   @default("[]") // JSON array: ["salles", "videoprojecteur", "paperboard"]
-  observation       String?
+  sourceContact    String? // "telephone" | "mail" | "agence" | "site_internet"
+  materielSurPlace String  @default("[]") // JSON array: ["salles", "videoprojecteur", "paperboard"]
+  observation      String?
 
   // Rattachement projet (agrégat racine)
   projetId String?
   projet   Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
 
-  @@map("BesoinFormation")
+  // Fiches pré-formation envoyées automatiquement à la création du prospect
+  fichesPreFormation          FichePreFormationEntreprise[]
+  fichesPreFormationStagiaire FichePreFormationStagiaire[]
+
   @@index([statut])
   @@index([entrepriseId])
   @@index([contactId])
   @@index([createdAt])
   @@index([projetId])
+  @@map("BesoinFormation")
 }
 
 model Devis {
@@ -371,17 +377,17 @@ model Devis {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  numero       String   @unique
+  numero       String    @unique
   objet        String
   montantHT    Float
-  tauxTVA      Float    @default(20)
+  tauxTVA      Float     @default(20)
   montantTTC   Float
-  dateEmission DateTime @default(now())
+  dateEmission DateTime  @default(now())
   dateValidite DateTime
   dateSigne    DateTime?
   signatureUrl String?
   notes        String?
-  statut       String   @default("brouillon") // brouillon, envoye, signe, refuse, expire
+  statut       String    @default("brouillon") // brouillon, envoye, signe, refuse, expire
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
@@ -405,13 +411,13 @@ model LigneDevis {
   id String @id @default(cuid())
 
   designation  String
-  quantite     Int   @default(1)
+  quantite     Int    @default(1)
   prixUnitaire Float
   montant      Float
 
   // Taux TVA par ligne (multi-taux conformité art. 289 II CGI).
   // null → utilise le taux global Devis.tauxTVA pour rétro-compatibilité.
-  tauxTVA      Float?
+  tauxTVA Float?
 
   // Caractéristiques détaillées de la prestation (Qualiopi art. L6353-1
   // du Code du travail) : programme / durée / public / méthodes
@@ -430,16 +436,16 @@ model Facture {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  numero       String   @unique
+  numero       String    @unique
   montantHT    Float
-  tauxTVA      Float    @default(20)
+  tauxTVA      Float     @default(20)
   montantTTC   Float
-  dateEmission DateTime @default(now())
+  dateEmission DateTime  @default(now())
   dateEcheance DateTime
-  datePaiement   DateTime?
-  paiements      Json?     // [{mode: string, montant: number}]
-  notes          String?
-  statut         String   @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
+  datePaiement DateTime?
+  paiements    Json? // [{mode: string, montant: number}]
+  notes        String?
+  statut       String    @default("en_attente") // en_attente, envoyee, payee, en_retard, annulee
 
   devisId String?
   devis   Devis?  @relation(fields: [devisId], references: [id], onDelete: SetNull)
@@ -447,8 +453,8 @@ model Facture {
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
-  paiementsRecus       Paiement[]
-  echeances            EcheancierPaiement[]
+  paiementsRecus        Paiement[]
+  echeances             EcheancierPaiement[]
   transactionsBancaires TransactionBancaire[]
 
   // Rattachement projet (agrégat racine)
@@ -485,11 +491,11 @@ model FeedbackFormateur {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  noteGlobale       Int     // 1-5
-  commentaire       String?
-  conditionsMat     String? // conditions matérielles
-  dynamiqueGroupe   String?
-  suggestions       String?
+  noteGlobale     Int // 1-5
+  commentaire     String?
+  conditionsMat   String? // conditions matérielles
+  dynamiqueGroupe String?
+  suggestions     String?
 
   formateurId String
   formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
@@ -505,31 +511,31 @@ model FeedbackFormateur {
 model Document {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   nom         String
   // Catégorie pour organisation/filtrage UI. Anciennes valeurs métier conservées
   // (convention/feuille_presence/etc.) + nouvelles génériques (livrable, contrat,
   // brief, rapport, autre) pour les documents projet.
   type        String
-  chemin      String  // file path or URL
-  taille      Int?    // file size in bytes
+  chemin      String // file path or URL
+  taille      Int? // file size in bytes
   description String?
 
-  sessionId    String?
-  session      Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
-  formateurId  String?
-  formateur    Formateur?  @relation(fields: [formateurId], references: [id], onDelete: SetNull)
+  formateurId String?
+  formateur   Formateur? @relation(fields: [formateurId], references: [id], onDelete: SetNull)
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
   // Rattachement projet + politique de visibilité par audience
   projetId         String?
-  projet           Projet?  @relation(fields: [projetId], references: [id], onDelete: SetNull)
-  visibleClient    Boolean  @default(false)
-  visibleFormateur Boolean  @default(false)
+  projet           Projet? @relation(fields: [projetId], references: [id], onDelete: SetNull)
+  visibleClient    Boolean @default(false)
+  visibleFormateur Boolean @default(false)
 
   @@index([projetId])
   @@index([type])
@@ -541,13 +547,13 @@ model Evaluation {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  type         String  // satisfaction_chaud, satisfaction_froid, acquis
-  cible        String  // stagiaire, client, formateur
-  noteGlobale  Int?    // 1-5
-  reponses     String  @default("{}") // JSON des réponses
-  commentaire  String?
-  estComplete  Boolean @default(false)
-  tokenAcces   String? @unique // pour accès par lien unique
+  type        String // satisfaction_chaud, satisfaction_froid, acquis
+  cible       String // stagiaire, client, formateur
+  noteGlobale Int? // 1-5
+  reponses    String  @default("{}") // JSON des réponses
+  commentaire String?
+  estComplete Boolean @default(false)
+  tokenAcces  String? @unique // pour accès par lien unique
 
   // Snapshot des questions du template au moment de l'envoi (fige le contenu).
   // Si null, fallback sur le template associe (ou QuestionnaireConfig pour l'ancien systeme).
@@ -569,7 +575,7 @@ model EvaluationTemplate {
   type        String   @default("custom") // satisfaction_chaud, satisfaction_froid, acquis, custom
   questions   String   @default("[]") // JSON array of question objects
   preset      Boolean  @default(false) // true = preset officiel non modifiable
-  icon        String?  // icone lucide ou emoji
+  icon        String? // icone lucide ou emoji
   ordre       Int      @default(0) // ordre d'affichage dans le catalogue
 }
 
@@ -577,9 +583,9 @@ model Attestation {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  type         String  @default("fin_formation") // fin_formation, presence, competences
-  statut       String  @default("generee") // generee, validee, envoyee
-  chemin       String? // file path
+  type           String    @default("fin_formation") // fin_formation, presence, competences
+  statut         String    @default("generee") // generee, validee, envoyee
+  chemin         String? // file path
   dateValidation DateTime?
 
   sessionId String
@@ -599,25 +605,25 @@ model FeuillePresence {
   updatedAt DateTime @updatedAt
 
   date      DateTime
-  matin     Boolean @default(false)
-  apresMidi Boolean @default(false)
+  matin     Boolean  @default(false)
+  apresMidi Boolean  @default(false)
   signature String? // legacy V1 — remplace par champs V2 ci-dessous
 
   // V2 Emargement numerique — statuts detailles
-  statutMatin     String?  // present, absent, en_retard, excuse, depart_anticipe
+  statutMatin     String? // present, absent, en_retard, excuse, depart_anticipe
   statutApresMidi String?
-  retardMinutes   Int?     // minutes de retard (si en_retard)
-  departMinutes   Int?     // minutes avant la fin (si depart_anticipe)
+  retardMinutes   Int? // minutes de retard (si en_retard)
+  departMinutes   Int? // minutes avant la fin (si depart_anticipe)
 
   // V2 Signatures numeriques (base64 PNG data URL)
   signatureMatin     String?
   signatureApresMidi String?
 
   // V2 Metadonnees de signature (preuve Qualiopi)
-  signatureMatinIp   String?
-  signatureMatinAt   DateTime?
-  signatureAmIp      String?
-  signatureAmAt      DateTime?
+  signatureMatinIp String?
+  signatureMatinAt DateTime?
+  signatureAmIp    String?
+  signatureAmAt    DateTime?
 
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -625,7 +631,7 @@ model FeuillePresence {
   contactId String
   // Audit 2026-05-19 §4.1 : Restrict pour préserver les feuilles de présence
   // (preuve d'émargement Qualiopi 7.1, conservation 3 ans légale).
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
 
   @@unique([sessionId, contactId, date])
 }
@@ -642,17 +648,17 @@ model EmargementToken {
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  date      DateTime  // jour concerne
-  creneau   String    // matin | apres_midi
+  date    DateTime // jour concerne
+  creneau String // matin | apres_midi
 
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime? // rempli quand le token OTP est utilise
 
-  contactId String?   // null = QR general, set = OTP individuel
+  contactId String? // null = QR general, set = OTP individuel
   // Audit 2026-05-19 §4.1 : SetNull (contactId déjà nullable) pour préserver
   // le token (preuve technique d'émargement) si le contact est supprimé.
-  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
   @@index([token])
   @@index([sessionId])
@@ -679,7 +685,7 @@ model ContactTag {
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   tagId String
-  tag   Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([contactId, tagId])
 }
@@ -692,7 +698,7 @@ model EntrepriseTag {
   entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
 
   tagId String
-  tag   Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([entrepriseId, tagId])
 }
@@ -703,28 +709,28 @@ model MarketingCampaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  nom          String
-  description  String?
-  type         String  @default("email") // email, sms
-  statut       String  @default("brouillon") // brouillon, planifiee, envoyee, annulee
+  nom         String
+  description String?
+  type        String  @default("email") // email, sms
+  statut      String  @default("brouillon") // brouillon, planifiee, envoyee, annulee
 
   // Ciblage : JSON array de criteres ou liste de tagIds
   segmentConfig String @default("{}") // JSON { tags: [], formations: [], type: "stagiaire", ... }
 
   // Contenu
-  objet    String? // sujet email
-  contenu  String? // HTML email ou texte SMS
+  objet      String? // sujet email
+  contenu    String? // HTML email ou texte SMS
   templateId String? // reference un MessageTemplate
 
   // Planification
-  dateEnvoi    DateTime?
-  dateEnvoyee  DateTime?
+  dateEnvoi   DateTime?
+  dateEnvoyee DateTime?
 
   // Stats
-  nbDestinataires Int @default(0)
-  nbEnvoyes       Int @default(0)
-  nbOuverts       Int @default(0)
-  nbClics         Int @default(0)
+  nbDestinataires   Int @default(0)
+  nbEnvoyes         Int @default(0)
+  nbOuverts         Int @default(0)
+  nbClics           Int @default(0)
   nbDesinscriptions Int @default(0)
 
   recipients CampaignRecipient[]
@@ -742,7 +748,7 @@ model CampaignRecipient {
 
   contactId String
 
-  statut    String  @default("pending") // pending, sent, opened, clicked, bounced, unsubscribed
+  statut    String    @default("pending") // pending, sent, opened, clicked, bounced, unsubscribed
   sentAt    DateTime?
   openedAt  DateTime?
   clickedAt DateTime?
@@ -756,8 +762,8 @@ model MarketingOptOut {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  email     String  @unique
-  reason    String? // opt-out volontaire, bounce, plainte
+  email  String  @unique
+  reason String? // opt-out volontaire, bounce, plainte
 
   @@index([email])
 }
@@ -772,15 +778,15 @@ model DigitalBadge {
 
   nom         String
   description String?
-  icone       String?  // URL image / emoji
-  niveau      String   @default("bronze") // bronze, argent, or
-  couleur     String   @default("#dc2626")
+  icone       String? // URL image / emoji
+  niveau      String  @default("bronze") // bronze, argent, or
+  couleur     String  @default("#dc2626")
 
   // Critere d'attribution automatique
-  formationId String?  // si set, attribue auto a la completion de cette formation
+  formationId String? // si set, attribue auto a la completion de cette formation
   formation   Formation? @relation("BadgeFormation", fields: [formationId], references: [id], onDelete: SetNull)
 
-  actif       Boolean @default(true)
+  actif Boolean @default(true)
 
   awards BadgeAward[]
 }
@@ -790,15 +796,15 @@ model BadgeAward {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  badgeId   String
-  badge     DigitalBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badgeId String
+  badge   DigitalBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   contactId String
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  sessionId String? // session d'obtention
-  revoque   Boolean @default(false)
-  revoqueAt DateTime?
+  sessionId     String? // session d'obtention
+  revoque       Boolean   @default(false)
+  revoqueAt     DateTime?
   revoqueRaison String?
 
   // Token de verification publique
@@ -817,24 +823,24 @@ model AiDocumentAnalysis {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contactId   String
-  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  documentUrl String  // URL du fichier dans Supabase Storage
-  documentNom String  // nom original du fichier
+  documentUrl String // URL du fichier dans Supabase Storage
+  documentNom String // nom original du fichier
 
   // Resultats IA
-  typeDetecte      String?  // habilitation_electrique, carte_btp, carte_pro, diplome, autre
-  nomDetecte       String?  // nom du titulaire extrait
+  typeDetecte      String? // habilitation_electrique, carte_btp, carte_pro, diplome, autre
+  nomDetecte       String? // nom du titulaire extrait
   dateEmission     DateTime?
   dateExpiration   DateTime?
-  scoreConfiance   Int      @default(0) // 0-100
-  donneesExtraites String   @default("{}") // JSON avec tous les champs extraits
+  scoreConfiance   Int       @default(0) // 0-100
+  donneesExtraites String    @default("{}") // JSON avec tous les champs extraits
 
   // Workflow validation
-  statut           String   @default("en_attente") // en_attente, valide_auto, valide_manuel, rejete, a_verifier
+  statut           String  @default("en_attente") // en_attente, valide_auto, valide_manuel, rejete, a_verifier
   commentaireAdmin String?
-  valideParId      String?  // userId admin qui a valide
+  valideParId      String? // userId admin qui a valide
 
   @@index([contactId])
   @@index([statut])
@@ -848,16 +854,16 @@ model CertificationStagiaire {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contactId   String
+  contactId String
   // Audit 2026-05-19 §4.1/4.3 : Restrict pour préserver les certifications
   // RNCP/Qualiopi (validité 3-5 ans). Suppression contact/formation bloquée
   // tant qu'une certif existe — éviter perte preuves légales.
-  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Restrict)
 
   formationId String
   formation   Formation @relation(fields: [formationId], references: [id], onDelete: Restrict)
 
-  sessionId   String?  // session d'obtention (si connue)
+  sessionId String? // session d'obtention (si connue)
 
   dateObtention  DateTime
   dateExpiration DateTime? // calculee : dateObtention + formation.dureeRecyclage mois
@@ -878,9 +884,9 @@ model ForumTopic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  titre     String
-  contenu   String
-  epingle   Boolean @default(false)
+  titre      String
+  contenu    String
+  epingle    Boolean @default(false)
   verrouille Boolean @default(false)
 
   // Scope : si sessionId set → forum de session, sinon forum general
@@ -892,7 +898,7 @@ model ForumTopic {
   auteurId  String // contactId ou formateurId
   auteurNom String // cache pour affichage
 
-  replies   ForumReply[]
+  replies ForumReply[]
 
   @@index([sessionId])
   @@index([createdAt])
@@ -903,9 +909,9 @@ model ForumReply {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contenu   String
-  topicId   String
-  topic     ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  contenu String
+  topicId String
+  topic   ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   auteurId  String
   auteurNom String
@@ -917,11 +923,11 @@ model DirectMessage {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  contenu    String
-  expediteur String // userId ou contactId
+  contenu       String
+  expediteur    String // userId ou contactId
   expediteurNom String
-  destinataire String
-  lu         Boolean @default(false)
+  destinataire  String
+  lu            Boolean @default(false)
 
   @@index([destinataire, lu])
   @@index([expediteur])
@@ -937,7 +943,7 @@ model NoteFrais {
   formateurId String
   formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
 
-  sessionId   String?
+  sessionId String?
 
   categorie   String // transport, hebergement, repas, materiel, autre
   description String
@@ -948,9 +954,9 @@ model NoteFrais {
   justificatifUrl String? // URL fichier dans Supabase Storage
   justificatifNom String?
 
-  statut      String @default("soumise") // soumise, approuvee, rejetee, payee
+  statut           String    @default("soumise") // soumise, approuvee, rejetee, payee
   commentaireAdmin String?
-  datePaiement DateTime?
+  datePaiement     DateTime?
 
   @@index([formateurId])
   @@index([statut])
@@ -964,15 +970,15 @@ model ClasseVirtuelle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessionId String @unique
+  sessionId String  @unique
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  lienVisio        String? // URL Zoom/Teams/Meet
-  plateformeVisio  String? // zoom, teams, meet, autre
-  enregistrementUrl String?
+  lienVisio                      String? // URL Zoom/Teams/Meet
+  plateformeVisio                String? // zoom, teams, meet, autre
+  enregistrementUrl              String?
   enregistrementDisponibleJusqua DateTime?
-  ressources       String  @default("[]") // JSON [{ nom, url }]
-  notes            String?
+  ressources                     String    @default("[]") // JSON [{ nom, url }]
+  notes                          String?
 }
 
 // ==================== COMPETENCES FORMATEURS (V2 Lot 4) ====================
@@ -981,7 +987,7 @@ model CompetenceReferentiel {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  nom         String @unique // SST, AFGSU 2, Incendie ERP, Habilitation electrique, ...
+  nom         String  @unique // SST, AFGSU 2, Incendie ERP, Habilitation electrique, ...
   description String?
   categorie   String? // securite, incendie, sante, ...
 
@@ -993,18 +999,18 @@ model FormateurCompetence {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  formateurId   String
-  formateur     Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
 
-  competenceId  String
-  competence    CompetenceReferentiel @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  competenceId String
+  competence   CompetenceReferentiel @relation(fields: [competenceId], references: [id], onDelete: Cascade)
 
-  niveau        String @default("intermediaire") // debutant, intermediaire, avance, expert
+  niveau          String    @default("intermediaire") // debutant, intermediaire, avance, expert
   justificatifUrl String?
-  dateObtention DateTime?
-  dateExpiration DateTime?
-  valideParAdmin Boolean @default(false)
-  dateValidation DateTime?
+  dateObtention   DateTime?
+  dateExpiration  DateTime?
+  valideParAdmin  Boolean   @default(false)
+  dateValidation  DateTime?
 
   @@unique([formateurId, competenceId])
   @@index([formateurId])
@@ -1021,7 +1027,7 @@ model Notification {
   message   String
   type      String   @default("info") // info, warning, success, error
   lu        Boolean  @default(false)
-  lien      String?  // optional link to navigate to
+  lien      String? // optional link to navigate to
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1035,12 +1041,12 @@ model Financement {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  type       String  // opco, entreprise, personnel, pole_emploi, cpf, autre
-  organisme  String?
-  montant    Float
-  reference  String?
-  statut     String  @default("en_cours") // en_cours, accorde, refuse
-  notes      String?
+  type      String // opco, entreprise, personnel, pole_emploi, cpf, autre
+  organisme String?
+  montant   Float
+  reference String?
+  statut    String  @default("en_cours") // en_cours, accorde, refuse
+  notes     String?
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
@@ -1064,22 +1070,22 @@ model HistoriqueAction {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  action    String
-  label     String
-  detail    String?
-  lien      String?
+  action String
+  label  String
+  detail String?
+  lien   String?
 
-  userId    String?
+  userId String?
 
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
 
-  contactId    String?
-  contact      Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
-  sessionId    String?
-  devisId      String?
-  factureId    String?
+  sessionId String?
+  devisId   String?
+  factureId String?
 
   @@index([entrepriseId])
   @@index([contactId])
@@ -1112,11 +1118,11 @@ model Parametres {
   moyensPaiement     String @default("virement,cpf,opco")
 
   // Identite visuelle (branding)
-  logoUrl            String?
-  couleurPrimaire    String @default("#dc2626")
+  logoUrl         String?
+  couleurPrimaire String  @default("#dc2626")
 
   // Feature flags V2 — JSON : { emargement_v2: boolean, automations_v2: boolean, ... }
-  featureFlags       String @default("{}")
+  featureFlags String @default("{}")
 
   // Conformité légale des devis/factures (Code de commerce, Code de la consommation, CGI).
   // formeJuridique : SARL / SAS / EI / EURL... imposé par art. R123-237 C.com.
@@ -1125,10 +1131,10 @@ model Parametres {
   //   - exonere_261_4_4  → organisme de formation déclaré, art. 261-4-4° CGI
   //   - franchise_293_b  → franchise en base PME, art. 293 B CGI
   // penalitesRetard / indemniteRecouvrement : art. L441-10 + D441-5 C.com (B2B).
-  formeJuridique        String  @default("")
-  regimeTVA             String  @default("assujetti")
-  penalitesRetard       String  @default("En cas de retard de paiement, pénalité égale à 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce).")
-  indemniteRecouvrement Float   @default(40)
+  formeJuridique        String @default("")
+  regimeTVA             String @default("assujetti")
+  penalitesRetard       String @default("En cas de retard de paiement, pénalité égale à 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce).")
+  indemniteRecouvrement Float  @default(40)
 }
 
 // ==================== MODELES DE DOCUMENTS (PDF) ====================
@@ -1137,16 +1143,16 @@ model Parametres {
 // Permettent de modifier le texte du document sans toucher au code.
 // Integre automatiquement le logo et la couleur de l'entreprise via Parametres.
 model DocumentTemplate {
-  id          String   @id
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   type         String  @unique // convocation, convention, attestation, feuille_presence, devis, facture
   nom          String
   description  String?
-  titre        String  // Titre principal en haut du document
+  titre        String // Titre principal en haut du document
   introduction String? // Paragraphe d'introduction (variables OK)
-  corps        String  // Corps principal (variables OK, saut de ligne \n)
+  corps        String // Corps principal (variables OK, saut de ligne \n)
   mentions     String? // Mentions legales / pied de page
   variables    String  @default("[]")
   actif        Boolean @default(true)
@@ -1161,18 +1167,18 @@ model DocumentTemplate {
 // type figé), on peut en créer autant qu'on veut (courriers, attestations
 // custom, etc.). Rendu PDF via le template générique document-libre.
 model ModeleDocumentIA {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  nom         String   // libellé court du modèle
-  description String?  // description / prompt source ayant servi à la génération
-  titre       String   // titre affiché en haut du document
+  nom          String // libellé court du modèle
+  description  String? // description / prompt source ayant servi à la génération
+  titre        String // titre affiché en haut du document
   introduction String? // paragraphe d'intro (variables {{}} OK)
-  corps       String   // corps principal (variables {{}} OK, \n = saut de ligne)
-  mentions    String?  // pied de page / mentions légales
-  variables   String   @default("[]") // JSON : [{ nom, description }]
-  actif       Boolean  @default(true)
+  corps        String // corps principal (variables {{}} OK, \n = saut de ligne)
+  mentions     String? // pied de page / mentions légales
+  variables    String  @default("[]") // JSON : [{ nom, description }]
+  actif        Boolean @default(true)
 
   @@index([actif])
   @@index([createdAt])
@@ -1184,20 +1190,20 @@ model ModeleDocumentIA {
 // seede, que l'utilisateur peut ensuite modifier a sa guise.
 // Les variables de la forme {{nom}} sont remplacees au moment de l'envoi.
 model MessageTemplate {
-  id          String   @id
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  type        String   @unique // convocation, fiche_besoin_client, fiche_besoin_stagiaire, evaluation_chaud, etc.
+  type        String  @unique // convocation, fiche_besoin_client, fiche_besoin_stagiaire, evaluation_chaud, etc.
   nom         String
   description String?
-  objet       String   // objet de l'email (avec variables)
-  contenu     String   // corps HTML (avec variables)
-  variables   String   @default("[]") // JSON array documentant les variables dispo
-  actif       Boolean  @default(true)
-  modifie     Boolean  @default(false) // true si l'admin a modifie le defaut
+  objet       String // objet de l'email (avec variables)
+  contenu     String // corps HTML (avec variables)
+  variables   String  @default("[]") // JSON array documentant les variables dispo
+  actif       Boolean @default(true)
+  modifie     Boolean @default(false) // true si l'admin a modifie le defaut
 
-  logEmails   LogEmail[]
+  logEmails LogEmail[]
 }
 
 // ==================== AUTOMATISATIONS ====================
@@ -1212,17 +1218,17 @@ model AutomationRule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  type           String  @unique // identifiant unique du type d'action
-  label          String  // libelle affiche
-  description    String? // description longue
-  enabled        Boolean @default(true) // active par defaut pour les nouvelles sessions
-  relativeTo     String  @default("dateDebut") // dateDebut, dateFin, inscription, creation_session
-  offsetDays     Int     @default(0) // negatif = avant, positif = apres
-  offsetHours    Int     @default(0)
-  timeOfDay      String? // HH:MM heure d'envoi preferentielle (ex: "09:00")
-  canalEmail     Boolean @default(true) // envoi par email
-  templateId     String? // ID du template associe (ex: preset_satisfaction_chaud)
-  ordre          Int     @default(0)
+  type        String  @unique // identifiant unique du type d'action
+  label       String // libelle affiche
+  description String? // description longue
+  enabled     Boolean @default(true) // active par defaut pour les nouvelles sessions
+  relativeTo  String  @default("dateDebut") // dateDebut, dateFin, inscription, creation_session
+  offsetDays  Int     @default(0) // negatif = avant, positif = apres
+  offsetHours Int     @default(0)
+  timeOfDay   String? // HH:MM heure d'envoi preferentielle (ex: "09:00")
+  canalEmail  Boolean @default(true) // envoi par email
+  templateId  String? // ID du template associe (ex: preset_satisfaction_chaud)
+  ordre       Int     @default(0)
 }
 
 // Override par session : si present, remplace la regle globale pour cette session
@@ -1234,14 +1240,14 @@ model SessionAutomation {
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  type         String
-  enabled      Boolean  @default(true)
-  relativeTo   String   @default("dateDebut")
-  offsetDays   Int      @default(0)
-  offsetHours  Int      @default(0)
-  timeOfDay    String?
-  canalEmail   Boolean  @default(true)
-  templateId   String?
+  type        String
+  enabled     Boolean @default(true)
+  relativeTo  String  @default("dateDebut")
+  offsetDays  Int     @default(0)
+  offsetHours Int     @default(0)
+  timeOfDay   String?
+  canalEmail  Boolean @default(true)
+  templateId  String?
 
   // Tracking execution
   executedAt   DateTime?
@@ -1268,16 +1274,16 @@ model AutomationRuleV2 {
   ordre       Int     @default(0)
 
   // Declencheur
-  trigger     String // inscription, session_start, session_end, j_minus_1, j_minus_7, j_minus_30, status_change, creation_session
+  trigger String // inscription, session_start, session_end, j_minus_1, j_minus_7, j_minus_30, status_change, creation_session
 
   // Conditions (JSON array) : [{ field, operator, value }]
   // field : formation.categorie, contact.type, inscription.statut, formation.id, financement.type
   // operator : equals, in, not_equals
-  conditions  String @default("[]")
+  conditions String @default("[]")
 
   // Delai avant execution
-  delayType   String @default("immediate") // immediate, minutes, hours, days
-  delayValue  Int    @default(0)
+  delayType  String @default("immediate") // immediate, minutes, hours, days
+  delayValue Int    @default(0)
 
   // Action a executer
   actionType   String // send_email, send_sms, generate_document, create_task, change_status
@@ -1296,13 +1302,13 @@ model AutomationExecutionV2 {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  ruleId    String
-  rule      AutomationRuleV2 @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  ruleId String
+  rule   AutomationRuleV2 @relation(fields: [ruleId], references: [id], onDelete: Cascade)
 
   sessionId String
   contactId String?
 
-  status       String  // success, error, skipped, dry_run
+  status       String // success, error, skipped, dry_run
   payload      String? // JSON contexte complet
   errorMessage String?
 
@@ -1322,8 +1328,15 @@ model FichePreFormationEntreprise {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessionId    String
-  session      Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  // La fiche est le point d'entrée du flux commercial : créée à la naissance
+  // du prospect (Demande), elle alimente ensuite Devis → Contrat → Session →
+  // Facture. sessionId est donc nullable (la session n'existe pas encore).
+  sessionId    String?
+  session      Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  demandeId    String?
+  demande      Demande?    @relation(fields: [demandeId], references: [id], onDelete: SetNull)
+  formationId  String?
+  formation    Formation?  @relation(fields: [formationId], references: [id], onDelete: SetNull)
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
@@ -1334,8 +1347,8 @@ model FichePreFormationEntreprise {
   dateReponse DateTime?
 
   // Destinataire (pre-rempli depuis contact entreprise si dispo)
-  destinataireNom    String?
-  destinataireEmail  String?
+  destinataireNom   String?
+  destinataireEmail String?
 
   // Section 1 - Entreprise
   secteurActivite  String?
@@ -1358,10 +1371,12 @@ model FichePreFormationEntreprise {
   aStagiairesHandicap Boolean @default(false)
   detailsHandicap     String?
 
-  @@map("BesoinClient")
   @@index([sessionId])
+  @@index([demandeId])
+  @@index([formationId])
   @@index([entrepriseId])
   @@index([statut])
+  @@map("BesoinClient")
 }
 
 // Fiche besoin individuelle envoyee a chaque stagiaire (Qualiopi + Passeport Prevention)
@@ -1370,10 +1385,16 @@ model FichePreFormationStagiaire {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessionId String
-  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  contactId String
-  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  // Même logique que la fiche entreprise : la fiche stagiaire peut exister
+  // avant la session (lors de la création du prospect). sessionId nullable.
+  sessionId   String?
+  session     Session?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  demandeId   String?
+  demande     Demande?   @relation(fields: [demandeId], references: [id], onDelete: SetNull)
+  formationId String?
+  formation   Formation? @relation(fields: [formationId], references: [id], onDelete: SetNull)
+  contactId   String
+  contact     Contact    @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   tokenAcces  String    @unique
   statut      String    @default("en_attente") // en_attente, envoye, repondu, incomplet
@@ -1387,8 +1408,8 @@ model FichePreFormationStagiaire {
   // Section 2 - Prerequis
   dejaSuivi             Boolean   @default(false)
   dateDerniereFormation DateTime?
-  niveauFormation       String?  // niveau scolaire general (sans_diplome, cap, bac, etc.)
-  niveauPrerequis       String?  // evaluation des prerequis specifiques a la formation (debutant, intermediaire, avance)
+  niveauFormation       String? // niveau scolaire general (sans_diplome, cap, bac, etc.)
+  niveauPrerequis       String? // evaluation des prerequis specifiques a la formation (debutant, intermediaire, avance)
 
   // Section 3 - Accessibilite & contraintes
   estRQTH                 Boolean @default(false)
@@ -1401,11 +1422,13 @@ model FichePreFormationStagiaire {
   consentementRGPD Boolean @default(false)
   consentementBPF  Boolean @default(false)
 
-  @@map("BesoinStagiaire")
   @@unique([sessionId, contactId])
   @@index([sessionId])
+  @@index([demandeId])
+  @@index([formationId])
   @@index([contactId])
   @@index([statut])
+  @@map("BesoinStagiaire")
 }
 
 // ============================================================
@@ -1425,9 +1448,9 @@ model Parcours {
 
   nom         String
   description String?
-  duree       Int      // total en heures
+  duree       Int // total en heures
   tarif       Float?
-  actif       Boolean  @default(true)
+  actif       Boolean @default(true)
   categorie   String?
   niveau      String?
 
@@ -1443,8 +1466,8 @@ model ParcoursModule {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  parcoursId  String
-  parcours    Parcours  @relation(fields: [parcoursId], references: [id], onDelete: Cascade)
+  parcoursId String
+  parcours   Parcours @relation(fields: [parcoursId], references: [id], onDelete: Cascade)
 
   formationId String
   // Audit 2026-05-19 §4.3 : Restrict pour empêcher la suppression d'une
@@ -1464,8 +1487,8 @@ model SessionParcours {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  sessionId  String
-  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   parcoursId String
   parcours   Parcours @relation(fields: [parcoursId], references: [id], onDelete: Cascade)
@@ -1483,21 +1506,21 @@ model Prospect {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  nom        String
-  prenom     String
-  email      String?
-  telephone  String?
-  entreprise String?  // nom libre (pas de FK : prospect pas encore qualifie)
-  source     String?  // web, salon, recommandation, autre
-  statut     String   @default("nouveau") // nouveau, qualifie, proposition, gagne, perdu
-  score      Int?     // 0-100
-  notes      String?
-  attribueA  String?  // userId
+  nom                 String
+  prenom              String
+  email               String?
+  telephone           String?
+  entreprise          String? // nom libre (pas de FK : prospect pas encore qualifie)
+  source              String? // web, salon, recommandation, autre
+  statut              String    @default("nouveau") // nouveau, qualifie, proposition, gagne, perdu
+  score               Int? // 0-100
+  notes               String?
+  attribueA           String? // userId
   dateProchaineAction DateTime?
   dateConversion      DateTime?
 
-  contactId  String?
-  contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
   activities ProspectActivity[]
 
@@ -1512,10 +1535,10 @@ model ProspectActivity {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  prospectId  String
-  prospect    Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
 
-  type        String   // call, email, meeting, note
+  type        String // call, email, meeting, note
   titre       String
   description String?
   date        DateTime
@@ -1541,7 +1564,7 @@ model TaskList {
   // (ou aucun). Pas contraint en BD (un projet ↔ N sessions, donc cohabitation OK).
   projetId    String?
   projet      Projet?  @relation(fields: [projetId], references: [id], onDelete: SetNull)
-  userId      String?  // utilisateur assigne
+  userId      String? // utilisateur assigne
   couleur     String   @default("#dc2626")
 
   items TaskItem[]
@@ -1557,16 +1580,16 @@ model TaskItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  listId      String
-  list        TaskList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId String
+  list   TaskList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
   titre       String
   description String?
   completed   Boolean   @default(false)
   dueDate     DateTime?
-  priorite    String?   // basse, moyenne, haute, urgente
+  priorite    String? // basse, moyenne, haute, urgente
   ordre       Int       @default(0)
-  userId      String?   // utilisateur assigne
+  userId      String? // utilisateur assigne
   completedAt DateTime?
 
   comments TaskComment[]
@@ -1587,8 +1610,8 @@ model TaskComment {
   taskId String
   task   TaskItem @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  authorId   String
-  author     User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   contentHtml String // HTML rich text sanitized (max ~10 Ko en pratique)
 
@@ -1613,7 +1636,7 @@ model Conversation {
   //   direct_client    : 1-1 admin ↔ client
   //   session_group    : groupe autour d'une session (admin + formateur(s)
   //                      assigné(s) + client(s) inscrits)
-  type      String   @default("direct_formateur")
+  type String @default("direct_formateur")
 
   sessionId String?
   session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
@@ -1628,13 +1651,13 @@ model Conversation {
 
 // Participant a une conversation
 model ConversationParticipant {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  userId     String
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   joinedAt   DateTime  @default(now())
   lastReadAt DateTime?
@@ -1651,9 +1674,9 @@ model ConversationMessage {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  userId  String   // auteur
+  userId  String // auteur
   contenu String
-  lu      Json     @default("{}") // map { userId: timestamp }
+  lu      Json   @default("{}") // map { userId: timestamp }
 
   @@index([conversationId])
   @@index([createdAt])
@@ -1666,14 +1689,14 @@ model Paiement {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  factureId    String
+  factureId String
   // Audit 2026-05-19 §4.2 : Restrict pour respecter CGI art. 286 — conservation
   // 10 ans des pièces comptables. Faire un avoir au lieu de supprimer.
-  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Restrict)
+  facture   Facture @relation(fields: [factureId], references: [id], onDelete: Restrict)
 
   montant      Float
   datePaiement DateTime
-  mode         String   // virement, cpf, opco, carte, especes, cheque
+  mode         String // virement, cpf, opco, carte, especes, cheque
   reference    String?
   notes        String?
 
@@ -1686,14 +1709,14 @@ model EcheancierPaiement {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  factureId    String
+  factureId String
   // Audit 2026-05-19 §4.2 : Restrict — l'échéancier est une pièce comptable.
-  facture      Facture @relation(fields: [factureId], references: [id], onDelete: Restrict)
+  facture   Facture @relation(fields: [factureId], references: [id], onDelete: Restrict)
 
-  montant       Float
-  dateEcheance  DateTime
-  statut        String    @default("en_attente") // en_attente, paye, en_retard
-  datePaiement  DateTime?
+  montant      Float
+  dateEcheance DateTime
+  statut       String    @default("en_attente") // en_attente, paye, en_retard
+  datePaiement DateTime?
 
   @@index([factureId])
   @@index([dateEcheance])
@@ -1709,7 +1732,7 @@ model TransactionBancaire {
   date      DateTime
   libelle   String
   reference String?
-  sens      String   // credit, debit
+  sens      String // credit, debit
   categorie String?
 
   factureId String?
@@ -1728,21 +1751,21 @@ model FactureFormateur {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  numero       String   @unique
+  numero String @unique
 
-  formateurId  String
-  formateur    Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
 
-  sessionId    String?
-  session      Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   montantHT      Float
-  tauxTVA        Float    @default(20)
+  tauxTVA        Float     @default(20)
   montantTTC     Float
   datePrestation DateTime
-  dateEmission   DateTime @default(now())
+  dateEmission   DateTime  @default(now())
   datePaiement   DateTime?
-  statut         String   @default("a_payer") // a_payer, paye, refuse
+  statut         String    @default("a_payer") // a_payer, paye, refuse
   fichierUrl     String?
   notes          String?
 
@@ -1757,20 +1780,20 @@ model EvaluationFormateur {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  formateurId      String
-  formateur        Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+  formateurId String
+  formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
 
-  sessionId        String
-  session          Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  evaluatorUserId  String?  // null = anonyme
-  noteGlobale      Int      // 1-5
-  pointsForts      String?
+  evaluatorUserId    String? // null = anonyme
+  noteGlobale        Int // 1-5
+  pointsForts        String?
   pointsAmelioration String?
-  pedagogie        Int?     // 1-5
-  maitriseTechnique Int?    // 1-5
-  animation        Int?     // 1-5
-  commentaire      String?
+  pedagogie          Int? // 1-5
+  maitriseTechnique  Int? // 1-5
+  animation          Int? // 1-5
+  commentaire        String?
 
   @@index([formateurId])
   @@index([sessionId])
@@ -1784,14 +1807,14 @@ model ActionQualite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  description    String
-  actionMenee    String
-  resultat       String?
-  responsable    String?
-  statut         String    @default("ouverte") // ouverte, en_cours, cloturee
-  dateOuverture  DateTime  @default(now())
-  dateCloture    DateTime?
-  source         String?   // audit, eval_chaud, eval_froid, incident, autre
+  description   String
+  actionMenee   String
+  resultat      String?
+  responsable   String?
+  statut        String    @default("ouverte") // ouverte, en_cours, cloturee
+  dateOuverture DateTime  @default(now())
+  dateCloture   DateTime?
+  source        String? // audit, eval_chaud, eval_froid, incident, autre
 
   @@index([statut])
   @@index([source])
@@ -1805,9 +1828,9 @@ model IncidentQualite {
 
   nom          String
   description  String
-  source       String   // Entreprise, Apprenant, Formateur
-  sujet        String   // Pedagogique, Administratif, Technique
-  gravite      String   // Faible, Modere, Grave
+  source       String // Entreprise, Apprenant, Formateur
+  sujet        String // Pedagogique, Administratif, Technique
+  gravite      String // Faible, Modere, Grave
   dateIncident DateTime
   actionMenee  String?
   statut       String   @default("ouvert") // ouvert, traite, cloture
@@ -1822,11 +1845,11 @@ model PartageQualiopi {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  token            String    @unique
-  nom              String    // libelle du share
-  expireAt         DateTime?
-  actif            Boolean   @default(true)
-  createdByUserId  String?
+  token           String    @unique
+  nom             String // libelle du share
+  expireAt        DateTime?
+  actif           Boolean   @default(true)
+  createdByUserId String?
 
   @@index([token])
   @@index([actif])
@@ -1844,11 +1867,11 @@ model LogEmail {
   templateId   String?
   template     MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
-  statut       String  @default("envoye") // envoye, livre, ouvert, clique, bounce, plainte
-  messageId    String? // Resend ID
-  erreur       String?
-  sessionId    String?
-  contactId    String?
+  statut    String  @default("envoye") // envoye, livre, ouvert, clique, bounce, plainte
+  messageId String? // Resend ID
+  erreur    String?
+  sessionId String?
+  contactId String?
 
   events EmailTrackingEvent[]
 
@@ -1866,7 +1889,7 @@ model EmailTrackingEvent {
   logEmailId String
   logEmail   LogEmail @relation(fields: [logEmailId], references: [id], onDelete: Cascade)
 
-  type      String  // open, click, bounce, complaint, delivered
+  type      String // open, click, bounce, complaint, delivered
   payload   Json    @default("{}")
   userAgent String?
   ipAddress String?
@@ -1885,9 +1908,9 @@ model SmsTemplate {
 
   nom         String
   description String?
-  contenu     String   // max 160 chars conventionally
-  variables   String   @default("[]")
-  actif       Boolean  @default(true)
+  contenu     String // max 160 chars conventionally
+  variables   String  @default("[]")
+  actif       Boolean @default(true)
 
   logs LogSms[]
 }
@@ -1899,7 +1922,7 @@ model LogSms {
 
   destinataire String
   contenu      String
-  statut       String  @default("envoye") // envoye, livre, echec
+  statut       String       @default("envoye") // envoye, livre, echec
   templateId   String?
   template     SmsTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   contactId    String?
@@ -1933,7 +1956,7 @@ model SignatureDocument {
   documentId      String?
   userId          String?
   contactId       String?
-  signatureBase64 String   // base64 PNG data URL
+  signatureBase64 String // base64 PNG data URL
   dateSignature   DateTime @default(now())
   ipAddress       String?
   userAgent       String?
@@ -1949,7 +1972,7 @@ model GeneratedDocument {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  type              String  // convocation, convention, attestation, facture, devis, feuille_presence, ...
+  type              String // convocation, convention, attestation, facture, devis, feuille_presence, ...
   templateUsed      String?
   template          DocumentTemplate? @relation(fields: [templateUsed], references: [id], onDelete: SetNull)
   sessionId         String?
@@ -1977,9 +2000,9 @@ model ChampPersonnalise {
 
   nom         String
   label       String
-  type        String  // text, number, date, select, boolean, textarea
-  entiteCible String  // Contact, Entreprise, Formation, Session, Inscription
-  options     Json?   // pour les selects : [{ value, label }]
+  type        String // text, number, date, select, boolean, textarea
+  entiteCible String // Contact, Entreprise, Formation, Session, Inscription
+  options     Json? // pour les selects : [{ value, label }]
   obligatoire Boolean @default(false)
   ordre       Int     @default(0)
   actif       Boolean @default(true)
@@ -1996,10 +2019,10 @@ model ValeurChampPersonnalise {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  champId  String
-  champ    ChampPersonnalise @relation(fields: [champId], references: [id], onDelete: Cascade)
+  champId String
+  champ   ChampPersonnalise @relation(fields: [champId], references: [id], onDelete: Cascade)
 
-  entiteId String   // UUID de l'entite cible (Contact, Entreprise, ...)
+  entiteId String // UUID de l'entite cible (Contact, Entreprise, ...)
   valeur   String
 
   @@index([champId, entiteId])
@@ -2013,14 +2036,14 @@ model ApiKey {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  nom              String
-  hashKey          String   @unique // hash SHA-256 de la cle
-  prefix           String   // premiers chars de la cle pour affichage UI
-  permissions      String   @default("[]") // JSON array de scopes
-  lastUsedAt       DateTime?
-  expireAt         DateTime?
-  revokedAt        DateTime?
-  createdByUserId  String?
+  nom             String
+  hashKey         String    @unique // hash SHA-256 de la cle
+  prefix          String // premiers chars de la cle pour affichage UI
+  permissions     String    @default("[]") // JSON array de scopes
+  lastUsedAt      DateTime?
+  expireAt        DateTime?
+  revokedAt       DateTime?
+  createdByUserId String?
 
   @@index([hashKey])
   @@index([revokedAt])
@@ -2032,14 +2055,14 @@ model DemandeRgpd {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  type             String   // acces, rectification, effacement, portabilite, opposition
-  demandeurEmail   String
-  demandeurNom     String?
-  statut           String   @default("recue") // recue, en_traitement, traitee, rejetee
-  description      String?
-  traiteParUserId  String?
-  dateTraitement   DateTime?
-  justificatif     String?
+  type            String // acces, rectification, effacement, portabilite, opposition
+  demandeurEmail  String
+  demandeurNom    String?
+  statut          String    @default("recue") // recue, en_traitement, traitee, rejetee
+  description     String?
+  traiteParUserId String?
+  dateTraitement  DateTime?
+  justificatif    String?
 
   @@index([statut])
   @@index([demandeurEmail])
@@ -2051,9 +2074,9 @@ model KpiHistory {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  dateSnapshot DateTime  // precision jour
-  kpis         Json      // { totalContacts, totalSessions, ... }
-  source       String    @default("cron")
+  dateSnapshot DateTime // precision jour
+  kpis         Json // { totalContacts, totalSessions, ... }
+  source       String   @default("cron")
 
   @@index([dateSnapshot])
   @@index([source])
@@ -2098,10 +2121,10 @@ model SignatureRequest {
   completedAt DateTime?
 
   // Preuves cryptographiques
-  tsaTimestamp     Bytes?    // TSR RFC 3161 binaire
+  tsaTimestamp     Bytes? // TSR RFC 3161 binaire
   tsaTimestampedAt DateTime?
   certificateUrl   String?
-  lastEventHash    String?   // tete de chaine audit log
+  lastEventHash    String? // tete de chaine audit log
 
   createdByUserId String
 
@@ -2123,20 +2146,20 @@ model SignatureZone {
   requestId String
   request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
-  page   Int    // 1-indexed
+  page     Int // 1-indexed
   // Coordonnees en unites PDF (points, 72 dpi) — pas en pixels
-  x      Float
-  y      Float
-  width  Float
-  height Float
-  type   String  // signature | initials | date | text
-  label  String?
+  x        Float
+  y        Float
+  width    Float
+  height   Float
+  type     String // signature | initials | date | text
+  label    String?
   required Boolean @default(true)
 
   // Remplissage par signataire
   filled       Boolean   @default(false)
-  filledValue  String?   // base64 image ou texte
-  filledMethod String?   // canvas | text | image
+  filledValue  String? // base64 image ou texte
+  filledMethod String? // canvas | text | image
   filledAt     DateTime?
 
   @@index([requestId])
@@ -2154,14 +2177,14 @@ model Signataire {
   contactId String? // rattachement auto si email matche un Contact existant
 
   // Token magique (jamais stocke en clair)
-  tokenHash   String  @unique // sha256(fullToken)
+  tokenHash   String    @unique // sha256(fullToken)
   tokenSentAt DateTime?
 
   // Statut individuel
-  statut       String    @default("pending") // pending | viewed | signed | declined | expired
-  viewedAt     DateTime?
-  signedAt     DateTime?
-  declinedAt   DateTime?
+  statut        String    @default("pending") // pending | viewed | signed | declined | expired
+  viewedAt      DateTime?
+  signedAt      DateTime?
+  declinedAt    DateTime?
   declineReason String?
 
   // Preuves signature
@@ -2179,8 +2202,8 @@ model SignatureEvent {
   requestId String
   request   SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
-  type      String  // created | zones_placed | sent | email_opened | viewed | signature_started | signed | tsa_stamped | completed | expired | cancelled | rejected | downloaded
-  actorType String  // admin | signataire | system
+  type      String // created | zones_placed | sent | email_opened | viewed | signature_started | signed | tsa_stamped | completed | expired | cancelled | rejected | downloaded
+  actorType String // admin | signataire | system
   actorId   String?
   payload   Json    @default("{}")
 
@@ -2196,7 +2219,7 @@ model SignatureTokenAttempt {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  tokenPrefix String  // 8 premiers chars du fullToken
+  tokenPrefix String // 8 premiers chars du fullToken
   ip          String
   success     Boolean
 
@@ -2220,14 +2243,14 @@ model Projet {
   updatedAt DateTime @updatedAt
 
   nom         String
-  code        String?  @unique  // référence courte type "PROJ-2026-001"
+  code        String? @unique // référence courte type "PROJ-2026-001"
   description String?
 
   // Lifecycle : brouillon → en_cours → en_pause → termine → archive
   // Le passage par "en_pause" est volontaire — distinguer un projet
   // suspendu (souvent revient) d'un projet terminé.
-  statut      String   @default("brouillon")
-  priorite    String   @default("normale") // basse, normale, haute, critique
+  statut   String @default("brouillon")
+  priorite String @default("normale") // basse, normale, haute, critique
 
   // Dates de pilotage
   dateDebut     DateTime?
@@ -2235,10 +2258,10 @@ model Projet {
   dateFinReelle DateTime?
 
   // Pilotage managérial
-  chefProjet String?  // libellé libre du responsable interne (User.id futur)
-  budget     Float?   // budget total alloué (TTC)
+  chefProjet String? // libellé libre du responsable interne (User.id futur)
+  budget     Float? // budget total alloué (TTC)
   objectifs  String?
-  livrables  String?  // attendus pédagogiques / contractuels
+  livrables  String? // attendus pédagogiques / contractuels
 
   // Lien client (entreprise) — un projet a au plus 1 client. Pour des
   // projets multi-clients, modéliser via N projets siblings.
@@ -2265,13 +2288,13 @@ model ProjetFormateur {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 
-  projetId    String
-  projet      Projet    @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  projetId String
+  projet   Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
 
   formateurId String
   formateur   Formateur @relation(fields: [formateurId], references: [id], onDelete: Cascade)
 
-  role  String?  // ex: "lead", "support", "evaluation", "tutorat"
+  role  String? // ex: "lead", "support", "evaluation", "tutorat"
   notes String?
 
   @@unique([projetId, formateurId])

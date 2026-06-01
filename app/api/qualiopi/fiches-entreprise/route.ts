@@ -12,7 +12,12 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const where = sessionId ? { sessionId } : {};
   const fiches = await prisma.fichePreFormationEntreprise.findMany({
     where,
-    include: { session: { select: { id: true, dateDebut: true, formation: { select: { titre: true } } } }, entreprise: { select: { id: true, nom: true } } },
+    include: {
+      session: { select: { id: true, dateDebut: true, formation: { select: { titre: true } } } },
+      formation: { select: { id: true, titre: true } }, // fiche pré-session : pas de session, formation directe
+      demande: { select: { id: true, titre: true } },
+      entreprise: { select: { id: true, nom: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(fiches);

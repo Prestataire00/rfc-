@@ -85,6 +85,8 @@ export async function autoCreateSessionAndFicheEntrepriseOnDevisSigned(
     const fiche = await tx.fichePreFormationEntreprise.create({
       data: {
         sessionId: session.id,
+        demandeId: demande.id,
+        formationId: demande.formationId ?? null,
         entrepriseId: devis.entrepriseId ?? null,
         tokenAcces,
         statut: "envoye",

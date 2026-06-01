@@ -11,12 +11,16 @@ type Fiche = {
   statut: string;
   optionnel: boolean;
   destinataireNom: string | null;
+  // session optionnelle : la fiche peut être créée à la naissance du prospect,
+  // avant qu'une session ne soit planifiée.
   session: {
     id: string;
     dateDebut: string;
     dateFin: string;
     formation: { titre: string; categorie: string | null; duree: number };
-  };
+  } | null;
+  // formation directe (cas fiche pré-session)
+  formation: { titre: string; categorie: string | null; duree: number } | null;
   entreprise: { id: string; nom: string; secteur: string | null; effectif: number | null } | null;
   secteurActivite: string | null;
   effectifTotal: number | null;
@@ -151,9 +155,24 @@ export default function FichePreFormationEntreprisePage() {
             </div>
           </div>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-gray-700">
-              Formation : <strong>{fiche.session.formation.titre}</strong> ({fiche.session.formation.duree}h) — debut le {new Date(fiche.session.dateDebut).toLocaleDateString("fr-FR")}
-            </p>
+            {(() => {
+              const formation = fiche.session?.formation ?? fiche.formation;
+              if (formation) {
+                return (
+                  <p className="text-sm text-gray-700">
+                    Formation : <strong>{formation.titre}</strong> ({formation.duree}h)
+                    {fiche.session?.dateDebut && (
+                      <> — debut le {new Date(fiche.session.dateDebut).toLocaleDateString("fr-FR")}</>
+                    )}
+                  </p>
+                );
+              }
+              return (
+                <p className="text-sm text-gray-700">
+                  Questionnaire de pré-formation — merci de nous aider à comprendre votre besoin.
+                </p>
+              );
+            })()}
             {fiche.entreprise && <p className="text-xs text-gray-600 mt-1">Entreprise : {fiche.entreprise.nom}</p>}
           </div>
           {fiche.optionnel && (

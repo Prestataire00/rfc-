@@ -45,21 +45,30 @@ export const GET = withErrorHandlerParams(
       });
     }
 
-    // 3. Fiches et inscriptions liées à la session
-    let ficheEntreprise = null;
-    let fichesStagiaire: Awaited<ReturnType<typeof prisma.fichePreFormationStagiaire.findMany>> = [];
+    // 3. Fiches : d'abord celles liées directement à la demande (créées auto à la
+    // naissance du prospect), sinon fallback sur celles de la session si elle existe.
+    let ficheEntreprise = await prisma.fichePreFormationEntreprise.findFirst({
+      where: { demandeId: demande.id },
+      orderBy: { createdAt: "desc" },
+    });
+    let fichesStagiaire = await prisma.fichePreFormationStagiaire.findMany({
+      where: { demandeId: demande.id },
+      include: { contact: true },
+    });
     let inscriptions: Awaited<ReturnType<typeof prisma.inscription.findMany>> = [];
 
     if (session) {
-      ficheEntreprise = await prisma.fichePreFormationEntreprise.findFirst({
-        where: { sessionId: session.id },
-      });
-
-      fichesStagiaire = await prisma.fichePreFormationStagiaire.findMany({
-        where: { sessionId: session.id },
-        include: { contact: true },
-      });
-
+      if (!ficheEntreprise) {
+        ficheEntreprise = await prisma.fichePreFormationEntreprise.findFirst({
+          where: { sessionId: session.id },
+        });
+      }
+      if (fichesStagiaire.length === 0) {
+        fichesStagiaire = await prisma.fichePreFormationStagiaire.findMany({
+          where: { sessionId: session.id },
+          include: { contact: true },
+        });
+      }
       inscriptions = await prisma.inscription.findMany({
         where: { sessionId: session.id },
         include: { contact: true },

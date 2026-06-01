@@ -21,7 +21,10 @@ type FicheClient = {
   tokenAcces: string;
   secteurActivite: string | null;
   aStagiairesHandicap: boolean;
-  session: { id: string; dateDebut: string; formation: { titre: string } };
+  // session optionnelle : la fiche peut être créée pré-session (depuis prospect).
+  session: { id: string; dateDebut: string; formation: { titre: string } } | null;
+  formation: { id: string; titre: string } | null;
+  demande: { id: string; titre: string } | null;
   entreprise: { id: string; nom: string } | null;
 };
 
@@ -93,7 +96,7 @@ export default function FichesPreFormationPage() {
   };
 
   const clientsFiltered = fichesClient.filter((f) =>
-    filterFiche(f, `${f.entreprise?.nom ?? ""} ${f.destinataireNom ?? ""} ${f.session.formation.titre}`)
+    filterFiche(f, `${f.entreprise?.nom ?? ""} ${f.destinataireNom ?? ""} ${f.session?.formation.titre ?? f.formation?.titre ?? f.demande?.titre ?? ""}`)
   );
   const stagiairesFiltered = fichesStagiaire.filter((f) =>
     filterFiche(f, `${f.contact.prenom} ${f.contact.nom} ${f.contact.email}`)
@@ -279,12 +282,21 @@ function ClientTable({ fiches, onResend, onCopy, copiedToken }: {
                 {f.destinataireEmail && <div className="text-xs text-gray-500">{f.destinataireEmail}</div>}
               </td>
               <td className="px-4 py-3">
-                <Link href={`/sessions/${f.session.id}`} className="text-gray-800 dark:text-gray-200 hover:text-red-500">
-                  {f.session.formation.titre}
-                </Link>
-                <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                  <Calendar className="h-3 w-3" /> {formatDate(f.session.dateDebut)}
-                </div>
+                {f.session ? (
+                  <>
+                    <Link href={`/sessions/${f.session.id}`} className="text-gray-800 dark:text-gray-200 hover:text-red-500">
+                      {f.session.formation.titre}
+                    </Link>
+                    <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                      <Calendar className="h-3 w-3" /> {formatDate(f.session.dateDebut)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-gray-800 dark:text-gray-200">{f.formation?.titre ?? f.demande?.titre ?? "—"}</span>
+                    <div className="text-xs text-gray-500 mt-0.5">Session non encore planifiée</div>
+                  </>
+                )}
               </td>
               <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{f.secteurActivite?.replace(/_/g, " ") || "—"}</td>
               <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{f.dateEnvoi ? formatDate(f.dateEnvoi) : "—"}</td>

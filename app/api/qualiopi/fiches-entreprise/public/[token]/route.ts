@@ -22,6 +22,8 @@ export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: {
           formation: { select: { titre: true, categorie: true, duree: true } },
         },
       },
+      // Fiche créée pré-session (depuis prospect) : formation rattachée directement.
+      formation: { select: { titre: true, categorie: true, duree: true } },
       entreprise: { select: { id: true, nom: true, secteur: true, effectif: true } },
     },
   });

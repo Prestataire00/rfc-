@@ -91,18 +91,24 @@ export default function CommercialPage() {
   // utilisateur entre les visites.
   type DevisView = "liste" | "cartes" | "kanban";
   const [devisView, setDevisView] = useState<DevisView>("liste");
+  const [factureView, setFactureView] = useState<DevisView>("liste");
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem("commercial.devisView");
-    if (saved === "liste" || saved === "cartes" || saved === "kanban") {
-      setDevisView(saved);
-    }
+    const savedD = window.localStorage.getItem("commercial.devisView");
+    if (savedD === "liste" || savedD === "cartes" || savedD === "kanban") setDevisView(savedD);
+    const savedF = window.localStorage.getItem("commercial.factureView");
+    if (savedF === "liste" || savedF === "cartes" || savedF === "kanban") setFactureView(savedF);
   }, []);
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("commercial.devisView", devisView);
     }
   }, [devisView]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("commercial.factureView", factureView);
+    }
+  }, [factureView]);
 
   useEffect(() => {
     setFacturePage(1);
@@ -118,10 +124,19 @@ export default function CommercialPage() {
 
   const { data: devisRaw, isLoading: loadingDevis } = useApi<DevisResponse>("/api/devis?limit=100");
   const { data: facturesRaw, isLoading: loadingFactures } = useApi<FacturesResponse>(facturesUrl);
+  // En vue Kanban, on a besoin de TOUTES les factures sans filtre statut
+  // pour les ventiler dans les 5 colonnes. Fetch conditionnel pour ne pas
+  // gaspiller de bande passante quand on est sur Liste/Cartes.
+  const { data: facturesKanbanRaw, isLoading: loadingFacturesKanban } = useApi<FacturesResponse>(
+    activeTab === "factures" && factureView === "kanban" ? "/api/factures?limit=200" : null,
+  );
   const { data: dashboardStats } = useApi<DashboardStats>("/api/dashboard/stats?period=mois");
 
   const devis: Devis[] = Array.isArray(devisRaw) ? devisRaw : devisRaw?.data ?? [];
   const factures: Facture[] = Array.isArray(facturesRaw) ? facturesRaw : facturesRaw?.data ?? [];
+  const facturesKanban: Facture[] = Array.isArray(facturesKanbanRaw)
+    ? facturesKanbanRaw
+    : facturesKanbanRaw?.data ?? [];
   const factureTotal = Array.isArray(facturesRaw) ? facturesRaw.length : facturesRaw?.total ?? 0;
   const factureTotalPages = Array.isArray(facturesRaw) ? 1 : facturesRaw?.totalPages ?? 1;
   const tunnelStats: TunnelStats | null = dashboardStats
@@ -461,11 +476,41 @@ export default function CommercialPage() {
       {/* Factures */}
       {activeTab === "factures" && (
         <>
+          {/* Toggle d'affichage : Liste / Cartes / Kanban */}
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Affichage :</span>
+            <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5">
+              {([
+                { key: "liste" as const, label: "Liste", icon: List },
+                { key: "cartes" as const, label: "Cartes", icon: LayoutGrid },
+                { key: "kanban" as const, label: "Kanban", icon: Columns3 },
+              ]).map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setFactureView(key)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors",
+                    factureView === key
+                      ? "bg-red-600 text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100",
+                  )}
+                  title={label}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
+            {/* Filtre statut masqué en vue Kanban (déjà ventilé en colonnes) */}
             <select
               value={filtreStatutFacture}
               onChange={(e) => setFiltreStatutFacture(e.target.value)}
-              className="h-10 rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+              className={cn(
+                "h-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100",
+                factureView === "kanban" && "invisible",
+              )}
             >
               {factureStatutOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -481,63 +526,144 @@ export default function CommercialPage() {
             </Link>
           </div>
 
-          {loadingFactures ? (
+          {factureView === "kanban" ? (
+            /* ── Vue Kanban : 5 colonnes par statut (en_attente → annulée) ── */
+            loadingFacturesKanban ? (
+              <SkeletonTable rows={5} cols={5} />
+            ) : facturesKanban.length === 0 ? (
+              <EmptyState icon={Receipt} title="Aucune facture" description="Vos factures apparaîtront ici" />
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {(Object.keys(FACTURE_STATUTS) as (keyof typeof FACTURE_STATUTS)[]).map((key) => {
+                  const meta = FACTURE_STATUTS[key];
+                  const colonne = facturesKanban.filter((f) => f.statut === key);
+                  return (
+                    <div
+                      key={key}
+                      className="flex-shrink-0 w-72 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col"
+                    >
+                      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{meta.label}</span>
+                        <span className="inline-flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[1.5rem] h-5 px-1.5">
+                          {colonne.length}
+                        </span>
+                      </div>
+                      <div className="flex-1 p-2 space-y-2 min-h-[120px]">
+                        {colonne.length === 0 ? (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">—</p>
+                        ) : (
+                          colonne.map((f) => (
+                            <button
+                              key={f.id}
+                              type="button"
+                              onClick={() => router.push(`/commercial/factures/${f.id}`)}
+                              className="w-full text-left rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 hover:border-red-400 dark:hover:border-red-600 hover:shadow-sm transition"
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="font-mono text-[10px] text-gray-500 dark:text-gray-400">{f.numero}</span>
+                                <span className="font-semibold text-xs text-gray-900 dark:text-gray-100">{formatCurrency(f.montantTTC)}</span>
+                              </div>
+                              <p className="text-xs text-gray-800 dark:text-gray-200 truncate mb-1">
+                                {f.entreprise?.nom || <span className="text-gray-400">—</span>}
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                Échéance {formatDate(f.dateEcheance)}
+                              </p>
+                              {f.devis && (
+                                <p className="text-[10px] text-blue-500 dark:text-blue-400 mt-1 font-mono">{f.devis.numero}</p>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : loadingFactures ? (
             <SkeletonTable rows={5} cols={7} />
           ) : factures.length === 0 ? (
-            <EmptyState
-              icon={Receipt}
-              title="Aucune facture"
-              description="Vos factures apparaîtront ici"
-            />
+            <EmptyState icon={Receipt} title="Aucune facture" description="Vos factures apparaîtront ici" />
+          ) : factureView === "cartes" ? (
+            /* ── Vue Cartes : grille responsive ── */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {factures.map((f) => {
+                const st = FACTURE_STATUTS[f.statut as keyof typeof FACTURE_STATUTS];
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => router.push(`/commercial/factures/${f.id}`)}
+                    className="text-left rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:border-red-400 dark:hover:border-red-600 hover:shadow-md transition"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{f.numero}</span>
+                      {st && <StatutBadge label={st.label} color={st.color} />}
+                    </div>
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate mb-1">
+                      {f.entreprise?.nom || <span className="text-gray-400">—</span>}
+                    </h3>
+                    {f.devis && (
+                      <p className="text-xs text-blue-500 dark:text-blue-400 font-mono mb-2">{f.devis.numero}</p>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Échéance {formatDate(f.dateEcheance)}</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{formatCurrency(f.montantTTC)}</span>
+                    </div>
+                    {f.datePaiement && (
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2">Payée le {formatDate(f.datePaiement)}</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           ) : (
-            <div className="rounded-lg border bg-gray-800 overflow-x-auto">
+            /* ── Vue Liste : table ── */
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto">
               <table className="min-w-[640px] w-full text-sm">
-                <thead className="bg-gray-900 border-b">
+                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Numéro</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Client</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Devis</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Montant TTC</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Échéance</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-400 hidden sm:table-cell">Date paiement</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Numéro</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">Devis</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Montant TTC</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Échéance</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">Date paiement</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {factures.map((f) => {
                     const st = FACTURE_STATUTS[f.statut as keyof typeof FACTURE_STATUTS];
                     return (
                       <tr
                         key={f.id}
-                        className="border-b last:border-0 hover:bg-gray-700 cursor-pointer"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition-colors"
                         onClick={() => router.push(`/commercial/factures/${f.id}`)}
                       >
-                        <td className="px-4 py-3 font-mono text-gray-300">{f.numero}</td>
-                        <td className="px-4 py-3 text-gray-300">
+                        <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{f.numero}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {f.entreprise?.nom || <span className="text-gray-400">—</span>}
                         </td>
-                        <td className="px-4 py-3 font-mono text-sm hidden sm:table-cell">
+                        <td className="px-4 py-3 font-mono text-xs hidden sm:table-cell">
                           {f.devis ? (
-                            <span className="text-blue-400">{f.devis.numero}</span>
+                            <span className="text-blue-500 dark:text-blue-400">{f.devis.numero}</span>
                           ) : (
-                            <span className="text-gray-500">—</span>
+                            <span className="text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-gray-200">
+                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">
                           {formatCurrency(f.montantTTC)}
                         </td>
-                        <td className="px-4 py-3 text-gray-400">
+                        <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(f.dateEcheance)}
                         </td>
                         <td className="px-4 py-3">
                           {st && <StatutBadge label={st.label} color={st.color} />}
                         </td>
-                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">
-                          {f.datePaiement ? (
-                            formatDate(f.datePaiement)
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
+                        <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                          {f.datePaiement ? formatDate(f.datePaiement) : <span className="text-gray-400">—</span>}
                         </td>
                       </tr>
                     );

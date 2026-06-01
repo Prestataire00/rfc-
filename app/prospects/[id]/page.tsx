@@ -222,6 +222,7 @@ function ProspectTimeline({
   ficheEntreprise,
   fichesStagiaire,
   devis,
+  session,
   demandeStatut,
   onMutate,
 }: {
@@ -229,6 +230,7 @@ function ProspectTimeline({
   ficheEntreprise: ProspectData["ficheEntreprise"];
   fichesStagiaire: ProspectData["fichesStagiaire"];
   devis: ProspectData["devis"];
+  session: ProspectData["session"];
   demandeStatut: string;
   onMutate: () => Promise<unknown>;
 }) {
@@ -248,15 +250,27 @@ function ProspectTimeline({
   const devisEnvoye = devis?.statut === "envoye" || devis?.statut === "signe" || devis?.statut === "refuse";
   const devisSigne = devis?.statut === "signe" || demandeStatut === "accepte";
 
+  // Session : "planifiée" = elle existe et n'est pas annulée
+  // (planifiee/confirmee/en_cours/terminee comptent).
+  // "Formation réalisée" = session.statut === "terminee".
+  const sessionPlanifiee = !!session && session.statut !== "annulee";
+  const formationRealisee = session?.statut === "terminee";
+
+  // Lien cliquable par étape — null = pas de cible (étape pas encore atteinte).
+  const sessionHref = session ? `/sessions/${session.id}` : null;
+  const devisHref = devis ? `/commercial/devis/${devis.id}` : null;
+
   // Étape "courante" = la première non terminée
-  const steps: TimelineStep[] = (() => {
-    const s = [
+  const steps: Array<TimelineStep & { href?: string | null }> = (() => {
+    const s: Array<Omit<TimelineStep, "current"> & { href?: string | null }> = [
       { key: "cree", label: "Prospect créé", done: true },
       { key: "fiche_envoyee", label: "Fiche envoyée", done: ficheEnvoyee },
       { key: "fiche_repondue", label: "Fiche reçue", done: ficheRepondue },
-      { key: "devis_pret", label: "Devis prêt", done: devisExiste },
-      { key: "devis_envoye", label: "Devis envoyé", done: devisEnvoye },
-      { key: "signe", label: "Signé / Gagné", done: devisSigne },
+      { key: "devis_pret", label: "Devis prêt", done: devisExiste, href: devisHref },
+      { key: "devis_envoye", label: "Devis envoyé", done: devisEnvoye, href: devisHref },
+      { key: "signe", label: "Signé / Gagné", done: devisSigne, href: devisHref },
+      { key: "session", label: "Session planifiée", done: sessionPlanifiee, href: sessionHref },
+      { key: "realisee", label: "Formation réalisée", done: formationRealisee, href: sessionHref },
     ];
     const firstUndone = s.findIndex((x) => !x.done);
     return s.map((x, i) => ({ ...x, current: i === firstUndone }));
@@ -322,14 +336,25 @@ function ProspectTimeline({
           const barColor = step.done
             ? "bg-emerald-500"
             : "bg-gray-200 dark:bg-gray-700";
+          // Une étape est cliquable si elle a un href défini (devis ou session
+          // déjà créés). Les autres restent purement informatives.
+          const stepInner = (
+            <div className="flex flex-col items-center gap-1 min-w-[64px]">
+              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${dotColor}`}>
+                {step.done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
+              </div>
+              <span className={`text-[10px] text-center leading-tight ${labelColor}`}>{step.label}</span>
+            </div>
+          );
           return (
             <li key={step.key} className="flex items-center gap-1 shrink-0">
-              <div className="flex flex-col items-center gap-1 min-w-[64px]">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${dotColor}`}>
-                  {step.done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
-                </div>
-                <span className={`text-[10px] text-center leading-tight ${labelColor}`}>{step.label}</span>
-              </div>
+              {step.href ? (
+                <Link href={step.href} className="hover:opacity-80 transition-opacity" title={`Ouvrir ${step.label.toLowerCase()}`}>
+                  {stepInner}
+                </Link>
+              ) : (
+                stepInner
+              )}
               {!isLast && <div className={`h-0.5 w-8 ${barColor}`} />}
             </li>
           );
@@ -549,6 +574,7 @@ export default function ProspectDetailPage() {
           ficheEntreprise={ficheEntreprise}
           fichesStagiaire={fichesStagiaire}
           devis={devis}
+          session={session}
           demandeStatut={demande.statut}
           onMutate={mutate}
         />

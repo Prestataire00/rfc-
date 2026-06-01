@@ -10,12 +10,14 @@ type Fiche = {
   id: string;
   statut: string;
   optionnel: boolean;
+  // session optionnelle : fiche créée pré-session depuis le prospect stagiaire
   session: {
     id: string;
     dateDebut: string;
     dateFin: string;
     formation: { titre: string; categorie: string | null };
-  };
+  } | null;
+  formation: { titre: string; categorie: string | null } | null;
   contact: {
     id: string;
     nom: string;
@@ -163,7 +165,16 @@ export default function FichePreFormationStagiairePage() {
             </div>
           </div>
           <p className="text-sm text-gray-700">Bonjour <strong>{fiche.contact.prenom} {fiche.contact.nom}</strong>,</p>
-          <p className="text-sm text-gray-600 mt-2">Vous etes inscrit(e) a la formation <strong>{fiche.session.formation.titre}</strong> qui debute le {new Date(fiche.session.dateDebut).toLocaleDateString("fr-FR")}.</p>
+          {(() => {
+            const formation = fiche.session?.formation ?? fiche.formation;
+            if (!formation) {
+              return <p className="text-sm text-gray-600 mt-2">Merci de completer ce questionnaire individuel.</p>;
+            }
+            if (fiche.session?.dateDebut) {
+              return <p className="text-sm text-gray-600 mt-2">Vous etes inscrit(e) a la formation <strong>{formation.titre}</strong> qui debute le {new Date(fiche.session.dateDebut).toLocaleDateString("fr-FR")}.</p>;
+            }
+            return <p className="text-sm text-gray-600 mt-2">Merci de l&apos;interet que vous portez a la formation <strong>{formation.titre}</strong>. Pour pouvoir vous proposer un devis adapte, merci de completer ce questionnaire.</p>;
+          })()}
           <p className="text-sm text-gray-600 mt-2">Merci de completer ce questionnaire pour que nous puissions adapter la formation a vos besoins. Temps estime : 3 minutes.</p>
           {fiche.optionnel && (
             <div className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">

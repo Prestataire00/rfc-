@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
-import { sendEmail, fichePreFormationEntrepriseEmail } from "@/lib/email";
+import { sendEmail, fichePreFormationEntrepriseEmail, fichePreFormationStagiaireEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
 import { logger } from "@/lib/logger";
 
@@ -36,8 +36,81 @@ export const POST = withErrorHandlerParams(
 
     const destinataireNom = `${demande.contact.prenom} ${demande.contact.nom}`;
     const destinataireEmail = demande.contact.email;
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const titre = demande.formation?.titre || demande.titre || "votre formation";
 
-    // Idempotence : on cherche une fiche déjà attachée à la demande.
+    // Routage entreprise vs stagiaire individuel :
+    //   - Contact.type "stagiaire" + pas d'entreprise → fiche stagiaire
+    //   - sinon → fiche entreprise (par défaut, couvre prospect entreprise + organisme)
+    const estStagiaireIndividuel =
+      demande.contact.type === "stagiaire" && !demande.entrepriseId;
+
+    if (estStagiaireIndividuel) {
+      let fiche = await prisma.fichePreFormationStagiaire.findFirst({
+        where: { demandeId: demande.id },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!fiche) {
+        fiche = await prisma.fichePreFormationStagiaire.create({
+          data: {
+            demandeId: demande.id,
+            formationId: demande.formationId,
+            contactId: demande.contact.id,
+            tokenAcces: randomBytes(24).toString("hex"),
+            statut: "en_attente",
+          },
+        });
+      }
+
+      const mail = fichePreFormationStagiaireEmail({
+        stagiaire: { prenom: demande.contact.prenom, nom: demande.contact.nom },
+        formation: { titre },
+        session: null,
+        link: `${baseUrl}/qualiopi/fiche-stagiaire/${fiche.tokenAcces}`,
+      });
+      const envoi = await sendEmail({
+        to: destinataireEmail,
+        subject: mail.subject,
+        html: mail.html,
+      });
+
+      if (envoi.skipped) {
+        return NextResponse.json(
+          {
+            error: "Email non envoyé (service mail non configuré ou destinataire refusé). Vérifiez RESEND_API_KEY et l'adresse du contact.",
+            ficheId: fiche.id,
+            tokenAcces: fiche.tokenAcces,
+          },
+          { status: 502 },
+        );
+      }
+
+      fiche = await prisma.fichePreFormationStagiaire.update({
+        where: { id: fiche.id },
+        data: { statut: "envoye", dateEnvoi: new Date() },
+      });
+
+      try {
+        await logAction({
+          action: "fiche_pre_formation_envoyee",
+          label: `Fiche stagiaire envoyée à ${destinataireEmail} (depuis prospect)`,
+          lien: `/prospects/${demande.id}`,
+          contactId: demande.contactId ?? undefined,
+        });
+      } catch (logErr) {
+        logger.warn("historique.fiche_envoyee_failed", { error: String(logErr) });
+      }
+
+      return NextResponse.json({
+        success: true,
+        ficheType: "stagiaire",
+        ficheId: fiche.id,
+        tokenAcces: fiche.tokenAcces,
+        destinataireEmail,
+      });
+    }
+
+    // Cas entreprise (par défaut)
     let fiche = await prisma.fichePreFormationEntreprise.findFirst({
       where: { demandeId: demande.id },
       orderBy: { createdAt: "desc" },
@@ -57,15 +130,12 @@ export const POST = withErrorHandlerParams(
         },
       });
     } else if (fiche.destinataireEmail !== destinataireEmail || fiche.destinataireNom !== destinataireNom) {
-      // Mise à jour si le contact a changé entre temps
       fiche = await prisma.fichePreFormationEntreprise.update({
         where: { id: fiche.id },
         data: { destinataireEmail, destinataireNom },
       });
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const titre = demande.formation?.titre || demande.titre || "votre formation";
     const mail = fichePreFormationEntrepriseEmail({
       destinataireNom,
       entreprise: { nom: demande.entreprise?.nom || "" },
@@ -109,6 +179,7 @@ export const POST = withErrorHandlerParams(
 
     return NextResponse.json({
       success: true,
+      ficheType: "entreprise",
       ficheId: fiche.id,
       tokenAcces: fiche.tokenAcces,
       destinataireEmail,

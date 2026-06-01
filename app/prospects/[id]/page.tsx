@@ -220,20 +220,30 @@ type TimelineStep = {
 function ProspectTimeline({
   demandeId,
   ficheEntreprise,
+  fichesStagiaire,
   devis,
   demandeStatut,
   onMutate,
 }: {
   demandeId: string;
   ficheEntreprise: ProspectData["ficheEntreprise"];
+  fichesStagiaire: ProspectData["fichesStagiaire"];
   devis: ProspectData["devis"];
   demandeStatut: string;
   onMutate: () => Promise<unknown>;
 }) {
   const [resending, setResending] = useState(false);
 
-  const ficheEnvoyee = !!ficheEntreprise && ficheEntreprise.statut !== "en_attente";
-  const ficheRepondue = ficheEntreprise?.statut === "repondu";
+  // Une fiche existe si on a soit une fiche entreprise, soit au moins une
+  // fiche stagiaire (cas stagiaire individuel). On considère "envoyée" si
+  // au moins une fiche a un statut différent de "en_attente".
+  const ficheStagiairePrincipale = fichesStagiaire[0] ?? null;
+  const ficheEnvoyee =
+    (!!ficheEntreprise && ficheEntreprise.statut !== "en_attente") ||
+    (!!ficheStagiairePrincipale && ficheStagiairePrincipale.statut !== "en_attente");
+  const ficheRepondue =
+    ficheEntreprise?.statut === "repondu" ||
+    ficheStagiairePrincipale?.statut === "repondu";
   const devisExiste = !!devis;
   const devisEnvoye = devis?.statut === "envoye" || devis?.statut === "signe" || devis?.statut === "refuse";
   const devisSigne = devis?.statut === "signe" || demandeStatut === "accepte";
@@ -537,6 +547,7 @@ export default function ProspectDetailPage() {
         <ProspectTimeline
           demandeId={demande.id}
           ficheEntreprise={ficheEntreprise}
+          fichesStagiaire={fichesStagiaire}
           devis={devis}
           demandeStatut={demande.statut}
           onMutate={mutate}

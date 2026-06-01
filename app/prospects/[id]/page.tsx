@@ -208,6 +208,128 @@ function actionColor(action: string) {
 }
 
 // ————————————————————————
+// Timeline workflow (Prospect → Fiche → Devis → Signature → Gagné)
+// ————————————————————————
+type TimelineStep = {
+  key: string;
+  label: string;
+  done: boolean;
+  current: boolean;
+};
+
+function ProspectTimeline({
+  demandeId,
+  ficheEntreprise,
+  devis,
+  demandeStatut,
+  onMutate,
+}: {
+  demandeId: string;
+  ficheEntreprise: ProspectData["ficheEntreprise"];
+  devis: ProspectData["devis"];
+  demandeStatut: string;
+  onMutate: () => Promise<unknown>;
+}) {
+  const [resending, setResending] = useState(false);
+
+  const ficheEnvoyee = !!ficheEntreprise && ficheEntreprise.statut !== "en_attente";
+  const ficheRepondue = ficheEntreprise?.statut === "repondu";
+  const devisExiste = !!devis;
+  const devisEnvoye = devis?.statut === "envoye" || devis?.statut === "signe" || devis?.statut === "refuse";
+  const devisSigne = devis?.statut === "signe" || demandeStatut === "accepte";
+
+  // Étape "courante" = la première non terminée
+  const steps: TimelineStep[] = (() => {
+    const s = [
+      { key: "cree", label: "Prospect créé", done: true },
+      { key: "fiche_envoyee", label: "Fiche envoyée", done: ficheEnvoyee },
+      { key: "fiche_repondue", label: "Fiche reçue", done: ficheRepondue },
+      { key: "devis_pret", label: "Devis prêt", done: devisExiste },
+      { key: "devis_envoye", label: "Devis envoyé", done: devisEnvoye },
+      { key: "signe", label: "Signé / Gagné", done: devisSigne },
+    ];
+    const firstUndone = s.findIndex((x) => !x.done);
+    return s.map((x, i) => ({ ...x, current: i === firstUndone }));
+  })();
+
+  const handleRenvoyerFiche = async () => {
+    if (resending) return;
+    setResending(true);
+    try {
+      const res = await fetch(`/api/prospects/${demandeId}/envoyer-fiche`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify.error(json.error || "Envoi impossible");
+        return;
+      }
+      notify.success(
+        ficheEnvoyee ? "Fiche pré-formation renvoyée" : "Fiche pré-formation envoyée",
+        json.destinataireEmail,
+      );
+      await onMutate();
+    } catch {
+      notify.error("Erreur réseau");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Avancement du dossier
+        </h3>
+        {!ficheRepondue && (
+          <button
+            type="button"
+            onClick={handleRenvoyerFiche}
+            disabled={resending}
+            className="inline-flex items-center gap-1.5 rounded-md bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1 text-xs text-white"
+            title={ficheEnvoyee ? "Renvoyer la fiche pré-formation par email" : "Envoyer la fiche pré-formation par email"}
+          >
+            <Send className="h-3 w-3" />
+            {resending ? "Envoi…" : ficheEnvoyee ? "Renvoyer la fiche" : "Envoyer la fiche"}
+          </button>
+        )}
+      </div>
+      <ol className="flex items-center gap-1 overflow-x-auto pb-1">
+        {steps.map((step, idx) => {
+          const isLast = idx === steps.length - 1;
+          const dotColor = step.done
+            ? "bg-emerald-500 text-white"
+            : step.current
+              ? "bg-red-500 text-white animate-pulse"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400";
+          const labelColor = step.done
+            ? "text-emerald-700 dark:text-emerald-400"
+            : step.current
+              ? "text-red-600 dark:text-red-400 font-semibold"
+              : "text-gray-500 dark:text-gray-500";
+          const barColor = step.done
+            ? "bg-emerald-500"
+            : "bg-gray-200 dark:bg-gray-700";
+          return (
+            <li key={step.key} className="flex items-center gap-1 shrink-0">
+              <div className="flex flex-col items-center gap-1 min-w-[64px]">
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${dotColor}`}>
+                  {step.done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
+                </div>
+                <span className={`text-[10px] text-center leading-tight ${labelColor}`}>{step.label}</span>
+              </div>
+              {!isLast && <div className={`h-0.5 w-8 ${barColor}`} />}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+// ————————————————————————
 // Page principale
 // ————————————————————————
 export default function ProspectDetailPage() {
@@ -410,6 +532,15 @@ export default function ProspectDetailPage() {
 
       {/* ——— BODY ——— */}
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
+
+        {/* ——— TIMELINE WORKFLOW ——— */}
+        <ProspectTimeline
+          demandeId={demande.id}
+          ficheEntreprise={ficheEntreprise}
+          devis={devis}
+          demandeStatut={demande.statut}
+          onMutate={mutate}
+        />
 
         {/* § 1 — CONTACT */}
         {contact && (

@@ -179,65 +179,90 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       }
     }
 
-    // Création automatique de la fiche pré-formation entreprise.
-    // C'est le point d'entrée du flux : la fiche est envoyée immédiatement
-    // au prospect pour récolter son besoin, puis devis → contrat → session →
-    // facture sont générés à partir de ses réponses.
-    // Skip si stagiaire individuel (la fiche entreprise n'a pas de sens).
-    let ficheCree: {
-      id: string;
-      tokenAcces: string;
-      destinataireEmail: string;
-      destinataireNom: string;
-      formationTitre: string | null;
-    } | null = null;
-    if (data.prospectType !== "stagiaire" && data.contact.email) {
-      const formation = data.demande.formationId
-        ? await tx.formation.findUnique({
-            where: { id: data.demande.formationId },
-            select: { id: true, titre: true },
-          }).catch(() => null)
-        : null;
-
-      let entrepriseDetails: { secteur: string | null; effectif: number | null } | null = null;
-      if (entrepriseId) {
-        entrepriseDetails = await tx.entreprise.findUnique({
-          where: { id: entrepriseId },
-          select: { secteur: true, effectif: true },
-        });
-      }
-
-      const fiche = await tx.fichePreFormationEntreprise.create({
-        data: {
-          demandeId: demande.id,
-          entrepriseId: entrepriseId || null,
-          formationId: data.demande.formationId || null,
-          tokenAcces: randomBytes(24).toString("hex"),
-          statut: "en_attente", // passera à "envoye" après envoi email réussi (hors tx)
-          destinataireNom: `${data.contact.prenom} ${data.contact.nom}`,
-          destinataireEmail: data.contact.email,
-          secteurActivite: entrepriseDetails?.secteur ?? null,
-          effectifTotal: entrepriseDetails?.effectif ?? null,
-        },
-        select: { id: true, tokenAcces: true, destinataireEmail: true, destinataireNom: true },
-      });
-      ficheCree = {
-        id: fiche.id,
-        tokenAcces: fiche.tokenAcces,
-        destinataireEmail: fiche.destinataireEmail!,
-        destinataireNom: fiche.destinataireNom!,
-        formationTitre: formation?.titre ?? data.demande.formationSouhaitee ?? null,
-      };
-    }
-
     return {
       demandeId: demande.id,
       contactId: contact.id,
       entrepriseId: entrepriseId ?? undefined,
       stagiairesCrees,
-      fiche: ficheCree,
     };
   });
+
+  // Création + envoi de la fiche pré-formation HORS transaction.
+  // Décision (2026-06-01) : une erreur ici (mail Resend KO, colonne DB,
+  // etc.) ne doit PAS rollback le prospect. Le prospect est sacro-saint.
+  // L'admin pourra renvoyer la fiche manuellement depuis /prospects/[id].
+  let ficheEnvoyee = false;
+  let ficheId: string | null = null;
+  if (data.prospectType !== "stagiaire" && data.contact.email) {
+    try {
+      const formation = data.demande.formationId
+        ? await prisma.formation.findUnique({
+            where: { id: data.demande.formationId },
+            select: { id: true, titre: true },
+          })
+        : null;
+      const entrepriseDetails = result.entrepriseId
+        ? await prisma.entreprise.findUnique({
+            where: { id: result.entrepriseId },
+            select: { secteur: true, effectif: true, nom: true },
+          })
+        : null;
+
+      const fiche = await prisma.fichePreFormationEntreprise.create({
+        data: {
+          demandeId: result.demandeId,
+          entrepriseId: result.entrepriseId ?? null,
+          formationId: data.demande.formationId || null,
+          tokenAcces: randomBytes(24).toString("hex"),
+          statut: "en_attente",
+          destinataireNom: `${data.contact.prenom} ${data.contact.nom}`,
+          destinataireEmail: data.contact.email,
+          secteurActivite: entrepriseDetails?.secteur ?? null,
+          effectifTotal: entrepriseDetails?.effectif ?? null,
+        },
+      });
+      ficheId = fiche.id;
+
+      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const titre = formation?.titre || data.demande.formationSouhaitee || "votre formation";
+      const mail = fichePreFormationEntrepriseEmail({
+        destinataireNom: `${data.contact.prenom} ${data.contact.nom}`,
+        entreprise: { nom: entrepriseDetails?.nom || data.entrepriseNouvelle?.nom || "" },
+        formation: { titre },
+        session: null,
+        link: `${baseUrl}/qualiopi/fiche-entreprise/${fiche.tokenAcces}`,
+      });
+      const envoi = await sendEmail({
+        to: data.contact.email,
+        subject: mail.subject,
+        html: mail.html,
+      });
+      if (!envoi.skipped) {
+        await prisma.fichePreFormationEntreprise.update({
+          where: { id: fiche.id },
+          data: { statut: "envoye", dateEnvoi: new Date() },
+        });
+        ficheEnvoyee = true;
+        await logAction({
+          action: "fiche_pre_formation_envoyee",
+          label: `Fiche pré-formation envoyée auto à ${data.contact.email}`,
+          lien: `/prospects/${result.demandeId}`,
+          contactId: result.contactId,
+          entrepriseId: result.entrepriseId,
+        }).catch(() => {});
+      } else {
+        logger.warn("prospect.fiche_email_skipped", {
+          demandeId: result.demandeId,
+          reason: "Resend not configured or recipient rejected",
+        });
+      }
+    } catch (ficheErr) {
+      logger.warn("prospect.fiche_creation_failed", {
+        demandeId: result.demandeId,
+        error: String(ficheErr),
+      });
+    }
+  }
 
   try {
     await logAction({
@@ -251,47 +276,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     logger.warn("historique.prospect_cree_failed", { error: String(logErr) });
   }
 
-  // Envoi auto de la fiche pré-formation (hors transaction : un échec email
-  // ne doit pas rollback la création du prospect). Marque la fiche "envoye"
-  // si l'email part bien.
-  let ficheEnvoyee = false;
-  if (result.fiche) {
-    try {
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const titre = result.fiche.formationTitre || "votre formation";
-      const mail = fichePreFormationEntrepriseEmail({
-        destinataireNom: result.fiche.destinataireNom,
-        entreprise: { nom: data.entrepriseNouvelle?.nom || "" },
-        formation: { titre },
-        session: null, // fiche pré-session : pas encore de date
-        link: `${baseUrl}/qualiopi/fiche-entreprise/${result.fiche.tokenAcces}`,
-      });
-      const envoi = await sendEmail({
-        to: result.fiche.destinataireEmail,
-        subject: mail.subject,
-        html: mail.html,
-      });
-      if (!envoi.skipped) {
-        await prisma.fichePreFormationEntreprise.update({
-          where: { id: result.fiche.id },
-          data: { statut: "envoye", dateEnvoi: new Date() },
-        });
-        ficheEnvoyee = true;
-        await logAction({
-          action: "fiche_pre_formation_envoyee",
-          label: `Fiche pré-formation envoyée auto à ${result.fiche.destinataireEmail}`,
-          lien: `/prospects/${result.demandeId}`,
-          contactId: result.contactId,
-          entrepriseId: result.entrepriseId,
-        }).catch(() => {});
-      }
-    } catch (emailErr) {
-      logger.warn("prospect.fiche_email_failed", { error: String(emailErr) });
-    }
-  }
-
   return NextResponse.json(
-    { ...result, ficheEnvoyee, redirectUrl: `/prospects/${result.demandeId}` },
+    { ...result, ficheEnvoyee, ficheId, redirectUrl: `/prospects/${result.demandeId}` },
     { status: 201 },
   );
 });

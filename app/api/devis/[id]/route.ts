@@ -127,7 +127,15 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
 
   const { lignes, dateValidite, entrepriseId, contactId, tauxTVA, ...rest } = parsed;
   const montantHT = lignes.reduce((sum, l) => sum + l.montant, 0);
-  const montantTTC = montantHT * (1 + tauxTVA / 100);
+  // Multi-taux : si une ligne a son propre tauxTVA, l'utilise ;
+  // sinon retombe sur le tauxTVA global du devis. Le total TTC est la
+  // somme HT + somme TVA calculée ligne par ligne — plus précis qu'un
+  // simple `HT * (1+taux)` quand les lignes ont des taux différents.
+  const montantTVA = lignes.reduce((sum, l) => {
+    const t = l.tauxTVA ?? tauxTVA;
+    return sum + l.montant * (t / 100);
+  }, 0);
+  const montantTTC = montantHT + montantTVA;
 
   // Atomique : on remplace les lignes seulement si l'update du devis réussit.
   try {

@@ -23,6 +23,9 @@ type Ligne = {
   quantite: number;
   prixUnitaire: number;
   montant: number;
+  // null → taux global du devis (TVA_RATE). Permet le multi-taux par ligne
+  // (art. 289 II CGI : ventilation TVA obligatoire dès qu'il y a 2 taux).
+  tauxTVA: number | null;
 };
 
 type DevisData = {
@@ -38,7 +41,7 @@ type DevisData = {
 };
 
 function createLigne(): Ligne {
-  return { designation: "", quantite: 1, prixUnitaire: 0, montant: 0 };
+  return { designation: "", quantite: 1, prixUnitaire: 0, montant: 0, tauxTVA: null };
 }
 
 export default function ModifierDevisPage() {
@@ -91,6 +94,7 @@ export default function ModifierDevisPage() {
           quantite: l.quantite,
           prixUnitaire: l.prixUnitaire,
           montant: l.montant,
+          tauxTVA: l.tauxTVA ?? null,
         }))
       );
     }
@@ -159,6 +163,7 @@ export default function ModifierDevisPage() {
         quantite: l.quantite,
         prixUnitaire: l.prixUnitaire,
         montant: l.montant,
+        tauxTVA: l.tauxTVA,
       })),
     };
 
@@ -327,6 +332,7 @@ export default function ModifierDevisPage() {
                     <th className="text-left pb-2 font-medium text-gray-400 pr-2">Désignation</th>
                     <th className="text-right pb-2 font-medium text-gray-400 w-20 pr-2">Qté</th>
                     <th className="text-right pb-2 font-medium text-gray-400 w-32 pr-2">Prix unit. HT</th>
+                    <th className="text-right pb-2 font-medium text-gray-400 w-20 pr-2">TVA %</th>
                     <th className="text-right pb-2 font-medium text-gray-400 w-28 pr-2">Montant HT</th>
                     <th className="pb-2 w-8" />
                   </tr>
@@ -359,6 +365,22 @@ export default function ModifierDevisPage() {
                           value={ligne.prixUnitaire}
                           onChange={(e) => updateLigne(index, "prixUnitaire", parseFloat(e.target.value) || 0)}
                           className="text-right"
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={ligne.tauxTVA ?? ""}
+                          placeholder={String(TVA_RATE)}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            updateLigne(index, "tauxTVA", v === "" ? (null as unknown as number) : parseFloat(v));
+                          }}
+                          className="text-right"
+                          title={`Vide = taux global du devis (${TVA_RATE}%)`}
                         />
                       </td>
                       <td className="py-2 pr-2 text-right font-medium text-gray-200">

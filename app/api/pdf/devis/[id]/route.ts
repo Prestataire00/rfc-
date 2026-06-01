@@ -73,7 +73,9 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
     })),
     // B2C détecté : pas d'entreprise rattachée → annexe formulaire de rétractation
     isB2C: !devis.entrepriseId,
+    // tauxTVA par ligne pour ventilation multi-taux (null → taux global devis)
     lignes: devis.lignes.map((l) => ({
+      tauxTVA: l.tauxTVA,
       designation: l.designation,
       quantite: l.quantite,
       prixUnitaire: l.prixUnitaire,

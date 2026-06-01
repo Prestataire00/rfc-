@@ -6,6 +6,8 @@ export const ligneDevisSchema = z.object({
   quantite: z.coerce.number().int().positive("Quantité doit être positive"),
   prixUnitaire: z.coerce.number().nonnegative("Prix doit être positif ou nul"),
   montant: z.coerce.number(),
+  // Taux TVA par ligne (multi-taux). null → utilise tauxTVA global du devis.
+  tauxTVA: z.coerce.number().min(0).max(100).nullable().optional(),
 });
 
 // Audit 2026-05-19 §4.8 : alignement Zod ↔ Prisma — statuts Devis officiels.

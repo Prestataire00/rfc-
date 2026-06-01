@@ -409,6 +409,10 @@ model LigneDevis {
   prixUnitaire Float
   montant      Float
 
+  // Taux TVA par ligne (multi-taux conformité art. 289 II CGI).
+  // null → utilise le taux global Devis.tauxTVA pour rétro-compatibilité.
+  tauxTVA      Float?
+
   devisId String
   devis   Devis  @relation(fields: [devisId], references: [id], onDelete: Cascade)
 

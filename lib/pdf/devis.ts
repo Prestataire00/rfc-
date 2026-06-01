@@ -29,7 +29,7 @@ export function devisPdf(data: {
   };
   entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string; email?: string; telephone?: string };
   contact?: { nom: string; prenom: string; email: string };
-  lignes: { designation: string; quantite: number; prixUnitaire: number; montant: number }[];
+  lignes: { designation: string; quantite: number; prixUnitaire: number; montant: number; tauxTVA?: number | null }[];
   montantHT: number;
   tauxTVA: number;
   montantTTC: number;
@@ -48,8 +48,28 @@ export function devisPdf(data: {
   const societe = data.societe;
   const regimeTVA = societe?.regimeTVA ?? "assujetti";
   const tvaApplicable = regimeTVA === "assujetti";
-  const montantTVA = tvaApplicable ? data.montantHT * (data.tauxTVA / 100) : 0;
-  const montantNetAPayer = tvaApplicable ? data.montantTTC : data.montantHT;
+
+  // Ventilation TVA multi-taux : si une ligne a son propre tauxTVA, on l'utilise,
+  // sinon on retombe sur le taux global du devis. Le bloc « Détail TVA » liste
+  // chaque taux distinct avec son sous-total — obligatoire art. 289 II CGI dès
+  // qu'il y a plus d'un taux.
+  const ventilationTVA: { taux: number; baseHT: number; tva: number }[] = [];
+  if (tvaApplicable) {
+    const acc = new Map<number, { baseHT: number; tva: number }>();
+    for (const l of data.lignes) {
+      const t = l.tauxTVA ?? data.tauxTVA;
+      const cur = acc.get(t) ?? { baseHT: 0, tva: 0 };
+      cur.baseHT += l.montant;
+      cur.tva += l.montant * (t / 100);
+      acc.set(t, cur);
+    }
+    for (const [taux, v] of Array.from(acc.entries()).sort((a, b) => b[0] - a[0])) {
+      ventilationTVA.push({ taux, ...v });
+    }
+  }
+  const montantTVA = ventilationTVA.reduce((s, v) => s + v.tva, 0);
+  const montantNetAPayer = tvaApplicable ? data.montantHT + montantTVA : data.montantHT;
+  const multiTaux = ventilationTVA.length > 1;
   const nomSociete = societe?.nom || branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
   const nomAvecForme = societe?.formeJuridique
     ? `${nomSociete} — ${societe.formeJuridique}`
@@ -208,7 +228,7 @@ export function devisPdf(data: {
                   { text: "Désignation", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "left" as const, margin: [4, 4, 4, 4] as [number, number, number, number] },
                   { text: "Quantité", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
                   { text: "Prix unit. HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
-                  { text: `Total TVA ${data.tauxTVA}%`, fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: multiTaux ? "TVA" : `Total TVA ${data.tauxTVA}%`, fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
                   { text: "Total HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
                 ]
               : [
@@ -227,12 +247,14 @@ export function devisPdf(data: {
                   { text: fmtCurrency(l.montant), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
                 ];
               }
-              const tva = l.montant * (data.tauxTVA / 100);
+              const tauxLigne = l.tauxTVA ?? data.tauxTVA;
+              const tva = l.montant * (tauxLigne / 100);
+              const tvaCell = multiTaux ? `${tauxLigne}% · ${fmtCurrency(tva)}` : fmtCurrency(tva);
               return [
                 { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] },
                 { text: l.quantite.toString(), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
                 { text: fmtCurrency(l.prixUnitaire), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
-                { text: fmtCurrency(tva), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                { text: tvaCell, fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
                 { text: fmtCurrency(l.montant), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
               ];
             }),
@@ -274,13 +296,15 @@ export function devisPdf(data: {
                       { text: "Total HT", fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
                       { text: fmtCurrency(data.montantHT), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
                     ],
-                    [
-                      { text: `Total TVA (${data.tauxTVA}%)`, fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
-                      { text: fmtCurrency(montantTVA), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
-                    ],
+                    // Ventilation TVA par taux — obligatoire dès qu'il y a plusieurs taux
+                    // (art. 289 II CGI). Sinon ligne unique style historique.
+                    ...ventilationTVA.map((v) => [
+                      { text: `Total TVA (${v.taux}%)`, fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                      { text: fmtCurrency(v.tva), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                    ]),
                     [
                       { text: "Net à payer", fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, margin: [6, 5, 4, 5] as [number, number, number, number] },
-                      { text: fmtCurrency(data.montantTTC), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
+                      { text: fmtCurrency(montantNetAPayer), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
                     ],
                   ]
                 : [

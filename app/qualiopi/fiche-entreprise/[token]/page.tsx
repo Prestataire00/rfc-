@@ -56,7 +56,7 @@ const OBJECTIFS = [
 
 export default function FichePreFormationEntreprisePage() {
   const { token } = useParams<{ token: string }>();
-  const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
+  const { data: fiche, error: fetchError, isLoading, mutate } = useApi<Fiche>(
     token ? `/api/qualiopi/fiches-entreprise/public/${token}` : null
   );
   const submitMutation = useApiMutation<Record<string, unknown>>(
@@ -105,6 +105,8 @@ export default function FichePreFormationEntreprisePage() {
     try {
       await submitMutation.trigger(payload);
       setSuccess(true);
+      // Rafraîchit la fiche pour afficher le récap avec les valeurs persistées
+      await mutate();
     } catch (err) {
       if (err instanceof ApiError) {
         setSubmitError(err.message || "Erreur lors de l'envoi");
@@ -129,12 +131,57 @@ export default function FichePreFormationEntreprisePage() {
   }
 
   if (success || fiche?.statut === "repondu") {
+    if (!fiche) return null;
+    const formation = fiche.session?.formation ?? fiche.formation;
+    const secteurLabel = SECTEURS.find((s) => s.value === fiche.secteurActivite)?.label
+      ?? (fiche.secteurActivite ? fiche.secteurActivite.replace(/_/g, " ") : "—");
+    const objectifLabel = OBJECTIFS.find((o) => o.value === fiche.objectifPrincipal)?.label
+      ?? (fiche.objectifPrincipal ? fiche.objectifPrincipal.replace(/_/g, " ") : "—");
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-        <div className="max-w-md bg-white rounded-xl shadow p-8 text-center">
-          <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Fiche transmise</h1>
-          <p className="text-sm text-gray-600">Merci, votre reponse a bien ete enregistree. Henri adaptera le programme en consequence.</p>
+      <div className="min-h-screen bg-gray-100 py-8 px-4">
+        <div className="max-w-3xl mx-auto space-y-6">
+          {/* Header de remerciement */}
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+            <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+            <h1 className="text-xl font-bold text-gray-900 mb-1">Fiche transmise</h1>
+            <p className="text-sm text-gray-600">
+              Merci, votre réponse a bien été enregistrée. Henri adaptera le programme en conséquence.
+            </p>
+            {formation && (
+              <p className="text-xs text-gray-500 mt-2">
+                Formation : <strong>{formation.titre}</strong>
+                {fiche.entreprise?.nom && <> · {fiche.entreprise.nom}</>}
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-3">
+              Récapitulatif ci-dessous pour vous (et pour l&apos;admin qui ouvre ce lien).
+            </p>
+          </div>
+
+          {/* Récap des réponses */}
+          <Section title="Entreprise" icon={Building2}>
+            <RecapField label="Secteur d'activité" value={secteurLabel} />
+            <RecapField label="Effectif total" value={fiche.effectifTotal != null ? String(fiche.effectifTotal) : null} />
+            <RecapField label="Effectif concerné par la formation" value={fiche.effectifConcerne != null ? String(fiche.effectifConcerne) : null} />
+          </Section>
+
+          <Section title="Stagiaires" icon={Users}>
+            <RecapField label="Métiers des stagiaires" value={fiche.metiersStagiaires} multiline />
+            <RecapField label="Contexte de travail" value={fiche.contexteTravail} multiline />
+            <RecapField label="Contraintes spécifiques" value={fiche.contraintesSpecifiques} multiline />
+          </Section>
+
+          <Section title="La formation" icon={BookOpen}>
+            <RecapField label="Objectif principal" value={objectifLabel} />
+            <RecapField label="Objectifs clients" value={fiche.objectifsClient} multiline />
+            <RecapField label="Accidents récents" value={fiche.casAccidentsRecents ? (fiche.detailsCasAccidents || "Oui (détails non précisés)") : "Non"} multiline />
+            <RecapField label="Contraintes horaires" value={fiche.contraintesHoraires} multiline />
+          </Section>
+
+          <Section title="Accessibilité" icon={Accessibility}>
+            <RecapField label="Stagiaires en situation de handicap" value={fiche.aStagiairesHandicap ? (fiche.detailsHandicap || "Oui") : "Non"} multiline />
+          </Section>
         </div>
       </div>
     );
@@ -287,6 +334,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       {children}
+    </div>
+  );
+}
+
+// RecapField — paire label/valeur read-only utilisée sur le récap post-soumission.
+// `multiline` rend les retours à la ligne dans la valeur (whitespace-pre-line).
+function RecapField({ label, value, multiline }: { label: string; value: string | null | undefined; multiline?: boolean }) {
+  const displayed = value && String(value).trim() ? String(value) : "—";
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-3 text-sm">
+      <span className="text-gray-500">{label}</span>
+      <span className={`text-gray-900 ${multiline ? "whitespace-pre-line" : ""}`}>{displayed}</span>
     </div>
   );
 }

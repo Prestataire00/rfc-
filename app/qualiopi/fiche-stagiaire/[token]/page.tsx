@@ -65,7 +65,7 @@ function formatSecuDisplay(v: string): string {
 
 export default function FichePreFormationStagiairePage() {
   const { token } = useParams<{ token: string }>();
-  const { data: fiche, error: fetchError, isLoading } = useApi<Fiche>(
+  const { data: fiche, error: fetchError, isLoading, mutate } = useApi<Fiche>(
     token ? `/api/qualiopi/fiches-stagiaire/public/${token}` : null
   );
   const submitMutation = useApiMutation<Record<string, unknown>>(
@@ -115,6 +115,8 @@ export default function FichePreFormationStagiairePage() {
     try {
       await submitMutation.trigger(form);
       setSuccess(true);
+      // Refresh la fiche pour afficher le récap avec les valeurs persistées
+      await mutate();
     } catch (err) {
       if (err instanceof ApiError) {
         setSubmitError(err.message || "Erreur lors de l'envoi");
@@ -139,12 +141,67 @@ export default function FichePreFormationStagiairePage() {
   }
 
   if (success || fiche?.statut === "repondu") {
+    if (!fiche) return null;
+    const formation = fiche.session?.formation ?? fiche.formation;
+    const niveauLabel = (val: string | null) =>
+      NIVEAUX.find((n) => n.value === val)?.label ?? val ?? "—";
+    const niveauPrerequisLabel = (val: string | null) =>
+      NIVEAUX_PREREQUIS.find((n) => n.value === val)?.label ?? val ?? "—";
+    // Cast pour récupérer niveauPrerequis qui n'est pas typé sur Fiche
+    const ficheAny = fiche as Fiche & { niveauPrerequis: string | null };
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-        <div className="max-w-md bg-white rounded-xl shadow p-8 text-center">
-          <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Merci !</h1>
-          <p className="text-sm text-gray-600">Vos informations ont bien ete transmises. Le formateur en tiendra compte pour adapter la formation a vos besoins.</p>
+      <div className="min-h-screen bg-gray-100 py-8 px-4">
+        <div className="max-w-2xl mx-auto space-y-6">
+          {/* Header de remerciement */}
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+            <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+            <h1 className="text-xl font-bold text-gray-900 mb-1">Fiche transmise</h1>
+            <p className="text-sm text-gray-600">
+              Merci <strong>{fiche.contact.prenom} {fiche.contact.nom}</strong>, vos informations ont bien été enregistrées.
+            </p>
+            {formation && (
+              <p className="text-xs text-gray-500 mt-2">
+                Formation : <strong>{formation.titre}</strong>
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-3">
+              Récapitulatif ci-dessous pour vous (et pour l&apos;admin qui ouvre ce lien).
+            </p>
+          </div>
+
+          {/* Récap des réponses */}
+          <Section title="Identification" icon={User}>
+            <RecapField label="Nom complet" value={`${fiche.contact.prenom} ${fiche.contact.nom}`} />
+            <RecapField label="Email" value={fiche.contact.email} />
+            <RecapField label="Date de naissance" value={fiche.contact.dateNaissance ? new Date(fiche.contact.dateNaissance).toLocaleDateString("fr-FR") : "—"} />
+            <RecapField label="N° sécurité sociale" value={fiche.contact.numeroSecuriteSociale ?? "—"} />
+            <RecapField label="N° passeport prévention" value={fiche.contact.numeroPasseportPrevention ?? "—"} />
+          </Section>
+
+          <Section title="Prérequis" icon={BookOpen}>
+            <RecapField label="A déjà suivi cette formation" value={fiche.dejaSuivi ? "Oui" : "Non"} />
+            {fiche.dejaSuivi && fiche.dateDerniereFormation && (
+              <RecapField label="Date de la dernière formation" value={new Date(fiche.dateDerniereFormation).toLocaleDateString("fr-FR")} />
+            )}
+            <RecapField label="Niveau de formation général" value={niveauLabel(fiche.niveauFormation)} />
+            <RecapField label="Niveau sur le sujet" value={niveauPrerequisLabel(ficheAny.niveauPrerequis)} />
+          </Section>
+
+          <Section title="Accessibilité & contraintes" icon={Accessibility}>
+            <RecapField label="Reconnaissance RQTH" value={fiche.estRQTH ? "Oui" : "Non"} />
+            {fiche.estRQTH && fiche.detailsRQTH && (
+              <RecapField label="Détails RQTH" value={fiche.detailsRQTH} multiline />
+            )}
+            <RecapField label="Contraintes physiques" value={fiche.contraintesPhysiques ?? "—"} multiline />
+            <RecapField label="Contraintes de langue" value={fiche.contraintesLangue ?? "—"} multiline />
+            <RecapField label="Contraintes alimentaires" value={fiche.contraintesAlimentaires ?? "—"} multiline />
+          </Section>
+
+          <Section title="Consentement RGPD" icon={CheckCircle2}>
+            <RecapField label="Traitement des données" value={fiche.consentementRGPD ? "Accepté" : "Refusé"} />
+            <RecapField label="Bilan pédagogique et financier (BPF)" value={fiche.consentementBPF ? "Accepté" : "Refusé"} />
+          </Section>
         </div>
       </div>
     );
@@ -309,6 +366,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       {children}
+    </div>
+  );
+}
+
+// RecapField — paire label/valeur read-only utilisée sur le récap post-soumission.
+// `multiline` rend les retours à la ligne dans la valeur (whitespace-pre-line).
+function RecapField({ label, value, multiline }: { label: string; value: string | null | undefined; multiline?: boolean }) {
+  const displayed = value && String(value).trim() ? String(value) : "—";
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-3 text-sm">
+      <span className="text-gray-500">{label}</span>
+      <span className={`text-gray-900 ${multiline ? "whitespace-pre-line" : ""}`}>{displayed}</span>
     </div>
   );
 }

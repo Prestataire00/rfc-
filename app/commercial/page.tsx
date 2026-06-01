@@ -8,11 +8,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { Pagination } from "@/components/shared/Pagination";
-import { SkeletonCard, SkeletonTable } from "@/components/shared/Skeleton";
+import { SkeletonTable } from "@/components/shared/Skeleton";
 import { DEVIS_STATUTS, FACTURE_STATUTS } from "@/lib/constants";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
-import { DevisKanbanBoard } from "@/components/commercial/DevisKanbanBoard";
 
 type TunnelStats = {
   caPrevisionnel: number;
@@ -48,13 +47,16 @@ type Facture = {
   devis: { id: string; numero: string } | null;
 };
 
-const PIPELINE_COLUMNS = [
-  { key: "brouillon", label: "Brouillon", color: "bg-gray-700 border-gray-600" },
-  { key: "envoye", label: "Envoyé", color: "bg-red-900/20 border-red-300" },
-  { key: "signe", label: "Signé", color: "bg-green-900/20 border-green-700" },
-  { key: "refuse", label: "Refusé", color: "bg-red-900/20 border-red-300" },
-  { key: "expire", label: "Expiré", color: "bg-orange-900/20 border-orange-700" },
-] as const;
+// Sous-onglets de la vue Devis — un par statut Prisma officiel.
+// Ordre : pipeline naturel (brouillon → envoyé → signé) + sorties (refusé, expiré).
+type DevisStatutKey = keyof typeof DEVIS_STATUTS;
+const DEVIS_STATUT_TABS: DevisStatutKey[] = [
+  "brouillon",
+  "envoye",
+  "signe",
+  "refuse",
+  "expire",
+];
 
 type DevisResponse = { data: Devis[] } | Devis[];
 type FacturesResponse = { data: Facture[]; total?: number; totalPages?: number } | Facture[];
@@ -77,6 +79,11 @@ export default function CommercialPage() {
   const [activeTab, setActiveTab] = useState<"devis" | "factures">(initialTab);
   const [facturePage, setFacturePage] = useState(1);
   const [filtreStatutFacture, setFiltreStatutFacture] = useState("");
+  // Sous-onglet statut sur la vue Devis (cf. demande UX — remplace le Kanban)
+  const initialDevisStatut = (searchParams.get("statut") as DevisStatutKey) || "brouillon";
+  const [activeDevisStatut, setActiveDevisStatut] = useState<DevisStatutKey>(
+    DEVIS_STATUT_TABS.includes(initialDevisStatut) ? initialDevisStatut : "brouillon",
+  );
 
   useEffect(() => {
     setFacturePage(1);
@@ -108,10 +115,19 @@ export default function CommercialPage() {
       }
     : null;
 
-  const devisByStatut = PIPELINE_COLUMNS.reduce((acc, col) => {
-    acc[col.key] = devis.filter((d) => d.statut === col.key);
-    return acc;
-  }, {} as Record<string, Devis[]>);
+  // Comptage par statut (alimente les badges des sous-onglets)
+  const devisCountByStatut = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const key of DEVIS_STATUT_TABS) {
+      counts[key] = devis.filter((d) => d.statut === key).length;
+    }
+    return counts;
+  }, [devis]);
+
+  const devisFiltres = useMemo(
+    () => devis.filter((d) => d.statut === activeDevisStatut),
+    [devis, activeDevisStatut],
+  );
 
   const getClientName = (d: Devis) => {
     if (d.entreprise) return d.entreprise.nom;
@@ -216,10 +232,42 @@ export default function CommercialPage() {
         </a>
       </div>
 
-      {/* Pipeline Devis */}
+      {/* Pipeline Devis — sous-onglets par statut */}
       {activeTab === "devis" && (
         <>
-          <div className="flex justify-end mb-4">
+          {/* Sous-onglets de statut */}
+          <div className="flex items-end justify-between gap-2 mb-4 flex-wrap">
+            <nav className="flex gap-1 border-b border-gray-200 dark:border-gray-700 -mb-px">
+              {DEVIS_STATUT_TABS.map((key) => {
+                const meta = DEVIS_STATUTS[key];
+                const active = activeDevisStatut === key;
+                const count = devisCountByStatut[key] ?? 0;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setActiveDevisStatut(key)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                      active
+                        ? "border-red-600 text-red-600 dark:text-red-400"
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200",
+                    )}
+                  >
+                    {meta.label}
+                    <span
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-full text-xs font-semibold min-w-[1.5rem] h-5 px-1.5",
+                        active
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                          : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+                      )}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
             <Link
               href="/commercial/devis/nouveau"
               className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
@@ -229,33 +277,55 @@ export default function CommercialPage() {
           </div>
 
           {loadingDevis ? (
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <SkeletonCard key={i} className="flex-shrink-0 w-64 h-48" />
-              ))}
-            </div>
-          ) : devis.length === 0 ? (
+            <SkeletonTable rows={6} cols={6} />
+          ) : devisFiltres.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title="Aucun devis"
-              description="Créez votre premier devis"
-              actionLabel="Nouveau devis"
-              actionHref="/commercial/devis/nouveau"
+              title={`Aucun devis ${DEVIS_STATUTS[activeDevisStatut].label.toLowerCase()}`}
+              description={
+                activeDevisStatut === "brouillon"
+                  ? "Créez un nouveau devis pour démarrer le pipeline commercial."
+                  : "Aucun devis dans ce statut pour le moment."
+              }
+              actionLabel={activeDevisStatut === "brouillon" ? "Nouveau devis" : undefined}
+              actionHref={activeDevisStatut === "brouillon" ? "/commercial/devis/nouveau" : undefined}
             />
           ) : (
-            <DevisKanbanBoard
-              initialDevis={devis.map((d) => ({
-                id: d.id,
-                numero: d.numero,
-                objet: d.objet,
-                statut: d.statut,
-                montantTTC: d.montantTTC,
-                entreprise: d.entreprise ? { nom: d.entreprise.nom } : null,
-                contact: d.contact ? { nom: d.contact.nom, prenom: d.contact.prenom } : null,
-              }))}
-              columns={[...PIPELINE_COLUMNS]}
-              statutsMeta={DEVIS_STATUTS}
-            />
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto">
+              <table className="min-w-[760px] w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Numéro</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Objet</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Montant TTC</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Validité</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {devisFiltres.map((d) => {
+                    const s = DEVIS_STATUTS[d.statut as DevisStatutKey];
+                    return (
+                      <tr
+                        key={d.id}
+                        onClick={() => router.push(`/commercial/devis/${d.id}`)}
+                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                      >
+                        <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{d.numero}</td>
+                        <td className="px-4 py-3 text-gray-900 dark:text-gray-100 max-w-xs truncate">{d.objet}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{getClientName(d)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(d.montantTTC)}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{formatDate(d.dateValidite)}</td>
+                        <td className="px-4 py-3">
+                          {s && <StatutBadge label={s.label} color={s.color} />}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
       )}

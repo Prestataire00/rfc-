@@ -82,11 +82,11 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   // ── Auto-génération du devis brouillon (hors transaction) ─────────────
   // Décision (2026-06-01, v2 flow) : à la soumission de la fiche, on génère
   // immédiatement un devis brouillon pré-rempli (formation × effectif), prêt
-  // pour révision admin. Le but : l'admin ouvre la page prospect et trouve
-  // déjà un devis à ajuster, pas une fiche à transformer.
+  // pour révision admin.
   //
-  // Skip si :
-  //   - pas d'entreprise rattachée (devis exige entrepriseId)
+  // Skip auto-devis si :
+  //   - pas d'entreprise rattachée (peut arriver pour stagiaire individuel
+  //     mais on n'a pas le contactId ici sans demande)
   //   - pas de formation (ni via session, ni directe)
   //   - la demande a déjà un devis (idempotence)
   const formation = fiche.session?.formation ?? fiche.formation;
@@ -97,8 +97,11 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
         select: { devisId: true },
       }))?.devisId
     : false;
+  const clientLabel = fiche.entreprise?.nom || fiche.destinataireNom || "Client";
 
   let autoDevisId: string | null = null;
+  let autoDevisNumero: string | null = null;
+  let autoDevisMontantTTC: number | null = null;
   if (fiche.entrepriseId && formation && !dejaUnDevis) {
     try {
       const quantite = Math.max(1, updated.effectifConcerne ?? data.effectifConcerne ?? 1);
@@ -150,15 +153,8 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
         return d;
       });
       autoDevisId = devis.id;
-
-      // Notif admin + log
-      const clientLabel = fiche.entreprise?.nom || "Client";
-      await notifyAdmins({
-        titre: "Fiche reçue + devis brouillon généré",
-        message: `${clientLabel} — ${numero} (${formatCurrency(montantTTC)}) à réviser avant envoi signature`,
-        type: "info",
-        lien: `/commercial/devis/${devis.id}`,
-      }).catch((err) => logger.warn("public.fiche.notify_failed", { error: String(err) }));
+      autoDevisNumero = numero;
+      autoDevisMontantTTC = montantTTC;
 
       await logAction({
         action: "devis_genere_auto",
@@ -174,13 +170,46 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       });
     }
   } else if (demandeId && !dejaUnDevis) {
-    // Demande sans devis mais sans formation/entreprise rattachée :
-    // on marque quand même qualifié pour signaler à l'admin qu'elle est mûre.
+    // Demande sans devis mais sans entreprise/formation : on marque qualifié
+    // quand même pour signaler à l'admin que la demande est mûre.
     await prisma.demande.update({
       where: { id: demandeId },
       data: { statut: "qualifie" },
     }).catch(() => {});
   }
+
+  // ── Notification admin (toujours émise, indépendamment du devis auto) ──
+  // Décision : la notif "fiche reçue" est le déclencheur principal pour
+  // l'admin. Le devis auto est un bonus mentionné quand il a réussi.
+  // Lien :
+  //   - vers le devis si auto-généré (action immédiate possible)
+  //   - sinon vers le prospect (vue d'ensemble pour décider la suite)
+  //   - sinon vers la liste des fiches (cas legacy sans demande rattachée)
+  const notifLien = autoDevisId
+    ? `/commercial/devis/${autoDevisId}`
+    : demandeId
+      ? `/prospects/${demandeId}`
+      : `/qualiopi/fiches-pre-formation`;
+  const notifTitre = autoDevisId
+    ? "Fiche reçue + devis brouillon généré"
+    : "Fiche pré-formation reçue";
+  const notifMessage = autoDevisId && autoDevisNumero && autoDevisMontantTTC !== null
+    ? `${clientLabel} — ${autoDevisNumero} (${formatCurrency(autoDevisMontantTTC)}) à réviser avant envoi signature`
+    : `${clientLabel} a répondu à la fiche pré-formation. À traiter pour générer le devis.`;
+  await notifyAdmins({
+    titre: notifTitre,
+    message: notifMessage,
+    type: autoDevisId ? "info" : "success",
+    lien: notifLien,
+  }).catch((err) => logger.warn("public.fiche.notify_failed", { error: String(err) }));
+
+  // Log historique systématique pour la fiche reçue (indépendant du devis)
+  await logAction({
+    action: "fiche_pre_formation_repondue",
+    label: `Fiche pré-formation reçue de ${clientLabel}`,
+    lien: notifLien,
+    entrepriseId: fiche.entrepriseId ?? undefined,
+  }).catch((err) => logger.warn("public.fiche.log_recu_failed", { error: String(err) }));
 
   return NextResponse.json({ success: true, id: updated.id, autoDevisId });
 });

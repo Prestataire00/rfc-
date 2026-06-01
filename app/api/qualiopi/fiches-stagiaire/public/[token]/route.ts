@@ -124,7 +124,13 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   // Cas stagiaire individuel : devis lié au contact uniquement (entrepriseId null),
   // formation × 1 stagiaire. Idempotent : skip si la demande a déjà un devis.
   const formation = fiche.session?.formation ?? fiche.formation;
+  const clientLabel = fiche.contact
+    ? `${fiche.contact.prenom} ${fiche.contact.nom}`
+    : "Stagiaire";
+
   let autoDevisId: string | null = null;
+  let autoDevisNumero: string | null = null;
+  let autoDevisMontantTTC: number | null = null;
   if (fiche.demandeId && !fiche.demande?.devisId && formation && fiche.contactId) {
     try {
       const quantite = 1;
@@ -175,16 +181,8 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
         return dv;
       });
       autoDevisId = devis.id;
-
-      const clientLabel = fiche.contact
-        ? `${fiche.contact.prenom} ${fiche.contact.nom}`
-        : "Stagiaire";
-      await notifyAdmins({
-        titre: "Fiche stagiaire reçue + devis brouillon généré",
-        message: `${clientLabel} — ${numero} (${formatCurrency(montantTTC)}) à réviser avant envoi signature`,
-        type: "info",
-        lien: `/commercial/devis/${devis.id}`,
-      }).catch((err) => logger.warn("public.fiche_stagiaire.notify_failed", { error: String(err) }));
+      autoDevisNumero = numero;
+      autoDevisMontantTTC = montantTTC;
 
       await logAction({
         action: "devis_genere_auto",
@@ -205,6 +203,32 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       data: { statut: "qualifie" },
     }).catch(() => {});
   }
+
+  // ── Notification admin (toujours émise, indépendamment du devis auto) ──
+  const notifLien = autoDevisId
+    ? `/commercial/devis/${autoDevisId}`
+    : fiche.demandeId
+      ? `/prospects/${fiche.demandeId}`
+      : `/qualiopi/fiches-pre-formation`;
+  const notifTitre = autoDevisId
+    ? "Fiche stagiaire reçue + devis brouillon généré"
+    : "Fiche pré-formation stagiaire reçue";
+  const notifMessage = autoDevisId && autoDevisNumero && autoDevisMontantTTC !== null
+    ? `${clientLabel} — ${autoDevisNumero} (${formatCurrency(autoDevisMontantTTC)}) à réviser avant envoi signature`
+    : `${clientLabel} a répondu à la fiche pré-formation. À traiter pour générer le devis.`;
+  await notifyAdmins({
+    titre: notifTitre,
+    message: notifMessage,
+    type: autoDevisId ? "info" : "success",
+    lien: notifLien,
+  }).catch((err) => logger.warn("public.fiche_stagiaire.notify_failed", { error: String(err) }));
+
+  await logAction({
+    action: "fiche_pre_formation_repondue",
+    label: `Fiche pré-formation reçue de ${clientLabel} (stagiaire)`,
+    lien: notifLien,
+    contactId: fiche.contactId ?? undefined,
+  }).catch((err) => logger.warn("public.fiche_stagiaire.log_recu_failed", { error: String(err) }));
 
   return NextResponse.json({ success: true, autoDevisId });
 });

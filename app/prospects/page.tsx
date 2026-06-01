@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { UserPlus, Plus, Search, LayoutGrid, Table } from "lucide-react";
+import { UserPlus, Plus, Search, LayoutGrid, Table, Mail, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { BESOIN_STATUTS, BESOIN_STATUTS_PIPELINE, BESOIN_PRIORITES, BESOIN_ORIGINES } from "@/lib/constants";
 import { useApi } from "@/hooks/useApi";
+import { api } from "@/lib/fetcher";
+import { notify } from "@/lib/toast";
 import { StatsBar } from "./_components/StatsBar";
 import { TableView } from "./_components/TableView";
 import { KanbanView, PIPELINE_COLS, type Besoin } from "./_components/KanbanView";
@@ -76,6 +78,43 @@ export default function ProspectsPage() {
 
   const hasFilters = !!(search || origineFilter || statutFilter || prioriteFilter);
 
+  // Backfill : envoie la fiche pré-formation à tous les prospects qui n'en
+  // ont aucune. Idempotent côté API (skip si déjà une fiche), donc le bouton
+  // est toujours visible et sûr à cliquer plusieurs fois.
+  const [backfilling, setBackfilling] = useState(false);
+  const handleBackfillFiches = async () => {
+    if (backfilling) return;
+    const confirmed = window.confirm(
+      "Envoyer la fiche pré-formation à tous les prospects qui n'en ont pas encore reçu une ?\n\nL'envoi est idempotent : les prospects qui ont déjà une fiche ne seront pas re-contactés.",
+    );
+    if (!confirmed) return;
+    setBackfilling(true);
+    try {
+      const res = await api.post<{
+        total: number;
+        eligible: number;
+        sent: number;
+        failed: number;
+        skipped_no_email: number;
+      }>("/api/prospects/backfill-fiches", {});
+      if (res.sent === 0 && res.failed === 0 && res.skipped_no_email === 0) {
+        notify.success("Tous les prospects ont déjà reçu la fiche", `${res.total} prospects examinés`);
+      } else {
+        const parts: string[] = [];
+        if (res.sent > 0) parts.push(`${res.sent} envoyée${res.sent > 1 ? "s" : ""}`);
+        if (res.failed > 0) parts.push(`${res.failed} échec${res.failed > 1 ? "s" : ""}`);
+        if (res.skipped_no_email > 0) parts.push(`${res.skipped_no_email} sans email`);
+        notify.success("Rattrapage terminé", parts.join(" · "));
+      }
+      await mutate();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Échec du rattrapage";
+      notify.error(msg);
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -88,12 +127,28 @@ export default function ProspectsPage() {
             {besoins.length} prospect{besoins.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link
-          href="/prospects/nouveau"
-          className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
-        >
-          <Plus className="h-4 w-4" /> Nouvelle demande
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleBackfillFiches}
+            disabled={backfilling}
+            className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2 text-sm font-medium text-gray-200 transition-colors"
+            title="Envoie la fiche pré-formation à tous les prospects qui n'en ont pas encore reçu une (idempotent)"
+          >
+            {backfilling ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
+            {backfilling ? "Envoi en cours…" : "Rattraper les fiches"}
+          </button>
+          <Link
+            href="/prospects/nouveau"
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Nouvelle demande
+          </Link>
+        </div>
       </div>
 
       {/* Stats compactes (1 ligne) */}

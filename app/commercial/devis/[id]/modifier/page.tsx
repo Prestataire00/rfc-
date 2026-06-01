@@ -26,6 +26,7 @@ type Ligne = {
 };
 
 type DevisData = {
+  numero?: string;
   objet?: string;
   notes?: string | null;
   dateValidite?: string;
@@ -46,6 +47,7 @@ export default function ModifierDevisPage() {
   const [error, setError] = useState("");
 
   const [clientType, setClientType] = useState<"entreprise" | "contact">("entreprise");
+  const [numero, setNumero] = useState("");
   const [objet, setObjet] = useState("");
   const [entrepriseId, setEntrepriseId] = useState("");
   const [contactId, setContactId] = useState("");
@@ -54,16 +56,22 @@ export default function ModifierDevisPage() {
   const [notes, setNotes] = useState("");
 
   const { data: devis, isLoading: devisLoading } = useApi<DevisData>(`/api/devis/${id}`);
-  const { data: entreprisesData, isLoading: entreprisesLoading } = useApi<Entreprise[]>("/api/entreprises");
-  const { data: contactsData, isLoading: contactsLoading } = useApi<Contact[]>("/api/contacts");
+  // /api/entreprises et /api/contacts retournent { data, total, ... } depuis l'audit §4.7
+  const { data: entreprisesData, isLoading: entreprisesLoading } = useApi<Entreprise[] | { data: Entreprise[] }>("/api/entreprises");
+  const { data: contactsData, isLoading: contactsLoading } = useApi<Contact[] | { data: Contact[] }>("/api/contacts");
   const { trigger: updateDevis, isMutating: loading } = useApiMutation<Record<string, unknown>>(`/api/devis/${id}`, "PUT");
 
-  const entreprises = entreprisesData ?? [];
-  const contacts = contactsData ?? [];
+  const entreprises: Entreprise[] = Array.isArray(entreprisesData)
+    ? entreprisesData
+    : entreprisesData?.data ?? [];
+  const contacts: Contact[] = Array.isArray(contactsData)
+    ? contactsData
+    : contactsData?.data ?? [];
   const pageLoading = devisLoading || entreprisesLoading || contactsLoading;
 
   useEffect(() => {
     if (!devis) return;
+    setNumero(devis.numero || "");
     setObjet(devis.objet || "");
     setNotes(devis.notes || "");
     setDateValidite(devis.dateValidite?.split("T")[0] || "");
@@ -139,6 +147,7 @@ export default function ModifierDevisPage() {
     }
 
     const payload = {
+      numero: numero.trim() || undefined,
       objet,
       entrepriseId: clientType === "entreprise" ? entrepriseId : null,
       contactId: clientType === "contact" ? contactId : null,
@@ -201,6 +210,20 @@ export default function ModifierDevisPage() {
           <CardContent className="space-y-5">
             {/* Objet */}
             <div className="space-y-1.5">
+              <Label htmlFor="numero">Numéro de devis *</Label>
+              <Input
+                id="numero"
+                type="text"
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                placeholder="DEV-2026-010"
+                className="mb-1"
+              />
+              <p className="text-[11px] text-gray-500 mb-3">
+                Format libre. Doit être unique sur l&apos;ensemble des devis (l&apos;enregistrement échouera sinon).
+              </p>
+            </div>
+            <div>
               <Label htmlFor="objet">Objet du devis *</Label>
               <Input
                 id="objet"

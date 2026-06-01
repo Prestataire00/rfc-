@@ -130,24 +130,36 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
   const montantTTC = montantHT * (1 + tauxTVA / 100);
 
   // Atomique : on remplace les lignes seulement si l'update du devis réussit.
-  const devis = await prisma.$transaction(async (tx) => {
-    await tx.ligneDevis.deleteMany({ where: { devisId: params.id } });
-    return tx.devis.update({
-      where: { id: params.id },
-      data: {
-        ...rest,
-        tauxTVA,
-        montantHT,
-        montantTTC,
-        dateValidite: new Date(dateValidite),
-        entrepriseId: entrepriseId || null,
-        contactId: contactId || null,
-        lignes: { create: lignes },
-      },
-      include: { lignes: true },
+  try {
+    const devis = await prisma.$transaction(async (tx) => {
+      await tx.ligneDevis.deleteMany({ where: { devisId: params.id } });
+      return tx.devis.update({
+        where: { id: params.id },
+        data: {
+          ...rest,
+          tauxTVA,
+          montantHT,
+          montantTTC,
+          dateValidite: new Date(dateValidite),
+          entrepriseId: entrepriseId || null,
+          contactId: contactId || null,
+          lignes: { create: lignes },
+        },
+        include: { lignes: true },
+      });
     });
-  });
-  return NextResponse.json(devis);
+    return NextResponse.json(devis);
+  } catch (e) {
+    // P2002 = conflit sur contrainte unique (Devis.numero) — message explicite
+    // au lieu du générique « doublon détecté » du wrapper api.
+    if (e && typeof e === "object" && "code" in e && (e as { code: string }).code === "P2002") {
+      return NextResponse.json(
+        { error: `Le numéro « ${rest.numero ?? ""} » est déjà utilisé par un autre devis.` },
+        { status: 409 },
+      );
+    }
+    throw e;
+  }
 });
 
 export const DELETE = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {

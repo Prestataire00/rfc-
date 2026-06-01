@@ -19,6 +19,9 @@ export const DEVIS_STATUT_ENUM = [
 
 export const devisSchema = z
   .object({
+    // Modifiable depuis le formulaire d'édition. Unicité garantie par
+    // @unique côté Prisma — P2002 intercepté dans la route PUT pour un 409 explicite.
+    numero: z.string().min(1, "Numéro requis").max(50, "Numéro trop long").optional(),
     objet: z.string().min(1, "Objet requis"),
     dateValidite: z.string().min(1, "Date de validité requise"),
     tauxTVA: z.coerce.number().default(20),

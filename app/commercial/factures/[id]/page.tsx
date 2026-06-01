@@ -432,6 +432,8 @@ export default function FactureDetailPage() {
         onOpenChange={setEmailOpen}
         title={`Envoyer la facture ${facture.numero} ?`}
         description={`Un email sera envoyé à ${facture.entreprise?.nom || "ce client"} avec la facture en pièce jointe. Le statut passera automatiquement à "Envoyée".`}
+        confirmLabel="Envoyer"
+        variant="default"
         onConfirm={handleSendEmail}
         loading={sending}
       />

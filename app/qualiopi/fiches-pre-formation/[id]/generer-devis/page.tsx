@@ -171,11 +171,13 @@ export default function GenererDevisDepuisFichePage() {
     return <div className="p-6 text-red-500">Fiche introuvable</div>;
   }
 
-  const blocked =
-    fiche.statut !== "repondu" || !fiche.entreprise || !formationEff;
+  // Blocage : on n'exige PLUS d'entreprise (cas stagiaire individuel : le
+  // devis sera rattaché au contact via la demande, sans entrepriseId).
+  // Il faut au minimum : fiche répondue + formation identifiée.
+  const blocked = fiche.statut !== "repondu" || !formationEff;
 
   return (
-    <div className="space-y-6 p-6 pb-24 max-w-5xl mx-auto">
+    <div className="space-y-6 p-6 pb-24 max-w-7xl mx-auto">
       <Breadcrumb items={[
         { label: "Fiches pré-formation", href: "/qualiopi/fiches-pre-formation" },
         { label: "Générer devis" },
@@ -185,7 +187,7 @@ export default function GenererDevisDepuisFichePage() {
 
       <PageHeader
         title="Générer le devis"
-        description="Ajustez le prix et les lignes en fonction du besoin exprimé dans la fiche, puis créez le devis (option : envoi signature en 1 clic)."
+        description="Réponses du client à gauche, devis éditable à droite — fixez le prix en gardant le contexte sous les yeux."
       />
 
       {blocked && (
@@ -193,42 +195,77 @@ export default function GenererDevisDepuisFichePage() {
           <strong>Action impossible.</strong>{" "}
           {fiche.statut !== "repondu"
             ? `Statut actuel : ${fiche.statut} (attendu : repondu).`
-            : !fiche.entreprise
-              ? "Pas d'entreprise rattachée à la fiche."
-              : "Pas de formation rattachée à la fiche."}
+            : "Pas de formation rattachée à la fiche."}
         </div>
       )}
 
-      {/* Récap de la fiche reçue (lecture seule, contexte de décision prix) */}
-      <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+      {/* Layout 2 colonnes : réponses (sticky) à gauche, devis éditable à droite.
+          Sur mobile, les sections s'empilent naturellement (grid-cols-1 par défaut). */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+      {/* ── Colonne gauche : Réponses du client (sticky en desktop) ── */}
+      <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-2">
           <Building2 className="h-4 w-4 text-red-500" />
-          Contexte du client
+          Réponses du client
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <RecapRow label="Entreprise" value={fiche.entreprise?.nom} />
-          <RecapRow label="Formation" value={formationEff?.titre} />
+
+        {/* Bandeau identification */}
+        <div className="rounded-md bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 p-3 mb-4 space-y-1">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {fiche.entreprise ? "Entreprise" : "Stagiaire individuel"}
+          </div>
+          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {fiche.entreprise?.nom || "Sans entreprise rattachée"}
+          </div>
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            Formation : <span className="font-medium">{formationEff?.titre || "—"}</span>
+            {formationEff?.duree ? <> · {formationEff.duree} h</> : null}
+          </div>
+          {fiche.dateReponse && (
+            <div className="text-[11px] text-gray-500 dark:text-gray-500">
+              Reçue le {new Date(fiche.dateReponse).toLocaleDateString("fr-FR")}
+            </div>
+          )}
+        </div>
+
+        {/* Données chiffrées */}
+        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
           <RecapRow label="Effectif total" value={fiche.effectifTotal} />
           <RecapRow label="Effectif concerné" value={fiche.effectifConcerne} />
           <RecapRow label="Secteur d'activité" value={fiche.secteurActivite} />
           <RecapRow label="Objectif principal" value={fiche.objectifPrincipal?.replace(/_/g, " ")} />
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 text-sm">
+
+        {/* Réponses libres */}
+        <div className="space-y-3 text-sm border-t border-gray-200 dark:border-gray-700 pt-4">
           <RecapRow label="Métiers des stagiaires" value={fiche.metiersStagiaires} multiline />
           <RecapRow label="Contexte de travail" value={fiche.contexteTravail} multiline />
           <RecapRow label="Contraintes spécifiques" value={fiche.contraintesSpecifiques} multiline />
           <RecapRow label="Objectifs clients" value={fiche.objectifsClient} multiline />
-          {fiche.casAccidentsRecents && (
-            <RecapRow label="Accidents récents" value={fiche.detailsCasAccidents || "Oui (détails non précisés)"} multiline />
-          )}
-          {fiche.aStagiairesHandicap && (
-            <RecapRow label="Stagiaires en situation de handicap" value={fiche.detailsHandicap || "Oui"} multiline />
-          )}
           <RecapRow label="Contraintes horaires" value={fiche.contraintesHoraires} multiline />
         </div>
+
+        {/* Drapeaux importants : accidents + handicap */}
+        {(fiche.casAccidentsRecents || fiche.aStagiairesHandicap) && (
+          <div className="mt-4 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+            {fiche.casAccidentsRecents && (
+              <div className="rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm">
+                <div className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300 mb-1">⚠ Accidents récents</div>
+                <div className="text-amber-900 dark:text-amber-200">{fiche.detailsCasAccidents || "Oui (détails non précisés)"}</div>
+              </div>
+            )}
+            {fiche.aStagiairesHandicap && (
+              <div className="rounded-md border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 p-3 text-sm">
+                <div className="text-xs font-semibold uppercase tracking-wide text-orange-800 dark:text-orange-300 mb-1">♿ Stagiaires en situation de handicap</div>
+                <div className="text-orange-900 dark:text-orange-200">{fiche.detailsHandicap || "Oui"}</div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
-      {/* Édition libre du devis */}
+      {/* ── Colonne droite : Édition libre du devis ── */}
       <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 flex items-center gap-2">
           <FileText className="h-4 w-4 text-red-500" />
@@ -350,6 +387,8 @@ export default function GenererDevisDepuisFichePage() {
           />
         </div>
       </section>
+
+      </div> {/* fin du grid 2 colonnes */}
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 sticky bottom-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-lg">

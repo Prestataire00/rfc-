@@ -65,6 +65,9 @@ export const POST = withErrorHandlerParams(
         },
         formation: true, // formation directe (fiche créée pré-session depuis prospect)
         entreprise: true,
+        // Demande source : permet de récupérer le contactId quand pas d'entreprise
+        // (cas stagiaire individuel : devis attaché au contact uniquement).
+        demande: { select: { id: true, contactId: true } },
       },
     });
 
@@ -77,8 +80,14 @@ export const POST = withErrorHandlerParams(
         { status: 422 },
       );
     }
-    if (!fiche.entrepriseId) {
-      return NextResponse.json({ error: "Pas d'entreprise rattachée à la fiche" }, { status: 422 });
+    // Le devis exige soit une entreprise, soit un contact (cas stagiaire individuel).
+    // Si la fiche n'a pas d'entreprise, on remonte le contact via la demande source.
+    const contactIdFallback = fiche.demande?.contactId ?? null;
+    if (!fiche.entrepriseId && !contactIdFallback) {
+      return NextResponse.json(
+        { error: "Aucune entreprise ni contact rattaché : impossible de créer un devis." },
+        { status: 422 },
+      );
     }
     // Formation : priorité session.formation (cas legacy), sinon formation directe
     // (cas fiche créée pré-session depuis le prospect).
@@ -140,12 +149,25 @@ export const POST = withErrorHandlerParams(
         dateEmission: new Date(),
         dateValidite: validite,
         statut: "brouillon",
-        entrepriseId: fiche.entrepriseId,
+        // Rattachement client : entreprise si présente, sinon contact (cas
+        // stagiaire individuel). Au moins l'un des deux est garanti non-null
+        // par le check plus haut.
+        entrepriseId: fiche.entrepriseId ?? null,
+        contactId: fiche.entrepriseId ? null : contactIdFallback,
         notes,
         lignes: { create: lignesFinales },
       },
       include: { lignes: true },
     });
+
+    // Si la fiche est rattachée à une demande, lier le devis créé à la
+    // demande pour que le tunnel reste cohérent (Demande.devisId pointe).
+    if (fiche.demande?.id) {
+      await prisma.demande.update({
+        where: { id: fiche.demande.id },
+        data: { devisId: devis.id, statut: "qualifie" },
+      }).catch((err) => logger.warn("demande.link_devis_failed", { error: String(err) }));
+    }
 
     try {
       await logAction({

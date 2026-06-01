@@ -34,6 +34,12 @@ export function devisPdf(data: {
   tauxTVA: number;
   montantTTC: number;
   notes?: string;
+  // Sessions rattachées au devis — pour la section « Délais d'exécution »
+  // (art. L111-1 C.conso). Reprend les dates de début/fin de chaque session.
+  sessions?: { dateDebut: string | Date; dateFin: string | Date }[];
+  // Si true, ajoute une page annexe « Formulaire de rétractation » au devis
+  // (art. L221-18 + R221-1 C.conso) — applicable aux particuliers (B2C).
+  isB2C?: boolean;
 }, opts?: PdfOpts): any {
   const branding = opts?.branding;
   const tpl = opts?.template;
@@ -172,6 +178,23 @@ export function devisPdf(data: {
       // ── OBJET ──
       { text: `Objet : ${data.objet}`, fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 12] as [number, number, number, number] },
 
+      // ── DÉLAIS D'EXÉCUTION (si sessions rattachées) ──
+      // Conformité art. L111-1 C.conso : indication des délais d'exécution
+      // de la prestation. Reprend les dates de toutes les sessions liées.
+      ...(data.sessions && data.sessions.length > 0
+        ? [
+            { text: "Délais d'exécution :", fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
+            {
+              ul: data.sessions.map((s) => ({
+                text: `Session du ${fmtDate(typeof s.dateDebut === "string" ? s.dateDebut : s.dateDebut.toISOString())} au ${fmtDate(typeof s.dateFin === "string" ? s.dateFin : s.dateFin.toISOString())}`,
+                fontSize: 9,
+                color: COLORS.dark,
+              })),
+              margin: [0, 0, 0, 12] as [number, number, number, number],
+            },
+          ]
+        : []),
+
       // ── TABLEAU LIGNES ──
       // Si TVA non applicable (exonéré 261-4-4° ou franchise 293 B) on cache
       // la colonne TVA — sinon la mention « pas de TVA » serait incohérente.
@@ -283,6 +306,55 @@ export function devisPdf(data: {
         { titre: `Pour ${nomSociete}`, nom: nomSociete },
         { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || data.contact ? `${data.contact?.prenom} ${data.contact?.nom}` : undefined }
       ),
+
+      // ── ANNEXE FORMULAIRE DE RÉTRACTATION (B2C uniquement) ──
+      // Art. L221-18 du Code de la consommation : 14 jours de rétractation.
+      // Art. R221-1 : modèle officiel de formulaire à fournir au consommateur
+      // lors d'une vente à distance ou hors établissement.
+      ...(data.isB2C
+        ? [
+            { text: "", pageBreak: "before" as const },
+            { text: "Formulaire de rétractation", fontSize: 16, bold: true, color: COLORS.dark, margin: [0, 0, 0, 8] as [number, number, number, number] },
+            { text: "Conformément aux articles L221-18 et suivants du Code de la consommation, vous disposez d'un délai de 14 jours calendaires pour vous rétracter de la présente commande, à compter du jour de sa conclusion. Pour exercer ce droit, vous pouvez utiliser le formulaire ci-dessous ou nous adresser toute déclaration dénuée d'ambiguïté exprimant votre volonté de vous rétracter.", fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 14] as [number, number, number, number] },
+            { text: "Modèle de formulaire de rétractation", fontSize: 11, bold: true, color: COLORS.dark, margin: [0, 0, 0, 6] as [number, number, number, number] },
+            {
+              table: {
+                widths: ["*"],
+                body: [[{
+                  stack: [
+                    { text: "À l'attention de :", fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 2] as [number, number, number, number] },
+                    { text: nomAvecForme, fontSize: 9, bold: true, color: COLORS.dark },
+                    ...(societe?.adresse ? [{ text: societe.adresse, fontSize: 9, color: COLORS.dark }] : []),
+                    ...(societe?.codePostal || societe?.ville
+                      ? [{ text: [societe?.codePostal, societe?.ville].filter(Boolean).join(" "), fontSize: 9, color: COLORS.dark }]
+                      : []),
+                    ...(societe?.email ? [{ text: `Email : ${societe.email}`, fontSize: 9, color: COLORS.dark }] : []),
+                    { text: "", margin: [0, 8, 0, 0] as [number, number, number, number] },
+                    { text: "Je / nous (*) vous notifie / notifions (*) par la présente ma / notre (*) rétractation du contrat portant sur la prestation de services ci-dessous :", fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 6] as [number, number, number, number] },
+                    { text: `Référence du devis : ${data.numero}`, fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 2] as [number, number, number, number] },
+                    { text: `Objet : ${data.objet}`, fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 6] as [number, number, number, number] },
+                    { text: "Commandé le : ____________________________________________", fontSize: 9, color: COLORS.dark, margin: [0, 4, 0, 4] as [number, number, number, number] },
+                    { text: "Nom du / des consommateur(s) : __________________________", fontSize: 9, color: COLORS.dark, margin: [0, 4, 0, 4] as [number, number, number, number] },
+                    { text: "Adresse du / des consommateur(s) : _______________________", fontSize: 9, color: COLORS.dark, margin: [0, 4, 0, 4] as [number, number, number, number] },
+                    { text: "________________________________________________________", fontSize: 9, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
+                    { text: "Signature du / des consommateur(s) (uniquement en cas de notification du présent formulaire sur papier) :", fontSize: 9, color: COLORS.dark, margin: [0, 4, 0, 4] as [number, number, number, number] },
+                    { text: "", margin: [0, 16, 0, 0] as [number, number, number, number] },
+                    { text: "Date : ___________________________________________________", fontSize: 9, color: COLORS.dark, margin: [0, 4, 0, 4] as [number, number, number, number] },
+                    { text: "(*) Rayer la mention inutile.", fontSize: 8, italics: true, color: COLORS.gray, margin: [0, 8, 0, 0] as [number, number, number, number] },
+                  ],
+                  border: [true, true, true, true],
+                  margin: [12, 12, 12, 12] as [number, number, number, number],
+                }]],
+              },
+              layout: {
+                hLineWidth: () => 1,
+                vLineWidth: () => 1,
+                hLineColor: () => primary,
+                vLineColor: () => primary,
+              },
+            },
+          ]
+        : []),
     ],
     footer: (_currentPage: number, _pageCount: number) => ({
       text: footerText,

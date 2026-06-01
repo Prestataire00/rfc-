@@ -13,7 +13,12 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
   const [devis, parametres] = await Promise.all([
     prisma.devis.findUnique({
       where: { id: params.id },
-      include: { lignes: true, entreprise: true, contact: true },
+      include: {
+        lignes: true,
+        entreprise: true,
+        contact: true,
+        sessions: { select: { dateDebut: true, dateFin: true } },
+      },
     }),
     prisma.parametres.findUnique({ where: { id: "default" } }),
   ]);
@@ -61,6 +66,13 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
     contact: devis.contact
       ? { nom: devis.contact.nom, prenom: devis.contact.prenom, email: devis.contact.email }
       : undefined,
+    // Sessions liées : reprises dans la section « Délais d'exécution » du devis
+    sessions: devis.sessions.map((s) => ({
+      dateDebut: s.dateDebut.toISOString(),
+      dateFin: s.dateFin.toISOString(),
+    })),
+    // B2C détecté : pas d'entreprise rattachée → annexe formulaire de rétractation
+    isB2C: !devis.entrepriseId,
     lignes: devis.lignes.map((l) => ({
       designation: l.designation,
       quantite: l.quantite,

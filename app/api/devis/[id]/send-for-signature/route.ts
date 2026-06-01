@@ -64,7 +64,12 @@ async function handle(devisId: string, adminUserId: string): Promise<NextRespons
     const [devis, parametres] = await Promise.all([
       prisma.devis.findUnique({
         where: { id: devisId },
-        include: { lignes: true, entreprise: true, contact: true },
+        include: {
+          lignes: true,
+          entreprise: true,
+          contact: true,
+          sessions: { select: { dateDebut: true, dateFin: true } },
+        },
       }),
       prisma.parametres.findUnique({ where: { id: "default" } }),
     ]);
@@ -154,6 +159,11 @@ async function handle(devisId: string, adminUserId: string): Promise<NextRespons
             }
           : undefined,
         contact: { nom: devis.contact.nom, prenom: devis.contact.prenom, email: devis.contact.email },
+        sessions: devis.sessions.map((s) => ({
+          dateDebut: s.dateDebut.toISOString(),
+          dateFin: s.dateFin.toISOString(),
+        })),
+        isB2C: !devis.entrepriseId,
         lignes: devis.lignes.map((l) => ({
           designation: l.designation,
           quantite: l.quantite,

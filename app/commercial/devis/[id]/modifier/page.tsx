@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -26,6 +26,9 @@ type Ligne = {
   // null → taux global du devis (TVA_RATE). Permet le multi-taux par ligne
   // (art. 289 II CGI : ventilation TVA obligatoire dès qu'il y a 2 taux).
   tauxTVA: number | null;
+  // Caractéristiques détaillées Qualiopi (programme, durée, public, méthodes,
+  // modalités d'évaluation) — art. L6353-1 C. trav.
+  caracteristiques: string;
 };
 
 type DevisData = {
@@ -41,7 +44,7 @@ type DevisData = {
 };
 
 function createLigne(): Ligne {
-  return { designation: "", quantite: 1, prixUnitaire: 0, montant: 0, tauxTVA: null };
+  return { designation: "", quantite: 1, prixUnitaire: 0, montant: 0, tauxTVA: null, caracteristiques: "" };
 }
 
 export default function ModifierDevisPage() {
@@ -95,6 +98,7 @@ export default function ModifierDevisPage() {
           prixUnitaire: l.prixUnitaire,
           montant: l.montant,
           tauxTVA: l.tauxTVA ?? null,
+          caracteristiques: l.caracteristiques ?? "",
         }))
       );
     }
@@ -164,6 +168,7 @@ export default function ModifierDevisPage() {
         prixUnitaire: l.prixUnitaire,
         montant: l.montant,
         tauxTVA: l.tauxTVA,
+        caracteristiques: l.caracteristiques.trim() || null,
       })),
     };
 
@@ -339,8 +344,9 @@ export default function ModifierDevisPage() {
                 </thead>
                 <tbody>
                   {lignes.map((ligne, index) => (
-                    <tr key={index} className="border-b last:border-0">
-                      <td className="py-2 pr-2">
+                    <Fragment key={index}>
+                    <tr className="last:border-0">
+                      <td className="pt-3 pr-2">
                         <Input
                           placeholder="Description de la prestation"
                           value={ligne.designation}
@@ -397,6 +403,19 @@ export default function ModifierDevisPage() {
                         </button>
                       </td>
                     </tr>
+                    {/* Sous-ligne : caractéristiques détaillées (Qualiopi L6353-1) */}
+                    <tr className="border-b last:border-0">
+                      <td colSpan={6} className="pb-3 pl-1 pr-2">
+                        <Textarea
+                          value={ligne.caracteristiques}
+                          onChange={(e) => updateLigne(index, "caracteristiques", e.target.value)}
+                          rows={2}
+                          placeholder="Caractéristiques détaillées (Qualiopi) — programme, durée, public visé, méthodes pédagogiques, modalités d'évaluation…"
+                          className="text-xs"
+                        />
+                      </td>
+                    </tr>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

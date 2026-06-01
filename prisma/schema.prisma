@@ -413,6 +413,12 @@ model LigneDevis {
   // null → utilise le taux global Devis.tauxTVA pour rétro-compatibilité.
   tauxTVA      Float?
 
+  // Caractéristiques détaillées de la prestation (Qualiopi art. L6353-1
+  // du Code du travail) : programme / durée / public / méthodes
+  // pédagogiques / modalités d'évaluation. Affiché en sous-texte de la
+  // désignation dans le PDF. Optionnel — recommandé pour audit Qualiopi.
+  caracteristiques String?
+
   devisId String
   devis   Devis  @relation(fields: [devisId], references: [id], onDelete: Cascade)
 

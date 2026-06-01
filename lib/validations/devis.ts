@@ -8,6 +8,9 @@ export const ligneDevisSchema = z.object({
   montant: z.coerce.number(),
   // Taux TVA par ligne (multi-taux). null → utilise tauxTVA global du devis.
   tauxTVA: z.coerce.number().min(0).max(100).nullable().optional(),
+  // Caractéristiques détaillées (programme, durée, public, méthodes, évaluation).
+  // Qualiopi art. L6353-1 C. trav. Optionnel pour rétro-compat.
+  caracteristiques: z.string().max(2000).nullable().optional(),
 });
 
 // Audit 2026-05-19 §4.8 : alignement Zod ↔ Prisma — statuts Devis officiels.

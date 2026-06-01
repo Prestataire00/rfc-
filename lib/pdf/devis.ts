@@ -29,7 +29,7 @@ export function devisPdf(data: {
   };
   entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string; email?: string; telephone?: string };
   contact?: { nom: string; prenom: string; email: string };
-  lignes: { designation: string; quantite: number; prixUnitaire: number; montant: number; tauxTVA?: number | null }[];
+  lignes: { designation: string; quantite: number; prixUnitaire: number; montant: number; tauxTVA?: number | null; caracteristiques?: string | null }[];
   montantHT: number;
   tauxTVA: number;
   montantTTC: number;
@@ -122,7 +122,14 @@ export function devisPdf(data: {
   // Footer text
   const footerParts: string[] = [nomAvecForme];
   if (societe?.tvaIntracom && tvaApplicable) footerParts.push(`N°TVA Intracommunautaire : ${societe.tvaIntracom}`);
-  if (societe?.nda) footerParts.push(`NDA : ${societe.nda}`);
+  if (societe?.nda) {
+    footerParts.push(`NDA : ${societe.nda}`);
+    // Si déclaré OF (NDA présent), mention obligatoire de l'action de
+    // formation (art. L6313-1 du Code du travail) : qualifie la prestation
+    // au sens de la formation pro continue et conditionne la prise en charge
+    // OPCO / CPF / fonds de formation.
+    footerParts.push("Action de formation au sens de l'art. L6313-1 du Code du travail");
+  }
   if (mentionTVA) footerParts.push(mentionTVA);
   const footerText = footerParts.join("  |  ");
 
@@ -250,8 +257,21 @@ export function devisPdf(data: {
               const tauxLigne = l.tauxTVA ?? data.tauxTVA;
               const tva = l.montant * (tauxLigne / 100);
               const tvaCell = multiTaux ? `${tauxLigne}% · ${fmtCurrency(tva)}` : fmtCurrency(tva);
+              // Désignation enrichie d'un sous-texte « caractéristiques » si fourni
+              // (Qualiopi art. L6353-1). Utilise un stack pour empiler les 2 lignes
+              // dans la même cellule.
+              const designationCell = l.caracteristiques
+                ? {
+                    stack: [
+                      { text: l.designation, fontSize: 9, color: COLORS.dark },
+                      { text: l.caracteristiques, fontSize: 8, color: COLORS.gray, italics: true, margin: [0, 2, 0, 0] as [number, number, number, number] },
+                    ],
+                    fillColor: bg,
+                    margin: [4, 4, 4, 4] as [number, number, number, number],
+                  }
+                : { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] };
               return [
-                { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                designationCell,
                 { text: l.quantite.toString(), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
                 { text: fmtCurrency(l.prixUnitaire), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
                 { text: tvaCell, fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },

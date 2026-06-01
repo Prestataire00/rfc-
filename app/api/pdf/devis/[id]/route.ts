@@ -76,6 +76,7 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
     // tauxTVA par ligne pour ventilation multi-taux (null → taux global devis)
     lignes: devis.lignes.map((l) => ({
       tauxTVA: l.tauxTVA,
+      caracteristiques: l.caracteristiques,
       designation: l.designation,
       quantite: l.quantite,
       prixUnitaire: l.prixUnitaire,

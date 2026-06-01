@@ -166,6 +166,7 @@ async function handle(devisId: string, adminUserId: string): Promise<NextRespons
         isB2C: !devis.entrepriseId,
         lignes: devis.lignes.map((l) => ({
           tauxTVA: l.tauxTVA,
+          caracteristiques: l.caracteristiques,
           designation: l.designation,
           quantite: l.quantite,
           prixUnitaire: l.prixUnitaire,

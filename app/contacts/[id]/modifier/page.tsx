@@ -100,8 +100,11 @@ export default function ModifierContactPage() {
   const [secuMasked, setSecuMasked] = useState("");
 
   const { data: contact, error: contactError, isLoading: loadingContact } = useApi<ContactData>(`/api/contacts/${id}`);
-  const { data: entreprisesData, isLoading: loadingEnts } = useApi<Entreprise[]>("/api/entreprises");
-  const entreprises: Entreprise[] = Array.isArray(entreprisesData) ? entreprisesData : [];
+  // /api/entreprises retourne { data, total, ... } depuis l'audit §4.7
+  const { data: entreprisesData, isLoading: loadingEnts } = useApi<Entreprise[] | { data: Entreprise[] }>("/api/entreprises");
+  const entreprises: Entreprise[] = Array.isArray(entreprisesData)
+    ? entreprisesData
+    : entreprisesData?.data ?? [];
   const loading = loadingContact || loadingEnts;
   const { trigger: updateContact, isMutating: saving } = useApiMutation<Record<string, unknown>>(`/api/contacts/${id}`, "PUT");
 

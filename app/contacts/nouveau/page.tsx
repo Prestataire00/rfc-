@@ -119,8 +119,11 @@ export default function NouveauContactPage() {
     diplomeObtenu: "",
   });
 
-  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
-  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  // /api/entreprises retourne { data, total, ... } depuis l'audit §4.7
+  const { data: entreprisesRaw } = useApi<Entreprise[] | { data: Entreprise[] }>("/api/entreprises");
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw)
+    ? entreprisesRaw
+    : entreprisesRaw?.data ?? [];
   const { trigger: createContact, isMutating: saving } = useApiMutation<
     Record<string, unknown>,
     ContactCreated

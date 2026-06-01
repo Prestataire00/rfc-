@@ -64,7 +64,8 @@ function NouveauDevisForm() {
   const [notes, setNotes] = useState("");
   const [avecTVA, setAvecTVA] = useState(true);
 
-  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
+  // /api/entreprises retourne { data, total, ... } depuis l'audit §4.7
+  const { data: entreprisesRaw } = useApi<Entreprise[] | { data: Entreprise[] }>("/api/entreprises");
   const { data: contactsRaw } = useApi<{ data: Contact[] } | Contact[]>("/api/contacts?limit=100");
   const { data: besoin } = useApi<BesoinDetail>(besoinId ? `/api/demandes/${besoinId}` : null);
   const { trigger: createDevis, isMutating: loading } = useApiMutation<Record<string, unknown>, DevisCreated>(
@@ -72,7 +73,9 @@ function NouveauDevisForm() {
     "POST"
   );
 
-  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw)
+    ? entreprisesRaw
+    : entreprisesRaw?.data ?? [];
   const contacts: Contact[] = Array.isArray(contactsRaw)
     ? contactsRaw
     : Array.isArray(contactsRaw?.data)

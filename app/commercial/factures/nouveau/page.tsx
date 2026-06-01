@@ -53,7 +53,8 @@ export default function NouvelleFacturePage() {
   const [notes, setNotes] = useState("");
   const [avecTVA, setAvecTVA] = useState(true);
 
-  const { data: entreprisesRaw } = useApi<Entreprise[]>("/api/entreprises");
+  // /api/entreprises retourne { data, total, ... } depuis l'audit §4.7
+  const { data: entreprisesRaw } = useApi<Entreprise[] | { data: Entreprise[] }>("/api/entreprises");
   const { data: devisRaw } = useApi<{ data: Devis[] } | Devis[]>("/api/devis?statut=signe&limit=100");
   const { data: devisDetail } = useApi<DevisDetail>(paramDevisId ? `/api/devis/${paramDevisId}` : null);
   const { trigger: createFacture, isMutating: loading } = useApiMutation<Record<string, unknown>, FactureCreated>(
@@ -61,7 +62,9 @@ export default function NouvelleFacturePage() {
     "POST"
   );
 
-  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw) ? entreprisesRaw : [];
+  const entreprises: Entreprise[] = Array.isArray(entreprisesRaw)
+    ? entreprisesRaw
+    : entreprisesRaw?.data ?? [];
   const devisList: Devis[] = Array.isArray(devisRaw)
     ? devisRaw
     : Array.isArray(devisRaw?.data)

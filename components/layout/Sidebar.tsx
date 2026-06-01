@@ -10,6 +10,7 @@ import {
   MessageSquare, Award, Shield, X, Settings, BadgeCheck, CreditCard,
   UserPlus, UserCheck, AlertTriangle, Zap, Receipt,
   ListChecks, Wallet, Building2, Layers, ShieldCheck, Mail, Clock,
+  Filter, PenLine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -52,22 +53,48 @@ const adminGroups: NavGroup[] = [
   // 1. Dashboard — KPIs + Planning
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
 
-  // 2. Devis — pipeline commercial + clients (entrée du flux métier)
+  // 2. Pipeline — narration explicite du tunnel commercial :
+  // Prospect → Fiche pré-formation → Devis → Signature → Facture → Client gagné.
+  // Les items sont ordonnés selon l'avancement du dossier dans le funnel,
+  // pas par module métier. Voir aussi le widget funnel du Dashboard.
   {
-    key: "devis",
-    label: "Devis",
-    icon: FileText,
+    key: "pipeline",
+    label: "Pipeline",
+    icon: Filter,
     items: [
-      { href: "/prospects", label: "Demandes (pipeline)", icon: UserPlus },
-      { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
-      { href: "/commercial?tab=factures", label: "Factures", icon: Receipt },
-      { href: "/entreprises?type=client", label: "Clients", icon: Building2 },
+      {
+        kind: "section",
+        label: "Acquisition",
+        icon: UserPlus,
+        items: [
+          { href: "/prospects", label: "Prospects", icon: UserPlus },
+          { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Conversion",
+        icon: FileText,
+        items: [
+          { href: "/commercial?tab=devis", label: "Devis", icon: FileText },
+          { href: "/signatures", label: "Signatures", icon: PenLine },
+        ],
+      },
+      {
+        kind: "section",
+        label: "Après signature",
+        icon: ListChecks,
+        items: [
+          { href: "/commercial?tab=factures", label: "Factures", icon: Receipt },
+          { href: "/entreprises?type=client", label: "Clients", icon: Building2 },
+        ],
+      },
     ],
   },
 
-  // 3. Formation — cycle de vie complet, 4 sous-sections pour découper les
-  // 10 items sans cognitive overload : Planification (quand/quoi) → Acteurs
-  // (qui) → Qualiopi (preuves conformité) → Documents (ressources produites).
+  // 3. Formation — cycle de vie pédagogique (post-signature jusqu'à l'attestation).
+  // Sous-sections : Planification (quand/quoi) → Acteurs (qui) → Qualiopi
+  // (preuves conformité) → Documents (ressources produites).
   {
     key: "formation",
     label: "Formation",
@@ -97,13 +124,10 @@ const adminGroups: NavGroup[] = [
         label: "Qualiopi",
         icon: ShieldCheck,
         items: [
-          { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
           { href: "/evaluations", label: "Évaluations", icon: ClipboardList },
           { href: "/certifications", label: "Certifications", icon: Award },
         ],
       },
-      // Documents = item plat : tout est unifié sur /documents (3 onglets :
-      // Uploadés / Modèles système / Modèles IA), pas besoin d'une sous-section.
       { href: "/documents", label: "Documents", icon: FolderOpen },
     ],
   },
@@ -130,7 +154,6 @@ const adminGroups: NavGroup[] = [
         icon: Clock,
         items: [
           { href: "/logs/emails", label: "Emails envoyés", icon: Mail },
-          { href: "/signatures", label: "Signatures", icon: ShieldCheck },
         ],
       },
     ],

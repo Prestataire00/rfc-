@@ -10,6 +10,7 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Send, FileText, Sparkles, Building2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
+import { ProspectBackLink } from "@/components/shared/ProspectBackLink";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -179,6 +180,8 @@ export default function GenererDevisDepuisFichePage() {
         { label: "Fiches pré-formation", href: "/qualiopi/fiches-pre-formation" },
         { label: "Générer devis" },
       ]} />
+
+      <ProspectBackLink ficheId={fiche.id} />
 
       <PageHeader
         title="Générer le devis"

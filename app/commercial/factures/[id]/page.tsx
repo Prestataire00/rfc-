@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Trash2, CheckCircle, FileText, Eye, Download, Plus, X, Mail } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
+import { ProspectBackLink } from "@/components/shared/ProspectBackLink";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { notify } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -157,6 +158,9 @@ export default function FactureDetailPage() {
           { label: "Commercial", href: "/commercial" },
           { label: `Facture ${facture.numero}` },
         ]} />
+        <div className="mb-3">
+          <ProspectBackLink factureId={facture.id} />
+        </div>
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-1">

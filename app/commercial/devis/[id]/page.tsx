@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus, ShieldCheck, Award, XCircle, Clock, Send } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
+import { ProspectBackLink } from "@/components/shared/ProspectBackLink";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { notify } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -231,6 +232,9 @@ export default function DevisDetailPage() {
           { label: "Commercial", href: "/commercial" },
           { label: `Devis ${devis.numero}` },
         ]} />
+        <div className="mb-3">
+          <ProspectBackLink devisId={devis.id} />
+        </div>
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-1">

@@ -17,6 +17,11 @@ import {
   AlertTriangle,
   Info,
   AlertCircle,
+  UserPlus,
+  BadgeCheck,
+  FileText,
+  PenLine,
+  Trophy,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SkeletonStats, SkeletonCard } from "@/components/shared/Skeleton";
@@ -111,6 +116,96 @@ function StatCard({
         </div>
       </div>
     </Link>
+  );
+}
+
+// Widget tunnel commercial : 6 étapes horizontales avec compteurs cliquables.
+// Cible le mois en cours par défaut. Chaque étape route vers la page filtrée
+// correspondante pour permettre à l'admin de voir la liste sous-jacente.
+type FunnelCounts = {
+  period: string;
+  steps: {
+    prospects: number;
+    fichesEnvoyees: number;
+    fichesRepondues: number;
+    devisBrouillons: number;
+    devisEnvoyes: number;
+    devisSignes: number;
+  };
+  tauxConversion: number;
+};
+
+function FunnelWidget() {
+  const { data } = useApi<FunnelCounts>("/api/funnel/counts?period=mois");
+  const s = data?.steps ?? {
+    prospects: 0,
+    fichesEnvoyees: 0,
+    fichesRepondues: 0,
+    devisBrouillons: 0,
+    devisEnvoyes: 0,
+    devisSignes: 0,
+  };
+
+  const steps: Array<{
+    key: string;
+    label: string;
+    count: number;
+    href: string;
+    icon: React.ElementType;
+    color: string;
+  }> = [
+    { key: "prospects", label: "Prospects", count: s.prospects, href: "/prospects", icon: UserPlus, color: "bg-sky-500" },
+    { key: "fichesEnv", label: "Fiches envoyées", count: s.fichesEnvoyees, href: "/qualiopi/fiches-pre-formation", icon: BadgeCheck, color: "bg-indigo-500" },
+    { key: "fichesRep", label: "Fiches reçues", count: s.fichesRepondues, href: "/qualiopi/fiches-pre-formation", icon: ClipboardList, color: "bg-violet-500" },
+    { key: "devisBr", label: "Devis à réviser", count: s.devisBrouillons, href: "/commercial?tab=devis&statut=brouillon", icon: FileText, color: "bg-amber-500" },
+    { key: "devisEnv", label: "En signature", count: s.devisEnvoyes, href: "/commercial?tab=devis&statut=envoye", icon: PenLine, color: "bg-orange-500" },
+    { key: "signes", label: "Gagnés", count: s.devisSignes, href: "/commercial?tab=devis&statut=signe", icon: Trophy, color: "bg-emerald-500" },
+  ];
+
+  return (
+    <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Tunnel commercial — ce mois
+          </h2>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+            Cliquer une étape pour voir la liste sous-jacente
+          </p>
+        </div>
+        {data && data.tauxConversion > 0 && (
+          <div className="text-right shrink-0">
+            <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Conversion</p>
+            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{data.tauxConversion}%</p>
+          </div>
+        )}
+      </div>
+      <ol className="flex items-stretch gap-1 overflow-x-auto pb-1">
+        {steps.map((step, idx) => {
+          const isLast = idx === steps.length - 1;
+          const Icon = step.icon;
+          return (
+            <li key={step.key} className="flex items-stretch gap-1 shrink-0">
+              <Link
+                href={step.href}
+                className="group flex flex-col items-center gap-1 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm transition-all min-w-[88px]"
+              >
+                <div className={`flex h-9 w-9 items-center justify-center rounded-full ${step.color} text-white shadow-sm group-hover:scale-105 transition-transform`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span className="text-2xl font-bold leading-none text-gray-900 dark:text-gray-100">{step.count}</span>
+                <span className="text-[10px] text-center leading-tight text-gray-600 dark:text-gray-400">{step.label}</span>
+              </Link>
+              {!isLast && (
+                <div className="flex items-center">
+                  <ArrowRight className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -238,6 +333,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ── Tunnel commercial ── */}
+      <FunnelWidget />
 
       {/* CA Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

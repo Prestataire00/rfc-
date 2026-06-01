@@ -28,6 +28,7 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
     });
     if (!fiche) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
     if (!fiche.contact.email) return NextResponse.json({ error: "Email stagiaire manquant" }, { status: 400 });
+    if (!fiche.session) return NextResponse.json({ error: "Session liée introuvable" }, { status: 400 });
 
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const link = `${baseUrl}/qualiopi/fiche-stagiaire/${fiche.tokenAcces}`;

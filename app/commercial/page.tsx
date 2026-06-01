@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileText, Plus, Receipt, Download, ArrowRight } from "lucide-react";
+import { FileText, Plus, Receipt, Download, ArrowRight, List, LayoutGrid, Columns3 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -79,11 +79,30 @@ export default function CommercialPage() {
   const [activeTab, setActiveTab] = useState<"devis" | "factures">(initialTab);
   const [facturePage, setFacturePage] = useState(1);
   const [filtreStatutFacture, setFiltreStatutFacture] = useState("");
-  // Sous-onglet statut sur la vue Devis (cf. demande UX — remplace le Kanban)
+  // Sous-onglet statut sur la vue Devis (filtre actif en mode Liste/Cartes,
+  // ignoré en mode Kanban qui montre toutes les colonnes).
   const initialDevisStatut = (searchParams.get("statut") as DevisStatutKey) || "brouillon";
   const [activeDevisStatut, setActiveDevisStatut] = useState<DevisStatutKey>(
     DEVIS_STATUT_TABS.includes(initialDevisStatut) ? initialDevisStatut : "brouillon",
   );
+
+  // Mode d'affichage des devis : liste (table), cartes (grille) ou kanban
+  // (colonnes par statut). Persisté en localStorage pour conserver le choix
+  // utilisateur entre les visites.
+  type DevisView = "liste" | "cartes" | "kanban";
+  const [devisView, setDevisView] = useState<DevisView>("liste");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem("commercial.devisView");
+    if (saved === "liste" || saved === "cartes" || saved === "kanban") {
+      setDevisView(saved);
+    }
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("commercial.devisView", devisView);
+    }
+  }, [devisView]);
 
   useEffect(() => {
     setFacturePage(1);
@@ -235,8 +254,34 @@ export default function CommercialPage() {
       {/* Pipeline Devis — sous-onglets par statut */}
       {activeTab === "devis" && (
         <>
-          {/* Sous-onglets de statut */}
-          <div className="flex items-end justify-between gap-2 mb-4 flex-wrap">
+          {/* Toggle d'affichage : Liste / Cartes / Kanban */}
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Affichage :</span>
+            <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5">
+              {([
+                { key: "liste" as const, label: "Liste", icon: List },
+                { key: "cartes" as const, label: "Cartes", icon: LayoutGrid },
+                { key: "kanban" as const, label: "Kanban", icon: Columns3 },
+              ]).map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setDevisView(key)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-medium transition-colors",
+                    devisView === key
+                      ? "bg-red-600 text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100",
+                  )}
+                  title={label}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sous-onglets de statut — masqués en vue Kanban (déjà ventilé par colonnes) */}
+          <div className={cn("items-end justify-between gap-2 mb-4 flex-wrap", devisView === "kanban" ? "hidden" : "flex")}>
             <nav className="flex gap-1 border-b border-gray-200 dark:border-gray-700 -mb-px">
               {DEVIS_STATUT_TABS.map((key) => {
                 const meta = DEVIS_STATUTS[key];
@@ -278,6 +323,62 @@ export default function CommercialPage() {
 
           {loadingDevis ? (
             <SkeletonTable rows={6} cols={6} />
+          ) : devisView === "kanban" ? (
+            /* ── Vue Kanban : 5 colonnes par statut, ventilation directe ── */
+            devis.length === 0 ? (
+              <EmptyState
+                icon={FileText}
+                title="Aucun devis"
+                description="Créez votre premier devis pour démarrer le pipeline."
+                actionLabel="Nouveau devis"
+                actionHref="/commercial/devis/nouveau"
+              />
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {DEVIS_STATUT_TABS.map((key) => {
+                  const meta = DEVIS_STATUTS[key];
+                  const colonne = devis.filter((d) => d.statut === key);
+                  return (
+                    <div
+                      key={key}
+                      className="flex-shrink-0 w-72 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col"
+                    >
+                      <div className="px-3 py-2.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("inline-block h-2 w-2 rounded-full", meta.color.replace("bg-", "bg-").split(" ")[0])} />
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{meta.label}</span>
+                        </div>
+                        <span className="inline-flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 min-w-[1.5rem] h-5 px-1.5">
+                          {colonne.length}
+                        </span>
+                      </div>
+                      <div className="flex-1 p-2 space-y-2 min-h-[120px]">
+                        {colonne.length === 0 ? (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">—</p>
+                        ) : (
+                          colonne.map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => router.push(`/commercial/devis/${d.id}`)}
+                              className="w-full text-left rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 hover:border-red-400 dark:hover:border-red-600 hover:shadow-sm transition"
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="font-mono text-[10px] text-gray-500 dark:text-gray-400">{d.numero}</span>
+                                <span className="font-semibold text-xs text-gray-900 dark:text-gray-100">{formatCurrency(d.montantTTC)}</span>
+                              </div>
+                              <p className="text-xs text-gray-800 dark:text-gray-200 line-clamp-2 mb-1">{d.objet}</p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{getClientName(d)}</p>
+                              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Valide {formatDate(d.dateValidite)}</p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : devisFiltres.length === 0 ? (
             <EmptyState
               icon={FileText}
@@ -290,7 +391,34 @@ export default function CommercialPage() {
               actionLabel={activeDevisStatut === "brouillon" ? "Nouveau devis" : undefined}
               actionHref={activeDevisStatut === "brouillon" ? "/commercial/devis/nouveau" : undefined}
             />
+          ) : devisView === "cartes" ? (
+            /* ── Vue Cartes : grille responsive ── */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {devisFiltres.map((d) => {
+                const s = DEVIS_STATUTS[d.statut as DevisStatutKey];
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => router.push(`/commercial/devis/${d.id}`)}
+                    className="text-left rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:border-red-400 dark:hover:border-red-600 hover:shadow-md transition"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{d.numero}</span>
+                      {s && <StatutBadge label={s.label} color={s.color} />}
+                    </div>
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-2 mb-2">{d.objet}</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate mb-3">{getClientName(d)}</p>
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Valide {formatDate(d.dateValidite)}</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{formatCurrency(d.montantTTC)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           ) : (
+            /* ── Vue Liste : table (par défaut) ── */
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto">
               <table className="min-w-[760px] w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">

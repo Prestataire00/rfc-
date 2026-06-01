@@ -1,11 +1,13 @@
 [build]
   # `prisma generate` est déjà fait par le hook `postinstall` du package.json
   # (déclenché par `npm install` que Netlify exécute avant ce command).
-  # `prisma db push` retiré : poussait le schéma à chaque déploiement (30-60s).
-  # Désormais : `npx prisma db push` à faire manuellement en local après modif
-  # de prisma/schema.prisma, avant commit. À terme : migrer vers `prisma
-  # migrate deploy` + fichiers dans prisma/migrations/ (PR séparée à prévoir).
-  command = "npm run build"
+  # `prisma db push` réintégré 2026-06-01 : éviter la dérive schéma Prisma vs
+  # DB prod, qui causait des 500 silencieux ("Prospect introuvable") quand un
+  # commit ajoutait des colonnes sans push manuel. Coût : ~30-60s par build.
+  # `--accept-data-loss=false` (défaut) empêche la perte de données ; un
+  # changement destructeur (drop column non-vide, etc.) ferait échouer le build,
+  # forçant à passer par une migration explicite (correct comportement).
+  command = "npx prisma db push --skip-generate && npm run build"
   publish = ".next"
 
 [build.environment]

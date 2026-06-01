@@ -19,6 +19,13 @@ export function devisPdf(data: {
     nom: string; slogan?: string; adresse?: string; codePostal?: string; ville?: string;
     telephone?: string; email?: string; siret?: string; nda?: string; tvaIntracom?: string;
     conditionsPaiement?: string; mentionsDevis?: string;
+    // Conformité légale ajoutée en juin 2026 (art. R123-237 / L441-10 / D441-5 C.com,
+    // 261-4-4° / 293 B CGI). Tous optionnels pour rétro-compat ; le rendu dégrade
+    // gracieusement sur absence.
+    formeJuridique?: string;
+    regimeTVA?: "assujetti" | "exonere_261_4_4" | "franchise_293_b" | string;
+    penalitesRetard?: string;
+    indemniteRecouvrement?: number;
   };
   entreprise?: { nom: string; adresse?: string; ville?: string; codePostal?: string; siret?: string; email?: string; telephone?: string };
   contact?: { nom: string; prenom: string; email: string };
@@ -32,13 +39,27 @@ export function devisPdf(data: {
   const tpl = opts?.template;
   const primary = branding?.couleurPrimaire || COLORS.primary;
   const logo = branding?.logoBase64 || LOGO_BASE64;
-  const montantTVA = data.montantHT * (data.tauxTVA / 100);
   const societe = data.societe;
+  const regimeTVA = societe?.regimeTVA ?? "assujetti";
+  const tvaApplicable = regimeTVA === "assujetti";
+  const montantTVA = tvaApplicable ? data.montantHT * (data.tauxTVA / 100) : 0;
+  const montantNetAPayer = tvaApplicable ? data.montantTTC : data.montantHT;
   const nomSociete = societe?.nom || branding?.nomEntreprise || "RFC - Rescue Formation Conseil";
+  const nomAvecForme = societe?.formeJuridique
+    ? `${nomSociete} — ${societe.formeJuridique}`
+    : nomSociete;
+
+  // Mention légale TVA — affichée dans le bloc Conditions et le footer selon régime.
+  const mentionTVA =
+    regimeTVA === "exonere_261_4_4"
+      ? "Exonération de TVA en application de l'article 261-4-4° du Code général des impôts (organisme de formation déclaré)."
+      : regimeTVA === "franchise_293_b"
+      ? "TVA non applicable, article 293 B du Code général des impôts (franchise en base)."
+      : null;
 
   // Build emetteur lines
   const emetteurLines: any[] = [
-    { text: nomSociete, fontSize: 10, bold: true, color: COLORS.dark },
+    { text: nomAvecForme, fontSize: 10, bold: true, color: COLORS.dark },
   ];
   if (societe?.slogan) emetteurLines.push({ text: societe.slogan, fontSize: 9, color: COLORS.gray });
   if (societe?.adresse) emetteurLines.push({ text: societe.adresse, fontSize: 9, color: COLORS.dark });
@@ -67,11 +88,16 @@ export function devisPdf(data: {
 
   const condPaiement = societe?.conditionsPaiement || "Paiement à 30 jours à compter de la date de facturation.";
   const mentions = societe?.mentionsDevis || "Devis valable 30 jours.";
+  const penalites = societe?.penalitesRetard
+    || "En cas de retard de paiement, pénalité égale à 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce).";
+  const indemnite = societe?.indemniteRecouvrement ?? 40;
+  const mentionIndemnite = `Tout retard de paiement déclenche également une indemnité forfaitaire de ${indemnite.toFixed(0)} € pour frais de recouvrement (art. D441-5 du Code de commerce).`;
 
   // Footer text
-  const footerParts: string[] = [nomSociete];
-  if (societe?.tvaIntracom) footerParts.push(`N°TVA Intracommunautaire : ${societe.tvaIntracom}`);
+  const footerParts: string[] = [nomAvecForme];
+  if (societe?.tvaIntracom && tvaApplicable) footerParts.push(`N°TVA Intracommunautaire : ${societe.tvaIntracom}`);
   if (societe?.nda) footerParts.push(`NDA : ${societe.nda}`);
+  if (mentionTVA) footerParts.push(mentionTVA);
   const footerText = footerParts.join("  |  ");
 
   return {
@@ -147,21 +173,38 @@ export function devisPdf(data: {
       { text: `Objet : ${data.objet}`, fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 12] as [number, number, number, number] },
 
       // ── TABLEAU LIGNES ──
+      // Si TVA non applicable (exonéré 261-4-4° ou franchise 293 B) on cache
+      // la colonne TVA — sinon la mention « pas de TVA » serait incohérente.
       {
         table: {
           headerRows: 1,
-          widths: ["*", 45, 75, 55, 60],
+          widths: tvaApplicable ? ["*", 45, 75, 55, 60] : ["*", 60, 90, 80],
           body: [
-            [
-              { text: "Désignation", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "left" as const, margin: [4, 4, 4, 4] as [number, number, number, number] },
-              { text: "Quantité", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
-              { text: "Prix unit. HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
-              { text: `Total TVA ${data.tauxTVA}%`, fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
-              { text: "Total HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
-            ],
+            tvaApplicable
+              ? [
+                  { text: "Désignation", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "left" as const, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                  { text: "Quantité", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+                  { text: "Prix unit. HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: `Total TVA ${data.tauxTVA}%`, fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: "Total HT", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                ]
+              : [
+                  { text: "Désignation", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "left" as const, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                  { text: "Quantité", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+                  { text: "Prix unit. net", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: "Total net", fontSize: 9, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                ],
             ...data.lignes.map((l, i) => {
-              const tva = l.montant * (data.tauxTVA / 100);
               const bg = i % 2 === 0 ? "#ffffff" : "#fafafa";
+              if (!tvaApplicable) {
+                return [
+                  { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] },
+                  { text: l.quantite.toString(), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
+                  { text: fmtCurrency(l.prixUnitaire), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                  { text: fmtCurrency(l.montant), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "right" as const, margin: [2, 4, 4, 4] as [number, number, number, number] },
+                ];
+              }
+              const tva = l.montant * (data.tauxTVA / 100);
               return [
                 { text: l.designation, fontSize: 9, color: COLORS.dark, fillColor: bg, margin: [4, 4, 4, 4] as [number, number, number, number] },
                 { text: l.quantite.toString(), fontSize: 9, color: COLORS.dark, fillColor: bg, alignment: "center" as const, margin: [2, 4, 2, 4] as [number, number, number, number] },
@@ -190,6 +233,11 @@ export function devisPdf(data: {
               { text: "Conditions de règlement :", fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 4] as [number, number, number, number] },
               { text: condPaiement, fontSize: 9, color: COLORS.dark },
               ...(mentions ? [{ text: mentions, fontSize: 9, color: COLORS.gray, margin: [0, 4, 0, 0] as [number, number, number, number] }] : []),
+              // Conformité B2B obligatoire — art. L441-10 + D441-5 C.com
+              { text: penalites, fontSize: 8, color: COLORS.gray, margin: [0, 6, 0, 0] as [number, number, number, number] },
+              { text: mentionIndemnite, fontSize: 8, color: COLORS.gray, margin: [0, 2, 0, 0] as [number, number, number, number] },
+              // Mention TVA légale si exonéré / franchise (art. 261-4-4° / 293 B CGI)
+              ...(mentionTVA ? [{ text: mentionTVA, fontSize: 8, italics: true, color: COLORS.dark, margin: [0, 6, 0, 0] as [number, number, number, number] }] : []),
             ],
           },
           { width: "5%", text: "" },
@@ -197,20 +245,27 @@ export function devisPdf(data: {
             width: "40%",
             table: {
               widths: ["*", 80],
-              body: [
-                [
-                  { text: "Total HT", fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
-                  { text: fmtCurrency(data.montantHT), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
-                ],
-                [
-                  { text: `Total TVA (${data.tauxTVA}%)`, fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
-                  { text: fmtCurrency(montantTVA), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
-                ],
-                [
-                  { text: "Net à payer", fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, margin: [6, 5, 4, 5] as [number, number, number, number] },
-                  { text: fmtCurrency(data.montantTTC), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
-                ],
-              ],
+              body: tvaApplicable
+                ? [
+                    [
+                      { text: "Total HT", fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                      { text: fmtCurrency(data.montantHT), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                    ],
+                    [
+                      { text: `Total TVA (${data.tauxTVA}%)`, fontSize: 9, color: COLORS.dark, margin: [6, 4, 4, 4] as [number, number, number, number] },
+                      { text: fmtCurrency(montantTVA), fontSize: 9, color: COLORS.dark, alignment: "right" as const, margin: [4, 4, 6, 4] as [number, number, number, number] },
+                    ],
+                    [
+                      { text: "Net à payer", fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, margin: [6, 5, 4, 5] as [number, number, number, number] },
+                      { text: fmtCurrency(data.montantTTC), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
+                    ],
+                  ]
+                : [
+                    [
+                      { text: "Net à payer", fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, margin: [6, 5, 4, 5] as [number, number, number, number] },
+                      { text: fmtCurrency(montantNetAPayer), fontSize: 10, bold: true, color: "#ffffff", fillColor: COLORS.dark, alignment: "right" as const, margin: [4, 5, 6, 5] as [number, number, number, number] },
+                    ],
+                  ],
             },
             layout: {
               hLineWidth: () => 0.3,

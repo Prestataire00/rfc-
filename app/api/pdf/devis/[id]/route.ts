@@ -41,6 +41,10 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
           tvaIntracom: parametres.tvaIntracom,
           conditionsPaiement: parametres.conditionsPaiement,
           mentionsDevis: parametres.mentionsDevis,
+          formeJuridique: parametres.formeJuridique,
+          regimeTVA: parametres.regimeTVA,
+          penalitesRetard: parametres.penalitesRetard,
+          indemniteRecouvrement: parametres.indemniteRecouvrement,
         }
       : undefined,
     entreprise: devis.entreprise

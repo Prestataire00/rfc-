@@ -14,6 +14,7 @@ import { notify } from "@/lib/toast";
 
 type Parametres = {
   nomEntreprise: string;
+  formeJuridique: string;
   slogan: string;
   adresse: string;
   codePostal: string;
@@ -24,9 +25,12 @@ type Parametres = {
   siret: string;
   nda: string;
   tvaIntracom: string;
+  regimeTVA: string;
   conditionsPaiement: string;
   mentionsDevis: string;
   mentionsFacture: string;
+  penalitesRetard: string;
+  indemniteRecouvrement: number;
   iban: string;
   bic: string;
   banque: string;
@@ -37,6 +41,7 @@ type Parametres = {
 
 const defaultParams: Parametres = {
   nomEntreprise: "RFC - Rescue Formation Conseil",
+  formeJuridique: "",
   slogan: "Sécurité - Incendie - Prévention",
   adresse: "",
   codePostal: "",
@@ -47,9 +52,12 @@ const defaultParams: Parametres = {
   siret: "",
   nda: "",
   tvaIntracom: "",
+  regimeTVA: "assujetti",
   conditionsPaiement: "Paiement à 30 jours à compter de la date de facturation.",
   mentionsDevis: "Devis valable 30 jours.",
   mentionsFacture: "En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.",
+  penalitesRetard: "En cas de retard de paiement, pénalité égale à 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce).",
+  indemniteRecouvrement: 40,
   iban: "",
   bic: "",
   banque: "",
@@ -85,7 +93,7 @@ export default function ParametresPage() {
     }
   };
 
-  const updateField = (field: keyof Parametres, value: string) => {
+  const updateField = (field: keyof Parametres, value: string | number) => {
     setParams((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -182,9 +190,20 @@ export default function ParametresPage() {
                 <Input value={params.nomEntreprise} onChange={(e) => updateField("nomEntreprise", e.target.value)} />
               </div>
               <div>
-                <Label>Slogan / Activité</Label>
-                <Input value={params.slogan} onChange={(e) => updateField("slogan", e.target.value)} />
+                <Label>Forme juridique</Label>
+                <Input
+                  value={params.formeJuridique}
+                  onChange={(e) => updateField("formeJuridique", e.target.value)}
+                  placeholder="SARL / SAS / EI / EURL…"
+                />
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Obligatoire sur les devis et factures (art. R123-237 C.com).
+                </p>
               </div>
+            </div>
+            <div>
+              <Label>Slogan / Activité</Label>
+              <Input value={params.slogan} onChange={(e) => updateField("slogan", e.target.value)} />
             </div>
 
             <div>
@@ -232,6 +251,24 @@ export default function ParametresPage() {
                 <Label>TVA Intracommunautaire</Label>
                 <Input value={params.tvaIntracom} onChange={(e) => updateField("tvaIntracom", e.target.value)} placeholder="FR XX XXXXXXXXX" />
               </div>
+            </div>
+
+            {/* Régime TVA — pilote le rendu TVA sur devis/factures */}
+            <div>
+              <Label htmlFor="regimeTVA">Régime de TVA</Label>
+              <select
+                id="regimeTVA"
+                value={params.regimeTVA}
+                onChange={(e) => updateField("regimeTVA", e.target.value)}
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+              >
+                <option value="assujetti">Assujetti à la TVA (20 % facturée)</option>
+                <option value="exonere_261_4_4">Exonéré — Organisme de formation (art. 261-4-4° CGI)</option>
+                <option value="franchise_293_b">Franchise en base PME (art. 293 B CGI)</option>
+              </select>
+              <p className="text-[11px] text-gray-500 mt-1">
+                Si exonéré ou franchise : les devis et factures n'afficheront pas de ligne TVA et incluront la mention légale obligatoire.
+              </p>
             </div>
 
             <div className="flex items-center gap-3 pt-2">
@@ -306,6 +343,37 @@ export default function ParametresPage() {
             <div>
               <Label>Mentions sur les factures</Label>
               <Textarea value={params.mentionsFacture} onChange={(e) => updateField("mentionsFacture", e.target.value)} rows={2} />
+            </div>
+
+            {/* Conformité B2B — pénalités + indemnité 40 € (art. L441-10 / D441-5 C.com) */}
+            <div>
+              <Label>Clause de pénalités de retard (devis & factures)</Label>
+              <Textarea
+                value={params.penalitesRetard}
+                onChange={(e) => updateField("penalitesRetard", e.target.value)}
+                rows={2}
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Obligatoire B2B (art. L441-10 C.com). Le taux légal pour 2026 est ~5,07 % S1.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="indemniteRecouvrement">Indemnité forfaitaire de recouvrement</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="indemniteRecouvrement"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={params.indemniteRecouvrement}
+                  onChange={(e) => updateField("indemniteRecouvrement", Number(e.target.value))}
+                  className="max-w-[120px]"
+                />
+                <span className="text-sm text-gray-500">€ par facture impayée</span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-1">
+                Montant légal fixé à 40 € (art. D441-5 C.com). Ne descend généralement pas en dessous.
+              </p>
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="gap-2">

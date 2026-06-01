@@ -1107,6 +1107,18 @@ model Parametres {
 
   // Feature flags V2 — JSON : { emargement_v2: boolean, automations_v2: boolean, ... }
   featureFlags       String @default("{}")
+
+  // Conformité légale des devis/factures (Code de commerce, Code de la consommation, CGI).
+  // formeJuridique : SARL / SAS / EI / EURL... imposé par art. R123-237 C.com.
+  // regimeTVA :
+  //   - assujetti        → TVA standard 20% facturée
+  //   - exonere_261_4_4  → organisme de formation déclaré, art. 261-4-4° CGI
+  //   - franchise_293_b  → franchise en base PME, art. 293 B CGI
+  // penalitesRetard / indemniteRecouvrement : art. L441-10 + D441-5 C.com (B2B).
+  formeJuridique        String  @default("")
+  regimeTVA             String  @default("assujetti")
+  penalitesRetard       String  @default("En cas de retard de paiement, pénalité égale à 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce).")
+  indemniteRecouvrement Float   @default(40)
 }
 
 // ==================== MODELES DE DOCUMENTS (PDF) ====================

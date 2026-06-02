@@ -69,6 +69,7 @@ const adminGroups: NavGroup[] = [
         items: [
           { href: "/prospects", label: "Prospects", icon: UserPlus },
           { href: "/qualiopi/fiches-pre-formation", label: "Fiches pré-formation", icon: BadgeCheck },
+          { href: "/suivi-questionnaires", label: "Suivi questionnaires", icon: ClipboardList },
         ],
       },
       {

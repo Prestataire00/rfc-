@@ -15,7 +15,13 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
       where: { id: params.id },
       include: {
         entreprise: true,
-        devis: { include: { lignes: true, contact: true } },
+        devis: {
+          include: {
+            lignes: true,
+            contact: true,
+            sessions: { select: { dateDebut: true, dateFin: true } },
+          },
+        },
       },
     }),
     prisma.parametres.findUnique({ where: { id: "default" } }),
@@ -46,6 +52,10 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
           tvaIntracom: parametres.tvaIntracom,
           conditionsPaiement: parametres.conditionsPaiement,
           mentionsFacture: parametres.mentionsFacture,
+          formeJuridique: parametres.formeJuridique,
+          regimeTVA: parametres.regimeTVA,
+          penalitesRetard: parametres.penalitesRetard,
+          indemniteRecouvrement: parametres.indemniteRecouvrement,
         }
       : undefined,
     entreprise: facture.entreprise
@@ -67,12 +77,18 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
       quantite: l.quantite,
       prixUnitaire: l.prixUnitaire,
       montant: l.montant,
+      tauxTVA: l.tauxTVA,
+      caracteristiques: l.caracteristiques,
     })),
     montantHT: facture.montantHT,
     tauxTVA: facture.tauxTVA,
     montantTTC: facture.montantTTC,
     notes: facture.notes || undefined,
     devisNumero: facture.devis?.numero || undefined,
+    sessions: (facture.devis?.sessions ?? []).map((s) => ({
+      dateDebut: s.dateDebut.toISOString(),
+      dateFin: s.dateFin.toISOString(),
+    })),
   }, {
     branding: await resolveBranding(await getParametres()),
     template: (await renderDocumentTemplate("facture", {

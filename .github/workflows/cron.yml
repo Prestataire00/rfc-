@@ -31,6 +31,11 @@ on:
     - cron: '*/5 * * * *'  # signature-retry-finalization (reprend les requests bloquées en signed)
     - cron: '0 2 * * *'    # signature-expirations (marque expired + purge SignatureTokenAttempt)
     - cron: '15 9 * * *'   # signature-reminders (rappels J-3 et J-1) — 15min après factures pour éviter rush
+    # Émargement quotidien — envoie les liens de signature stagiaire matin & après-midi.
+    # 07:30 UTC ≈ 09:30 Paris (avant début formation typique 09h00) → permet au stagiaire
+    # de signer dès son arrivée. 12:30 UTC ≈ 14:30 Paris (juste après pause déjeuner).
+    - cron: '30 7 * * 1-5' # emargement-quotidien matin (jours ouvrés)
+    - cron: '30 12 * * 1-5' # emargement-quotidien après-midi (jours ouvrés)
   workflow_dispatch:
     inputs:
       target:
@@ -45,6 +50,8 @@ on:
           - signature-retry-finalization
           - signature-expirations
           - signature-reminders
+          - emargement-quotidien-matin
+          - emargement-quotidien-apres-midi
 
 env:
   # Crons ciblent la prod uniquement. Le staging (https://staging--projetrfc.netlify.app)
@@ -68,16 +75,25 @@ jobs:
         run: |
           set -euo pipefail
           case "${EVENT_SCHEDULE:-}" in
-            "0 7 * * *")    target="recyclages" ;;
-            "0 8 * * *")    target="evaluations" ;;
-            "0 9 * * *")    target="factures" ;;
-            "*/15 * * * *") target="automations-v2" ;;
-            "*/5 * * * *")  target="signature-retry-finalization" ;;
-            "0 2 * * *")    target="signature-expirations" ;;
-            "15 9 * * *")   target="signature-reminders" ;;
-            "")             target="${MANUAL_TARGET}" ;;
-            *)              echo "Schedule non mappé: ${EVENT_SCHEDULE}" >&2; exit 1 ;;
+            "0 7 * * *")     target="recyclages" ;;
+            "0 8 * * *")     target="evaluations" ;;
+            "0 9 * * *")     target="factures" ;;
+            "*/15 * * * *")  target="automations-v2" ;;
+            "*/5 * * * *")   target="signature-retry-finalization" ;;
+            "0 2 * * *")     target="signature-expirations" ;;
+            "15 9 * * *")    target="signature-reminders" ;;
+            "30 7 * * 1-5")  target="emargement-quotidien?creneau=matin" ;;
+            "30 12 * * 1-5") target="emargement-quotidien?creneau=apres_midi" ;;
+            "")              target="${MANUAL_TARGET}" ;;
+            *)               echo "Schedule non mappé: ${EVENT_SCHEDULE}" >&2; exit 1 ;;
           esac
+          # Le workflow_dispatch envoie « emargement-quotidien-matin » qu'on
+          # convertit ici en l'endpoint réel avec query param.
+          if [ "${target}" = "emargement-quotidien-matin" ]; then
+            target="emargement-quotidien?creneau=matin"
+          elif [ "${target}" = "emargement-quotidien-apres-midi" ]; then
+            target="emargement-quotidien?creneau=apres_midi"
+          fi
           echo "target=${target}" >> "$GITHUB_OUTPUT"
           echo "→ cron cible : ${target}"
 

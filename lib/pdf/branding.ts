@@ -10,6 +10,14 @@ let logoCache: ImageCache = null;
 let tamponCache: ImageCache = null;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
+// Invalidation manuelle : appelée par PUT /api/parametres/entreprise quand
+// l'admin upload un nouveau logo ou tampon. Évite d'attendre 1h pour voir
+// le changement sur les nouveaux PDFs générés.
+export function invalidateBrandingCache(): void {
+  logoCache = null;
+  tamponCache = null;
+}
+
 // Convertit une URL d'image en data URI base64 pour pdfmake.
 // Retourne le logo RFC par defaut en cas d'erreur.
 export async function resolveLogoBase64(logoUrl: string | null | undefined): Promise<string> {

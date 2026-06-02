@@ -73,6 +73,22 @@ export async function stampSignatures(
       continue;
     }
 
+    // type "date" : drawText Helvetica avec valeur saisie OU date du jour si vide.
+    // Prioritaire sur la branche method=text car une zone date avec method "text"
+    // ne doit pas être rendue en cursive Dancing Script (date doit rester lisible).
+    if (fill.type === "date") {
+      if (!helveticaFont) helveticaFont = await pdf.embedFont(StandardFonts.Helvetica);
+      const text = fill.value?.trim() || new Date().toLocaleDateString("fr-FR");
+      page.drawText(text, {
+        x: fill.x + 4,
+        y: yPdf + 4,
+        font: helveticaFont,
+        size: 10,
+        color: rgb(0, 0, 0),
+      });
+      continue;
+    }
+
     if (fill.method === "text") {
       if (!cursiveFont) cursiveFont = await pdf.embedFont(loadCursiveFont());
       // Taille = 60% de la hauteur zone, plafonnée à 24pt pour rester lisible.
@@ -87,9 +103,9 @@ export async function stampSignatures(
       continue;
     }
 
-    // type=date avec method != text/image/canvas (cas marginal V1) → date du jour.
+    // Fallback générique : drawText Helvetica.
     if (!helveticaFont) helveticaFont = await pdf.embedFont(StandardFonts.Helvetica);
-    const text = fill.value?.trim() || new Date().toLocaleDateString("fr-FR");
+    const text = fill.value?.trim() || "";
     page.drawText(text, {
       x: fill.x + 4,
       y: yPdf + 4,

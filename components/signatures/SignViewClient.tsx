@@ -80,6 +80,11 @@ export function SignViewClient({
     .filter((z) => z.required)
     .every((z) => z.filled && z.value);
 
+  // Zones type "date" : remplies automatiquement par le stamper avec la date
+  // du jour de signature. On les masque côté signataire pour ne pas demander
+  // de saisie inutile et garder l'UI épurée.
+  const visibleZones = zones.filter((z) => z.type !== "date");
+
   const handleConfirm = async () => {
     setBusy(true);
     setError(null);
@@ -145,7 +150,7 @@ export function SignViewClient({
       <PdfViewer fileUrl={fileUrl} scale={1.5}>
         {({ pageNumber }) => (
           <div className="absolute inset-0">
-            {zones
+            {visibleZones
               .filter((z) => z.page === pageNumber)
               .map((z) => {
                 const px = pointsToPixels(z, 1.5);

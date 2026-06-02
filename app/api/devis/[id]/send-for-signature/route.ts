@@ -276,6 +276,24 @@ async function handle(devisId: string, adminUserId: string): Promise<NextRespons
       },
     });
 
+    // Zone date — tamponnée automatiquement par le stamper avec la date du
+    // jour de signature, pile sur le placeholder « Date : ___ » du bloc client
+    // de signatureBlock(). Le signataire ne la voit pas (filtrée dans
+    // SignViewClient via z.type !== "date").
+    await prisma.signatureZone.create({
+      data: {
+        requestId: request.id,
+        page: pageCount,
+        x: 340,
+        y: 658,
+        width: 150,
+        height: 12,
+        type: "date",
+        label: "Date de signature",
+        required: false,
+      },
+    });
+
     // 8. Créer le Signataire (= contact du devis) avec token provisoire
     //    Le tokenHash sera remplacé juste après par le vrai token envoyé.
     const provisional = generateToken();

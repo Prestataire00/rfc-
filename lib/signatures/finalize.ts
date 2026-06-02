@@ -50,8 +50,10 @@ export async function finalizeSignatureRequest(
 
   // 1. Reconstruction PDF final
   const originalBuf = await downloadSignatureFile(BUCKETS.ORIGINAL, r.originalFileUrl);
+  // Inclut aussi les zones type="date" non remplies → le stamper drawText
+  // automatiquement la date du jour (cas usuel : « Date : ___ » du bloc signature).
   const fills: SignatureFill[] = r.zones
-    .filter((z) => z.filled && z.filledValue && z.filledMethod)
+    .filter((z) => (z.filled && z.filledValue && z.filledMethod) || z.type === "date")
     .map((z) => ({
       page: z.page,
       x: z.x,
@@ -59,8 +61,8 @@ export async function finalizeSignatureRequest(
       width: z.width,
       height: z.height,
       type: z.type as SignatureFill["type"],
-      method: z.filledMethod as SignatureFill["method"],
-      value: z.filledValue!,
+      method: (z.filledMethod as SignatureFill["method"]) || "text",
+      value: z.filledValue ?? "",
     }));
   const signedBuf = await stampSignatures(originalBuf, fills);
 

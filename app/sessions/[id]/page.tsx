@@ -10,6 +10,7 @@ import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Up
 const SESSION_TABS = [
   { id: "informations", label: "Informations", icon: InfoIcon },
   { id: "participants", label: "Participants", icon: Users },
+  { id: "emargement", label: "Émargement", icon: CheckCircle2 },
   { id: "fiches", label: "Fiches besoin", icon: ClipboardList },
   { id: "automatisations", label: "Automatisations", icon: Zap },
   { id: "documents", label: "Documents", icon: FileText },
@@ -1296,16 +1297,16 @@ export default function SessionDetailPage() {
                         <td className="px-4 py-3">
                           {/* Toggle réussite : null (gris) → true (vert) → false (rouge) → null
                               Désactivé si statut != "presente" (pas de résultat possible pour
-                              un absent ou non-confirmé). */}
-                          <div className="inline-flex rounded-md border border-gray-700 bg-gray-900/60 overflow-hidden text-[10px]">
+                              un absent ou non-confirmé). Couleurs compat light+dark. */}
+                          <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 overflow-hidden text-[11px]">
                             <button
                               onClick={() => handleUpdateReussite(insc.id, true)}
                               disabled={insc.statut !== "presente"}
                               className={cn(
-                                "px-2 py-1 transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                                "px-2.5 py-1 transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
                                 insc.reussite === true
-                                  ? "bg-emerald-600 text-white font-medium"
-                                  : "text-gray-400 hover:text-emerald-400",
+                                  ? "bg-emerald-600 text-white font-semibold"
+                                  : "text-gray-700 dark:text-gray-300 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-400",
                               )}
                               title="Réussite — déclenche envoi du certificat de réalisation au financeur"
                             >
@@ -1315,10 +1316,10 @@ export default function SessionDetailPage() {
                               onClick={() => handleUpdateReussite(insc.id, false)}
                               disabled={insc.statut !== "presente"}
                               className={cn(
-                                "px-2 py-1 border-l border-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                                "px-2.5 py-1 border-l border-gray-300 dark:border-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
                                 insc.reussite === false
-                                  ? "bg-red-600 text-white font-medium"
-                                  : "text-gray-400 hover:text-red-400",
+                                  ? "bg-red-600 text-white font-semibold"
+                                  : "text-gray-700 dark:text-gray-300 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400",
                               )}
                               title="Échec — pas de certificat de réalisation envoyé"
                             >
@@ -1327,7 +1328,7 @@ export default function SessionDetailPage() {
                             {insc.reussite !== null && insc.reussite !== undefined && (
                               <button
                                 onClick={() => handleUpdateReussite(insc.id, null)}
-                                className="px-2 py-1 border-l border-gray-700 text-gray-500 hover:text-gray-300"
+                                className="px-2 py-1 border-l border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
                                 title="Réinitialiser (non évalué)"
                               >
                                 ↺
@@ -1461,15 +1462,18 @@ export default function SessionDetailPage() {
         </div>
       )}
 
-      {/* ── Feuille de présence / Emargement V2 — onglet PARTICIPANTS ──── */}
-      {tab === "participants" && ["confirmee", "en_cours", "terminee"].includes(session.statut) &&
-        session.inscriptions.length > 0 && (
-          <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+      {/* ── Feuille de présence / Emargement — onglet ÉMARGEMENT dédié ──── */}
+      {tab === "emargement" && (
+        ["confirmee", "en_cours", "terminee"].includes(session.statut) && session.inscriptions.length > 0 ? (
+          <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h2 className="font-semibold text-gray-100 flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-green-500" />
-                Emargement
+                Émargement
               </h2>
+              <p className="text-xs text-gray-400">
+                Présent · Absent · En retard · Excusé · Départ anticipé · Signer à la place
+              </p>
             </div>
             <div className="p-4">
               <EmargementGrid
@@ -1481,7 +1485,14 @@ export default function SessionDetailPage() {
               />
             </div>
           </div>
-        )}
+        ) : (
+          <div className="rounded-lg border border-gray-700 bg-gray-800 p-8 text-center text-sm text-gray-400">
+            {session.inscriptions.length === 0
+              ? "Aucun stagiaire inscrit à cette session."
+              : "L'émargement sera disponible une fois la session confirmée."}
+          </div>
+        )
+      )}
 
       {/* Confirm passage à "Terminée" */}
       <ConfirmDialog

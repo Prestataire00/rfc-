@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarDays, MapPin, Users, ClipboardList, Send, Smile, Clock, Award } from "lucide-react";
+import { ArrowLeft, CalendarDays, MapPin, Users, ClipboardList, Send, Smile, Clock, Award, Sun, Sunset } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
@@ -59,6 +59,64 @@ export default function FormateurSessionDetailPage() {
   const session = sessions.find((s) => s.id === id);
 
   const [sendingEval, setSendingEval] = useState<EvalType | null>(null);
+  const [emargDate, setEmargDate] = useState<string>("");
+  const [sendingEmarg, setSendingEmarg] = useState<"matin" | "apres_midi" | null>(null);
+
+  const handleSendEmargement = async (creneau: "matin" | "apres_midi") => {
+    if (!session) return;
+    if (!emargDate) {
+      notify.error("Sélectionnez d'abord une date de session");
+      return;
+    }
+    const stagiairesCount = session.inscriptions.filter((i) => ["confirmee", "presente"].includes(i.statut)).length;
+    if (stagiairesCount === 0) {
+      notify.error("Aucun stagiaire confirmé sur cette session");
+      return;
+    }
+    const creneauLabel = creneau === "matin" ? "matin" : "après-midi";
+    if (!window.confirm(`Envoyer la feuille de présence du ${creneauLabel} (${emargDate}) à ${stagiairesCount} stagiaire${stagiairesCount > 1 ? "s" : ""} ?`)) {
+      return;
+    }
+    setSendingEmarg(creneau);
+    try {
+      const res = await fetch(`/api/formateur/sessions/${id}/envoyer-emargement`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: emargDate, creneau }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Échec de l'envoi");
+      const parts: string[] = [];
+      if (json.sent) parts.push(`${json.sent} envoyé${json.sent > 1 ? "s" : ""}`);
+      if (json.skipped) parts.push(`${json.skipped} ignoré${json.skipped > 1 ? "s" : ""} (token déjà actif)`);
+      notify.success(`Feuille de présence ${creneauLabel} ${emargDate}`, parts.join(" · "));
+      if (json.errors && json.errors.length > 0) {
+        const lines = (json.errors as { stagiaire: string; raison: string }[])
+          .map((e) => `${e.stagiaire} : ${e.raison}`)
+          .join("\n");
+        notify.error("Quelques échecs", lines);
+      }
+    } catch (err) {
+      notify.error("Erreur", err instanceof Error ? err.message : "Envoi impossible");
+    } finally {
+      setSendingEmarg(null);
+    }
+  };
+
+  // Liste des jours ouvrés de la session pour le sélecteur de date d'émargement.
+  // On bornoie [dateDebut, dateFin] et on génère chaque jour intermédiaire.
+  const sessionDays: string[] = (() => {
+    if (!session) return [];
+    const out: string[] = [];
+    const start = new Date(session.dateDebut);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(session.dateFin);
+    end.setUTCHours(0, 0, 0, 0);
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      out.push(d.toISOString().slice(0, 10));
+    }
+    return out;
+  })();
 
   const handleSendEval = async (type: EvalType) => {
     if (!session) return;
@@ -206,6 +264,54 @@ export default function FormateurSessionDetailPage() {
       {!canEmarger && (
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-5 text-center text-sm text-gray-400">
           L&apos;emargement sera disponible une fois la session confirmee.
+        </div>
+      )}
+
+      {/* Envoi manuel des feuilles de présence (en complément du cron auto) */}
+      {stagiairesActifs.length > 0 && sessionDays.length > 0 && (
+        <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-red-400" />
+              Envoyer une feuille de présence
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Envoi automatique chaque jour ouvré à 09:30 (matin) et 14:30 (après-midi).
+              Tu peux aussi déclencher l&apos;envoi manuellement ci-dessous (utile en cas de rattrapage,
+              session le weekend, ou si un stagiaire dit ne pas avoir reçu l&apos;email).
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-300 mb-1">Jour de session</label>
+              <select
+                value={emargDate}
+                onChange={(e) => setEmargDate(e.target.value)}
+                className="w-full h-10 rounded-md border border-gray-600 bg-gray-900 px-3 text-sm text-gray-100"
+              >
+                <option value="">— Choisir une date —</option>
+                {sessionDays.map((d) => (
+                  <option key={d} value={d}>{new Date(d).toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSendEmargement("matin")}
+              disabled={!emargDate || sendingEmarg !== null}
+              className="inline-flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium text-white transition-colors"
+            >
+              <Sun className="h-4 w-4" /> {sendingEmarg === "matin" ? "Envoi…" : "Envoyer matin"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSendEmargement("apres_midi")}
+              disabled={!emargDate || sendingEmarg !== null}
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-medium text-white transition-colors"
+            >
+              <Sunset className="h-4 w-4" /> {sendingEmarg === "apres_midi" ? "Envoi…" : "Envoyer après-midi"}
+            </button>
+          </div>
         </div>
       )}
 

@@ -4,6 +4,7 @@
 
 import type { EntrepriseParams } from "@/lib/parametres";
 import { LOGO_BASE64 } from "./logo-base64";
+import { TAMPON_BASE64 } from "./tampon-base64";
 
 type ImageCache = { url: string; data: string; fetchedAt: number } | null;
 let logoCache: ImageCache = null;
@@ -42,11 +43,12 @@ export async function resolveLogoBase64(logoUrl: string | null | undefined): Pro
   }
 }
 
-// Convertit l'URL du tampon+signature en data URI base64. Retourne null si
-// pas configuré ou erreur de fetch (les templates affichent alors le bloc
-// signature vide habituel à compléter à la main).
-export async function resolveTamponBase64(tamponUrl: string | null | undefined): Promise<string | null> {
-  if (!tamponUrl) return null;
+// Convertit l'URL du tampon+signature en data URI base64. Retourne le
+// TAMPON_BASE64 embarqué par défaut (tampon Henri RFC) si pas d'URL Supabase
+// configurée ou en cas d'erreur de fetch. Garantit que TOUS les PDFs sortent
+// signés sans intervention manuelle.
+export async function resolveTamponBase64(tamponUrl: string | null | undefined): Promise<string> {
+  if (!tamponUrl) return TAMPON_BASE64;
 
   const now = Date.now();
   if (tamponCache && tamponCache.url === tamponUrl && now - tamponCache.fetchedAt < CACHE_TTL_MS) {
@@ -55,24 +57,23 @@ export async function resolveTamponBase64(tamponUrl: string | null | undefined):
 
   try {
     const res = await fetch(tamponUrl, { cache: "no-store" });
-    if (!res.ok) return null;
+    if (!res.ok) return TAMPON_BASE64;
     const buf = Buffer.from(await res.arrayBuffer());
     const contentType = res.headers.get("content-type") || "image/png";
     const data = `data:${contentType};base64,${buf.toString("base64")}`;
     tamponCache = { url: tamponUrl, data, fetchedAt: now };
     return data;
   } catch {
-    return null;
+    return TAMPON_BASE64;
   }
 }
 
 // Resout les infos de branding utilisables par les templates PDF.
 // Couleur primaire toujours definie (fallback sur rouge RFC).
-// Le tampon+signature est null si non configuré → les templates affichent
-// alors un bloc vide à signer manuellement.
+// Le tampon+signature a TOUJOURS une valeur (fallback embarqué TAMPON_BASE64).
 export async function resolveBranding(params: EntrepriseParams): Promise<{
   logoBase64: string;
-  tamponBase64: string | null;
+  tamponBase64: string;
   couleurPrimaire: string;
   nomEntreprise: string;
   slogan: string;

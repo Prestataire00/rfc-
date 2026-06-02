@@ -104,6 +104,16 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     )
     .catch((err) => logger.warn("phase-3.import-failed", { error: String(err) }));
 
+  // Auto-envoi de la convention de formation au stagiaire (fire-and-forget).
+  // Si le contact n'a pas d'email, skip silencieux (loggé côté helper).
+  import("@/lib/automations/auto-convention")
+    .then(({ sendConventionOnInscription }) =>
+      sendConventionOnInscription(inscription.id).catch((err) =>
+        logger.warn("auto-convention.failed", { error: String(err) }),
+      ),
+    )
+    .catch((err) => logger.warn("auto-convention.import_failed", { error: String(err) }));
+
   const traineeName = contact ? `${contact.prenom} ${contact.nom}` : "Un stagiaire";
   const sessionTitle = sessionWithFormation?.formation.titre ?? "une session";
 

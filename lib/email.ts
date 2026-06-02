@@ -254,6 +254,47 @@ export function factureEmail(data: {
   };
 }
 
+// Convention de formation : envoyée auto au stagiaire lors de l'inscription
+// à une session. PDF en pièce jointe (généré côté caller via lib/pdf).
+export function conventionEmail(data: {
+  destinataireNom: string;
+  entrepriseNom: string | null;
+  formationTitre: string;
+  dateDebut: string; // déjà formaté JJ/MM/AAAA
+  dateFin: string;
+  lieu: string | null;
+  numero: string;
+}) {
+  const destinataire = escapeHtml(data.destinataireNom);
+  const entreprise = data.entrepriseNom ? escapeHtml(data.entrepriseNom) : null;
+  const formation = escapeHtml(data.formationTitre);
+  const dateDebut = escapeHtml(data.dateDebut);
+  const dateFin = escapeHtml(data.dateFin);
+  const lieu = data.lieu ? escapeHtml(data.lieu) : null;
+  const numero = escapeHtml(data.numero);
+  return {
+    subject: `Convention de formation ${data.numero} — ${data.formationTitre}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Convention de formation</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${destinataire}</strong>,</p>
+          <p>Suite à votre inscription, vous trouverez ci-joint la convention de formation <strong>${numero}</strong> pour la session <strong>"${formation}"</strong>${entreprise ? ` (${entreprise})` : ""}.</p>
+          <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+            <p style="margin: 0 0 6px;"><strong>Dates :</strong> du ${dateDebut} au ${dateFin}</p>
+            ${lieu ? `<p style="margin: 0;"><strong>Lieu :</strong> ${lieu}</p>` : ""}
+          </div>
+          <p>Merci de prendre connaissance du document et de nous le retourner signé avant le début de la formation.</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Cordialement,<br>L'équipe RFC</p>
+        </div>
+      </div>
+    `,
+  };
+}
+
 export function evaluationEmail(data: {
   stagiaire: { prenom: string; nom: string };
   formation: { titre: string };

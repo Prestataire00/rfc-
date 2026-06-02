@@ -7,10 +7,12 @@ import {
   User, Building2, Mail, Phone, Briefcase, FileText, Calendar, Pencil, Trash2,
   BookOpen, ClipboardList, MessageSquare, FolderOpen, Clock,
   Star, Euro, CheckCircle2, AlertCircle, Plus, UserCheck, Sparkles, Download,
+  CalendarPlus,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { InscrireSessionDialog } from "@/components/shared/InscrireSessionDialog";
 import { AIButton } from "@/components/shared/AIButton";
 import { notify } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -91,6 +93,7 @@ export default function ContactDetailPage() {
   const demandeSansDevis = contact?.demandes.find((d) => !d.devisId);
 
   const [convertOpen, setConvertOpen] = useState(false);
+  const [inscribeOpen, setInscribeOpen] = useState(false);
   const [convertMode, setConvertMode] = useState<"existante" | "nouvelle">("nouvelle");
   const [convertEntrepriseId, setConvertEntrepriseId] = useState("");
   const [convertNom, setConvertNom] = useState("");
@@ -240,6 +243,14 @@ export default function ContactDetailPage() {
             >
               <Plus className="h-4 w-4" /> Besoin
             </Link>
+            <button
+              type="button"
+              onClick={() => setInscribeOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 px-3 py-2 text-sm font-medium text-white transition-colors"
+              title="Inscrire ce contact à une session — convention envoyée auto"
+            >
+              <CalendarPlus className="h-4 w-4" /> Inscrire à une session
+            </button>
             <Button
               size="sm"
               onClick={() => window.open(`/api/pdf/fiche-inscription/${id}`, "_blank")}
@@ -798,6 +809,14 @@ export default function ContactDetailPage() {
         confirmLabel="Supprimer"
         onConfirm={handleDelete}
         loading={deleting}
+      />
+
+      <InscrireSessionDialog
+        open={inscribeOpen}
+        onOpenChange={setInscribeOpen}
+        contactId={id}
+        contactNom={`${contact.prenom} ${contact.nom}`}
+        onInscribed={refreshContact}
       />
 
       {/* Dialog conversion prospect -> client */}

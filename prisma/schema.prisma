@@ -109,6 +109,12 @@ model Contact {
   numeroFranceTravail String? // N° allocataire France Travail (ex Pole Emploi)
   diplomeObtenu       String? // diplome le plus eleve obtenu (libre)
 
+  // Statut professionnel BPF (Cerfa 10443*17 cadre D1). Override
+  // l'heuristique basée sur entrepriseId/numeroFranceTravail. Valeurs :
+  // salarie | demandeur_emploi | particulier | contrat_pro | apprenti |
+  // travailleur_non_salarie | autre
+  statutProfessionnel String?
+
   entrepriseId String?
   entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: SetNull)
 
@@ -190,6 +196,11 @@ model Formation {
   accessibilite        String? // informations sur l'accessibilité PMR
   indicateursResultats String? // indicateurs de résultats
   typesFinancement     String  @default("[]") // JSON array: opco, cpf, entreprise, etc.
+  // Type d'action BPF (Cerfa 10443*17 cadre D2). 11 valeurs réglementaires :
+  // adaptation (1) | promotion (2) | prevention (3) | conversion (4) |
+  // acquisition (5) | qualification (6) | apprentissage (7) |
+  // professionnalisation (8) | cpf (9) | vae (10) | bilanCompetences (11)
+  typeActionBpf        String  @default("adaptation")
   dureeRecyclage       Int? // durée de recyclage en mois (pour certifications)
   misEnAvant           Boolean @default(false) // formation featured
   image                String? // URL image de couverture
@@ -1060,6 +1071,24 @@ model Financement {
 
   @@index([entrepriseId])
   @@index([statut])
+}
+
+// ==================== BPF — CHARGES ANNUELLES ====================
+
+// Charges détaillées (Cerfa 10443*17 cadre C). Non dérivables automatiquement
+// depuis les ventes / sessions — saisie manuelle par l'OF avant télédéclaration.
+// Une ligne par exercice (annee). Si absente, le PDF Cerfa imprime des zéros.
+model BpfCharges {
+  id        String   @id @default(cuid())
+  annee     Int      @unique
+  updatedAt DateTime @updatedAt
+
+  c1Achats        Float @default(0) // C1 — achats consommables, fournitures
+  c2Services      Float @default(0) // C2 — services extérieurs (loyers, transport, formateurs externes)
+  c3AutresCharges Float @default(0) // C3 — autres charges externes
+  c4Impots        Float @default(0) // C4 — impôts et taxes
+  c5Salaires      Float @default(0) // C5 — salaires et charges sociales
+  c6Autres        Float @default(0) // C6 — autres charges
 }
 
 // ==================== QUESTIONNAIRE ====================

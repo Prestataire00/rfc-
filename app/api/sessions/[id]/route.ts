@@ -57,6 +57,15 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
 
   if (rest.statut === "terminee" && sessionAvant?.statut !== "terminee") {
     await envoyerQuestionnairesChaud(params.id, session);
+    // Envoi auto des attestations aux stagiaires "presente" (fire-and-forget,
+    // pas d'await pour ne pas bloquer la réponse API).
+    import("@/lib/automations/auto-attestation")
+      .then(({ sendAttestationsOnSessionTerminee }) =>
+        sendAttestationsOnSessionTerminee(params.id).catch((err) =>
+          logger.warn("auto-attestation.batch_failed", { error: String(err) }),
+        ),
+      )
+      .catch((err) => logger.warn("auto-attestation.import_failed", { error: String(err) }));
   }
 
   // Notif formateur quand assignation change vers un nouveau formateur
@@ -128,6 +137,14 @@ export const PATCH = withErrorHandlerParams(async (req: NextRequest, { params }:
 
   if (data.statut === "terminee" && sessionAvant?.statut !== "terminee") {
     await envoyerQuestionnairesChaud(params.id, session);
+    // Envoi auto des attestations aux stagiaires "presente" (fire-and-forget)
+    import("@/lib/automations/auto-attestation")
+      .then(({ sendAttestationsOnSessionTerminee }) =>
+        sendAttestationsOnSessionTerminee(params.id).catch((err) =>
+          logger.warn("auto-attestation.batch_failed", { error: String(err) }),
+        ),
+      )
+      .catch((err) => logger.warn("auto-attestation.import_failed", { error: String(err) }));
   }
 
   return NextResponse.json({ statut: session.statut });

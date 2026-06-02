@@ -48,6 +48,7 @@ export default function SessionDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [sendingConvention, setSendingConvention] = useState<string | null>(null);
+  const [sendingAttestation, setSendingAttestation] = useState<string | null>(null);
   const [emailMsg, setEmailMsg] = useState("");
   const [evalLoading, setEvalLoading] = useState(false);
   const [evalMsg, setEvalMsg] = useState("");
@@ -397,6 +398,29 @@ export default function SessionDetailPage() {
       notify.error("Erreur réseau");
     } finally {
       setSendingConvention(null);
+    }
+  };
+
+  // Envoi manuel de l'attestation de fin de formation (filet de sécurité
+  // quand l'auto-envoi de clôture a skippé, ou si l'admin veut forcer
+  // l'envoi avant clôture).
+  const handleSendAttestation = async (inscriptionId: string) => {
+    if (sendingAttestation) return;
+    setSendingAttestation(inscriptionId);
+    try {
+      const res = await fetch(`/api/inscriptions/${inscriptionId}/envoyer-attestation`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify.error("Envoi impossible", data.error);
+      } else {
+        notify.success("Attestation envoyée", data.destinataireEmail);
+      }
+    } catch {
+      notify.error("Erreur réseau");
+    } finally {
+      setSendingAttestation(null);
     }
   };
 
@@ -984,9 +1008,17 @@ export default function SessionDetailPage() {
                       >
                         {sendingConvention === insc.id ? "…" : "Conv."}
                       </button>
-                      <a href={`/api/pdf/attestation/${id}/${insc.contact.id}`} target="_blank" className="text-green-600 hover:underline px-1" title="Attestation">
+                      <a href={`/api/pdf/attestation/${id}/${insc.contact.id}`} target="_blank" className="text-green-600 hover:underline px-1" title="Télécharger l'attestation">
                         Attest.
                       </a>
+                      <button
+                        onClick={() => handleSendAttestation(insc.id)}
+                        disabled={sendingAttestation === insc.id}
+                        className="text-emerald-500 hover:text-emerald-400 px-1 disabled:opacity-50"
+                        title="Envoyer l'attestation par email"
+                      >
+                        {sendingAttestation === insc.id ? "…" : <Mail className="h-3.5 w-3.5 inline" />}
+                      </button>
                     </div>
                   ))}
                   {emailMsg && (

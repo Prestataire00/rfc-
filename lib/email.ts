@@ -295,6 +295,42 @@ export function conventionEmail(data: {
   };
 }
 
+// Attestation de fin de formation : envoyée auto à la clôture de session
+// (statut "terminee") + sur action manuelle depuis /sessions/[id].
+// PDF en pièce jointe construit côté caller.
+export function attestationEmail(data: {
+  stagiaireNom: string; // ex "Jean Dupont"
+  formationTitre: string;
+  dateDebut: string; // déjà formaté JJ/MM/AAAA
+  dateFin: string;
+}) {
+  const stagiaire = escapeHtml(data.stagiaireNom);
+  const formation = escapeHtml(data.formationTitre);
+  const dateDebut = escapeHtml(data.dateDebut);
+  const dateFin = escapeHtml(data.dateFin);
+  return {
+    subject: `Attestation de fin de formation — ${data.formationTitre}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Attestation de fin de formation</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${stagiaire}</strong>,</p>
+          <p>Félicitations pour avoir suivi avec succès la formation <strong>"${formation}"</strong> du ${dateDebut} au ${dateFin}.</p>
+          <p>Vous trouverez ci-joint votre <strong>attestation de fin de formation</strong>, à conserver précieusement.</p>
+          <div style="background: #ecfdf5; border-left: 4px solid #059669; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+            Cette attestation atteste de votre participation et des compétences acquises lors de la formation.
+          </div>
+          <p>Pour toute question, n'hésitez pas à nous contacter.</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Cordialement,<br>L'équipe RFC</p>
+        </div>
+      </div>
+    `,
+  };
+}
+
 export function evaluationEmail(data: {
   stagiaire: { prenom: string; nom: string };
   formation: { titre: string };

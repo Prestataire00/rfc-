@@ -169,13 +169,18 @@ export async function sendCertificatToContact(
   }
 }
 
-// Envoi batch à la clôture de session — cible "presente" uniquement (on
-// ne certifie pas la réalisation pour quelqu'un d'absent).
+// Envoi batch à la clôture de session — cible "presente" ET reussite=true.
+// On ne certifie pas la réalisation pour :
+//   - les absents (statut != "presente")
+//   - ceux qui ont participé mais échoué (reussite=false)
+//   - ceux qui n'ont pas encore été évalués (reussite=null) — admin doit
+//     d'abord cocher réussite/échec sur la page session pour déclencher
+//     l'envoi. Bouton manuel disponible si besoin de forcer.
 export async function sendCertificatsOnSessionTerminee(
   sessionId: string,
 ): Promise<{ sent: number; skipped: number; failed: number; total: number }> {
   const inscriptions = await prisma.inscription.findMany({
-    where: { sessionId, statut: "presente" },
+    where: { sessionId, statut: "presente", reussite: true },
     include: { contact: { select: { id: true } } },
   });
 

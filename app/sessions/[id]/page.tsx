@@ -307,6 +307,20 @@ export default function SessionDetailPage() {
     fetchSession();
   };
 
+  // Bascule réussite : null → true → false → null (3 états)
+  // Filtre l'auto-envoi du certificat de réalisation à la clôture.
+  const handleUpdateReussite = async (
+    inscriptionId: string,
+    reussite: boolean | null,
+  ) => {
+    await fetch(`/api/sessions/${id}/inscriptions`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inscriptionId, reussite }),
+    });
+    fetchSession();
+  };
+
   const handleRemoveInscription = async () => {
     if (!removeConfirm) return;
     setRemoving(true);
@@ -1133,9 +1147,30 @@ export default function SessionDetailPage() {
           {/* Inscriptions */}
           <div className="rounded-lg border bg-gray-800 overflow-hidden">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b">
-              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2 flex-wrap">
                 <Users className="h-4 w-4" />
                 Participants ({session.inscriptions.length}/{session.capaciteMax})
+                {(() => {
+                  // Taux de réussite live calculé sur les inscriptions presente
+                  const presents = session.inscriptions.filter((i) => i.statut === "presente");
+                  const reussis = presents.filter((i) => i.reussite === true).length;
+                  const echecs = presents.filter((i) => i.reussite === false).length;
+                  const evalues = reussis + echecs;
+                  if (evalues === 0) return null;
+                  const taux = Math.round((reussis / evalues) * 100);
+                  const color =
+                    taux >= 80 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                    : taux >= 60 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                    : "bg-red-500/20 text-red-300 border-red-500/30";
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${color}`}
+                      title={`${reussis} réussis · ${echecs} échecs · ${presents.length - evalues} non évalués`}
+                    >
+                      Taux réussite {taux}%
+                    </span>
+                  );
+                })()}
               </h2>
               <div className="flex gap-2">
                 <button
@@ -1224,6 +1259,7 @@ export default function SessionDetailPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Participant</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Entreprise</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Statut</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-400" title="Réussite / Échec — déclenche l'envoi du certificat de réalisation au financeur">Résultat</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Documents</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-400">Date inscription</th>
                     <th className="px-4 py-3" />
@@ -1256,6 +1292,48 @@ export default function SessionDetailPage() {
                               <option key={v} value={v}>{s.label}</option>
                             ))}
                           </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          {/* Toggle réussite : null (gris) → true (vert) → false (rouge) → null
+                              Désactivé si statut != "presente" (pas de résultat possible pour
+                              un absent ou non-confirmé). */}
+                          <div className="inline-flex rounded-md border border-gray-700 bg-gray-900/60 overflow-hidden text-[10px]">
+                            <button
+                              onClick={() => handleUpdateReussite(insc.id, true)}
+                              disabled={insc.statut !== "presente"}
+                              className={cn(
+                                "px-2 py-1 transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                                insc.reussite === true
+                                  ? "bg-emerald-600 text-white font-medium"
+                                  : "text-gray-400 hover:text-emerald-400",
+                              )}
+                              title="Réussite — déclenche envoi du certificat de réalisation au financeur"
+                            >
+                              ✓ Réussi
+                            </button>
+                            <button
+                              onClick={() => handleUpdateReussite(insc.id, false)}
+                              disabled={insc.statut !== "presente"}
+                              className={cn(
+                                "px-2 py-1 border-l border-gray-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                                insc.reussite === false
+                                  ? "bg-red-600 text-white font-medium"
+                                  : "text-gray-400 hover:text-red-400",
+                              )}
+                              title="Échec — pas de certificat de réalisation envoyé"
+                            >
+                              ✗ Échec
+                            </button>
+                            {insc.reussite !== null && insc.reussite !== undefined && (
+                              <button
+                                onClick={() => handleUpdateReussite(insc.id, null)}
+                                className="px-2 py-1 border-l border-gray-700 text-gray-500 hover:text-gray-300"
+                                title="Réinitialiser (non évalué)"
+                              >
+                                ↺
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <DocumentsRemisPopover

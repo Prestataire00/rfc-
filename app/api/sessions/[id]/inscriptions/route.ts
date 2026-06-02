@@ -22,7 +22,10 @@ const INSCRIPTION_STATUT_KEYS = Object.keys(INSCRIPTION_STATUTS) as [
 
 const inscriptionPatchSchema = z.object({
   inscriptionId: z.string().min(1, "inscriptionId requis"),
-  statut: z.enum(INSCRIPTION_STATUT_KEYS),
+  // Au moins l'un des deux doit être présent. Validation supplémentaire dans
+  // le handler car z.object ne couvre pas le "au moins un de" trivialement.
+  statut: z.enum(INSCRIPTION_STATUT_KEYS).optional(),
+  reussite: z.boolean().nullable().optional(), // null = remettre à zéro
 });
 
 export const GET = withErrorHandlerParams(async (_req: NextRequest, { params }: { params: { id: string } }) => {
@@ -128,11 +131,23 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
 });
 
 export const PATCH = withErrorHandlerParams(async (req: NextRequest, _ctx: { params: { id: string } }) => {
-  const { inscriptionId, statut } = await parseBody(req, inscriptionPatchSchema);
+  const body = await parseBody(req, inscriptionPatchSchema);
+  const { inscriptionId, statut, reussite } = body;
+
+  if (statut === undefined && reussite === undefined) {
+    return NextResponse.json(
+      { error: "Au moins un champ doit être fourni (statut ou reussite)" },
+      { status: 400 },
+    );
+  }
+
+  const data: { statut?: string; reussite?: boolean | null } = {};
+  if (statut !== undefined) data.statut = statut;
+  if (reussite !== undefined) data.reussite = reussite;
 
   const inscription = await prisma.inscription.update({
     where: { id: inscriptionId },
-    data: { statut },
+    data,
   });
 
   return NextResponse.json(inscription);

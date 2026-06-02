@@ -212,6 +212,89 @@ function FunnelWidget() {
   );
 }
 
+// Widget Taux de Réussite — KPI Qualiopi (indicateur de performance pédagogique).
+// Brut = réussis / total presents (inclut les non-évalués)
+// Ajusté = réussis / évalués (ignore les non-évalués). On affiche les 2 pour
+// que l'admin voie si l'évaluation est à jour ou si elle gonfle artificiellement
+// le taux affiché.
+type TauxReussite = {
+  period: string;
+  total: number;
+  reussis: number;
+  echecs: number;
+  nonEvalues: number;
+  evalues: number;
+  tauxBrut: number;
+  tauxAjuste: number;
+  topFormations: Array<{
+    formationId: string;
+    titre: string;
+    total: number;
+    reussis: number;
+    echecs: number;
+    taux: number;
+  }>;
+};
+
+function TauxReussiteWidget() {
+  const { data } = useApi<TauxReussite>("/api/stats/taux-reussite?period=annee");
+  const taux = data?.tauxAjuste ?? 0;
+  const color =
+    taux >= 80 ? "bg-emerald-500" :
+    taux >= 60 ? "bg-amber-500" :
+    "bg-red-500";
+
+  return (
+    <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Taux de réussite — cette année
+          </h2>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+            Indicateur Qualiopi · cible 80% — basé sur les certificats de réalisation envoyés
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 col-span-1 md:col-span-2">
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className={`inline-flex h-3 w-3 rounded-full ${color}`} />
+            <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{taux}%</span>
+            <span className="text-xs text-gray-500">ajusté · {data?.tauxBrut ?? 0}% brut</span>
+          </div>
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
+            <div>{data?.reussis ?? 0} réussis sur {data?.evalues ?? 0} évalués</div>
+            {(data?.nonEvalues ?? 0) > 0 && (
+              <div className="text-amber-600 dark:text-amber-400">
+                ⚠ {data?.nonEvalues} stagiaires non encore évalués (allez sur la fiche session)
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="rounded-md border border-gray-200 dark:border-gray-700 p-3 md:col-span-2">
+          <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-2">Top formations (volume)</p>
+          {data?.topFormations.length === 0 ? (
+            <p className="text-xs text-gray-400">Aucune session terminée cette année.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {data?.topFormations.slice(0, 3).map((f) => (
+                <li key={f.formationId} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{f.titre}</span>
+                  <span className="text-gray-500 shrink-0">{f.reussis}/{f.total}</span>
+                  <span className={`shrink-0 font-medium ${f.taux >= 80 ? "text-emerald-500" : f.taux >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                    {f.taux}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 function getWeekDates() {
@@ -339,6 +422,9 @@ export default function DashboardPage() {
 
       {/* ── Tunnel commercial ── */}
       <FunnelWidget />
+
+      {/* ── Taux de réussite formations (KPI Qualiopi) ── */}
+      <TauxReussiteWidget />
 
       {/* CA Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

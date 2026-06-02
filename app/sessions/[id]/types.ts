@@ -15,6 +15,9 @@ export type Inscription = {
   // Cles: piece_identite, casier_b3, test_b1, diplome_ssiap, diplome,
   // photos, cnaps_preal, cnaps_car, cv, titre_sejour, justif_domicile.
   documentsRemis?: string | null;
+  // Résultat de la formation : null = pas évalué, true = réussi, false = échec.
+  // Filtre le destinataire de l'envoi auto du certificat de réalisation (Qualiopi).
+  reussite?: boolean | null;
 };
 
 export type Session = {

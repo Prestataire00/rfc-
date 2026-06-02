@@ -306,6 +306,13 @@ model Inscription {
   dateInscription DateTime @default(now())
   notes           String?
 
+  // Résultat de la formation pour un stagiaire qui a participé (statut "presente").
+  // null  → pas encore évalué (cas par défaut, avant clôture session)
+  // true  → réussite (déclenche envoi certificat + attestation)
+  // false → échec (pas de certificat, attestation possible selon politique)
+  // Permet de calculer un taux de réussite (KPI Qualiopi).
+  reussite Boolean?
+
   contactId String
   // Audit 2026-05-19 §4.1 : Restrict pour préserver les preuves Qualiopi
   // (Inscription = preuve d'inscription stagiaire, conservation 3 ans).

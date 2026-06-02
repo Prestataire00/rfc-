@@ -62,7 +62,6 @@ export default function FactureDetailPage() {
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
-  const [signatureOpen, setSignatureOpen] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
   const [paiements, setPaiements] = useState<PaiementLigne[]>([{ mode: "", montant: 0 }]);
 
@@ -71,9 +70,6 @@ export default function FactureDetailPage() {
   const { trigger: updateFacture, isMutating: updatingStatut } = useApiMutation<Partial<Facture>>(`/api/factures/${id}`, "PUT");
   const { trigger: markPaid, isMutating: markingPaid } = useApiMutation<Partial<Facture>>(`/api/factures/${id}`, "PUT");
   const { trigger: sendEmail, isMutating: sending } = useApiMutation<{ factureId: string }, { skipped?: boolean }>("/api/email/facture", "POST");
-  // Signature électronique facture (acquittement client) — pareil que devis :
-  // crée SignatureRequest + email lien magique /sign/[token].
-  const { trigger: sendForSignature, isMutating: sendingSig } = useApiMutation<undefined, { signatureRequestId: string; sentTo: string }>(`/api/factures/${id}/send-for-signature`, "POST");
 
   const handleDelete = async () => {
     await deleteFacture();
@@ -116,22 +112,6 @@ export default function FactureDetailPage() {
       const msg = err instanceof ApiError ? err.message : "Erreur envoi";
       setEmailMsg(msg);
       notify.error("Erreur envoi", msg);
-    }
-    setTimeout(() => setEmailMsg(""), 4000);
-  };
-
-  const handleSendForSignature = async () => {
-    try {
-      const data = await sendForSignature();
-      setSignatureOpen(false);
-      setEmailMsg(`Envoyé pour signature à ${data?.sentTo ?? "le contact"}`);
-      notify.success("Facture envoyée pour signature", `Lien envoyé à ${data?.sentTo ?? "le contact"}`);
-      await mutate();
-    } catch (err) {
-      setSignatureOpen(false);
-      const msg = err instanceof ApiError ? err.message : "Erreur envoi signature";
-      setEmailMsg(msg);
-      notify.error("Erreur envoi signature", msg);
     }
     setTimeout(() => setEmailMsg(""), 4000);
   };
@@ -209,15 +189,6 @@ export default function FactureDetailPage() {
                 className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
               >
                 <Mail className="h-4 w-4" /> Envoyer par email
-              </button>
-            )}
-            {(facture.statut === "en_attente" || facture.statut === "envoyee") && (
-              <button
-                onClick={() => setSignatureOpen(true)}
-                className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
-                title="Envoyer la facture en signature électronique (acquittement client)"
-              >
-                <Mail className="h-4 w-4" /> Pour signature
               </button>
             )}
             <a href={`/api/pdf/facture/${id}`} target="_blank" rel="noopener noreferrer"
@@ -465,17 +436,6 @@ export default function FactureDetailPage() {
         variant="default"
         onConfirm={handleSendEmail}
         loading={sending}
-      />
-
-      <ConfirmDialog
-        open={signatureOpen}
-        onOpenChange={setSignatureOpen}
-        title={`Envoyer la facture ${facture.numero} pour signature électronique ?`}
-        description={`Un lien de signature sécurisé sera envoyé au contact de cette facture. Une fois signée, le PDF acquitté inclura la signature et la date du jour. Cette action est distincte du « Marquer comme payée ».`}
-        confirmLabel="Envoyer"
-        variant="default"
-        onConfirm={handleSendForSignature}
-        loading={sendingSig}
       />
 
       <ConfirmDialog

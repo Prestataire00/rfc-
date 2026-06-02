@@ -1,15 +1,37 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarDays, MapPin, Users, ClipboardList } from "lucide-react";
+import { ArrowLeft, CalendarDays, MapPin, Users, ClipboardList, Send, Smile, Clock, Award } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SESSION_STATUTS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { useApi } from "@/hooks/useApi";
+import { notify } from "@/lib/toast";
 import { EmargementGrid } from "@/components/emargement/EmargementGrid";
+
+type EvalType = "satisfaction_chaud" | "satisfaction_froid" | "acquis";
+
+const EVAL_META: Record<EvalType, { label: string; description: string; icon: typeof Smile }> = {
+  satisfaction_chaud: {
+    label: "Satisfaction à chaud",
+    description: "À envoyer juste après la formation (J ou J+1).",
+    icon: Smile,
+  },
+  satisfaction_froid: {
+    label: "Satisfaction à froid",
+    description: "À envoyer ~3 semaines après pour mesurer l'application sur le terrain.",
+    icon: Clock,
+  },
+  acquis: {
+    label: "Évaluation des acquis",
+    description: "À envoyer dès que la formation est terminée pour valider les compétences.",
+    icon: Award,
+  },
+};
 
 type Inscription = {
   id: string;
@@ -35,6 +57,46 @@ export default function FormateurSessionDetailPage() {
   const { data, isLoading, error } = useApi<Session[]>("/api/formateur/mes-sessions");
   const sessions: Session[] = Array.isArray(data) ? data : [];
   const session = sessions.find((s) => s.id === id);
+
+  const [sendingEval, setSendingEval] = useState<EvalType | null>(null);
+
+  const handleSendEval = async (type: EvalType) => {
+    if (!session) return;
+    const stagiairesCount = session.inscriptions.filter((i) => ["confirmee", "presente"].includes(i.statut)).length;
+    if (stagiairesCount === 0) {
+      notify.error("Aucun stagiaire confirmé sur cette session");
+      return;
+    }
+    const meta = EVAL_META[type];
+    if (!window.confirm(`Envoyer le questionnaire « ${meta.label} » à ${stagiairesCount} stagiaire${stagiairesCount > 1 ? "s" : ""} ?`)) {
+      return;
+    }
+    setSendingEval(type);
+    try {
+      const res = await fetch(`/api/formateur/sessions/${id}/envoyer-evaluations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Échec de l'envoi");
+      const parts: string[] = [];
+      if (json.sent) parts.push(`${json.sent} envoyé${json.sent > 1 ? "s" : ""}`);
+      if (json.created) parts.push(`${json.created} questionnaire${json.created > 1 ? "s" : ""} créé${json.created > 1 ? "s" : ""}`);
+      if (json.skipped) parts.push(`${json.skipped} ignoré${json.skipped > 1 ? "s" : ""}`);
+      notify.success(`Questionnaires « ${meta.label} »`, parts.join(" · "));
+      if (json.errors && json.errors.length > 0) {
+        const lines = (json.errors as { stagiaire: string; raison: string }[])
+          .map((e) => `${e.stagiaire} : ${e.raison}`)
+          .join("\n");
+        notify.error("Quelques échecs", lines);
+      }
+    } catch (err) {
+      notify.error("Erreur", err instanceof Error ? err.message : "Envoi impossible");
+    } finally {
+      setSendingEval(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -144,6 +206,48 @@ export default function FormateurSessionDetailPage() {
       {!canEmarger && (
         <div className="rounded-lg border border-gray-700 bg-gray-800 p-5 text-center text-sm text-gray-400">
           L&apos;emargement sera disponible une fois la session confirmee.
+        </div>
+      )}
+
+      {/* Envoi de questionnaires d'évaluation aux stagiaires */}
+      {stagiairesActifs.length > 0 && (
+        <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 p-5">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
+                <Send className="h-4 w-4 text-red-400" />
+                Envoyer des questionnaires
+              </h2>
+              <p className="text-xs text-gray-400 mt-1">
+                Les stagiaires recevront un lien unique pour répondre depuis leur boîte mail.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {(Object.keys(EVAL_META) as EvalType[]).map((type) => {
+              const meta = EVAL_META[type];
+              const Icon = meta.icon;
+              const busy = sendingEval === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleSendEval(type)}
+                  disabled={sendingEval !== null}
+                  className="text-left rounded-md border border-gray-600 bg-gray-900/60 hover:border-red-500 hover:bg-gray-900 p-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="h-4 w-4 text-red-400" />
+                    <span className="text-sm font-semibold text-gray-100">{meta.label}</span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 leading-snug">{meta.description}</p>
+                  <p className="text-[11px] text-red-400 mt-2 font-medium">
+                    {busy ? "Envoi en cours…" : `Envoyer à ${stagiairesActifs.length} stagiaire${stagiairesActifs.length > 1 ? "s" : ""}`}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -64,6 +64,10 @@ describe("GET /api/prospects/[id]", () => {
     };
 
     prisma.demande.findUnique.mockResolvedValueOnce(fakeDemande);
+    // La route cherche les fiches rattachées à la demande (et fallback session
+    // si une existe). Mock : pas de fiche, pas de stagiaires (cas test minimal).
+    prisma.fichePreFormationEntreprise.findFirst.mockResolvedValueOnce(null);
+    prisma.fichePreFormationStagiaire.findMany.mockResolvedValueOnce([]);
     prisma.historiqueAction.findMany.mockResolvedValueOnce([
       { id: "h-1", action: "prospect_cree", label: "Prospect créé", createdAt: new Date() },
     ]);

@@ -5,12 +5,13 @@ import { BESOIN_STATUTS } from "@/lib/constants";
 // These tests validate the data contract that StatusBadge depends on.
 
 const STATUS_DOT: Record<string, string> = {
-  nouveau:      "bg-sky-500",
-  qualifie:     "bg-indigo-500",
-  devis_envoye: "bg-amber-500",
-  accepte:      "bg-emerald-500",
-  refuse:       "bg-red-500",
-  archive:      "bg-slate-500",
+  nouveau:        "bg-sky-500",
+  qualifie:       "bg-indigo-500",
+  devis_envoye:   "bg-amber-500",
+  en_negociation: "bg-orange-500",
+  accepte:        "bg-emerald-500",
+  refuse:         "bg-red-500",
+  archive:        "bg-slate-500",
 };
 
 describe("StatusBadge data contract", () => {
@@ -31,8 +32,11 @@ describe("StatusBadge data contract", () => {
     expect(BESOIN_STATUTS.nouveau.label).toBe("Nouveau");
   });
 
-  it("le statut 'qualifie' a le bon label", () => {
-    expect(BESOIN_STATUTS.qualifie.label).toBe("Qualifié");
+  it("le statut 'qualifie' a son label (legacy pipeline 5 étapes)", () => {
+    // "qualifie" et "archive" sont des statuts legacy conservés pour
+    // l'affichage des demandes pré-pipeline 5 étapes mais non sélectionnables
+    // dans les menus manuels (cf. BESOIN_STATUTS_MANUEL dans lib/constants.ts).
+    expect(BESOIN_STATUTS.qualifie.label).toBe("Qualifié (legacy)");
   });
 
   it("le statut 'accepte' a le dot vert (bg-emerald-500)", () => {

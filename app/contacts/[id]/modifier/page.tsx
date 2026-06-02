@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CONTACT_TYPES } from "@/lib/constants";
+import { CONTACT_TYPES, STATUTS_PROFESSIONNELS } from "@/lib/constants";
 import { useApi, useApiMutation } from "@/hooks/useApi";
 import { ApiError } from "@/lib/fetcher";
 
@@ -43,6 +43,7 @@ interface ContactData {
   numeroCartePro?: string | null;
   numeroFranceTravail?: string | null;
   diplomeObtenu?: string | null;
+  statutProfessionnel?: string | null;
 }
 
 const typeOptions = Object.entries(CONTACT_TYPES).map(([key, val]) => ({
@@ -87,6 +88,7 @@ export default function ModifierContactPage() {
     // Diplome / Experience
     niveauFormation: "",
     diplomeObtenu: "",
+    statutProfessionnel: "",
     // Type & rattachement
     type: "prospect",
     entrepriseId: "",
@@ -129,6 +131,7 @@ export default function ModifierContactPage() {
       numeroFranceTravail: contact.numeroFranceTravail ?? "",
       niveauFormation: contact.niveauFormation ?? "",
       diplomeObtenu: contact.diplomeObtenu ?? "",
+      statutProfessionnel: contact.statutProfessionnel ?? "",
       type: contact.type ?? "prospect",
       entrepriseId: contact.entrepriseId ?? "",
       poste: contact.poste ?? "",
@@ -162,6 +165,7 @@ export default function ModifierContactPage() {
       "entrepriseId", "email", "telephone", "poste", "notes", "sexe", "lieuNaissance",
       "adressePerso", "codePostalPerso", "villePerso", "numeroCartePro",
       "numeroFranceTravail", "niveauFormation", "diplomeObtenu",
+      "statutProfessionnel",
       "numeroPasseportPrevention", "besoinsAdaptation",
     ];
     for (const k of optionalKeys) {
@@ -328,6 +332,20 @@ export default function ModifierContactPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="numeroFranceTravail">N° allocataire France Travail</Label>
                 <Input id="numeroFranceTravail" name="numeroFranceTravail" value={form.numeroFranceTravail} onChange={handleChange} placeholder="Identifiant France Travail" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="statutProfessionnel">
+                  Statut professionnel <span className="text-xs text-gray-400">(BPF cadre D1)</span>
+                </Label>
+                <Select
+                  id="statutProfessionnel"
+                  name="statutProfessionnel"
+                  value={form.statutProfessionnel}
+                  onChange={handleChange}
+                  options={[{ value: "", label: "— Auto (déduit) —" }, ...STATUTS_PROFESSIONNELS.map((s) => ({ value: s.value, label: s.label }))]}
+                />
               </div>
             </div>
           </CardContent>

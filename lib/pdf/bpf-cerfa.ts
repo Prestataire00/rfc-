@@ -74,7 +74,8 @@ export type BpfCerfaInput = {
   email: string;
   siret: string;
   nda: string;
-  natureJuridique?: string;
+  natureJuridique?: string; // SARL / SAS / EI... — art. R123-237 C.com.
+  regimeTVA?: string; // assujetti | exonere_261_4_4 | franchise_293_b
   // Cadres B, C, D
   produits: BpfCerfaProduits;
   charges: BpfCerfaCharges;
@@ -125,7 +126,17 @@ function pedRow(label: string, hStag: number) {
   ];
 }
 
+// Libellés affichables du régime TVA pour la mention en pied du cadre B.
+const REGIME_TVA_LABEL: Record<string, string> = {
+  assujetti: "Assujetti à la TVA (taux 20%)",
+  exonere_261_4_4:
+    "Organisme de formation déclaré — exonéré de TVA (art. 261-4-4° du CGI)",
+  franchise_293_b: "Franchise en base de TVA (art. 293 B du CGI)",
+};
+
 export function bpfCerfaPdf(data: BpfCerfaInput, opts?: { branding?: PdfBranding }): any {
+  const regimeLabel = data.regimeTVA ? REGIME_TVA_LABEL[data.regimeTVA] : null;
+
   return {
     content: [
       ...header(`Cerfa 10443*17 — Année ${data.annee}`, opts?.branding),
@@ -191,7 +202,19 @@ export function bpfCerfaPdf(data: BpfCerfaInput, opts?: { branding?: PdfBranding
             ],
             [
               { text: "7. Nature juridique", fontSize: 9, bold: true },
-              { text: data.natureJuridique || "À compléter", fontSize: 9, color: "#999999" },
+              {
+                text: data.natureJuridique || "À compléter",
+                fontSize: 9,
+                color: data.natureJuridique ? "#000000" : "#999999",
+              },
+            ],
+            [
+              { text: "8. Régime de TVA", fontSize: 9, bold: true },
+              {
+                text: regimeLabel || "À compléter",
+                fontSize: 9,
+                color: regimeLabel ? "#000000" : "#999999",
+              },
             ],
           ],
         },
@@ -290,14 +313,18 @@ export function bpfCerfaPdf(data: BpfCerfaInput, opts?: { branding?: PdfBranding
         padding: 4,
         margin: [0, 0, 0, 4],
       },
-      {
-        text:
-          "⚠ Les charges détaillées ne sont pas suivies en base — à compléter manuellement avant télédéclaration.",
-        fontSize: 8,
-        italics: true,
-        color: "#c97a00",
-        margin: [0, 0, 0, 4],
-      },
+      ...(data.charges.c7_total === 0
+        ? [
+            {
+              text:
+                "⚠ Aucune charge saisie pour cet exercice — à compléter dans la page BPF avant télédéclaration.",
+              fontSize: 8,
+              italics: true,
+              color: "#c97a00",
+              margin: [0, 0, 0, 4],
+            },
+          ]
+        : []),
       {
         table: {
           widths: [40, "*", 100],

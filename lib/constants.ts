@@ -136,3 +136,31 @@ export const TYPES_FINANCEMENT = [
 ] as const;
 
 export const TVA_RATE = 20;
+
+// Type d'action BPF (Cerfa 10443*17 cadre D2) — art. L6313-1 C. trav.
+// 11 catégories réglementaires utilisées pour ventiler les heures-stagiaires.
+export const BPF_TYPES_ACTION = [
+  { value: "adaptation", label: "1. Adaptation et développement des compétences" },
+  { value: "promotion", label: "2. Promotion professionnelle" },
+  { value: "prevention", label: "3. Prévention" },
+  { value: "conversion", label: "4. Conversion" },
+  { value: "acquisition", label: "5. Acquisition, entretien et perfectionnement" },
+  { value: "qualification", label: "6. Qualification professionnelle" },
+  { value: "apprentissage", label: "7. Apprentissage (CFA)" },
+  { value: "professionnalisation", label: "8. Contrat de professionnalisation" },
+  { value: "cpf", label: "9. Compte personnel de formation (CPF)" },
+  { value: "vae", label: "10. Validation des acquis (VAE)" },
+  { value: "bilanCompetences", label: "11. Bilan de compétences" },
+] as const;
+
+// Statut professionnel BPF (Cerfa 10443*17 cadre D1) — override sur Contact
+// pour ventiler les stagiaires entre salariés / demandeurs d'emploi / autres.
+export const STATUTS_PROFESSIONNELS = [
+  { value: "salarie", label: "Salarié" },
+  { value: "demandeur_emploi", label: "Demandeur d'emploi" },
+  { value: "particulier", label: "Particulier (à ses frais)" },
+  { value: "contrat_pro", label: "Contrat de professionnalisation" },
+  { value: "apprenti", label: "Apprenti" },
+  { value: "travailleur_non_salarie", label: "Travailleur non salarié (TNS)" },
+  { value: "autre", label: "Autre" },
+] as const;

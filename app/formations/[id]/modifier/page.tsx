@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT } from "@/lib/constants";
+import { NIVEAUX_FORMATION, MODALITES_FORMATION, STATUTS_FORMATION, TYPES_FINANCEMENT, BPF_TYPES_ACTION } from "@/lib/constants";
 import { AIButton } from "@/components/shared/AIButton";
 import { ImageUpload } from "@/components/shared/ImageUpload";
 import { useApi, useApiMutation } from "@/hooks/useApi";
@@ -37,6 +37,7 @@ type FormationData = {
   accessibilite?: string | null;
   indicateursResultats?: string | null;
   typesFinancement?: string;
+  typeActionBpf?: string;
   certifiante?: boolean;
   codeRNCP?: string | null;
   dureeRecyclage?: number | null;
@@ -75,6 +76,7 @@ export default function ModifierFormationPage() {
     accessibilite: "",
     indicateursResultats: "",
     typesFinancement: [] as string[],
+    typeActionBpf: "adaptation",
     certifiante: false,
     codeRNCP: "",
     dureeRecyclage: "",
@@ -112,6 +114,7 @@ export default function ModifierFormationPage() {
       accessibilite: data.accessibilite ?? "",
       indicateursResultats: data.indicateursResultats ?? "",
       typesFinancement: financements,
+      typeActionBpf: data.typeActionBpf ?? "adaptation",
       certifiante: data.certifiante ?? false,
       codeRNCP: data.codeRNCP ?? "",
       dureeRecyclage: data.dureeRecyclage != null ? String(data.dureeRecyclage) : "",
@@ -159,6 +162,7 @@ export default function ModifierFormationPage() {
       duree: form.duree ? Number(form.duree) : undefined,
       tarif: form.tarif ? Number(form.tarif) : undefined,
       typesFinancement: JSON.stringify(form.typesFinancement),
+      typeActionBpf: form.typeActionBpf,
       description: form.description || undefined,
       prerequis: form.prerequis || undefined,
       objectifs: form.objectifs || undefined,
@@ -408,6 +412,21 @@ export default function ModifierFormationPage() {
                 className="h-4 w-4 rounded border-gray-600 text-red-600"
               />
               <Label htmlFor="certifiante" className="cursor-pointer">Formation certifiante</Label>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="typeActionBpf">
+                Type d&apos;action BPF <span className="text-xs text-gray-400">(Cerfa 10443*17 cadre D2)</span>
+              </Label>
+              <Select
+                id="typeActionBpf"
+                name="typeActionBpf"
+                value={form.typeActionBpf}
+                onChange={handleChange}
+                options={BPF_TYPES_ACTION.map((t) => ({ value: t.value, label: t.label }))}
+              />
+              <p className="text-[11px] text-gray-500">
+                Détermine la ligne du bilan annuel où sont ventilées les heures-stagiaires de cette formation.
+              </p>
             </div>
             {form.certifiante && (
               <div className="grid grid-cols-2 gap-4">

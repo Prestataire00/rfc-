@@ -1465,15 +1465,17 @@ export default function SessionDetailPage() {
       {/* ── Feuille de présence / Emargement — onglet ÉMARGEMENT dédié ──── */}
       {tab === "emargement" && (
         ["confirmee", "en_cours", "terminee"].includes(session.statut) && session.inscriptions.length > 0 ? (
-          <div className="rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h2 className="font-semibold text-gray-100 flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-green-500" />
-                Émargement
-              </h2>
-              <p className="text-xs text-gray-400">
-                Présent · Absent · En retard · Excusé · Départ anticipé · Signer à la place
-              </p>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  Émargement
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Cochez la présence de chaque stagiaire par demi-journée. Boutons « Tous présents » pour valider toute la promo en 1 clic.
+                </p>
+              </div>
             </div>
             <div className="p-4">
               <EmargementGrid
@@ -1486,7 +1488,7 @@ export default function SessionDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-gray-700 bg-gray-800 p-8 text-center text-sm text-gray-400">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center text-sm text-gray-500 dark:text-gray-400">
             {session.inscriptions.length === 0
               ? "Aucun stagiaire inscrit à cette session."
               : "L'émargement sera disponible une fois la session confirmée."}

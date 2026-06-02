@@ -3,6 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withErrorHandler } from "@/lib/api-wrapper";
 
+/**
+ * GET /api/bpf?annee=2026
+ *
+ * Tableau de bord BPF annuel — KPIs et graphiques. Aligné sur le calcul
+ * Cerfa 10443*17 :
+ *   - inscriptions retenues : statut ∈ ("confirmee", "presente")
+ *   - heures-stagiaires : durée formation × inscrits
+ *   - CA HT : factures payées (dateEmission dans l'exercice civil)
+ *   - financements : source unique = paiements des factures payées
+ *     (la table Financement est ignorée pour éviter le double comptage)
+ */
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const annee = parseInt(searchParams.get("annee") || String(new Date().getFullYear()));
@@ -12,11 +23,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   const [
     sessionsTerminees,
-    totalStagiaires,
-    totalHeures,
+    sessionsAvecInscrits,
     caRealise,
-    financements,
-    formationsParCategorie,
     sessionsParMois,
     certifications,
     facturesList,
@@ -24,37 +32,24 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     prisma.session.count({
       where: { statut: "terminee", dateDebut: { gte: debutAnnee, lte: finAnnee } },
     }),
-    prisma.inscription.count({
-      where: {
-        statut: "presente",
-        session: { statut: "terminee", dateDebut: { gte: debutAnnee, lte: finAnnee } },
-      },
-    }),
     prisma.session.findMany({
       where: { statut: "terminee", dateDebut: { gte: debutAnnee, lte: finAnnee } },
-      include: { formation: { select: { duree: true } } },
-    }).then((sessions) => sessions.reduce((total, s) => total + s.formation.duree, 0)),
+      include: {
+        formation: { select: { duree: true, categorie: true, titre: true } },
+        inscriptions: {
+          where: { statut: { in: ["confirmee", "presente"] } },
+          select: { id: true },
+        },
+      },
+    }),
     prisma.facture.aggregate({
       where: { statut: "payee", dateEmission: { gte: debutAnnee, lte: finAnnee } },
       _sum: { montantHT: true, montantTTC: true },
     }),
-    prisma.financement.findMany({
-      where: { createdAt: { gte: debutAnnee, lte: finAnnee } },
-      include: { entreprise: { select: { nom: true } } },
-    }),
-    prisma.session.findMany({
-      where: { statut: "terminee", dateDebut: { gte: debutAnnee, lte: finAnnee } },
-      include: {
-        formation: { select: { categorie: true, titre: true } },
-        _count: { select: { inscriptions: true } },
-      },
-    }),
-    // Sessions par mois
     prisma.session.findMany({
       where: { dateDebut: { gte: debutAnnee, lte: finAnnee } },
       select: { dateDebut: true, statut: true },
     }),
-    // Certifications
     prisma.session.findMany({
       where: {
         statut: "terminee",
@@ -66,7 +61,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         _count: { select: { inscriptions: true } },
       },
     }),
-    // Factures
     prisma.facture.findMany({
       where: { dateEmission: { gte: debutAnnee, lte: finAnnee } },
       include: {
@@ -77,42 +71,46 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }),
   ]);
 
-  // Aggregate by category
+  // Agrégats sessions — inscriptions filtrées (confirmee/presente)
+  let totalStagiaires = 0;
+  let totalHeures = 0;
   const parCategorie: Record<string, { sessions: number; stagiaires: number }> = {};
-  formationsParCategorie.forEach((s: any) => {
+  for (const s of sessionsAvecInscrits) {
+    const nbIns = s.inscriptions.length;
+    totalStagiaires += nbIns;
+    totalHeures += s.formation.duree * nbIns;
     const cat = s.formation.categorie || "Non categorise";
     if (!parCategorie[cat]) parCategorie[cat] = { sessions: 0, stagiaires: 0 };
     parCategorie[cat].sessions++;
-    parCategorie[cat].stagiaires += s._count.inscriptions;
-  });
+    parCategorie[cat].stagiaires += nbIns;
+  }
 
-  // Aggregate by month
+  // Sessions par mois (total / terminées)
   const parMois = Array.from({ length: 12 }, (_, i) => ({
     mois: i,
     total: 0,
     terminees: 0,
   }));
-  (sessionsParMois as any[]).forEach((s: any) => {
+  for (const s of sessionsParMois) {
     const m = new Date(s.dateDebut).getMonth();
     parMois[m].total++;
     if (s.statut === "terminee") parMois[m].terminees++;
-  });
+  }
 
-  // Financements by type (from Financement table + Facture paiements)
+  // Financements par type — source UNIQUE : paiements des factures payées
+  // (la table Financement reste utilisée pour le suivi commercial mais n'est
+  // pas réconciliable avec la trésorerie, donc exclue du BPF pour éviter
+  // tout double comptage).
   const financementsParType: Record<string, number> = {};
-  financements.forEach((f: any) => {
-    financementsParType[f.type] = (financementsParType[f.type] || 0) + f.montant;
-  });
-  // Also aggregate from facture paiements (paid invoices)
-  (facturesList as any[]).forEach((f: any) => {
-    if (f.statut === "payee" && Array.isArray(f.paiements)) {
-      f.paiements.forEach((p: any) => {
-        if (p.mode && p.montant) {
-          financementsParType[p.mode] = (financementsParType[p.mode] || 0) + p.montant;
-        }
-      });
+  for (const f of facturesList) {
+    if (f.statut !== "payee") continue;
+    if (!Array.isArray(f.paiements)) continue;
+    for (const p of f.paiements as Array<{ mode?: string; montant?: number }>) {
+      if (p?.mode && typeof p.montant === "number") {
+        financementsParType[p.mode] = (financementsParType[p.mode] || 0) + p.montant;
+      }
     }
-  });
+  }
 
   return NextResponse.json({
     annee,
@@ -124,7 +122,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     parCategorie,
     parMois,
     financementsParType,
-    financements,
     certifications,
     factures: facturesList,
   });

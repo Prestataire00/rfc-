@@ -3,11 +3,11 @@
 import { CheckCircle2, XCircle, Clock, ShieldAlert, LogOut } from "lucide-react";
 
 export const STATUTS = [
-  { value: "present", label: "Present", icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-900/30 border-emerald-700" },
-  { value: "absent", label: "Absent", icon: XCircle, color: "text-red-400", bg: "bg-red-900/30 border-red-700" },
-  { value: "en_retard", label: "En retard", icon: Clock, color: "text-amber-400", bg: "bg-amber-900/30 border-amber-700" },
-  { value: "excuse", label: "Excuse", icon: ShieldAlert, color: "text-blue-400", bg: "bg-blue-900/30 border-blue-700" },
-  { value: "depart_anticipe", label: "Depart anticipe", icon: LogOut, color: "text-orange-400", bg: "bg-orange-900/30 border-orange-700" },
+  { value: "present", label: "Présent", icon: CheckCircle2, color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700" },
+  { value: "absent", label: "Absent", icon: XCircle, color: "text-red-700 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700" },
+  { value: "en_retard", label: "En retard", icon: Clock, color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700" },
+  { value: "excuse", label: "Excusé", icon: ShieldAlert, color: "text-blue-700 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700" },
+  { value: "depart_anticipe", label: "Départ anticipé", icon: LogOut, color: "text-orange-700 dark:text-orange-400", bg: "bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700" },
 ] as const;
 
 export type PresenceStatut = (typeof STATUTS)[number]["value"];
@@ -100,15 +100,23 @@ export function StatutSelector({
 
 // Helper : badge compact pour affichage dans les grilles
 export function StatutBadge({ statut, retardMinutes, departMinutes }: { statut: string | null; retardMinutes?: number | null; departMinutes?: number | null }) {
-  if (!statut) return <span className="text-xs text-gray-600">—</span>;
+  if (!statut) return <span className="text-xs text-gray-500 dark:text-gray-400">—</span>;
   const s = STATUTS.find((st) => st.value === statut);
-  if (!s) return <span className="text-xs text-gray-400">{statut}</span>;
+  if (!s) return <span className="text-xs text-gray-500 dark:text-gray-400">{statut}</span>;
   const Icon = s.icon;
   const extra =
-    statut === "en_retard" && retardMinutes ? ` (${retardMinutes}min)` : statut === "depart_anticipe" && departMinutes ? ` (-${departMinutes}min)` : "";
+    statut === "en_retard" && retardMinutes
+      ? ` (${retardMinutes}min)`
+      : statut === "depart_anticipe" && departMinutes
+        ? ` (-${departMinutes}min)`
+        : "";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[10px] font-medium ${s.color}`} title={s.label + extra}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${s.bg} ${s.color}`}
+      title={s.label + extra}
+    >
       <Icon className="h-3 w-3" />
+      {s.label}
       {extra}
     </span>
   );

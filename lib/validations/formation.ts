@@ -21,6 +21,22 @@ export const formationSchema = z.object({
   accessibilite: z.string().optional(),
   indicateursResultats: z.string().optional(),
   typesFinancement: z.string().optional().default("[]"),
+  typeActionBpf: z
+    .enum([
+      "adaptation",
+      "promotion",
+      "prevention",
+      "conversion",
+      "acquisition",
+      "qualification",
+      "apprentissage",
+      "professionnalisation",
+      "cpf",
+      "vae",
+      "bilanCompetences",
+    ])
+    .optional()
+    .default("adaptation"),
   dureeRecyclage: z.coerce.number().int().positive().optional().nullable(),
   certifiante: z.boolean().optional().default(false),
   codeRNCP: z.string().optional(),

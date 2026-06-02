@@ -25,6 +25,20 @@ export const contactSchema = z.object({
   numeroCartePro: z.string().optional().nullable(),
   numeroFranceTravail: z.string().optional().nullable(),
   diplomeObtenu: z.string().optional().nullable(),
+  // Statut professionnel BPF (cadre D1 Cerfa 10443*17). Override l'heuristique
+  // de catégorisation salarié/demandeur/particulier basée sur entrepriseId.
+  statutProfessionnel: z
+    .enum([
+      "salarie",
+      "demandeur_emploi",
+      "particulier",
+      "contrat_pro",
+      "apprenti",
+      "travailleur_non_salarie",
+      "autre",
+    ])
+    .optional()
+    .nullable(),
 });
 
 export type ContactFormData = z.infer<typeof contactSchema>;

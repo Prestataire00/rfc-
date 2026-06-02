@@ -47,6 +47,7 @@ export default function SessionDetailPage() {
   const [contactSearch, setContactSearch] = useState("");
   const [uploading, setUploading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [sendingConvention, setSendingConvention] = useState<string | null>(null);
   const [emailMsg, setEmailMsg] = useState("");
   const [evalLoading, setEvalLoading] = useState(false);
   const [evalMsg, setEvalMsg] = useState("");
@@ -375,6 +376,28 @@ export default function SessionDetailPage() {
     else { setEmailMsg(data.error || "Erreur d'envoi"); notify.error("Erreur envoi", data.error); }
     setSendingEmail(null);
     setTimeout(() => setEmailMsg(""), 3000);
+  };
+
+  // Renvoi manuel de la convention de formation (filet de sécurité quand
+  // l'envoi auto à l'inscription a skippé : SMTP HS, contact maj plus tard).
+  const handleResendConvention = async (inscriptionId: string) => {
+    if (sendingConvention) return;
+    setSendingConvention(inscriptionId);
+    try {
+      const res = await fetch(`/api/inscriptions/${inscriptionId}/renvoyer-convention`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify.error("Renvoi impossible", data.error);
+      } else {
+        notify.success("Convention renvoyée", data.destinataireEmail);
+      }
+    } catch {
+      notify.error("Erreur réseau");
+    } finally {
+      setSendingConvention(null);
+    }
   };
 
   const handleSendConvocationBatch = async () => {
@@ -952,6 +975,14 @@ export default function SessionDetailPage() {
                         title="Envoyer convocation par email"
                       >
                         <Mail className="h-3.5 w-3.5 inline" />
+                      </button>
+                      <button
+                        onClick={() => handleResendConvention(insc.id)}
+                        disabled={sendingConvention === insc.id}
+                        className="text-blue-500 hover:text-blue-400 px-1 disabled:opacity-50"
+                        title="Renvoyer la convention de formation par email"
+                      >
+                        {sendingConvention === insc.id ? "…" : "Conv."}
                       </button>
                       <a href={`/api/pdf/attestation/${id}/${insc.contact.id}`} target="_blank" className="text-green-600 hover:underline px-1" title="Attestation">
                         Attest.

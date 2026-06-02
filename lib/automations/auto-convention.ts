@@ -21,6 +21,7 @@ import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
 import { sendEmail, conventionEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
+import { notifyAdmins } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -119,6 +120,14 @@ export async function sendConventionOnInscription(inscriptionId: string): Promis
     });
     if (envoi.skipped) {
       logger.warn("auto-convention.email_skipped", { inscriptionId });
+      // Notif admin : convention NON envoyée (SMTP KO ou destinataire refusé)
+      // pour qu'il puisse intervenir manuellement.
+      await notifyAdmins({
+        titre: "Convention non envoyée",
+        message: `${contact.prenom} ${contact.nom} — ${formation.titre}. Service mail non configuré ou destinataire refusé. Renvoyez manuellement depuis la session.`,
+        type: "warning",
+        lien: `/sessions/${session.id}`,
+      }).catch(() => {});
       return;
     }
     await logAction({
@@ -128,6 +137,13 @@ export async function sendConventionOnInscription(inscriptionId: string): Promis
       contactId: contact.id,
       entrepriseId: entreprise?.id ?? undefined,
       sessionId: session.id,
+    }).catch(() => {});
+    // Notif admin de succès (visibilité immédiate dans la cloche)
+    await notifyAdmins({
+      titre: "Convention envoyée",
+      message: `${numero} envoyée à ${contact.prenom} ${contact.nom} (${contact.email}) — ${formation.titre}`,
+      type: "success",
+      lien: `/sessions/${session.id}`,
     }).catch(() => {});
   } catch (err) {
     logger.warn("auto-convention.send_failed", {

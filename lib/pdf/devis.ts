@@ -348,7 +348,8 @@ export function devisPdf(data: {
       // ── SIGNATURE ──
       signatureBlock(
         { titre: `Pour ${nomSociete}`, nom: nomSociete },
-        { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || data.contact ? `${data.contact?.prenom} ${data.contact?.nom}` : undefined }
+        { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || data.contact ? `${data.contact?.prenom} ${data.contact?.nom}` : undefined },
+        { tamponBase64: branding?.tamponBase64 }
       ),
 
       // ── ANNEXE FORMULAIRE DE RÉTRACTATION (B2C uniquement) ──

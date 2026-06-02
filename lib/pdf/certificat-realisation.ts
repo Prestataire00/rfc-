@@ -175,8 +175,18 @@ export function certificatRealisationPdf(data: {
                 alignment: "center" as const,
                 fontSize: 9,
                 italics: true,
-                margin: [0, 0, 0, 30] as [number, number, number, number],
+                margin: [0, 0, 0, 8] as [number, number, number, number],
               },
+              // Tampon+signature scanné si configuré dans /parametres,
+              // sinon espace blanc à signer à la main.
+              branding?.tamponBase64
+                ? {
+                    image: branding.tamponBase64,
+                    height: 80,
+                    alignment: "center" as const,
+                    margin: [0, 0, 0, 4] as [number, number, number, number],
+                  }
+                : { text: "\n\n\n", margin: [0, 0, 0, 22] as [number, number, number, number] },
               {
                 text: representantNom,
                 alignment: "center" as const,

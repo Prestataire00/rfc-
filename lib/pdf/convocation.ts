@@ -70,7 +70,8 @@ export function convocationPdf(data: {
       { text: `L'équipe ${nomOrg}`, style: "value", bold: true, margin: [0, 5, 0, 0] as [number, number, number, number] },
       signatureBlock(
         { titre: `Pour ${nomOrg}` },
-        { titre: "Accusé de réception du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` }
+        { titre: "Accusé de réception du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` },
+        { tamponBase64: branding?.tamponBase64 }
       ),
       ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
       footer(branding),

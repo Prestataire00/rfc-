@@ -36,6 +36,7 @@ type Parametres = {
   banque: string;
   moyensPaiement: string;
   logoUrl: string | null;
+  tamponSignatureUrl: string | null;
   couleurPrimaire: string;
 };
 
@@ -63,6 +64,7 @@ const defaultParams: Parametres = {
   banque: "",
   moyensPaiement: "virement,cpf,opco",
   logoUrl: null,
+  tamponSignatureUrl: null,
   couleurPrimaire: "#dc2626",
 };
 
@@ -137,6 +139,20 @@ export default function ParametresPage() {
                   size="md"
                 />
                 <p className="text-xs text-gray-500 mt-2">PNG transparent recommande, 400px de large au minimum.</p>
+              </div>
+              <div>
+                <Label className="mb-2 block">Tampon &amp; signature</Label>
+                <ImageUpload
+                  value={params.tamponSignatureUrl || ""}
+                  onChange={(url) => setParams((p) => ({ ...p, tamponSignatureUrl: url || null }))}
+                  folder="branding"
+                  shape="rect"
+                  size="md"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Tampon + signature scannés du représentant légal (PNG transparent recommandé, fond blanc accepté).
+                  Incrusté automatiquement sur conventions, attestations, certificats de réalisation, devis et factures.
+                </p>
               </div>
               <div>
                 <Label htmlFor="couleurPrimaire" className="mb-2 block">Couleur primaire</Label>

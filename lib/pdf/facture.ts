@@ -325,7 +325,8 @@ export function facturePdf(data: {
       // ── SIGNATURE ──
       signatureBlock(
         { titre: "Pour RFC - Rescue Formation Conseil", nom: nomSociete },
-        { titre: "Acquitté — Client", nom: data.entreprise?.nom || (data.contact ? `${data.contact.prenom} ${data.contact.nom}` : undefined) }
+        { titre: "Acquitté — Client", nom: data.entreprise?.nom || (data.contact ? `${data.contact.prenom} ${data.contact.nom}` : undefined) },
+        { tamponBase64: branding?.tamponBase64 }
       ),
     ],
     footer: (_currentPage: number, _pageCount: number) => ({

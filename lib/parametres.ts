@@ -23,6 +23,7 @@ export type EntrepriseParams = {
   representantPrenom: string;
   representantQualite: string;
   logoUrl: string | null;
+  tamponSignatureUrl: string | null;
   couleurPrimaire: string;
   featureFlags: Record<string, boolean>;
 };
@@ -49,6 +50,7 @@ const DEFAULTS: EntrepriseParams = {
   representantNom: "",
   representantPrenom: "",
   representantQualite: "",
+  tamponSignatureUrl: null,
   logoUrl: null,
   couleurPrimaire: "#dc2626",
   featureFlags: {},

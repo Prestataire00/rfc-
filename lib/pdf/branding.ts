@@ -5,8 +5,9 @@
 import type { EntrepriseParams } from "@/lib/parametres";
 import { LOGO_BASE64 } from "./logo-base64";
 
-type LogoCache = { url: string; data: string; fetchedAt: number } | null;
-let logoCache: LogoCache = null;
+type ImageCache = { url: string; data: string; fetchedAt: number } | null;
+let logoCache: ImageCache = null;
+let tamponCache: ImageCache = null;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 // Convertit une URL d'image en data URI base64 pour pdfmake.
@@ -33,18 +34,49 @@ export async function resolveLogoBase64(logoUrl: string | null | undefined): Pro
   }
 }
 
+// Convertit l'URL du tampon+signature en data URI base64. Retourne null si
+// pas configuré ou erreur de fetch (les templates affichent alors le bloc
+// signature vide habituel à compléter à la main).
+export async function resolveTamponBase64(tamponUrl: string | null | undefined): Promise<string | null> {
+  if (!tamponUrl) return null;
+
+  const now = Date.now();
+  if (tamponCache && tamponCache.url === tamponUrl && now - tamponCache.fetchedAt < CACHE_TTL_MS) {
+    return tamponCache.data;
+  }
+
+  try {
+    const res = await fetch(tamponUrl, { cache: "no-store" });
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const contentType = res.headers.get("content-type") || "image/png";
+    const data = `data:${contentType};base64,${buf.toString("base64")}`;
+    tamponCache = { url: tamponUrl, data, fetchedAt: now };
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 // Resout les infos de branding utilisables par les templates PDF.
 // Couleur primaire toujours definie (fallback sur rouge RFC).
+// Le tampon+signature est null si non configuré → les templates affichent
+// alors un bloc vide à signer manuellement.
 export async function resolveBranding(params: EntrepriseParams): Promise<{
   logoBase64: string;
+  tamponBase64: string | null;
   couleurPrimaire: string;
   nomEntreprise: string;
   slogan: string;
   siteWeb: string;
 }> {
-  const logoBase64 = await resolveLogoBase64(params.logoUrl);
+  const [logoBase64, tamponBase64] = await Promise.all([
+    resolveLogoBase64(params.logoUrl),
+    resolveTamponBase64(params.tamponSignatureUrl),
+  ]);
   return {
     logoBase64,
+    tamponBase64,
     couleurPrimaire: params.couleurPrimaire || "#dc2626",
     nomEntreprise: params.nomEntreprise || "RFC",
     slogan: params.slogan || "",

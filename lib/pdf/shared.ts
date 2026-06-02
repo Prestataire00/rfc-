@@ -133,25 +133,33 @@ export function renderTemplateBody(text: string | undefined) {
  * Bloc signature réutilisable.
  * @param left  { titre, nom } — signataire gauche (ex. RFC / Le Directeur)
  * @param right { titre, nom } — signataire droit (ex. Client / Bon pour accord) — optionnel
+ * @param opts.tamponBase64 — image base64 du tampon+signature à incruster
+ *                            dans la case gauche (PNG transparent recommandé).
+ *                            Quand fourni, le bloc gauche apparaît déjà signé,
+ *                            le bloc droit reste vide pour le client.
  */
 export function signatureBlock(
   left: { titre: string; nom?: string },
-  right?: { titre: string; nom?: string }
+  right?: { titre: string; nom?: string },
+  opts?: { tamponBase64?: string | null }
 ) {
-  const bloc = (s: { titre: string; nom?: string }) => ({
-    stack: [
-      { text: s.titre, fontSize: 9, bold: true, color: COLORS.dark },
-      ...(s.nom ? [{ text: s.nom, fontSize: 9, color: COLORS.gray, margin: [0, 1, 0, 0] as [number, number, number, number] }] : []),
-      { text: "Date : ___________________________", fontSize: 9, color: COLORS.gray, margin: [0, 12, 0, 0] as [number, number, number, number] },
-      {
+  const tampon = opts?.tamponBase64 || null;
+
+  // Case signature : vide (ligne pour signer à la main) ou pré-remplie avec
+  // l'image du tampon+signature scannée du représentant légal.
+  const signatureCase = (withTampon: boolean) => {
+    if (withTampon && tampon) {
+      return {
         table: {
           widths: ["*"],
           heights: [55],
           body: [[{
-            text: "Signature",
-            fontSize: 8,
-            color: "#aaaaaa",
-            margin: [4, 4, 0, 0] as [number, number, number, number],
+            image: tampon,
+            // pdfmake n'accepte pas % ici — on contraint par hauteur, la
+            // largeur s'auto-adapte en gardant le ratio image. fit forcerait
+            // un crop ; cover non supporté → hauteur fixe c'est le mieux.
+            height: 50,
+            alignment: "center" as const,
           }]],
         },
         layout: {
@@ -161,22 +169,52 @@ export function signatureBlock(
           vLineColor: () => "#cccccc",
         },
         margin: [0, 6, 0, 0] as [number, number, number, number],
+      };
+    }
+    return {
+      table: {
+        widths: ["*"],
+        heights: [55],
+        body: [[{
+          text: "Signature",
+          fontSize: 8,
+          color: "#aaaaaa",
+          margin: [4, 4, 0, 0] as [number, number, number, number],
+        }]],
       },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0.5,
+        hLineColor: () => "#cccccc",
+        vLineColor: () => "#cccccc",
+      },
+      margin: [0, 6, 0, 0] as [number, number, number, number],
+    };
+  };
+
+  const bloc = (s: { titre: string; nom?: string }, isOrganisme: boolean) => ({
+    stack: [
+      { text: s.titre, fontSize: 9, bold: true, color: COLORS.dark },
+      ...(s.nom ? [{ text: s.nom, fontSize: 9, color: COLORS.gray, margin: [0, 1, 0, 0] as [number, number, number, number] }] : []),
+      { text: "Date : ___________________________", fontSize: 9, color: COLORS.gray, margin: [0, 12, 0, 0] as [number, number, number, number] },
+      signatureCase(isOrganisme),
     ],
   });
 
   if (!right) {
     return {
-      columns: [bloc(left), { width: "*", text: "" }],
+      columns: [bloc(left, true), { width: "*", text: "" }],
       margin: [0, 25, 0, 0] as [number, number, number, number],
     };
   }
 
   return {
     columns: [
-      { width: "48%", ...bloc(left) },
+      // Gauche = organisme (RFC) → tampon pré-incrusté si dispo
+      { width: "48%", ...bloc(left, true) },
       { width: "4%", text: "" },
-      { width: "48%", ...bloc(right) },
+      // Droite = client → toujours vide à signer
+      { width: "48%", ...bloc(right, false) },
     ],
     margin: [0, 25, 0, 0] as [number, number, number, number],
   };

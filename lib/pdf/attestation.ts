@@ -81,7 +81,8 @@ export function attestationPdf(data: {
       { text: `Fait à Toulon, le ${data.dateGeneration}`, style: "value", margin: [0, 20, 0, 0] as [number, number, number, number] },
       signatureBlock(
         { titre: `Pour ${nomOrg}`, nom: "Le Directeur" },
-        { titre: "Signature du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` }
+        { titre: "Signature du stagiaire", nom: `${data.stagiaire.prenom} ${data.stagiaire.nom}` },
+        { tamponBase64: branding?.tamponBase64 }
       ),
       ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
       footer(branding),

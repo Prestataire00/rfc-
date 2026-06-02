@@ -85,7 +85,8 @@ export function conventionPdf(data: {
       ...(corpsBody ? [{ stack: corpsBody, margin: [0, 10, 0, 10] as [number, number, number, number] }] : []),
       signatureBlock(
         { titre: "Pour l'organisme de formation", nom: info[0] },
-        { titre: "Pour le client", nom: data.entreprise.nom }
+        { titre: "Pour le client", nom: data.entreprise.nom },
+        { tamponBase64: branding?.tamponBase64 }
       ),
       ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
       footer(branding),

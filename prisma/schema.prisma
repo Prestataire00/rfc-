@@ -1132,8 +1132,12 @@ model Parametres {
   representantQualite String @default("") // ex "Directeur", "Gérant"
 
   // Identite visuelle (branding)
-  logoUrl         String?
-  couleurPrimaire String  @default("#dc2626")
+  logoUrl              String?
+  couleurPrimaire      String  @default("#dc2626")
+  // Tampon + signature scannés du représentant légal (PNG transparent recommandé).
+  // Incrusté automatiquement dans le bloc signature gauche de tous les PDFs
+  // générés (convention, attestation, certificat de réalisation, devis, facture).
+  tamponSignatureUrl   String?
 
   // Feature flags V2 — JSON : { emargement_v2: boolean, automations_v2: boolean, ... }
   featureFlags String @default("{}")

@@ -22,6 +22,9 @@ import {
   FileText,
   PenLine,
   Trophy,
+  Smile,
+  TrendingDown,
+  Send,
 } from "lucide-react";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { SkeletonStats, SkeletonCard } from "@/components/shared/Skeleton";
@@ -382,6 +385,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* KPI satisfaction Qualiopi — calculés en direct depuis les évaluations
+          remplies par les stagiaires (indicateurs 30/31 + acquis). */}
+      <SatisfactionKpis />
+
       {/* Heures vendues (cahier des charges art. 2.3) — réutilise le filtre période ci-dessus */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="rounded-lg border bg-gradient-to-br from-blue-50 to-sky-50 p-5">
@@ -592,6 +599,107 @@ export default function DashboardPage() {
               })}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SatisfactionKpis — 3 cards de KPI Qualiopi calculés en direct depuis
+// /api/dashboard/satisfaction. Tendance J-30 vs J-60 affichée si dispo.
+// ──────────────────────────────────────────────────────────────────────────────
+type SatisfactionStats = {
+  noteMoyenne: number | null;
+  noteMoyenneChaud: number | null;
+  noteMoyenneFroid: number | null;
+  noteMoyenneAcquis: number | null;
+  nbCompletes: number;
+  nbTotal: number;
+  tauxReponseGlobal: number;
+  tendanceJ30: number | null;
+  nbReponses: number;
+};
+
+function fmtNote(n: number | null | undefined): string {
+  return n == null ? "—" : `${n.toFixed(1)} / 5`;
+}
+
+function SatisfactionKpis() {
+  const { data, isLoading } = useApi<SatisfactionStats>("/api/dashboard/satisfaction");
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    );
+  }
+  if (!data) return null;
+
+  const noteGlobalePct = data.noteMoyenne != null ? Math.round((data.noteMoyenne / 5) * 100) : null;
+  const tendance = data.tendanceJ30;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Note de satisfaction moyenne globale */}
+      <div className="rounded-lg border bg-gradient-to-br from-amber-50 to-yellow-50 p-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Smile className="h-5 w-5 text-amber-600" />
+            <span className="text-sm font-medium text-amber-800">Satisfaction moyenne</span>
+          </div>
+          {tendance != null && (
+            <span
+              className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${
+                tendance >= 0 ? "text-emerald-700" : "text-red-700"
+              }`}
+              title="Évolution sur 30 jours vs 30 jours précédents"
+            >
+              {tendance >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {tendance >= 0 ? "+" : ""}{tendance.toFixed(1)}
+            </span>
+          )}
+        </div>
+        <p className="text-3xl font-bold text-amber-900">{fmtNote(data.noteMoyenne)}</p>
+        <p className="text-xs text-amber-600 mt-1">
+          {data.nbReponses} réponse{data.nbReponses > 1 ? "s" : ""}
+          {noteGlobalePct != null ? ` · ${noteGlobalePct}%` : ""}
+        </p>
+      </div>
+
+      {/* Taux de réponse */}
+      <div className="rounded-lg border bg-gradient-to-br from-blue-50 to-sky-50 p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <Send className="h-5 w-5 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">Taux de réponse</span>
+        </div>
+        <p className="text-3xl font-bold text-blue-900">{data.tauxReponseGlobal}%</p>
+        <p className="text-xs text-blue-600 mt-1">
+          {data.nbCompletes} / {data.nbTotal} envoyée{data.nbTotal > 1 ? "s" : ""}
+        </p>
+      </div>
+
+      {/* Détail par type */}
+      <div className="rounded-lg border bg-gradient-to-br from-violet-50 to-purple-50 p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <ClipboardList className="h-5 w-5 text-violet-600" />
+          <span className="text-sm font-medium text-violet-800">Par type d'évaluation</span>
+        </div>
+        <div className="space-y-1 mt-2">
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-violet-700">À chaud</span>
+            <span className="font-semibold text-violet-900">{fmtNote(data.noteMoyenneChaud)}</span>
+          </div>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-violet-700">À froid</span>
+            <span className="font-semibold text-violet-900">{fmtNote(data.noteMoyenneFroid)}</span>
+          </div>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-violet-700">Acquis</span>
+            <span className="font-semibold text-violet-900">{fmtNote(data.noteMoyenneAcquis)}</span>
+          </div>
         </div>
       </div>
     </div>

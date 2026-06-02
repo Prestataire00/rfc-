@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Edit, Trash2, FileText, Receipt, Eye, Download, Mail, Copy, CalendarPlus, ShieldCheck, Award, XCircle, Clock, Send } from "lucide-react";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { ProspectBackLink } from "@/components/shared/ProspectBackLink";
+import { FicheReponsesPanel } from "@/components/shared/FicheReponsesPanel";
 import { StatutBadge } from "@/components/shared/StatutBadge";
 import { notify } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -571,7 +572,10 @@ export default function DevisDetailPage() {
         </div>
 
         {/* Lignes devis */}
-        <div className="col-span-2">
+        <div className="col-span-2 space-y-4">
+          {/* Besoin client — affiché en tête pour avoir le contexte avant les lignes */}
+          <FicheReponsesPanel devisId={devis.id} />
+
           <div className="rounded-lg border bg-gray-800 overflow-hidden">
             <div className="p-4 border-b">
               <h2 className="font-semibold text-gray-100">Lignes du devis</h2>

@@ -108,6 +108,7 @@ const adminGroups: NavGroup[] = [
         items: [
           { href: "/sessions", label: "Sessions", icon: CalendarDays },
           { href: "/dashboard/planning", label: "Planning", icon: Calendar },
+          { href: "/emargement", label: "Émargement", icon: ClipboardList },
           { href: "/formations", label: "Catalogue", icon: BookOpen },
         ],
       },

@@ -246,19 +246,30 @@ async function handle(devisId: string, adminUserId: string): Promise<NextRespons
       payload: { originalFileSha256: sha256, originalPageCount: pageCount, sizeBytes: pdfBuffer.length },
     });
 
-    // 7. Zone signature par défaut : bas droite de la dernière page.
-    //    A4 portrait = 595×842 points (72 dpi). Zone 200×60 points.
-    //    Coords stockées en TOP-LEFT (cf. lib/signatures/zones.ts) :
-    //    y = pageHeight (842) − marge bas (60) − hauteur zone (60) = 722
-    //    → zone à 60 pts du bas, hors zone d'entête « DEVIS / Numéro / Date ».
+    // 7. Zone signature par défaut : positionnée pour MATCHER le cadre
+    //    « Signature » du bloc « Bon pour accord — Client » rendu par
+    //    signatureBlock() (cf. lib/pdf/shared.ts) sur un devis A4 typique
+    //    de 1 page (1-3 lignes, notes courtes).
+    //
+    //    A4 portrait = 595×842 points. Le bloc Client (colonne droite) :
+    //    - left ≈ 308 pts (page-margin 40 + colonne 48% + gap 4%)
+    //    - width ≈ 235 pts
+    //    - le cadre signature à l'intérieur est à environ 80 pts sous le
+    //      top du bloc (titre + nom + Date + margins)
+    //
+    //    Pour un devis standard, le bloc atterrit naturellement vers
+    //    y_top_left ≈ 600 pts → cadre signature à ≈ 680. Sur un devis
+    //    plus long (>5 lignes ou grosses notes), le bloc descend et la
+    //    zone peut être désynchronisée — dans ce cas, l'admin peut
+    //    repositionner manuellement la zone depuis /signatures/[id].
     await prisma.signatureZone.create({
       data: {
         requestId: request.id,
         page: pageCount,
-        x: 350,
-        y: 722,
-        width: 200,
-        height: 60,
+        x: 308,
+        y: 680,
+        width: 235,
+        height: 65,
         type: "signature",
         label: "Signature client",
         required: true,

@@ -49,6 +49,7 @@ export default function SessionDetailPage() {
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [sendingConvention, setSendingConvention] = useState<string | null>(null);
   const [sendingAttestation, setSendingAttestation] = useState<string | null>(null);
+  const [sendingCertificat, setSendingCertificat] = useState<string | null>(null);
   const [emailMsg, setEmailMsg] = useState("");
   const [evalLoading, setEvalLoading] = useState(false);
   const [evalMsg, setEvalMsg] = useState("");
@@ -421,6 +422,28 @@ export default function SessionDetailPage() {
       notify.error("Erreur réseau");
     } finally {
       setSendingAttestation(null);
+    }
+  };
+
+  // Envoi manuel du certificat de réalisation au financeur (entreprise
+  // du stagiaire, ou stagiaire si individuel).
+  const handleSendCertificat = async (inscriptionId: string) => {
+    if (sendingCertificat) return;
+    setSendingCertificat(inscriptionId);
+    try {
+      const res = await fetch(`/api/inscriptions/${inscriptionId}/envoyer-certificat`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify.error("Envoi impossible", data.error);
+      } else {
+        notify.success("Certificat envoyé", data.destinataireEmail);
+      }
+    } catch {
+      notify.error("Erreur réseau");
+    } finally {
+      setSendingCertificat(null);
     }
   };
 
@@ -1015,9 +1038,20 @@ export default function SessionDetailPage() {
                         onClick={() => handleSendAttestation(insc.id)}
                         disabled={sendingAttestation === insc.id}
                         className="text-emerald-500 hover:text-emerald-400 px-1 disabled:opacity-50"
-                        title="Envoyer l'attestation par email"
+                        title="Envoyer l'attestation par email au stagiaire"
                       >
                         {sendingAttestation === insc.id ? "…" : <Mail className="h-3.5 w-3.5 inline" />}
+                      </button>
+                      <a href={`/api/pdf/certificat-realisation/${id}/${insc.contact.id}`} target="_blank" className="text-blue-600 hover:underline px-1" title="Télécharger le certificat de réalisation (Qualiopi)">
+                        Cert.
+                      </a>
+                      <button
+                        onClick={() => handleSendCertificat(insc.id)}
+                        disabled={sendingCertificat === insc.id}
+                        className="text-blue-500 hover:text-blue-400 px-1 disabled:opacity-50"
+                        title="Envoyer le certificat de réalisation par email au financeur (entreprise du stagiaire)"
+                      >
+                        {sendingCertificat === insc.id ? "…" : <Send className="h-3.5 w-3.5 inline" />}
                       </button>
                     </div>
                   ))}

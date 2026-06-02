@@ -331,6 +331,46 @@ export function attestationEmail(data: {
   };
 }
 
+// Certificat de réalisation : document Qualiopi obligatoire (art. L.6353-1)
+// envoyé au FINANCEUR (entreprise du stagiaire OU stagiaire lui-même si
+// individuel) pour justifier la réalisation de l'action et déclencher
+// le paiement.
+export function certificatRealisationEmail(data: {
+  destinataireLabel: string; // "Acme Corp" ou "Jean Dupont"
+  stagiaireNom: string; // toujours nominatif sur le PDF
+  formationTitre: string;
+  dateAction: string; // JJ/MM/AAAA
+  duree: number; // heures
+}) {
+  const destinataire = escapeHtml(data.destinataireLabel);
+  const stagiaire = escapeHtml(data.stagiaireNom);
+  const formation = escapeHtml(data.formationTitre);
+  const dateAction = escapeHtml(data.dateAction);
+  return {
+    subject: `Certificat de réalisation — ${data.formationTitre} (${data.stagiaireNom})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1e40af; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Certificat de réalisation</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${destinataire}</strong>,</p>
+          <p>Suite à la réalisation de la formation, vous trouverez ci-joint le <strong>certificat de réalisation</strong> pour :</p>
+          <div style="background: #eff6ff; border-left: 4px solid #1e40af; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+            <p style="margin: 0 0 6px;"><strong>Stagiaire :</strong> ${stagiaire}</p>
+            <p style="margin: 0 0 6px;"><strong>Action :</strong> ${formation}</p>
+            <p style="margin: 0 0 6px;"><strong>Date :</strong> ${dateAction}</p>
+            <p style="margin: 0;"><strong>Durée :</strong> ${data.duree} heures</p>
+          </div>
+          <p>Ce certificat fait foi de la réalisation de l'action concourant au développement des compétences au sens de l'article L.6353-1 du Code du travail. Il vous est nécessaire pour justifier la prise en charge auprès de votre financeur (OPCO, CPF, France Travail, etc.).</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Cordialement,<br>L'équipe RFC</p>
+        </div>
+      </div>
+    `,
+  };
+}
+
 export function evaluationEmail(data: {
   stagiaire: { prenom: string; nom: string };
   formation: { titre: string };

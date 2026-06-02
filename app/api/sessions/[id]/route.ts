@@ -66,6 +66,16 @@ export const PUT = withErrorHandlerParams(async (req: NextRequest, { params }: {
         ),
       )
       .catch((err) => logger.warn("auto-attestation.import_failed", { error: String(err) }));
+    // Envoi auto des certificats de réalisation au financeur (entreprise du
+    // stagiaire ou stagiaire lui-même si individuel). Document Qualiopi
+    // obligatoire art. L.6353-1.
+    import("@/lib/automations/auto-certificat")
+      .then(({ sendCertificatsOnSessionTerminee }) =>
+        sendCertificatsOnSessionTerminee(params.id).catch((err) =>
+          logger.warn("auto-certificat.batch_failed", { error: String(err) }),
+        ),
+      )
+      .catch((err) => logger.warn("auto-certificat.import_failed", { error: String(err) }));
   }
 
   // Notif formateur quand assignation change vers un nouveau formateur

@@ -1117,6 +1117,13 @@ model Parametres {
   banque             String @default("")
   moyensPaiement     String @default("virement,cpf,opco")
 
+  // Représentant légal du dispensateur (utilisé sur le Certificat de Réalisation
+  // obligatoire Qualiopi art. L.6353-1). Trois champs séparés pour pouvoir
+  // afficher "Monsieur <prenom> <nom>" + qualité sur le document.
+  representantNom     String @default("")
+  representantPrenom  String @default("")
+  representantQualite String @default("") // ex "Directeur", "Gérant"
+
   // Identite visuelle (branding)
   logoUrl         String?
   couleurPrimaire String  @default("#dc2626")

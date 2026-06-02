@@ -2,6 +2,7 @@
 // Splitting was done in Chantier 10 — see ./shared for the common helpers.
 export { conventionPdf } from "./convention";
 export { attestationPdf } from "./attestation";
+export { certificatRealisationPdf } from "./certificat-realisation";
 export { convocationPdf } from "./convocation";
 export { devisPdf } from "./devis";
 export { facturePdf } from "./facture";

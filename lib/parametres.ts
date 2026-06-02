@@ -19,6 +19,9 @@ export type EntrepriseParams = {
   bic: string;
   banque: string;
   moyensPaiement: string;
+  representantNom: string;
+  representantPrenom: string;
+  representantQualite: string;
   logoUrl: string | null;
   couleurPrimaire: string;
   featureFlags: Record<string, boolean>;
@@ -43,6 +46,9 @@ const DEFAULTS: EntrepriseParams = {
   bic: "",
   banque: "",
   moyensPaiement: "virement,cpf,opco",
+  representantNom: "",
+  representantPrenom: "",
+  representantQualite: "",
   logoUrl: null,
   couleurPrimaire: "#dc2626",
   featureFlags: {},

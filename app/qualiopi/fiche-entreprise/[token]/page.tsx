@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle2, AlertCircle, Loader2, Building2, Users, BookOpen, Accessibility } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, Building2, Users, BookOpen, Accessibility, Plus, Trash2, UserPlus } from "lucide-react";
 import { useApi, useApiMutation, ApiError } from "@/hooks/useApi";
 
 type Fiche = {
@@ -35,7 +35,19 @@ type Fiche = {
   contraintesHoraires: string | null;
   aStagiairesHandicap: boolean;
   detailsHandicap: string | null;
+  stagiairesData?: string | null;
 };
+
+type StagiaireRow = {
+  prenom: string;
+  nom: string;
+  email: string;
+  dateNaissance: string;
+  sexe: string;
+  lieuNaissance: string;
+};
+
+const emptyStagiaire: StagiaireRow = { prenom: "", nom: "", email: "", dateNaissance: "", sexe: "", lieuNaissance: "" };
 
 const SECTEURS = [
   { value: "securite_privee", label: "Securite privee" },
@@ -66,6 +78,7 @@ export default function FichePreFormationEntreprisePage() {
   const [submitError, setSubmitError] = useState("");
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
+  const [stagiaires, setStagiaires] = useState<StagiaireRow[]>([]);
 
   const loading = isLoading;
   const saving = submitMutation.isMutating;
@@ -94,13 +107,42 @@ export default function FichePreFormationEntreprisePage() {
 
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
 
+  const addStagiaire = () => setStagiaires((p) => [...p, { ...emptyStagiaire }]);
+  const removeStagiaire = (i: number) => setStagiaires((p) => p.filter((_, idx) => idx !== i));
+  const updateStagiaire = (i: number, k: keyof StagiaireRow, v: string) =>
+    setStagiaires((p) => p.map((s, idx) => (idx === i ? { ...s, [k]: v } : s)));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError("");
+
+    // Ne garde que les stagiaires réellement renseignés (prénom + nom + email).
+    const stagiairesRemplis = stagiaires.filter(
+      (s) => s.prenom.trim() && s.nom.trim() && s.email.trim(),
+    );
+    // Détecte une ligne partiellement remplie (au moins un champ mais incomplète).
+    const ligneIncomplete = stagiaires.some(
+      (s) =>
+        (s.prenom.trim() || s.nom.trim() || s.email.trim() || s.dateNaissance || s.sexe || s.lieuNaissance) &&
+        !(s.prenom.trim() && s.nom.trim() && s.email.trim()),
+    );
+    if (ligneIncomplete) {
+      setSubmitError("Chaque stagiaire doit avoir au minimum un prénom, un nom et un email.");
+      return;
+    }
+
     const payload = {
       ...form,
       effectifTotal: form.effectifTotal ? Number(form.effectifTotal) : null,
       effectifConcerne: form.effectifConcerne ? Number(form.effectifConcerne) : null,
+      stagiaires: stagiairesRemplis.map((s) => ({
+        prenom: s.prenom.trim(),
+        nom: s.nom.trim(),
+        email: s.email.trim(),
+        dateNaissance: s.dateNaissance || null,
+        sexe: s.sexe || null,
+        lieuNaissance: s.lieuNaissance || null,
+      })),
     };
     try {
       await submitMutation.trigger(payload);
@@ -138,6 +180,13 @@ export default function FichePreFormationEntreprisePage() {
     const objectifLabel = OBJECTIFS.find((o) => o.value === fiche.objectifPrincipal)?.label
       ?? (fiche.objectifPrincipal ? fiche.objectifPrincipal.replace(/_/g, " ") : "—");
 
+    let stagiairesRecap: StagiaireRow[] = [];
+    try {
+      stagiairesRecap = fiche.stagiairesData ? (JSON.parse(fiche.stagiairesData) as StagiaireRow[]) : [];
+    } catch {
+      stagiairesRecap = [];
+    }
+
     return (
       <div className="min-h-screen bg-gray-100 py-8 px-4">
         <div className="max-w-3xl mx-auto space-y-6">
@@ -171,6 +220,21 @@ export default function FichePreFormationEntreprisePage() {
             <RecapField label="Contexte de travail" value={fiche.contexteTravail} multiline />
             <RecapField label="Contraintes spécifiques" value={fiche.contraintesSpecifiques} multiline />
           </Section>
+
+          {stagiairesRecap.length > 0 && (
+            <Section title={`Stagiaires à former (${stagiairesRecap.length})`} icon={UserPlus}>
+              <div className="space-y-2">
+                {stagiairesRecap.map((s, i) => (
+                  <div key={i} className="text-sm text-gray-900 flex flex-wrap gap-x-2">
+                    <span className="font-medium">{s.prenom} {s.nom}</span>
+                    <span className="text-gray-500">· {s.email}</span>
+                    {s.dateNaissance && <span className="text-gray-500">· né(e) le {new Date(s.dateNaissance).toLocaleDateString("fr-FR")}</span>}
+                    {s.lieuNaissance && <span className="text-gray-500">à {s.lieuNaissance}</span>}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
           <Section title="La formation" icon={BookOpen}>
             <RecapField label="Objectif principal" value={objectifLabel} />
@@ -260,6 +324,66 @@ export default function FichePreFormationEntreprisePage() {
             <Field label="Contraintes particulieres sur le lieu de formation">
               <textarea value={form.contraintesSpecifiques as string} onChange={(e) => set("contraintesSpecifiques", e.target.value)} placeholder="Connexion internet, espace disponible, materiel specifique..." rows={2} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
             </Field>
+          </Section>
+
+          {/* Section 2b - Stagiaires nominatifs */}
+          <Section title="Vos stagiaires à former" icon={UserPlus}>
+            <p className="text-sm text-gray-600 -mt-1">
+              Renseignez chaque personne à former. Nous créerons leur dossier et leur enverrons
+              automatiquement le programme et leur convention dès la signature du devis.
+            </p>
+            {stagiaires.length === 0 && (
+              <p className="text-sm text-gray-400 italic">Aucun stagiaire ajouté pour l&apos;instant.</p>
+            )}
+            <div className="space-y-4">
+              {stagiaires.map((s, i) => (
+                <div key={i} className="border border-gray-200 rounded-lg p-4 bg-gray-50/60 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-500">Stagiaire {i + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeStagiaire(i)}
+                      className="text-gray-400 hover:text-red-600 transition-colors inline-flex items-center gap-1 text-xs"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Retirer
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Prénom *">
+                      <input value={s.prenom} onChange={(e) => updateStagiaire(i, "prenom", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+                    </Field>
+                    <Field label="Nom *">
+                      <input value={s.nom} onChange={(e) => updateStagiaire(i, "nom", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+                    </Field>
+                  </div>
+                  <Field label="Email *">
+                    <input type="email" value={s.email} onChange={(e) => updateStagiaire(i, "email", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+                  </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Field label="Date de naissance">
+                      <input type="date" value={s.dateNaissance} onChange={(e) => updateStagiaire(i, "dateNaissance", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+                    </Field>
+                    <Field label="Sexe">
+                      <select value={s.sexe} onChange={(e) => updateStagiaire(i, "sexe", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white">
+                        <option value="">—</option>
+                        <option value="M">Homme</option>
+                        <option value="F">Femme</option>
+                      </select>
+                    </Field>
+                    <Field label="Lieu de naissance">
+                      <input value={s.lieuNaissance} onChange={(e) => updateStagiaire(i, "lieuNaissance", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addStagiaire}
+              className="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700"
+            >
+              <Plus className="h-4 w-4" /> Ajouter un stagiaire
+            </button>
           </Section>
 
           {/* Section 3 - Formation */}

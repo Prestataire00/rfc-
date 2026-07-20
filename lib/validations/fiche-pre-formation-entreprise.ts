@@ -17,6 +17,17 @@ export const OBJECTIFS_FORMATION = [
   "autre",
 ] as const;
 
+// Un stagiaire nominatif saisi par l'entreprise sur la fiche de besoin.
+export const stagiaireSaisiSchema = z.object({
+  prenom: z.string().trim().min(1, "Prénom requis"),
+  nom: z.string().trim().min(1, "Nom requis"),
+  email: z.string().trim().email("Email invalide"),
+  dateNaissance: z.string().trim().optional().nullable(), // ISO "YYYY-MM-DD"
+  sexe: z.enum(["M", "F"]).optional().nullable(),
+  lieuNaissance: z.string().trim().optional().nullable(),
+});
+export type StagiaireSaisi = z.infer<typeof stagiaireSaisiSchema>;
+
 // Reponses publiques au questionnaire (via token)
 export const fichePreFormationEntrepriseReponseSchema = z.object({
   // Section 1
@@ -42,6 +53,14 @@ export const fichePreFormationEntrepriseReponseSchema = z.object({
 });
 
 export type FichePreFormationEntrepriseReponseData = z.infer<typeof fichePreFormationEntrepriseReponseSchema>;
+
+// Réponse publique (via token) : identique + liste nominative des stagiaires.
+// `stagiaires` n'est PAS une colonne de la fiche → schéma séparé pour ne pas
+// polluer les routes admin qui spreadent les données directement dans Prisma.
+export const fichePreFormationEntreprisePublicReponseSchema = fichePreFormationEntrepriseReponseSchema.extend({
+  stagiaires: z.array(stagiaireSaisiSchema).optional().default([]),
+});
+export type FichePreFormationEntreprisePublicReponseData = z.infer<typeof fichePreFormationEntreprisePublicReponseSchema>;
 
 // Creation/maj cote admin
 export const fichePreFormationEntrepriseAdminSchema = fichePreFormationEntrepriseReponseSchema.extend({

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fichePreFormationEntrepriseReponseSchema } from "@/lib/validations/fiche-pre-formation-entreprise";
+import { fichePreFormationEntreprisePublicReponseSchema } from "@/lib/validations/fiche-pre-formation-entreprise";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { parseBody } from "@/lib/validations/helpers";
 import { enforceRateLimit } from "@/lib/with-rate-limit";
@@ -53,31 +53,97 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     return NextResponse.json({ error: "Fiche deja soumise" }, { status: 409 });
   }
 
-  const data = await parseBody(req, fichePreFormationEntrepriseReponseSchema);
+  const data = await parseBody(req, fichePreFormationEntreprisePublicReponseSchema);
+  // `stagiaires` n'est pas une colonne de la fiche : on le sort du spread et on
+  // le matérialise en Contact + JSON `stagiairesData`.
+  const { stagiaires, ...ficheData } = data;
 
-  // Atomique : fiche → repondu + maj entreprise.
+  const parseNaissance = (s?: string | null): Date | null => {
+    if (!s || !s.trim()) return null;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // Atomique : fiche → repondu + maj entreprise + création/déduplication des
+  // contacts stagiaires (par email) rattachés à l'entreprise.
   const updated = await prisma.$transaction(async (tx) => {
+    // Crée ou met à jour un Contact par email pour chaque stagiaire saisi.
+    const stagiairesData: Array<{
+      contactId: string;
+      prenom: string;
+      nom: string;
+      email: string;
+      dateNaissance: string | null;
+      sexe: string | null;
+      lieuNaissance: string | null;
+    }> = [];
+    for (const s of stagiaires) {
+      const email = s.email.toLowerCase();
+      const identite = {
+        prenom: s.prenom,
+        nom: s.nom,
+        dateNaissance: parseNaissance(s.dateNaissance),
+        sexe: s.sexe ?? undefined,
+        lieuNaissance: s.lieuNaissance ?? undefined,
+      };
+      const contact = await tx.contact.upsert({
+        where: { email },
+        create: {
+          email,
+          type: "stagiaire",
+          entrepriseId: fiche.entrepriseId ?? undefined,
+          ...identite,
+        },
+        // Ne rétrograde jamais un client existant ; complète juste l'identité.
+        update: {
+          entrepriseId: fiche.entrepriseId ?? undefined,
+          ...identite,
+        },
+        select: { id: true },
+      });
+      stagiairesData.push({
+        contactId: contact.id,
+        prenom: s.prenom,
+        nom: s.nom,
+        email,
+        dateNaissance: s.dateNaissance ?? null,
+        sexe: s.sexe ?? null,
+        lieuNaissance: s.lieuNaissance ?? null,
+      });
+    }
+
     const u = await tx.fichePreFormationEntreprise.update({
       where: { id: fiche.id },
       data: {
-        ...data,
+        ...ficheData,
+        stagiairesData: JSON.stringify(stagiairesData),
         statut: "repondu",
         dateReponse: new Date(),
       },
     });
 
-    if (fiche.entrepriseId && data.effectifTotal) {
+    if (fiche.entrepriseId && ficheData.effectifTotal) {
       await tx.entreprise.update({
         where: { id: fiche.entrepriseId },
         data: {
-          effectif: data.effectifTotal,
-          secteur: data.secteurActivite || fiche.entreprise?.secteur || null,
+          effectif: ficheData.effectifTotal,
+          secteur: ficheData.secteurActivite || fiche.entreprise?.secteur || null,
         },
+      });
+    }
+
+    // Nombre de stagiaires renseignés → aligne la Demande (capaciteMax session).
+    if (fiche.demandeId && stagiairesData.length > 0) {
+      await tx.demande.update({
+        where: { id: fiche.demandeId },
+        data: { nbStagiaires: stagiairesData.length },
       });
     }
 
     return u;
   });
+
+  const nbStagiairesSaisis = stagiaires.length;
 
   // ── Auto-génération du devis brouillon (hors transaction) ─────────────
   // Décision (2026-06-01, v2 flow) : à la soumission de la fiche, on génère
@@ -104,7 +170,11 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   let autoDevisMontantTTC: number | null = null;
   if (fiche.entrepriseId && formation && !dejaUnDevis) {
     try {
-      const quantite = Math.max(1, updated.effectifConcerne ?? data.effectifConcerne ?? 1);
+      // Priorité au nombre de stagiaires nominatifs saisis ; sinon l'effectif déclaré.
+      const quantite = Math.max(
+        1,
+        nbStagiairesSaisis > 0 ? nbStagiairesSaisis : (updated.effectifConcerne ?? data.effectifConcerne ?? 1),
+      );
       const tarifUnit = formation.tarif ?? 0;
       const montantHT = tarifUnit * quantite;
       const tauxTVA = 20;
@@ -193,9 +263,12 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   const notifTitre = autoDevisId
     ? "Fiche reçue + devis brouillon généré"
     : "Fiche pré-formation reçue";
+  const stagiairesSuffix = nbStagiairesSaisis > 0
+    ? ` — ${nbStagiairesSaisis} stagiaire${nbStagiairesSaisis > 1 ? "s" : ""} renseigné${nbStagiairesSaisis > 1 ? "s" : ""}`
+    : "";
   const notifMessage = autoDevisId && autoDevisNumero && autoDevisMontantTTC !== null
-    ? `${clientLabel} — ${autoDevisNumero} (${formatCurrency(autoDevisMontantTTC)}) à réviser avant envoi signature`
-    : `${clientLabel} a répondu à la fiche pré-formation. À traiter pour générer le devis.`;
+    ? `${clientLabel} — ${autoDevisNumero} (${formatCurrency(autoDevisMontantTTC)}) à réviser avant envoi signature${stagiairesSuffix}`
+    : `${clientLabel} a répondu à la fiche pré-formation${stagiairesSuffix}. À traiter pour générer le devis.`;
   await notifyAdmins({
     titre: notifTitre,
     message: notifMessage,

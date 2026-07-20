@@ -121,6 +121,57 @@ export async function autoCreateSessionAndFicheEntrepriseOnDevisSigned(
     );
   }
 
+  // Auto-inscription des stagiaires nominatifs pré-saisis par l'entreprise dans
+  // la fiche de besoin (champ FichePreFormationEntreprise.stagiairesData rempli à
+  // la soumission). On les inscrit sur la session brouillon qui vient d'être
+  // créée ; chaque inscription déclenche convention + programme + fiche stagiaire.
+  try {
+    const ficheAvecStagiaires = await prisma.fichePreFormationEntreprise.findFirst({
+      where: { demandeId: demande.id, stagiairesData: { not: "[]" } },
+      orderBy: { createdAt: "asc" },
+      select: { stagiairesData: true },
+    });
+    const contactIds: string[] = ficheAvecStagiaires
+      ? (JSON.parse(ficheAvecStagiaires.stagiairesData) as Array<{ contactId?: string }>)
+          .map((s) => s.contactId)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      : [];
+
+    for (const contactId of contactIds) {
+      const existing = await prisma.inscription.findUnique({
+        where: { contactId_sessionId: { contactId, sessionId: result.sessionId } },
+        select: { id: true },
+      });
+      if (existing) continue;
+
+      const inscription = await prisma.inscription.create({
+        data: { contactId, sessionId: result.sessionId, statut: "confirmee" },
+        select: { id: true },
+      });
+
+      // Suivi post-inscription (fire-and-forget), identique à la route POST inscriptions.
+      autoCreateFicheStagiaireOnInscription(inscription.id).catch((err) =>
+        logger.warn("phase-3.auto-inscription.fiche-stagiaire-failed", { error: String(err) }),
+      );
+      import("@/lib/automations/auto-convention")
+        .then(({ sendConventionOnInscription }) =>
+          sendConventionOnInscription(inscription.id).catch((err) =>
+            logger.warn("phase-3.auto-inscription.convention-failed", { error: String(err) }),
+          ),
+        )
+        .catch((err) => logger.warn("phase-3.auto-inscription.convention-import-failed", { error: String(err) }));
+      import("@/lib/automations/auto-programme")
+        .then(({ sendProgrammeOnInscription }) =>
+          sendProgrammeOnInscription(inscription.id).catch((err) =>
+            logger.warn("phase-3.auto-inscription.programme-failed", { error: String(err) }),
+          ),
+        )
+        .catch((err) => logger.warn("phase-3.auto-inscription.programme-import-failed", { error: String(err) }));
+    }
+  } catch (err) {
+    logger.warn("phase-3.auto-inscription-failed", { error: String(err) });
+  }
+
   // Notif admin succès
   await notifyAdmins({
     titre: "Devis signé — session brouillon créée",

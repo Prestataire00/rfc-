@@ -140,15 +140,19 @@ export function EmargementGrid({
     field: "matin" | "apresMidi",
     current: boolean,
   ) => {
-    const presence = getPresence(contactId, dateStr);
+    // PATCH ciblé sur le seul créneau cliqué : pose un statut explicite
+    // (present / absent) sans toucher l'autre demi-journée. Le statut "absent"
+    // désactive le lien de signature du stagiaire pour ce créneau ; re-cocher
+    // (present) le réactive.
+    const creneau = field === "matin" ? "matin" : "apres_midi";
     await fetch(`${apiBasePath}/${sessionId}/presence`, {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contactId,
         date: dateStr,
-        matin: field === "matin" ? !current : presence?.matin ?? false,
-        apresMidi: field === "apresMidi" ? !current : presence?.apresMidi ?? false,
+        creneau,
+        statut: !current ? "present" : "absent",
       }),
     });
     await fetchData();

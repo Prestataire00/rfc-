@@ -161,9 +161,9 @@ export default function EmargementPublicPage({ params }: { params: { token: stri
                 <button
                   key={s.id}
                   onClick={() => setSelectedContact(s.id)}
-                  disabled={s.presence?.signed}
+                  disabled={s.presence?.signed || s.presence?.statut === "absent"}
                   className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-                    s.presence?.signed
+                    s.presence?.signed || s.presence?.statut === "absent"
                       ? "border-gray-700 bg-gray-800/50 opacity-50"
                       : "border-gray-600 bg-gray-900 hover:bg-gray-700 hover:border-gray-500"
                   }`}
@@ -172,14 +172,36 @@ export default function EmargementPublicPage({ params }: { params: { token: stri
                   {s.presence?.signed && (
                     <span className="text-xs text-emerald-400 ml-2">Deja signe</span>
                   )}
+                  {!s.presence?.signed && s.presence?.statut === "absent" && (
+                    <span className="text-xs text-amber-400 ml-2">Marqué absent</span>
+                  )}
                 </button>
               ))}
             </div>
           </div>
         )}
 
+        {/* Stagiaire marqué absent par le formateur : signature impossible */}
+        {selectedContact && selected?.presence?.statut === "absent" && (
+          <div className="bg-gray-800 rounded-xl p-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-3" />
+            <p className="text-gray-100 font-semibold mb-1">
+              {selected?.prenom} {selected?.nom} — marqué(e) absent(e)
+            </p>
+            <p className="text-sm text-gray-400">
+              Le formateur vous a marqué(e) absent(e) pour ce créneau. La signature n&apos;est pas possible.
+              S&apos;il s&apos;agit d&apos;une erreur, rapprochez-vous du formateur.
+            </p>
+            {!data.isOtp && (
+              <button onClick={() => setSelectedContact(null)} className="mt-3 text-xs text-red-400 underline">
+                Choisir un autre nom
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Formulaire de signature */}
-        {selectedContact && (
+        {selectedContact && selected?.presence?.statut !== "absent" && (
           <div className="bg-gray-800 rounded-xl p-5 space-y-5">
             <div>
               <p className="text-sm text-gray-400 mb-1">Stagiaire</p>

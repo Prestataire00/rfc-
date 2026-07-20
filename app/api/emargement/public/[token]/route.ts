@@ -122,9 +122,25 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
   }
 
+  const isMatin = emToken.creneau === "matin";
+
+  // Le formateur/admin a-t-il marqué ce stagiaire absent sur ce créneau ?
+  // Dans ce cas, la signature est bloquée (lien désactivé). Il redevient
+  // possible de signer si le formateur le re-coche présent.
+  const existante = await prisma.feuillePresence.findUnique({
+    where: { sessionId_contactId_date: { sessionId: emToken.sessionId, contactId, date: emToken.date } },
+    select: { statutMatin: true, statutApresMidi: true },
+  });
+  const statutActuel = isMatin ? existante?.statutMatin : existante?.statutApresMidi;
+  if (statutActuel === "absent") {
+    return NextResponse.json(
+      { error: "Vous avez été marqué(e) absent(e) par le formateur pour ce créneau. La signature n'est pas possible. Rapprochez-vous du formateur si c'est une erreur." },
+      { status: 403 },
+    );
+  }
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
   const now = new Date();
-  const isMatin = emToken.creneau === "matin";
   const boolValue = ["present", "en_retard", "depart_anticipe"].includes(statut);
 
   const updateData = isMatin

@@ -1,16 +1,12 @@
-// Envoi automatique du programme de formation à la signature d'un devis.
-// Trigger : appel fire-and-forget depuis syncDevisOnSignature (lib/signatures/devis-sync.ts)
-// après passage du devis au statut "signe".
+// Envoi automatique du programme de formation.
+//   1. À la signature d'un devis  → sendProgrammeOnDevisSigned (au contact du devis)
+//      Trigger : syncDevisOnSignature (lib/signatures/devis-sync.ts)
+//   2. À l'inscription d'un stagiaire → sendProgrammeOnInscription (au stagiaire)
+//      Trigger : POST /api/sessions/[id]/inscriptions (fire-and-forget)
 //
-// Comportement :
-//   - Retrouve la formation via la Demande liée au devis (Demande.formationId)
-//   - Génère le PDF programme (lib/pdf/programmePdf) avec le branding RFC
-//   - Envoie par email au contact du devis avec le PDF en pièce jointe
-//   - Log historique action "programme_envoye_auto" + notif admin
-//   - Skip silencieux si : pas de contact/email, pas de Demande liée, ou pas de formationId
-//
-// Idempotence : syncDevisOnSignature ne relance cette fonction qu'une fois
-// (garde `statut === "signe"` en amont), donc pas de double envoi.
+// Dans les deux cas : génère le PDF programme (lib/pdf/programmePdf) avec le
+// branding RFC et l'envoie en pièce jointe, puis log historique + notif admin.
+// Skip silencieux si pas d'email destinataire ou formation introuvable.
 
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
@@ -22,6 +18,44 @@ import { logAction } from "@/lib/historique";
 import { notifyAdmins } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 
+// Construit le PDF programme pour une formation donnée + un nom de fichier propre.
+// Retourne null si la formation est introuvable (loggé par l'appelant).
+async function buildProgrammePdf(
+  formationId: string,
+): Promise<{ buffer: Uint8Array; filename: string; formation: { titre: string; duree: number } } | null> {
+  const formation = await prisma.formation.findUnique({ where: { id: formationId } });
+  if (!formation) return null;
+
+  const parametres = await getParametres();
+  const branding = await resolveBranding(parametres);
+
+  const docDef = programmePdf(
+    {
+      titre: formation.titre,
+      duree: formation.duree,
+      description: formation.description || undefined,
+      publicCible: formation.publicCible || undefined,
+      prerequis: formation.prerequis || undefined,
+      objectifs: formation.objectifs || undefined,
+      contenuProgramme: formation.contenuProgramme || undefined,
+      methodesPedagogiques: formation.methodesPedagogiques || undefined,
+      methodesEvaluation: formation.methodesEvaluation || undefined,
+      moyensTechniques: formation.moyensTechniques || undefined,
+      accessibilite: formation.accessibilite || undefined,
+      indicateursResultats: formation.indicateursResultats || undefined,
+      modalite: formation.modalite || undefined,
+    },
+    { branding },
+  );
+
+  const buffer = await generatePdfBuffer(docDef);
+  const filename = `Programme-${formation.titre.replace(/[^a-zA-Z0-9]+/g, "-").slice(0, 40)}.pdf`;
+  return { buffer, filename, formation: { titre: formation.titre, duree: formation.duree } };
+}
+
+// ==================== 1. À la signature du devis (contact) ====================
+// Idempotence : syncDevisOnSignature ne relance cette fonction qu'une fois
+// (garde `statut === "signe"` en amont), donc pas de double envoi.
 export async function sendProgrammeOnDevisSigned(devisId: string): Promise<void> {
   const devis = await prisma.devis.findUnique({
     where: { id: devisId },
@@ -48,61 +82,33 @@ export async function sendProgrammeOnDevisSigned(devisId: string): Promise<void>
     return;
   }
 
-  const formation = await prisma.formation.findUnique({
-    where: { id: demande.formationId },
-  });
-  if (!formation) {
+  const built = await buildProgrammePdf(demande.formationId);
+  if (!built) {
     logger.warn("auto-programme.formation_not_found", { devisId, formationId: demande.formationId });
     return;
   }
-
-  const parametres = await getParametres();
-  const branding = await resolveBranding(parametres);
-
-  const docDef = programmePdf(
-    {
-      titre: formation.titre,
-      duree: formation.duree,
-      description: formation.description || undefined,
-      publicCible: formation.publicCible || undefined,
-      prerequis: formation.prerequis || undefined,
-      objectifs: formation.objectifs || undefined,
-      contenuProgramme: formation.contenuProgramme || undefined,
-      methodesPedagogiques: formation.methodesPedagogiques || undefined,
-      methodesEvaluation: formation.methodesEvaluation || undefined,
-      moyensTechniques: formation.moyensTechniques || undefined,
-      accessibilite: formation.accessibilite || undefined,
-      indicateursResultats: formation.indicateursResultats || undefined,
-      modalite: formation.modalite || undefined,
-    },
-    { branding },
-  );
-
-  const buffer = await generatePdfBuffer(docDef);
 
   const contact = devis.contact;
   const mail = programmeFormationEmail({
     destinataireNom: `${contact.prenom} ${contact.nom}`,
     entrepriseNom: devis.entreprise?.nom ?? null,
-    formationTitre: formation.titre,
-    duree: formation.duree,
+    formationTitre: built.formation.titre,
+    duree: built.formation.duree,
   });
-
-  const filename = `Programme-${formation.titre.replace(/[^a-zA-Z0-9]+/g, "-").slice(0, 40)}.pdf`;
 
   try {
     const envoi = await sendEmail({
       to: contact.email,
       subject: mail.subject,
       html: mail.html,
-      attachments: [{ filename, content: Buffer.from(buffer) }],
+      attachments: [{ filename: built.filename, content: Buffer.from(built.buffer) }],
       log: { contactId: contact.id },
     });
     if (envoi.skipped) {
       logger.warn("auto-programme.email_skipped", { devisId });
       await notifyAdmins({
         titre: "Programme de formation non envoyé",
-        message: `Devis ${devis.numero} signé — ${formation.titre}. Service mail non configuré ou destinataire refusé. Renvoyez manuellement.`,
+        message: `Devis ${devis.numero} signé — ${built.formation.titre}. Service mail non configuré ou destinataire refusé. Renvoyez manuellement.`,
         type: "warning",
         lien: `/commercial/devis/${devis.id}`,
       }).catch(() => {});
@@ -110,7 +116,7 @@ export async function sendProgrammeOnDevisSigned(devisId: string): Promise<void>
     }
     await logAction({
       action: "programme_envoye_auto",
-      label: `Programme "${formation.titre}" envoyé auto à ${contact.email} (signature devis ${devis.numero})`,
+      label: `Programme "${built.formation.titre}" envoyé auto à ${contact.email} (signature devis ${devis.numero})`,
       lien: `/commercial/devis/${devis.id}`,
       contactId: contact.id,
       entrepriseId: devis.entrepriseId ?? undefined,
@@ -118,11 +124,73 @@ export async function sendProgrammeOnDevisSigned(devisId: string): Promise<void>
     }).catch(() => {});
     await notifyAdmins({
       titre: "Programme de formation envoyé",
-      message: `Programme "${formation.titre}" envoyé à ${contact.prenom} ${contact.nom} (${contact.email}) — signature devis ${devis.numero}`,
+      message: `Programme "${built.formation.titre}" envoyé à ${contact.prenom} ${contact.nom} (${contact.email}) — signature devis ${devis.numero}`,
       type: "success",
       lien: `/commercial/devis/${devis.id}`,
     }).catch(() => {});
   } catch (err) {
     logger.warn("auto-programme.send_failed", { devisId, error: String(err) });
+  }
+}
+
+// ==================== 2. À l'inscription d'un stagiaire ====================
+// Envoie le programme au stagiaire inscrit (même déclenchement que la convention).
+// Skip silencieux si le contact n'a pas d'email.
+export async function sendProgrammeOnInscription(inscriptionId: string): Promise<void> {
+  const inscription = await prisma.inscription.findUnique({
+    where: { id: inscriptionId },
+    include: {
+      contact: { include: { entreprise: true } },
+      session: { select: { id: true, formationId: true } },
+    },
+  });
+  if (!inscription) {
+    logger.warn("auto-programme.inscription_not_found", { inscriptionId });
+    return;
+  }
+  if (!inscription.contact?.email) {
+    logger.warn("auto-programme.inscription_no_contact_email", { inscriptionId });
+    return;
+  }
+
+  const built = await buildProgrammePdf(inscription.session.formationId);
+  if (!built) {
+    logger.warn("auto-programme.inscription_formation_not_found", {
+      inscriptionId,
+      formationId: inscription.session.formationId,
+    });
+    return;
+  }
+
+  const contact = inscription.contact;
+  const mail = programmeFormationEmail({
+    destinataireNom: `${contact.prenom} ${contact.nom}`,
+    entrepriseNom: contact.entreprise?.nom ?? null,
+    formationTitre: built.formation.titre,
+    duree: built.formation.duree,
+  });
+
+  try {
+    const envoi = await sendEmail({
+      to: contact.email,
+      subject: mail.subject,
+      html: mail.html,
+      attachments: [{ filename: built.filename, content: Buffer.from(built.buffer) }],
+      log: { contactId: contact.id, sessionId: inscription.session.id },
+    });
+    if (envoi.skipped) {
+      logger.warn("auto-programme.inscription_email_skipped", { inscriptionId });
+      return;
+    }
+    await logAction({
+      action: "programme_envoye_auto",
+      label: `Programme "${built.formation.titre}" envoyé auto à ${contact.email} (inscription)`,
+      lien: `/sessions/${inscription.session.id}`,
+      contactId: contact.id,
+      entrepriseId: contact.entreprise?.id ?? undefined,
+      sessionId: inscription.session.id,
+    }).catch(() => {});
+  } catch (err) {
+    logger.warn("auto-programme.inscription_send_failed", { inscriptionId, error: String(err) });
   }
 }

@@ -117,6 +117,15 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
     )
     .catch((err) => logger.warn("auto-convention.import_failed", { error: String(err) }));
 
+  // Auto-envoi du programme de formation au stagiaire (fire-and-forget).
+  import("@/lib/automations/auto-programme")
+    .then(({ sendProgrammeOnInscription }) =>
+      sendProgrammeOnInscription(inscription.id).catch((err) =>
+        logger.warn("auto-programme.inscription_failed", { error: String(err) }),
+      ),
+    )
+    .catch((err) => logger.warn("auto-programme.import_failed", { error: String(err) }));
+
   const traineeName = contact ? `${contact.prenom} ${contact.nom}` : "Un stagiaire";
   const sessionTitle = sessionWithFormation?.formation.titre ?? "une session";
 

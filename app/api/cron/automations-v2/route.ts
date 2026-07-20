@@ -80,8 +80,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       if (execDate < sevenDaysAgo) continue;
 
-      // Si l'action cible un contact (email, sms), boucler sur les inscrits
-      const perContact = ["send_email", "send_sms"].includes(rule.actionType);
+      // Si l'action cible un contact (email, sms, programme), boucler sur les inscrits
+      const perContact = ["send_email", "send_programme", "send_sms"].includes(rule.actionType);
 
       if (perContact) {
         for (const insc of session.inscriptions) {

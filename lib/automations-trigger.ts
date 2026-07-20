@@ -165,6 +165,24 @@ export async function triggerAutomation(
             }
             break;
           }
+          case "send_programme": {
+            const prog = await import("@/lib/automations/auto-programme");
+            if (ctx.devisId) {
+              await prog.sendProgrammeOnDevisSigned(ctx.devisId);
+              detail = "Programme envoyé (devis signé)";
+            } else if (ctx.inscriptionId) {
+              await prog.sendProgrammeOnInscription(ctx.inscriptionId);
+              detail = "Programme envoyé (inscription)";
+            } else if (ctx.contactId && ctx.sessionId) {
+              const r = await prog.sendProgrammeToContactSession(ctx.contactId, ctx.sessionId);
+              detail = r.detail;
+              if (!r.ok) status = "error";
+            } else {
+              detail = "Ni devisId, ni inscriptionId, ni (contactId + sessionId)";
+              status = "error";
+            }
+            break;
+          }
           default:
             detail = `Action ${rule.actionType} executee (hook)`;
         }

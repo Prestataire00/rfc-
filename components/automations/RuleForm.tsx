@@ -130,6 +130,8 @@ export function RuleForm({ initial, onSave, onDelete, saving, templates = [] }: 
             <option value="minutes">Minutes</option>
             <option value="hours">Heures</option>
             <option value="days">Jours</option>
+            <option value="weeks">Semaines</option>
+            <option value="months">Mois</option>
           </select>
           {delayType !== "immediate" && (
             <input type="number" min={0} value={delayValue} onChange={(e) => setDelayValue(parseInt(e.target.value) || 0)} className="h-10 w-24 rounded-md border border-gray-600 bg-gray-900 text-sm text-gray-100 px-3" />
@@ -157,6 +159,14 @@ export function RuleForm({ initial, onSave, onDelete, saving, templates = [] }: 
               ))}
             </select>
           </div>
+        )}
+
+        {actionType === "send_programme" && (
+          <p className="text-[11px] text-gray-400 bg-gray-900/60 border border-gray-700 rounded-md px-3 py-2">
+            Envoie automatiquement le PDF du programme de la formation au(x) stagiaire(s) concerné(s).
+            Aucun réglage nécessaire. Exemples d&apos;usage : à la signature du devis, la veille de la formation (J-1),
+            ou un délai après la fin de session (ex. 1 mois).
+          </p>
         )}
 
         {actionType === "change_status" && (

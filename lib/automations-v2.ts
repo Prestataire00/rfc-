@@ -59,6 +59,8 @@ export function applyDelay(triggerDate: Date, delayType: string, delayValue: num
     case "minutes": d.setMinutes(d.getMinutes() + delayValue); break;
     case "hours": d.setHours(d.getHours() + delayValue); break;
     case "days": d.setDate(d.getDate() + delayValue); break;
+    case "weeks": d.setDate(d.getDate() + delayValue * 7); break;
+    case "months": d.setMonth(d.getMonth() + delayValue); break;
     case "immediate": break;
   }
   return d;
@@ -159,6 +161,12 @@ export async function executeAction(
           }
         }
         return { ok: false, detail: "Template non trouve" };
+      }
+
+      case "send_programme": {
+        if (!context.contact?.id) return { ok: false, detail: "Pas de contact" };
+        const { sendProgrammeToContactSession } = await import("@/lib/automations/auto-programme");
+        return await sendProgrammeToContactSession(context.contact.id, context.session.id);
       }
 
       case "send_sms": {

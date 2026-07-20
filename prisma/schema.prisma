@@ -1407,6 +1407,12 @@ model FichePreFormationEntreprise {
   contexteTravail        String?
   contraintesSpecifiques String?
 
+  // Section 2b - Stagiaires nominatifs saisis par l'entreprise. JSON array :
+  // [{ contactId, prenom, nom, email, dateNaissance?, sexe?, lieuNaissance? }]
+  // Les Contact sont créés/déduits à la soumission ; les contactId permettent
+  // l'auto-inscription sur la session à la signature du devis (phase 3).
+  stagiairesData String @default("[]")
+
   // Section 3 - Formation
   objectifPrincipal   String? // renouvellement_carte_pro | premiere_habilitation | recyclage_annuel | autre
   objectifsClient     String?

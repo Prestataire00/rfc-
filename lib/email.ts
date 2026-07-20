@@ -295,6 +295,42 @@ export function conventionEmail(data: {
   };
 }
 
+// Programme de formation : envoyé auto au contact du devis à la signature
+// électronique (cf. lib/automations/auto-programme.ts). PDF en pièce jointe
+// construit côté caller (lib/pdf/programme.ts).
+export function programmeFormationEmail(data: {
+  destinataireNom: string;
+  entrepriseNom: string | null;
+  formationTitre: string;
+  duree: number; // en heures
+}) {
+  const destinataire = escapeHtml(data.destinataireNom);
+  const entreprise = data.entrepriseNom ? escapeHtml(data.entrepriseNom) : null;
+  const formation = escapeHtml(data.formationTitre);
+  return {
+    subject: `Programme de formation — ${data.formationTitre}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 20px;">Rescue Formation Conseil</h1>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px;">Programme de formation</p>
+        </div>
+        <div style="padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <p>Bonjour <strong>${destinataire}</strong>,</p>
+          <p>Nous vous remercions pour la signature de votre devis${entreprise ? ` (${entreprise})` : ""}.</p>
+          <p>Vous trouverez ci-joint le <strong>programme détaillé</strong> de la formation <strong>"${formation}"</strong>.</p>
+          <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+            <p style="margin: 0;"><strong>Durée :</strong> ${data.duree} heures</p>
+          </div>
+          <p>Nos équipes reviendront vers vous prochainement pour organiser les modalités pratiques (dates, lieu, participants).</p>
+          <p>Pour toute question, n'hésitez pas à nous contacter.</p>
+          <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Cordialement,<br>L'équipe RFC</p>
+        </div>
+      </div>
+    `,
+  };
+}
+
 // Attestation de fin de formation : envoyée auto à la clôture de session
 // (statut "terminee") + sur action manuelle depuis /sessions/[id].
 // PDF en pièce jointe construit côté caller.

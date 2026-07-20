@@ -153,4 +153,13 @@ export async function syncDevisOnSignature(
       ),
     )
     .catch((err) => logger.warn("phase-3.import-failed", { error: String(err) }));
+
+  // Envoi auto du programme de formation au contact du devis (fire-and-forget)
+  import("@/lib/automations/auto-programme")
+    .then(({ sendProgrammeOnDevisSigned }) =>
+      sendProgrammeOnDevisSigned(devisId).catch((err) =>
+        logger.warn("auto-programme.failed", { error: String(err) }),
+      ),
+    )
+    .catch((err) => logger.warn("auto-programme.import-failed", { error: String(err) }));
 }

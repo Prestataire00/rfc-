@@ -18,6 +18,8 @@ export type Inscription = {
   // Résultat de la formation : null = pas évalué, true = réussi, false = échec.
   // Filtre le destinataire de l'envoi auto du certificat de réalisation (Qualiopi).
   reussite?: boolean | null;
+  // Note libre (ex. trace de remplacement : "Remplacé par …" / "Remplace …").
+  notes?: string | null;
 };
 
 export type Session = {

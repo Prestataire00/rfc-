@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2, Star, BarChart3, ArrowRight, Info as InfoIcon } from "lucide-react";
+import { ArrowLeft, UserPlus, Trash2, Edit, CalendarDays, Download, FileText, Upload, Mail, Send, ClipboardList, Link2, Users, AlertTriangle, QrCode, Zap, Accessibility, BadgeCheck, CheckCircle2, Star, BarChart3, ArrowRight, ArrowLeftRight, Info as InfoIcon } from "lucide-react";
 
 // Onglets de la fiche session — réorganisation en sous-pages (cliquables).
 // Layout précédent : grid 2 colonnes mélangeant info / fiches / docs / participants.
@@ -28,6 +28,7 @@ import { notify } from "@/lib/toast";
 import { StatusPipeline } from "@/components/shared/StatusPipeline";
 import type { Contact, Session, BesoinClient, BesoinStagiaire } from "./types";
 import { AddInscriptionDialog } from "./AddInscriptionDialog";
+import { RemplacerStagiaireDialog } from "./RemplacerStagiaireDialog";
 import { QRCodeDialog } from "./QRCodeDialog";
 import { PasseportPreventionDialog } from "./PasseportPreventionDialog";
 import { FichesBesoinSection } from "./FichesPreFormationSection";
@@ -57,6 +58,7 @@ export default function SessionDetailPage() {
   const [inscriptionLink, setInscriptionLink] = useState("");
   const [removeConfirm, setRemoveConfirm] = useState<{ id: string; name: string } | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [remplaceTarget, setRemplaceTarget] = useState<{ id: string; name: string } | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [confirmTerminee, setConfirmTerminee] = useState(false);
   const [pendingStatut, setPendingStatut] = useState<string | null>(null);
@@ -1276,6 +1278,9 @@ export default function SessionDetailPage() {
                             {insc.contact.prenom} {insc.contact.nom}
                           </Link>
                           <div className="text-gray-400 text-xs">{insc.contact.email}</div>
+                          {insc.statut === "remplace" && insc.notes && (
+                            <div className="text-purple-500 text-xs mt-0.5">{insc.notes}</div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-gray-400">
                           {insc.contact.entreprise?.nom || <span className="text-gray-400">—</span>}
@@ -1353,13 +1358,24 @@ export default function SessionDetailPage() {
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(insc.dateInscription)}</td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => setRemoveConfirm({ id: insc.id, name: `${insc.contact.prenom} ${insc.contact.nom}` })}
-                            className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-900/20"
-                            title="Supprimer l'inscription"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {insc.statut !== "remplace" && insc.statut !== "annulee" && (
+                              <button
+                                onClick={() => setRemplaceTarget({ id: insc.id, name: `${insc.contact.prenom} ${insc.contact.nom}` })}
+                                className="text-gray-400 hover:text-purple-500 transition-colors p-1 rounded hover:bg-purple-900/20"
+                                title="Remplacer ce stagiaire (indisponibilité)"
+                              >
+                                <ArrowLeftRight className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setRemoveConfirm({ id: insc.id, name: `${insc.contact.prenom} ${insc.contact.nom}` })}
+                              className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-900/20"
+                              title="Supprimer l'inscription"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1562,6 +1578,16 @@ export default function SessionDetailPage() {
         onSubmit={handleAddInscription}
         contactsCount={contacts.length}
         capaciteRestante={(session?.capaciteMax ?? 0) - (session?.inscriptions.length ?? 0)}
+      />
+
+      {/* Remplacement de stagiaire (indisponibilité) */}
+      <RemplacerStagiaireDialog
+        open={!!remplaceTarget}
+        onOpenChange={(o) => { if (!o) setRemplaceTarget(null); }}
+        sessionId={id}
+        replaced={remplaceTarget}
+        availableContacts={availableContacts}
+        onDone={() => { setRemplaceTarget(null); fetchSession(); }}
       />
 
       {/* QR Code modal */}

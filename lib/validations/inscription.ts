@@ -17,3 +17,25 @@ export const inscriptionSchema = z.object({
 });
 
 export type InscriptionData = z.infer<typeof inscriptionSchema>;
+
+// Remplacement d'un stagiaire indisponible par un autre.
+// Soit un contact existant (contactId), soit un nouveau à créer (newContact).
+export const remplacerStagiaireSchema = z
+  .object({
+    contactId: z.string().cuid("contactId invalide").optional(),
+    newContact: z
+      .object({
+        prenom: z.string().trim().min(1, "Prénom requis"),
+        nom: z.string().trim().min(1, "Nom requis"),
+        email: z.string().trim().email("Email invalide"),
+        dateNaissance: z.string().trim().optional().nullable(),
+        sexe: z.enum(["M", "F"]).optional().nullable(),
+        lieuNaissance: z.string().trim().optional().nullable(),
+      })
+      .optional(),
+  })
+  .refine((d) => !!d.contactId || !!d.newContact, {
+    message: "Fournir un contact existant (contactId) ou les infos d'un nouveau (newContact)",
+  });
+
+export type RemplacerStagiaireData = z.infer<typeof remplacerStagiaireSchema>;

@@ -18,6 +18,7 @@ export const INSCRIPTION_STATUTS = {
   annulee: { label: "Annulée", color: "bg-red-500/20 text-red-500" },
   presente: { label: "Présente", color: "bg-emerald-500/20 text-emerald-500" },
   absente: { label: "Absente", color: "bg-orange-500/20 text-orange-500" },
+  remplace: { label: "Remplacé", color: "bg-purple-500/20 text-purple-500" },
 } as const;
 
 export const DEVIS_STATUTS = {

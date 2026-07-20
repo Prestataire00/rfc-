@@ -81,7 +81,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       if (execDate < sevenDaysAgo) continue;
 
       // Si l'action cible un contact (email, sms, programme), boucler sur les inscrits
-      const perContact = ["send_email", "send_programme", "send_sms"].includes(rule.actionType);
+      const perContact = ["send_email", "send_programme", "send_convention", "send_sms"].includes(rule.actionType);
 
       if (perContact) {
         for (const insc of session.inscriptions) {

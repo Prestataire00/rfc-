@@ -183,6 +183,26 @@ export async function triggerAutomation(
             }
             break;
           }
+          case "send_convention": {
+            const conv = await import("@/lib/automations/auto-convention");
+            if (ctx.devisId) {
+              // Signature du devis → convention au client (entreprise). Les
+              // stagiaires reçoivent la leur via l'inscription auto.
+              await conv.sendConventionEntrepriseOnDevisSigned(ctx.devisId);
+              detail = "Convention client envoyée (devis signé)";
+            } else if (ctx.inscriptionId) {
+              await conv.sendConventionOnInscription(ctx.inscriptionId);
+              detail = "Convention envoyée (inscription)";
+            } else if (ctx.contactId && ctx.sessionId) {
+              const r = await conv.sendConventionToContactSession(ctx.contactId, ctx.sessionId);
+              detail = r.detail;
+              if (!r.ok) status = "error";
+            } else {
+              detail = "Ni devisId, ni inscriptionId, ni (contactId + sessionId)";
+              status = "error";
+            }
+            break;
+          }
           default:
             detail = `Action ${rule.actionType} executee (hook)`;
         }

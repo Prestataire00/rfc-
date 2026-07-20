@@ -169,6 +169,13 @@ export function RuleForm({ initial, onSave, onDelete, saving, templates = [] }: 
           </p>
         )}
 
+        {actionType === "send_convention" && (
+          <p className="text-[11px] text-gray-400 bg-gray-900/60 border border-gray-700 rounded-md px-3 py-2">
+            Envoie automatiquement la convention de formation. Sur « Signature du devis », elle part au client
+            (l&apos;entreprise) ; sur un déclencheur de session, à chaque stagiaire concerné. Aucun réglage nécessaire.
+          </p>
+        )}
+
         {actionType === "change_status" && (
           <div>
             <label className="block text-xs text-gray-400 mb-1">Statut cible</label>

@@ -169,6 +169,12 @@ export async function executeAction(
         return await sendProgrammeToContactSession(context.contact.id, context.session.id);
       }
 
+      case "send_convention": {
+        if (!context.contact?.id) return { ok: false, detail: "Pas de contact" };
+        const { sendConventionToContactSession } = await import("@/lib/automations/auto-convention");
+        return await sendConventionToContactSession(context.contact.id, context.session.id);
+      }
+
       case "send_sms": {
         // SMS non implemente — placeholder pour integration Brevo/OVH
         return { ok: false, detail: "SMS non configure (integration Brevo/OVH requise)" };

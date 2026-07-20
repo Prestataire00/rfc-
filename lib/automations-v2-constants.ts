@@ -25,7 +25,7 @@ export type Condition = {
   value: string | string[];
 };
 
-export type ActionType = "send_email" | "send_programme" | "send_sms" | "generate_document" | "create_task" | "change_status";
+export type ActionType = "send_email" | "send_programme" | "send_convention" | "send_sms" | "generate_document" | "create_task" | "change_status";
 
 export type ActionConfig = {
   templateId?: string;
@@ -56,6 +56,7 @@ export const TRIGGER_LABELS: Record<string, string> = {
 export const ACTION_TYPE_LABELS: Record<string, string> = {
   send_email: "Envoyer un email",
   send_programme: "Envoyer le programme de formation",
+  send_convention: "Envoyer la convention de formation",
   send_sms: "Envoyer un SMS",
   generate_document: "Generer un document",
   create_task: "Creer une tache",

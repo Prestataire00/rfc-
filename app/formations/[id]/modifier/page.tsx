@@ -37,6 +37,7 @@ type FormationData = {
   accessibilite?: string | null;
   indicateursResultats?: string | null;
   informationsComplementaires?: string | null;
+  competencesAttestation?: string | null;
   typesFinancement?: string;
   typeActionBpf?: string;
   certifiante?: boolean;
@@ -77,6 +78,7 @@ export default function ModifierFormationPage() {
     accessibilite: "",
     indicateursResultats: "",
     informationsComplementaires: "",
+    competencesAttestation: "",
     typesFinancement: [] as string[],
     typeActionBpf: "adaptation",
     certifiante: false,
@@ -116,6 +118,14 @@ export default function ModifierFormationPage() {
       accessibilite: data.accessibilite ?? "",
       indicateursResultats: data.indicateursResultats ?? "",
       informationsComplementaires: data.informationsComplementaires ?? "",
+      competencesAttestation: (() => {
+        try {
+          const a = JSON.parse(data.competencesAttestation || "[]");
+          return Array.isArray(a) ? a.map((x) => (typeof x === "string" ? x : x?.label)).filter(Boolean).join("\n") : "";
+        } catch {
+          return "";
+        }
+      })(),
       typesFinancement: financements,
       typeActionBpf: data.typeActionBpf ?? "adaptation",
       certifiante: data.certifiante ?? false,
@@ -178,6 +188,9 @@ export default function ModifierFormationPage() {
       accessibilite: form.accessibilite || undefined,
       indicateursResultats: form.indicateursResultats || undefined,
       informationsComplementaires: form.informationsComplementaires || undefined,
+      competencesAttestation: JSON.stringify(
+        (form.competencesAttestation || "").split("\n").map((s) => s.trim()).filter(Boolean),
+      ),
       codeRNCP: form.codeRNCP || undefined,
       dureeRecyclage: form.dureeRecyclage ? Number(form.dureeRecyclage) : null,
       image: form.image || null,
@@ -632,6 +645,18 @@ export default function ModifierFormationPage() {
                 placeholder="Info libre à ajouter au programme. Laissée vide, elle n'apparaît pas dans le PDF partagé."
                 rows={3}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="competencesAttestation">Compétences visées (attestation) — une par ligne</Label>
+              <Textarea
+                id="competencesAttestation"
+                name="competencesAttestation"
+                value={form.competencesAttestation}
+                onChange={handleChange}
+                placeholder={"Être capable de mettre en sécurité les acteurs de la situation\nÊtre capable d'alerter les secours en communiquant les informations nécessaires"}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">Reprises dans le tableau « Compétences visées » de l&apos;attestation (acquises par défaut).</p>
             </div>
           </CardContent>
         </Card>

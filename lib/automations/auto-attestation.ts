@@ -19,7 +19,7 @@
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { attestationPdf } from "@/lib/pdf/templates";
-import { getParametres } from "@/lib/parametres";
+import { getParametres, type EntrepriseParams } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
 import { sendEmail, attestationEmail } from "@/lib/email";
@@ -28,6 +28,75 @@ import { notifyAdmins } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+// Construit les données de l'attestation (mise en page fidèle au modèle RFC)
+// à partir des enregistrements chargés. Réutilisé par l'envoi auto et les
+// routes de téléchargement PDF pour garantir un rendu identique partout.
+export function buildAttestationData(input: {
+  contact: { nom: string; prenom: string; entreprise?: { nom: string; adresse?: string | null; codePostal?: string | null; ville?: string | null } | null };
+  formation: { titre: string; duree: number; objectifs?: string | null; competencesAttestation?: string | null };
+  session: { dateDebut: Date; dateFin: Date; lieu?: string | null };
+  formateur?: { nom: string; prenom: string } | null;
+  parametres: EntrepriseParams;
+}): Parameters<typeof attestationPdf>[0] {
+  const p = input.parametres;
+  const dd = format(new Date(input.session.dateDebut), "dd/MM/yyyy", { locale: fr });
+  const df = format(new Date(input.session.dateFin), "dd/MM/yyyy", { locale: fr });
+  const dateFormation = dd === df ? dd : `du ${dd} au ${df}`;
+
+  const objectifs = (input.formation.objectifs || "")
+    .split("\n")
+    .map((l) => l.replace(/^\s*[•\-*]\s*/, "").trim())
+    .filter(Boolean);
+
+  let competences: { label: string; acquise: boolean }[] = [];
+  try {
+    const raw = JSON.parse(input.formation.competencesAttestation || "[]");
+    if (Array.isArray(raw)) {
+      competences = raw
+        .map((c) => (typeof c === "string" ? c : c?.label))
+        .filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+        .map((label) => ({ label, acquise: true }));
+    }
+  } catch { /* liste vide si JSON invalide */ }
+
+  const ent = input.contact.entreprise;
+  const entrepriseCliente = ent
+    ? [ent.nom, ent.adresse, [ent.codePostal, ent.ville].filter(Boolean).join(" ")].filter(Boolean).join(" ")
+    : undefined;
+
+  const responsable = [p.representantPrenom, p.representantNom].filter(Boolean).join(" ").trim();
+  const formateurNom = input.formateur
+    ? `${input.formateur.prenom} ${input.formateur.nom}`
+    : responsable || p.nomEntreprise;
+
+  return {
+    stagiaire: { nom: input.contact.nom, prenom: input.contact.prenom },
+    organisme: {
+      nom: p.nomEntreprise,
+      responsable: responsable || undefined,
+      adresse: p.adresse || undefined,
+      codePostal: p.codePostal || undefined,
+      ville: p.ville || undefined,
+      telephone: p.telephone || undefined,
+      email: p.email || undefined,
+      siret: p.siret || undefined,
+      nda: p.nda || undefined,
+    },
+    formateurNom,
+    dateFormation,
+    entrepriseCliente,
+    lieuFormation: input.session.lieu || undefined,
+    formation: {
+      titre: input.formation.titre,
+      dureeLabel: `${String(input.formation.duree).padStart(2, "0")} heures`,
+      objectifs,
+    },
+    competences,
+    villeSignature: p.ville || "",
+    dateSignature: format(new Date(), "dd/MM/yyyy", { locale: fr }),
+  };
+}
 
 export type AttestationResult =
   | { status: "sent"; destinataireEmail: string }
@@ -44,7 +113,7 @@ export async function sendAttestationToContact(
       where: { id: sessionId },
       include: { formation: true, formateur: true },
     }),
-    prisma.contact.findUnique({ where: { id: contactId } }),
+    prisma.contact.findUnique({ where: { id: contactId }, include: { entreprise: true } }),
     getParametres(),
   ]);
 
@@ -74,19 +143,7 @@ export async function sendAttestationToContact(
     });
 
     const docDef = attestationPdf(
-      {
-        stagiaire: { nom: contact.nom, prenom: contact.prenom },
-        formation: {
-          titre: session.formation.titre,
-          duree: session.formation.duree,
-          objectifs: session.formation.objectifs || undefined,
-        },
-        session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-        formateur: session.formateur
-          ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
-          : undefined,
-        dateGeneration: format(new Date(), "dd/MM/yyyy", { locale: fr }),
-      },
+      buildAttestationData({ contact, formation: session.formation, session, formateur: session.formateur, parametres }),
       { branding, template: template || undefined },
     );
 

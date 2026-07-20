@@ -7,6 +7,7 @@ import { attestationPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
+import { buildAttestationData } from "@/lib/automations/auto-attestation";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -18,7 +19,7 @@ export const GET = withErrorHandlerParams<{ sessionId: string; contactId: string
         where: { id: params.sessionId },
         include: { formation: true, formateur: true },
       }),
-      prisma.contact.findUnique({ where: { id: params.contactId } }),
+      prisma.contact.findUnique({ where: { id: params.contactId }, include: { entreprise: true } }),
       getParametres(),
     ]);
 
@@ -42,19 +43,10 @@ export const GET = withErrorHandlerParams<{ sessionId: string; contactId: string
       },
     });
 
-    const docDef = attestationPdf({
-      stagiaire: { nom: contact.nom, prenom: contact.prenom },
-      formation: {
-        titre: session.formation.titre,
-        duree: session.formation.duree,
-        objectifs: session.formation.objectifs || undefined,
-      },
-      session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-      formateur: session.formateur
-        ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
-        : undefined,
-      dateGeneration: format(new Date(), "dd/MM/yyyy", { locale: fr }),
-    }, { branding, template: template || undefined });
+    const docDef = attestationPdf(
+      buildAttestationData({ contact, formation: session.formation, session, formateur: session.formateur, parametres }),
+      { branding, template: template || undefined },
+    );
 
     const buffer = await generatePdfBuffer(docDef);
 

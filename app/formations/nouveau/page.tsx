@@ -50,6 +50,7 @@ export default function NouvelleFormationPage() {
     accessibilite: "",
     indicateursResultats: "",
     informationsComplementaires: "",
+    competencesAttestation: "",
     typesFinancement: [] as string[],
     typeActionBpf: "adaptation",
     certifiante: false,
@@ -109,6 +110,11 @@ export default function NouvelleFormationPage() {
       if (form.accessibilite) payload.accessibilite = form.accessibilite;
       if (form.indicateursResultats) payload.indicateursResultats = form.indicateursResultats;
       if (form.informationsComplementaires) payload.informationsComplementaires = form.informationsComplementaires;
+      if (form.competencesAttestation) {
+        payload.competencesAttestation = JSON.stringify(
+          form.competencesAttestation.split("\n").map((s) => s.trim()).filter(Boolean),
+        );
+      }
       if (form.codeRNCP) payload.codeRNCP = form.codeRNCP;
       if (form.dureeRecyclage) payload.dureeRecyclage = Number(form.dureeRecyclage);
       if (form.image) payload.image = form.image;
@@ -554,6 +560,18 @@ export default function NouvelleFormationPage() {
                 placeholder="Info libre à ajouter au programme. Laissée vide, elle n'apparaît pas dans le PDF partagé."
                 rows={3}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="competencesAttestation">Compétences visées (attestation) — une par ligne</Label>
+              <Textarea
+                id="competencesAttestation"
+                name="competencesAttestation"
+                value={form.competencesAttestation}
+                onChange={handleChange}
+                placeholder={"Être capable de mettre en sécurité les acteurs de la situation\nÊtre capable d'alerter les secours en communiquant les informations nécessaires"}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">Reprises dans le tableau « Compétences visées » de l&apos;attestation (acquises par défaut).</p>
             </div>
           </CardContent>
         </Card>

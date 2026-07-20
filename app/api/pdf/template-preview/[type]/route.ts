@@ -120,11 +120,34 @@ export const GET = withErrorHandlerParams<{ type: string }>(async (req: NextRequ
 
     case "attestation":
       docDef = attestationPdf({
-        stagiaire: fakeStagiaire,
-        formation: fakeFormation,
-        session: fakeSession,
-        formateur: fakeFormateur,
-        dateGeneration: "17/06/2026",
+        stagiaire: { nom: fakeStagiaire.nom, prenom: fakeStagiaire.prenom },
+        organisme: {
+          nom: parametres.nomEntreprise,
+          responsable: [parametres.representantPrenom, parametres.representantNom].filter(Boolean).join(" ") || undefined,
+          adresse: parametres.adresse || undefined,
+          codePostal: parametres.codePostal || undefined,
+          ville: parametres.ville || undefined,
+          telephone: parametres.telephone || undefined,
+          email: parametres.email || undefined,
+          siret: parametres.siret || undefined,
+          nda: parametres.nda || undefined,
+        },
+        formateurNom: `${fakeFormateur.prenom} ${fakeFormateur.nom}`,
+        dateFormation: fakeSession.dateDebut,
+        entrepriseCliente: [fakeEntreprise.nom, fakeEntreprise.adresse, `${fakeEntreprise.codePostal} ${fakeEntreprise.ville}`].filter(Boolean).join(" "),
+        lieuFormation: fakeSession.lieu,
+        formation: {
+          titre: fakeFormation.titre,
+          dureeLabel: `${String(fakeFormation.duree).padStart(2, "0")} heures`,
+          objectifs: String(fakeFormation.objectifs || "").split("\n").map((s) => s.replace(/^\s*[•\-*]\s*/, "").trim()).filter(Boolean),
+        },
+        competences: [
+          { label: "Être capable de mettre en sécurité les acteurs de la situation", acquise: true },
+          { label: "Être capable d'examiner une victime et de déterminer le résultat à atteindre", acquise: true },
+          { label: "Être capable d'alerter ou faire alerter en communiquant les informations nécessaires", acquise: true },
+        ],
+        villeSignature: parametres.ville || "—",
+        dateSignature: "17/06/2026",
       }, { branding, template: template || undefined });
       break;
 

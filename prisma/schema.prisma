@@ -196,6 +196,9 @@ model Formation {
   accessibilite        String? // informations sur l'accessibilité PMR
   indicateursResultats String? // indicateurs de résultats
   informationsComplementaires String? // note libre optionnelle affichée dans le PDF du programme si remplie
+  // Compétences visées listées sur l'attestation de fin de formation. JSON :
+  // ["Être capable de …", …]. Acquises par défaut pour chaque stagiaire présent.
+  competencesAttestation String @default("[]")
   typesFinancement     String  @default("[]") // JSON array: opco, cpf, entreprise, etc.
   // Type d'action BPF (Cerfa 10443*17 cadre D2). 11 valeurs réglementaires :
   // adaptation (1) | promotion (2) | prevention (3) | conversion (4) |

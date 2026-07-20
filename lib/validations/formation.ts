@@ -21,6 +21,7 @@ export const formationSchema = z.object({
   accessibilite: z.string().optional(),
   indicateursResultats: z.string().optional(),
   informationsComplementaires: z.string().optional(),
+  competencesAttestation: z.string().optional(), // JSON array de libellés
   typesFinancement: z.string().optional().default("[]"),
   typeActionBpf: z
     .enum([

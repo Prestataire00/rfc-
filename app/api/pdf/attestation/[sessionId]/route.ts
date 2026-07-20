@@ -7,6 +7,7 @@ import { attestationPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
+import { buildAttestationData } from "@/lib/automations/auto-attestation";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -19,7 +20,7 @@ export const GET = withErrorHandlerParams<{ sessionId: string }>(async (_req: Ne
       formateur: true,
       inscriptions: {
         where: { statut: { in: ["presente", "confirmee"] } },
-        include: { contact: true },
+        include: { contact: { include: { entreprise: true } } },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -35,11 +36,6 @@ export const GET = withErrorHandlerParams<{ sessionId: string }>(async (_req: Ne
 
   const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
   const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
-  const dateGeneration = format(new Date(), "dd/MM/yyyy", { locale: fr });
-
-  const formateur = session.formateur
-    ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
-    : undefined;
 
   const parametres = await getParametres();
   const branding = await resolveBranding(parametres);
@@ -63,17 +59,10 @@ export const GET = withErrorHandlerParams<{ sessionId: string }>(async (_req: Ne
       },
     });
 
-    const doc = attestationPdf({
-      stagiaire: { nom: contact.nom, prenom: contact.prenom },
-      formation: {
-        titre: session.formation.titre,
-        duree: session.formation.duree,
-        objectifs: session.formation.objectifs || undefined,
-      },
-      session: { dateDebut, dateFin, lieu: session.lieu || undefined },
-      formateur,
-      dateGeneration,
-    }, { branding, template: template || undefined });
+    const doc = attestationPdf(
+      buildAttestationData({ contact, formation: session.formation, session, formateur: session.formateur, parametres }),
+      { branding, template: template || undefined },
+    );
 
     if (index > 0) {
       const content = [...doc.content] as any[];
@@ -86,18 +75,23 @@ export const GET = withErrorHandlerParams<{ sessionId: string }>(async (_req: Ne
     }
   }
 
-  // Use styles from a first (empty) attestation
-  const firstDoc = attestationPdf({
-    stagiaire: { nom: "", prenom: "" },
-    formation: { titre: session.formation.titre, duree: session.formation.duree },
-    session: { dateDebut, dateFin },
-    dateGeneration,
-  }, { branding });
+  // Reprend marges / police / pied de page du gabarit (une attestation vide).
+  const gabarit = attestationPdf(
+    buildAttestationData({
+      contact: { nom: "", prenom: "" },
+      formation: session.formation,
+      session,
+      formateur: session.formateur,
+      parametres,
+    }),
+    { branding },
+  );
 
   const docDef = {
     content: combinedContent,
-    styles: firstDoc.styles,
-    defaultStyle: firstDoc.defaultStyle,
+    pageMargins: gabarit.pageMargins,
+    footer: gabarit.footer,
+    defaultStyle: gabarit.defaultStyle,
   };
 
   const buffer = await generatePdfBuffer(docDef);

@@ -36,6 +36,7 @@ type FormationData = {
   moyensTechniques?: string | null;
   accessibilite?: string | null;
   indicateursResultats?: string | null;
+  informationsComplementaires?: string | null;
   typesFinancement?: string;
   typeActionBpf?: string;
   certifiante?: boolean;
@@ -75,6 +76,7 @@ export default function ModifierFormationPage() {
     moyensTechniques: "",
     accessibilite: "",
     indicateursResultats: "",
+    informationsComplementaires: "",
     typesFinancement: [] as string[],
     typeActionBpf: "adaptation",
     certifiante: false,
@@ -113,6 +115,7 @@ export default function ModifierFormationPage() {
       moyensTechniques: data.moyensTechniques ?? "",
       accessibilite: data.accessibilite ?? "",
       indicateursResultats: data.indicateursResultats ?? "",
+      informationsComplementaires: data.informationsComplementaires ?? "",
       typesFinancement: financements,
       typeActionBpf: data.typeActionBpf ?? "adaptation",
       certifiante: data.certifiante ?? false,
@@ -174,6 +177,7 @@ export default function ModifierFormationPage() {
       moyensTechniques: form.moyensTechniques || undefined,
       accessibilite: form.accessibilite || undefined,
       indicateursResultats: form.indicateursResultats || undefined,
+      informationsComplementaires: form.informationsComplementaires || undefined,
       codeRNCP: form.codeRNCP || undefined,
       dureeRecyclage: form.dureeRecyclage ? Number(form.dureeRecyclage) : null,
       image: form.image || null,
@@ -616,6 +620,17 @@ export default function ModifierFormationPage() {
                 onChange={handleChange}
                 placeholder="Taux de réussite : 95% — Taux de satisfaction : 4.8/5"
                 rows={2}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="informationsComplementaires">Informations complémentaires (optionnel)</Label>
+              <Textarea
+                id="informationsComplementaires"
+                name="informationsComplementaires"
+                value={form.informationsComplementaires}
+                onChange={handleChange}
+                placeholder="Info libre à ajouter au programme. Laissée vide, elle n'apparaît pas dans le PDF partagé."
+                rows={3}
               />
             </div>
           </CardContent>

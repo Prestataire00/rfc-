@@ -24,6 +24,7 @@ export function programmePdf(data: {
   moyensTechniques?: string;
   accessibilite?: string;
   indicateursResultats?: string;
+  informationsComplementaires?: string;
   modalite?: string;
 }, opts?: PdfOpts): any {
   const branding = opts?.branding;
@@ -80,6 +81,7 @@ export function programmePdf(data: {
       ...section("MOYENS TECHNIQUES", data.moyensTechniques),
       ...section("ACCESSIBILITÉ", data.accessibilite),
       ...section("INDICATEURS DE RÉSULTATS", data.indicateursResultats),
+      ...section("INFORMATIONS COMPLÉMENTAIRES", data.informationsComplementaires),
 
       ...(mentionsBody ? [{ stack: mentionsBody, margin: [0, 15, 0, 0] as [number, number, number, number], fontSize: 8 }] : []),
       footer(branding),

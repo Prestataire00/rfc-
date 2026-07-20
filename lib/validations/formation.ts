@@ -20,6 +20,7 @@ export const formationSchema = z.object({
   moyensTechniques: z.string().optional(),
   accessibilite: z.string().optional(),
   indicateursResultats: z.string().optional(),
+  informationsComplementaires: z.string().optional(),
   typesFinancement: z.string().optional().default("[]"),
   typeActionBpf: z
     .enum([

@@ -49,6 +49,7 @@ export default function NouvelleFormationPage() {
     moyensTechniques: "",
     accessibilite: "",
     indicateursResultats: "",
+    informationsComplementaires: "",
     typesFinancement: [] as string[],
     typeActionBpf: "adaptation",
     certifiante: false,
@@ -107,6 +108,7 @@ export default function NouvelleFormationPage() {
       if (form.moyensTechniques) payload.moyensTechniques = form.moyensTechniques;
       if (form.accessibilite) payload.accessibilite = form.accessibilite;
       if (form.indicateursResultats) payload.indicateursResultats = form.indicateursResultats;
+      if (form.informationsComplementaires) payload.informationsComplementaires = form.informationsComplementaires;
       if (form.codeRNCP) payload.codeRNCP = form.codeRNCP;
       if (form.dureeRecyclage) payload.dureeRecyclage = Number(form.dureeRecyclage);
       if (form.image) payload.image = form.image;
@@ -540,6 +542,17 @@ export default function NouvelleFormationPage() {
                 onChange={handleChange}
                 placeholder="Taux de réussite : 95% — Taux de satisfaction : 4.8/5"
                 rows={2}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="informationsComplementaires">Informations complémentaires (optionnel)</Label>
+              <Textarea
+                id="informationsComplementaires"
+                name="informationsComplementaires"
+                value={form.informationsComplementaires}
+                onChange={handleChange}
+                placeholder="Info libre à ajouter au programme. Laissée vide, elle n'apparaît pas dans le PDF partagé."
+                rows={3}
               />
             </div>
           </CardContent>

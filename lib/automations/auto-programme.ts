@@ -43,6 +43,7 @@ async function buildProgrammePdf(
       moyensTechniques: formation.moyensTechniques || undefined,
       accessibilite: formation.accessibilite || undefined,
       indicateursResultats: formation.indicateursResultats || undefined,
+      informationsComplementaires: formation.informationsComplementaires || undefined,
       modalite: formation.modalite || undefined,
     },
     { branding },

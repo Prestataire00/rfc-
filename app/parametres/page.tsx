@@ -38,6 +38,8 @@ type Parametres = {
   logoUrl: string | null;
   tamponSignatureUrl: string | null;
   couleurPrimaire: string;
+  evalOffsetChaud: number;
+  evalOffsetFroid: number;
 };
 
 const defaultParams: Parametres = {
@@ -66,6 +68,8 @@ const defaultParams: Parametres = {
   logoUrl: null,
   tamponSignatureUrl: null,
   couleurPrimaire: "#dc2626",
+  evalOffsetChaud: 1,
+  evalOffsetFroid: 21,
 };
 
 export default function ParametresPage() {
@@ -287,6 +291,54 @@ export default function ParametresPage() {
               </p>
             </div>
 
+            <div className="flex items-center gap-3 pt-2">
+              <Button onClick={handleSave} disabled={saving} className="gap-2">
+                <Save className="h-4 w-4" />
+                {saving ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+              {saved && (
+                <span className="flex items-center gap-1 text-sm text-green-500">
+                  <CheckCircle className="h-4 w-4" /> Enregistré
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Évaluations — délais d'envoi chaud / froid */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Questionnaires de satisfaction</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Délais d&apos;envoi automatique après la fin de la session. Le questionnaire « à chaud » et
+              le questionnaire « à froid » (questions distinctes) partent à des échéances différentes.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="evalOffsetChaud">À chaud — jours après la fin</Label>
+                <Input
+                  id="evalOffsetChaud"
+                  type="number"
+                  min={0}
+                  value={params.evalOffsetChaud}
+                  onChange={(e) => updateField("evalOffsetChaud", Number(e.target.value))}
+                />
+                <p className="text-[11px] text-gray-500 mt-1">Ex. 1 = le lendemain, 0 = le jour de la clôture.</p>
+              </div>
+              <div>
+                <Label htmlFor="evalOffsetFroid">À froid — jours après la fin</Label>
+                <Input
+                  id="evalOffsetFroid"
+                  type="number"
+                  min={0}
+                  value={params.evalOffsetFroid}
+                  onChange={(e) => updateField("evalOffsetFroid", Number(e.target.value))}
+                />
+                <p className="text-[11px] text-gray-500 mt-1">Ex. 21 = 3 semaines, 90 = 3 mois, 180 = 6 mois.</p>
+              </div>
+            </div>
             <div className="flex items-center gap-3 pt-2">
               <Button onClick={handleSave} disabled={saving} className="gap-2">
                 <Save className="h-4 w-4" />

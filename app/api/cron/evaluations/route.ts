@@ -5,9 +5,9 @@ import { randomBytes } from "crypto";
 import { sendEmail, evaluationEmail } from "@/lib/email";
 import { withErrorHandler } from "@/lib/api-wrapper";
 
-// Called by cron job to auto-send evaluations
-// - satisfaction_chaud: J+1 after session ends
-// - satisfaction_froid: J+21 (3 weeks) after session ends
+// Called by cron job to auto-send evaluations. Les délais chaud/froid sont
+// CONFIGURABLES (Parametres.evalOffsetChaud / evalOffsetFroid, en jours après
+// la fin de session ; défauts 1 et 21). Distinction chaud/froid conservée.
 export const GET = withErrorHandler(async (req: NextRequest) => {
   // CRON_SECRET obligatoire (sinon n'importe qui peut déclencher l'envoi
   // massif d'emails d'évaluation → DoS SMTP + spam stagiaires).
@@ -26,6 +26,27 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const now = new Date();
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
+  // Délais configurables (jours après la fin de session). Défauts 1 / 21.
+  const parametres = await prisma.parametres.findUnique({
+    where: { id: "default" },
+    select: { evalOffsetChaud: true, evalOffsetFroid: true },
+  });
+  const offsetChaud = parametres?.evalOffsetChaud ?? 1;
+  const offsetFroid = parametres?.evalOffsetFroid ?? 21;
+
+  // Fenêtre du jour = sessions dont dateFin = (aujourd'hui - offset jours).
+  const windowFor = (offsetJours: number): { gte: Date; lte: Date } => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - offsetJours);
+    const gte = new Date(d);
+    gte.setHours(0, 0, 0, 0);
+    const lte = new Date(d);
+    lte.setHours(23, 59, 59, 999);
+    return { gte, lte };
+  };
+  const fenetreChaud = windowFor(offsetChaud);
+  const fenetreFroid = windowFor(offsetFroid);
+
   // Snapshot des templates presets (pour figer le questionnaire au moment de l'envoi)
   const [presetChaud, presetFroid] = await Promise.all([
     prisma.evaluationTemplate.findUnique({ where: { id: "preset_satisfaction_chaud" } }),
@@ -34,25 +55,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const snapshotChaud = presetChaud?.questions || null;
   const snapshotFroid = presetFroid?.questions || null;
 
-  // J+1: sessions ended yesterday
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const startOfYesterday = new Date(yesterday.setHours(0, 0, 0, 0));
-  const endOfYesterday = new Date(yesterday.setHours(23, 59, 59, 999));
-
-  // J+21: sessions ended 3 weeks ago
-  const day21ago = new Date(now);
-  day21ago.setDate(day21ago.getDate() - 21);
-  const startOf21 = new Date(day21ago.setHours(0, 0, 0, 0));
-  const endOf21 = new Date(day21ago.setHours(23, 59, 59, 999));
-
   let chaudSent = 0;
   let froidSent = 0;
 
-  // Find sessions for chaud (ended yesterday)
+  // Find sessions for chaud (fin de session il y a `offsetChaud` jours)
   const sessionsChaud = await prisma.session.findMany({
     where: {
-      dateFin: { gte: startOfYesterday, lte: endOfYesterday },
+      dateFin: { gte: fenetreChaud.gte, lte: fenetreChaud.lte },
       statut: { in: ["terminee", "en_cours"] },
     },
     include: {
@@ -100,10 +109,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  // Find sessions for froid (ended 3 weeks ago)
+  // Find sessions for froid (fin de session il y a `offsetFroid` jours)
   const sessionsFroid = await prisma.session.findMany({
     where: {
-      dateFin: { gte: startOf21, lte: endOf21 },
+      dateFin: { gte: fenetreFroid.gte, lte: fenetreFroid.lte },
       statut: "terminee",
     },
     include: {

@@ -1186,6 +1186,12 @@ model Parametres {
   regimeTVA             String @default("assujetti")
   penalitesRetard       String @default("En cas de retard de paiement, pénalité égale à 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce).")
   indemniteRecouvrement Float  @default(40)
+
+  // Délais d'envoi des questionnaires de satisfaction (jours après la fin de
+  // session). Chaud = à chaud (peu après), Froid = à froid (impact/mise en
+  // pratique). Lus par le cron /api/cron/evaluations. Distinction configurable.
+  evalOffsetChaud Int @default(1)
+  evalOffsetFroid Int @default(21)
 }
 
 // ==================== MODELES DE DOCUMENTS (PDF) ====================

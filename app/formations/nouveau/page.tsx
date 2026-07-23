@@ -51,6 +51,7 @@ export default function NouvelleFormationPage() {
     indicateursResultats: "",
     informationsComplementaires: "",
     competencesAttestation: "",
+    formatAttestation: "fin_formation",
     typesFinancement: [] as string[],
     typeActionBpf: "adaptation",
     certifiante: false,
@@ -115,6 +116,7 @@ export default function NouvelleFormationPage() {
           form.competencesAttestation.split("\n").map((s) => s.trim()).filter(Boolean),
         );
       }
+      if (form.formatAttestation) payload.formatAttestation = form.formatAttestation;
       if (form.codeRNCP) payload.codeRNCP = form.codeRNCP;
       if (form.dureeRecyclage) payload.dureeRecyclage = Number(form.dureeRecyclage);
       if (form.image) payload.image = form.image;
@@ -572,6 +574,20 @@ export default function NouvelleFormationPage() {
                 rows={4}
               />
               <p className="text-xs text-muted-foreground">Reprises dans le tableau « Compétences visées » de l&apos;attestation (acquises par défaut).</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="formatAttestation">Format d&apos;attestation</Label>
+              <select
+                id="formatAttestation"
+                name="formatAttestation"
+                value={form.formatAttestation}
+                onChange={handleChange}
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              >
+                <option value="fin_formation">Attestation de fin de formation (art. L.6353-1)</option>
+                <option value="habilitation">Attestation de formation — habilitation électrique</option>
+              </select>
+              <p className="text-xs text-muted-foreground">Détermine le modèle d&apos;attestation généré et envoyé pour cette formation.</p>
             </div>
           </CardContent>
         </Card>

@@ -19,8 +19,9 @@
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { attestationPdf } from "@/lib/pdf/templates";
+import { attestationHabilitationPdf } from "@/lib/pdf/attestation-habilitation";
 import { getParametres, type EntrepriseParams } from "@/lib/parametres";
-import { resolveBranding } from "@/lib/pdf/branding";
+import { resolveBranding, type PdfBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
 import { sendEmail, attestationEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
@@ -98,6 +99,74 @@ export function buildAttestationData(input: {
   };
 }
 
+// Données pour l'attestation "habilitation électrique" (format alternatif).
+type AttestationInput = {
+  contact: { nom: string; prenom: string; sexe?: string | null; entreprise?: { nom: string; adresse?: string | null; codePostal?: string | null; ville?: string | null } | null };
+  formation: { titre: string; duree: number; objectifs?: string | null; competencesAttestation?: string | null; typeActionBpf?: string | null; formatAttestation?: string | null };
+  session: { dateDebut: Date; dateFin: Date; lieu?: string | null };
+  formateur?: { nom: string; prenom: string } | null;
+  parametres: EntrepriseParams;
+};
+
+export function buildHabilitationData(input: AttestationInput): Parameters<typeof attestationHabilitationPdf>[0] {
+  const p = input.parametres;
+  const dd = format(new Date(input.session.dateDebut), "dd/MM/yyyy", { locale: fr });
+  const df = format(new Date(input.session.dateFin), "dd/MM/yyyy", { locale: fr });
+  const dateFormation = dd === df ? dd : `du ${dd} au ${df}`;
+  const responsable = [p.representantPrenom, p.representantNom].filter(Boolean).join(" ").trim();
+  const civilite = input.contact.sexe === "M" ? "Mr" : input.contact.sexe === "F" ? "Mme" : "";
+
+  let competences: { label: string; acquise: boolean }[] = [];
+  try {
+    const raw = JSON.parse(input.formation.competencesAttestation || "[]");
+    if (Array.isArray(raw)) {
+      competences = raw
+        .map((c) => (typeof c === "string" ? c : c?.label))
+        .filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+        .map((label) => ({ label, acquise: true }));
+    }
+  } catch { /* liste vide */ }
+
+  return {
+    stagiaire: { civilite, nom: input.contact.nom, prenom: input.contact.prenom },
+    organisme: {
+      nom: p.nomEntreprise,
+      representant: responsable || undefined,
+      adresse: p.adresse || undefined,
+      codePostal: p.codePostal || undefined,
+      ville: p.ville || undefined,
+      telephone: p.telephone || undefined,
+      email: p.email || undefined,
+      siret: p.siret || undefined,
+      nda: p.nda || undefined,
+      numeroCnaps: p.numeroCnaps || undefined,
+    },
+    formationTitre: input.formation.titre,
+    formateurNom: input.formateur ? `Mr ${input.formateur.prenom} ${input.formateur.nom}` : responsable || p.nomEntreprise,
+    dateFormation,
+    dureeLabel: `${String(input.formation.duree).padStart(2, "0")}h00`,
+    lieu: input.session.lieu || undefined,
+    objectifs: input.formation.objectifs || undefined,
+    typeActionKey: input.formation.typeActionBpf || undefined,
+    competences,
+    villeSignature: p.ville || "",
+    dateSignature: format(new Date(), "dd/MM/yyyy", { locale: fr }),
+  };
+}
+
+// Dispatcher : choisit le générateur selon Formation.formatAttestation.
+export function attestationDocDef(
+  input: AttestationInput,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  opts?: { branding?: PdfBranding; template?: any },
+): any {
+  const branding = opts?.branding;
+  if (input.formation.formatAttestation === "habilitation") {
+    return attestationHabilitationPdf(buildHabilitationData(input), { branding });
+  }
+  return attestationPdf(buildAttestationData(input), { branding, template: opts?.template });
+}
+
 export type AttestationResult =
   | { status: "sent"; destinataireEmail: string }
   | { status: "skipped"; reason: string }
@@ -142,8 +211,8 @@ export async function sendAttestationToContact(
       },
     });
 
-    const docDef = attestationPdf(
-      buildAttestationData({ contact, formation: session.formation, session, formateur: session.formateur, parametres }),
+    const docDef = attestationDocDef(
+      { contact, formation: session.formation, session, formateur: session.formateur, parametres },
       { branding, template: template || undefined },
     );
 

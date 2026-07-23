@@ -3,11 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { pdfResponse } from "@/lib/pdf/response";
-import { attestationPdf } from "@/lib/pdf/templates";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
-import { buildAttestationData } from "@/lib/automations/auto-attestation";
+import { attestationDocDef } from "@/lib/automations/auto-attestation";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -43,8 +42,8 @@ export const GET = withErrorHandlerParams<{ sessionId: string; contactId: string
       },
     });
 
-    const docDef = attestationPdf(
-      buildAttestationData({ contact, formation: session.formation, session, formateur: session.formateur, parametres }),
+    const docDef = attestationDocDef(
+      { contact, formation: session.formation, session, formateur: session.formateur, parametres },
       { branding, template: template || undefined },
     );
 

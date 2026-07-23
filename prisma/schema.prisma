@@ -199,6 +199,9 @@ model Formation {
   // Compétences visées listées sur l'attestation de fin de formation. JSON :
   // ["Être capable de …", …]. Acquises par défaut pour chaque stagiaire présent.
   competencesAttestation String @default("[]")
+  // Format d'attestation à générer : "fin_formation" (art L.6353-1, défaut) ou
+  // "habilitation" (attestation de formation habilitation électrique).
+  formatAttestation String @default("fin_formation")
   typesFinancement     String  @default("[]") // JSON array: opco, cpf, entreprise, etc.
   // Type d'action BPF (Cerfa 10443*17 cadre D2). 11 valeurs réglementaires :
   // adaptation (1) | promotion (2) | prevention (3) | conversion (4) |
@@ -1199,6 +1202,9 @@ model Parametres {
   // Horaires par défaut affichés sur les convocations (si la session n'en
   // définit pas de spécifiques).
   horairesDefaut String @default("09h00 - 12h30 / 14h00 - 17h30")
+
+  // Numéro d'agrément CNAPS (affiché en pied des attestations habilitation).
+  numeroCnaps String @default("")
 }
 
 // ==================== MODELES DE DOCUMENTS (PDF) ====================

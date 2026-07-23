@@ -41,6 +41,7 @@ type Parametres = {
   evalOffsetChaud: number;
   evalOffsetFroid: number;
   horairesDefaut: string;
+  numeroCnaps: string;
 };
 
 const defaultParams: Parametres = {
@@ -72,6 +73,7 @@ const defaultParams: Parametres = {
   evalOffsetChaud: 1,
   evalOffsetFroid: 21,
   horairesDefaut: "09h00 - 12h30 / 14h00 - 17h30",
+  numeroCnaps: "",
 };
 
 export default function ParametresPage() {
@@ -272,6 +274,10 @@ export default function ParametresPage() {
               <div>
                 <Label>TVA Intracommunautaire</Label>
                 <Input value={params.tvaIntracom} onChange={(e) => updateField("tvaIntracom", e.target.value)} placeholder="FR XX XXXXXXXXX" />
+              </div>
+              <div>
+                <Label>N° d&apos;agrément CNAPS</Label>
+                <Input value={params.numeroCnaps} onChange={(e) => updateField("numeroCnaps", e.target.value)} placeholder="FOR-XXX-XXXX-XX-XX-XXXXXXXXXXX" />
               </div>
             </div>
 

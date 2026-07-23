@@ -27,6 +27,16 @@ type Fiche = {
     numeroSecuriteSociale: string | null;
     numeroPasseportPrevention: string | null;
     niveauFormation: string | null;
+    sexe: string | null;
+    lieuNaissance: string | null;
+    pays: string | null;
+    adressePerso: string | null;
+    codePostalPerso: string | null;
+    villePerso: string | null;
+    telephone: string | null;
+    numeroCartePro: string | null;
+    numeroFranceTravail: string | null;
+    diplomeObtenu: string | null;
   };
   dejaSuivi: boolean;
   dateDerniereFormation: string | null;
@@ -87,6 +97,16 @@ export default function FichePreFormationStagiairePage() {
       dateNaissance: fiche.contact?.dateNaissance ? fiche.contact.dateNaissance.slice(0, 10) : "",
       numeroSecuriteSociale: fiche.contact?.numeroSecuriteSociale?.startsWith("•") ? "" : (fiche.contact?.numeroSecuriteSociale ?? ""),
       numeroPasseportPrevention: fiche.contact?.numeroPasseportPrevention ?? "",
+      sexe: fiche.contact?.sexe ?? "",
+      lieuNaissance: fiche.contact?.lieuNaissance ?? "",
+      pays: fiche.contact?.pays ?? "France",
+      adressePerso: fiche.contact?.adressePerso ?? "",
+      codePostalPerso: fiche.contact?.codePostalPerso ?? "",
+      villePerso: fiche.contact?.villePerso ?? "",
+      telephone: fiche.contact?.telephone ?? "",
+      numeroCartePro: fiche.contact?.numeroCartePro ?? "",
+      numeroFranceTravail: fiche.contact?.numeroFranceTravail ?? "",
+      diplomeObtenu: fiche.contact?.diplomeObtenu ?? "",
       dejaSuivi: fiche.dejaSuivi ?? false,
       dateDerniereFormation: fiche.dateDerniereFormation ? fiche.dateDerniereFormation.slice(0, 10) : "",
       niveauFormation: fiche.niveauFormation ?? fiche.contact?.niveauFormation ?? "",
@@ -251,9 +271,49 @@ export default function FichePreFormationStagiairePage() {
                 <input value={fiche.contact.nom} disabled className="w-full h-10 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600" />
               </Field>
             </div>
-            <Field label="Date de naissance">
-              <input type="date" value={form.dateNaissance as string} onChange={(e) => set("dateNaissance", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            <Field label="Sexe">
+              <div className="flex gap-4">
+                <label className="inline-flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                  <input type="radio" name="sexe" checked={form.sexe === "M"} onChange={() => set("sexe", "M")} className="h-4 w-4" /> Masculin
+                </label>
+                <label className="inline-flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                  <input type="radio" name="sexe" checked={form.sexe === "F"} onChange={() => set("sexe", "F")} className="h-4 w-4" /> Féminin
+                </label>
+              </div>
             </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Date de naissance">
+                <input type="date" value={form.dateNaissance as string} onChange={(e) => set("dateNaissance", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+              </Field>
+              <Field label="Lieu de naissance">
+                <input value={form.lieuNaissance as string} onChange={(e) => set("lieuNaissance", e.target.value)} placeholder="Ville de naissance" className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+              </Field>
+            </div>
+            <Field label="Pays">
+              <input value={form.pays as string} onChange={(e) => set("pays", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            </Field>
+            <Field label="Adresse personnelle">
+              <input value={form.adressePerso as string} onChange={(e) => set("adressePerso", e.target.value)} placeholder="N°, rue" className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Code postal">
+                <input value={form.codePostalPerso as string} onChange={(e) => set("codePostalPerso", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+              </Field>
+              <Field label="Ville">
+                <input value={form.villePerso as string} onChange={(e) => set("villePerso", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+              </Field>
+            </div>
+            <Field label="Téléphone">
+              <input value={form.telephone as string} onChange={(e) => set("telephone", e.target.value)} placeholder="06 12 34 56 78" className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="N° carte pro / autorisation préalable (CNAPS)">
+                <input value={form.numeroCartePro as string} onChange={(e) => set("numeroCartePro", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+              </Field>
+              <Field label="N° allocataire France Travail">
+                <input value={form.numeroFranceTravail as string} onChange={(e) => set("numeroFranceTravail", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+              </Field>
+            </div>
             <Field label="Numero de securite sociale (15 chiffres)">
               <input
                 value={form.numeroSecuriteSociale as string}
@@ -287,6 +347,9 @@ export default function FichePreFormationStagiairePage() {
                 <option value="">Selectionner...</option>
                 {NIVEAUX.map((n) => <option key={n.value} value={n.value}>{n.label}</option>)}
               </select>
+            </Field>
+            <Field label="Diplôme obtenu">
+              <input value={form.diplomeObtenu as string} onChange={(e) => set("diplomeObtenu", e.target.value)} placeholder="Le diplôme le plus élevé obtenu" className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
             </Field>
             <Field label="Votre niveau sur le sujet de la formation">
               <select value={form.niveauPrerequis as string} onChange={(e) => set("niveauPrerequis", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white">

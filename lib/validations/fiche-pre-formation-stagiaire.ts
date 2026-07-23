@@ -10,6 +10,19 @@ export const fichePreFormationStagiaireReponseSchema = z.object({
   numeroSecuriteSociale: z.string().optional().nullable(),
   numeroPasseportPrevention: z.string().optional().nullable(),
 
+  // Section 1b - Etat civil & coordonnées (repris de la fiche d'inscription papier).
+  // Tous mappés sur des colonnes existantes du Contact.
+  sexe: z.enum(["M", "F"]).optional().nullable(),
+  lieuNaissance: z.string().optional().nullable(),
+  pays: z.string().optional().nullable(),
+  adressePerso: z.string().optional().nullable(),
+  codePostalPerso: z.string().optional().nullable(),
+  villePerso: z.string().optional().nullable(),
+  telephone: z.string().optional().nullable(),
+  numeroCartePro: z.string().optional().nullable(), // carte pro CNAPS / autorisation préalable
+  numeroFranceTravail: z.string().optional().nullable(),
+  diplomeObtenu: z.string().optional().nullable(),
+
   // Section 2 - Prerequis
   dejaSuivi: z.boolean().optional().default(false),
   dateDerniereFormation: z.string().optional().nullable(),

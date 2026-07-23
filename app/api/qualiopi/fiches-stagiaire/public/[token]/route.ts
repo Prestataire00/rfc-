@@ -40,6 +40,16 @@ export const GET = withErrorHandlerParams(async (req: NextRequest, { params }: {
           numeroSecuriteSociale: true,
           numeroPasseportPrevention: true,
           niveauFormation: true,
+          sexe: true,
+          lieuNaissance: true,
+          pays: true,
+          adressePerso: true,
+          codePostalPerso: true,
+          villePerso: true,
+          telephone: true,
+          numeroCartePro: true,
+          numeroFranceTravail: true,
+          diplomeObtenu: true,
         },
       },
     },
@@ -87,6 +97,17 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
   }
   if (d.numeroPasseportPrevention) contactUpdate.numeroPasseportPrevention = d.numeroPasseportPrevention;
   if (d.niveauFormation) contactUpdate.niveauFormation = d.niveauFormation;
+  // Etat civil & coordonnées (fiche d'inscription individuelle)
+  if (d.sexe) contactUpdate.sexe = d.sexe;
+  if (d.lieuNaissance) contactUpdate.lieuNaissance = d.lieuNaissance;
+  if (d.pays) contactUpdate.pays = d.pays;
+  if (d.adressePerso) contactUpdate.adressePerso = d.adressePerso;
+  if (d.codePostalPerso) contactUpdate.codePostalPerso = d.codePostalPerso;
+  if (d.villePerso) contactUpdate.villePerso = d.villePerso;
+  if (d.telephone) contactUpdate.telephone = d.telephone;
+  if (d.numeroCartePro) contactUpdate.numeroCartePro = d.numeroCartePro;
+  if (d.numeroFranceTravail) contactUpdate.numeroFranceTravail = d.numeroFranceTravail;
+  if (d.diplomeObtenu) contactUpdate.diplomeObtenu = d.diplomeObtenu;
   if (d.estRQTH || d.detailsRQTH) {
     const details = [d.estRQTH ? "RQTH: oui" : null, d.detailsRQTH, d.contraintesPhysiques, d.contraintesLangue]
       .filter(Boolean).join(" | ");

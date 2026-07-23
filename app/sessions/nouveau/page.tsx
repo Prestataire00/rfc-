@@ -45,6 +45,7 @@ function NouvelleSessionForm() {
     dateDebut: "",
     dateFin: "",
     lieu: "",
+    horaires: "",
     capaciteMax: 10,
     statut: "planifiee",
     notes: "",
@@ -135,6 +136,7 @@ function NouvelleSessionForm() {
     };
     if (formData.formateurId) payload.formateurId = formData.formateurId;
     if (formData.lieu) payload.lieu = formData.lieu;
+    if (formData.horaires) payload.horaires = formData.horaires;
     if (formData.notes) payload.notes = formData.notes;
     if (devisId) payload.devisId = devisId;
     if (formData.modeExpress) payload.modeExpress = true;
@@ -332,6 +334,19 @@ function NouvelleSessionForm() {
                   ? `${lieuxFormationRaw.length} lieu${lieuxFormationRaw.length > 1 ? "x" : ""} préenregistré${lieuxFormationRaw.length > 1 ? "s" : ""} — gérez-les dans Pédagogie › Lieux de formation`
                   : "Aucun lieu préenregistré. Crée-en via Pédagogie › Lieux de formation."}
               </p>
+            </div>
+
+            {/* Horaires (affichés sur la convocation) */}
+            <div className="space-y-1.5">
+              <Label htmlFor="horaires">Horaires (convocation)</Label>
+              <Input
+                id="horaires"
+                name="horaires"
+                value={formData.horaires}
+                onChange={handleChange}
+                placeholder="08h30 - 12h00 / 13h00 - 16h30"
+              />
+              <p className="text-xs text-muted-foreground">Laissé vide → horaires par défaut définis dans Paramètres.</p>
             </div>
 
             {/* Capacité et statut */}

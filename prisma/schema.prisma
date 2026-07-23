@@ -260,6 +260,9 @@ model Session {
   dateDebut        DateTime
   dateFin          DateTime
   lieu             String?
+  // Horaires affichés sur la convocation (ex "08h30 - 12h00 / 13h00 - 16h30").
+  // Vide → défaut Parametres.horairesDefaut.
+  horaires         String?
   capaciteMax      Int      @default(10)
   statut           String   @default("planifiee") // planifiee, confirmee, en_cours, terminee, annulee
   tokenInscription String?  @unique
@@ -1192,6 +1195,10 @@ model Parametres {
   // pratique). Lus par le cron /api/cron/evaluations. Distinction configurable.
   evalOffsetChaud Int @default(1)
   evalOffsetFroid Int @default(21)
+
+  // Horaires par défaut affichés sur les convocations (si la session n'en
+  // définit pas de spécifiques).
+  horairesDefaut String @default("09h00 - 12h30 / 14h00 - 17h30")
 }
 
 // ==================== MODELES DE DOCUMENTS (PDF) ====================

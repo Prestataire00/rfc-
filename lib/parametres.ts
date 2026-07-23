@@ -25,6 +25,7 @@ export type EntrepriseParams = {
   logoUrl: string | null;
   tamponSignatureUrl: string | null;
   couleurPrimaire: string;
+  horairesDefaut: string;
   featureFlags: Record<string, boolean>;
 };
 
@@ -53,6 +54,7 @@ const DEFAULTS: EntrepriseParams = {
   tamponSignatureUrl: null,
   logoUrl: null,
   couleurPrimaire: "#dc2626",
+  horairesDefaut: "09h00 - 12h30 / 14h00 - 17h30",
   featureFlags: {},
 };
 

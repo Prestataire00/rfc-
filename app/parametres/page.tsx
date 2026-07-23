@@ -40,6 +40,7 @@ type Parametres = {
   couleurPrimaire: string;
   evalOffsetChaud: number;
   evalOffsetFroid: number;
+  horairesDefaut: string;
 };
 
 const defaultParams: Parametres = {
@@ -70,6 +71,7 @@ const defaultParams: Parametres = {
   couleurPrimaire: "#dc2626",
   evalOffsetChaud: 1,
   evalOffsetFroid: 21,
+  horairesDefaut: "09h00 - 12h30 / 14h00 - 17h30",
 };
 
 export default function ParametresPage() {
@@ -338,6 +340,16 @@ export default function ParametresPage() {
                 />
                 <p className="text-[11px] text-gray-500 mt-1">Ex. 21 = 3 semaines, 90 = 3 mois, 180 = 6 mois.</p>
               </div>
+            </div>
+            <div>
+              <Label htmlFor="horairesDefaut">Horaires par défaut (convocations)</Label>
+              <Input
+                id="horairesDefaut"
+                value={params.horairesDefaut}
+                onChange={(e) => updateField("horairesDefaut", e.target.value)}
+                placeholder="08h30 - 12h00 / 13h00 - 16h30"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">Utilisés sur les convocations quand la session n&apos;a pas d&apos;horaires spécifiques.</p>
             </div>
             <div className="flex items-center gap-3 pt-2">
               <Button onClick={handleSave} disabled={saving} className="gap-2">

@@ -6,6 +6,7 @@ import { sendEmail, convocationEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { convocationPdf } from "@/lib/pdf/templates";
+import { getParametres } from "@/lib/parametres";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { withErrorHandler } from "@/lib/api-wrapper";
@@ -27,12 +28,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
   const { sessionId, contactId } = parsed.data;
 
-  const [session, contact] = await Promise.all([
+  const [session, contact, parametres] = await Promise.all([
     prisma.session.findUnique({
       where: { id: sessionId },
       include: { formation: true, formateur: true },
     }),
     prisma.contact.findUnique({ where: { id: contactId } }),
+    getParametres(),
   ]);
 
   if (!session || !contact) {
@@ -51,7 +53,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     convocationPdf({
       stagiaire: { nom: contact.nom, prenom: contact.prenom, email: contact.email },
       formation: { titre: session.formation.titre, duree: session.formation.duree },
-      session: { dateDebut, dateFin, lieu: session.lieu || undefined },
+      session: { dateDebut, dateFin, lieu: session.lieu || undefined, horaires: session.horaires || parametres.horairesDefaut || undefined },
       formateur: session.formateur
         ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
         : undefined,

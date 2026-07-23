@@ -52,6 +52,7 @@ export const GET = withErrorHandlerParams<{ sessionId: string; contactId: string
         dateDebut,
         dateFin,
         lieu: session.lieu || undefined,
+        horaires: session.horaires || parametres.horairesDefaut || undefined,
       },
       formateur: session.formateur
         ? { nom: session.formateur.nom, prenom: session.formateur.prenom }

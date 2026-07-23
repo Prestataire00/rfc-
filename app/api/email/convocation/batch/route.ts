@@ -5,6 +5,7 @@ import { sendEmail, convocationEmail } from "@/lib/email";
 import { logAction } from "@/lib/historique";
 import { generatePdfBuffer } from "@/lib/pdf/generate";
 import { convocationPdf } from "@/lib/pdf/templates";
+import { getParametres } from "@/lib/parametres";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { withErrorHandler } from "@/lib/api-wrapper";
@@ -39,6 +40,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     return NextResponse.json({ sent: 0, failed: 0, errors: [], message: "Aucun stagiaire avec email" });
   }
 
+  const parametres = await getParametres();
+  const horaires = session.horaires || parametres.horairesDefaut || undefined;
+
   const dateDebut = format(new Date(session.dateDebut), "dd/MM/yyyy", { locale: fr });
   const dateFin = format(new Date(session.dateFin), "dd/MM/yyyy", { locale: fr });
 
@@ -54,7 +58,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
         convocationPdf({
           stagiaire: { nom: contact.nom, prenom: contact.prenom, email: contact.email! },
           formation: { titre: session.formation.titre, duree: session.formation.duree },
-          session: { dateDebut, dateFin, lieu: session.lieu || undefined },
+          session: { dateDebut, dateFin, lieu: session.lieu || undefined, horaires },
           formateur: session.formateur
             ? { nom: session.formateur.nom, prenom: session.formateur.prenom }
             : undefined,

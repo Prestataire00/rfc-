@@ -13,7 +13,7 @@ import {
 export function convocationPdf(data: {
   stagiaire: { nom: string; prenom: string; email: string };
   formation: { titre: string; duree: number };
-  session: { dateDebut: string; dateFin: string; lieu?: string };
+  session: { dateDebut: string; dateFin: string; lieu?: string; horaires?: string };
   formateur?: { nom: string; prenom: string };
 }, opts?: PdfOpts): any {
   const branding = opts?.branding;
@@ -55,7 +55,7 @@ export function convocationPdf(data: {
             [{ text: "Dates", bold: true, style: "value" }, { text: `Du ${data.session.dateDebut} au ${data.session.dateFin}`, style: "value" }],
             [{ text: "Lieu", bold: true, style: "value" }, { text: data.session.lieu || "À confirmer", style: "value" }],
             ...(data.formateur ? [[{ text: "Formateur", bold: true, style: "value" }, { text: `${data.formateur.prenom} ${data.formateur.nom}`, style: "value" }]] : []),
-            [{ text: "Horaires", bold: true, style: "value" }, { text: "9h00 - 12h30 / 14h00 - 17h30", style: "value" }],
+            [{ text: "Horaires", bold: true, style: "value" }, { text: data.session.horaires || "09h00 - 12h30 / 14h00 - 17h30", style: "value" }],
           ],
         },
         layout: "lightHorizontalLines",

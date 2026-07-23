@@ -6,6 +6,7 @@ export const sessionSchema = z.object({
   dateDebut: z.string().min(1, "Date de début requise"),
   dateFin: z.string().min(1, "Date de fin requise"),
   lieu: z.string().optional().nullable(),
+  horaires: z.string().optional().nullable(),
   capaciteMax: z.coerce.number().int().positive().default(10),
   statut: z
     .enum(["planifiee", "confirmee", "en_cours", "terminee", "annulee"])

@@ -25,6 +25,7 @@ type SessionData = {
   dateDebut: string;
   dateFin: string;
   lieu?: string | null;
+  horaires?: string | null;
   capaciteMax: number;
   statut: string;
   notes?: string | null;
@@ -48,6 +49,7 @@ export default function ModifierSessionPage() {
     dateDebut: "",
     dateFin: "",
     lieu: "",
+    horaires: "",
     capaciteMax: 10,
     statut: "planifiee",
     notes: "",
@@ -70,6 +72,7 @@ export default function ModifierSessionPage() {
       dateDebut: toDatetimeLocal(session.dateDebut),
       dateFin: toDatetimeLocal(session.dateFin),
       lieu: session.lieu || "",
+      horaires: session.horaires || "",
       capaciteMax: session.capaciteMax,
       statut: session.statut,
       notes: session.notes || "",
@@ -109,6 +112,7 @@ export default function ModifierSessionPage() {
       dateDebut: formData.dateDebut,
       dateFin: formData.dateFin,
       lieu: formData.lieu || null,
+      horaires: formData.horaires || null,
       capaciteMax: formData.capaciteMax,
       statut: formData.statut,
       notes: formData.notes || null,
@@ -233,6 +237,19 @@ export default function ModifierSessionPage() {
                 value={formData.lieu}
                 onChange={handleChange}
               />
+            </div>
+
+            {/* Horaires (convocation) */}
+            <div className="space-y-1.5">
+              <Label htmlFor="horaires">Horaires (convocation)</Label>
+              <Input
+                id="horaires"
+                name="horaires"
+                placeholder="08h30 - 12h00 / 13h00 - 16h30"
+                value={formData.horaires}
+                onChange={handleChange}
+              />
+              <p className="text-xs text-muted-foreground">Laissé vide → horaires par défaut définis dans Paramètres.</p>
             </div>
 
             {/* Capacité et statut */}

@@ -22,8 +22,15 @@ L'administrateur souhaite un modele de document reutilisable. Voici sa demande :
 
 TACHE : redige un modele de document professionnel, en francais, conforme aux usages d'un organisme de formation francais.
 Le document doit pouvoir etre reutilise pour plusieurs destinataires : insere des variables au format {{categorie.champ}} la ou des donnees personnalisees doivent apparaitre.
-Variables courantes disponibles : {{contact.nom}}, {{contact.prenom}}, {{contact.civilite}}, {{session.dateDebut}}, {{session.dateFin}}, {{session.lieu}}, {{formation.titre}}, {{formation.duree}}, {{entreprise.nomEntreprise}}, {{entreprise.adresse}}, {{entreprise.siret}}, {{entreprise.nda}}, {{date.aujourdhui}}.
-Tu peux inventer d'autres variables si le contexte l'exige, toujours au format {{categorie.champ}}.
+Variables reellement disponibles (elles seront remplacees par les vraies donnees) :
+- Stagiaire : {{stagiaire.civilite}}, {{stagiaire.prenom}}, {{stagiaire.nom}}, {{stagiaire.email}}, {{stagiaire.telephone}}, {{stagiaire.sexe}}, {{stagiaire.dateNaissance}}, {{stagiaire.lieuNaissance}}, {{stagiaire.pays}}, {{stagiaire.adresse}}, {{stagiaire.codePostal}}, {{stagiaire.ville}}, {{stagiaire.numeroCartePro}}, {{stagiaire.numeroFranceTravail}}, {{stagiaire.diplomeObtenu}}, {{stagiaire.niveauFormation}} (alias {{contact.*}} et {{client.*}})
+- Formation : {{formation.titre}}, {{formation.duree}}, {{formation.objectifs}}
+- Session : {{session.dateDebut}}, {{session.dateFin}}, {{session.lieu}}
+- Formateur : {{formateur.prenom}}, {{formateur.nom}}
+- Organisme : {{entreprise.nomEntreprise}}, {{entreprise.adresse}}, {{entreprise.codePostal}}, {{entreprise.ville}}, {{entreprise.telephone}}, {{entreprise.email}}, {{entreprise.siret}}, {{entreprise.nda}}, {{entreprise.representant}}, {{entreprise.representantQualite}}
+- Entreprise du stagiaire : {{societe.nom}}, {{societe.adresse}}, {{societe.codePostal}}, {{societe.ville}}, {{societe.siret}}
+- Divers : {{date.aujourdhui}}
+N'utilise QUE des variables de cette liste (sinon elles resteront vides).
 
 Retourne UNIQUEMENT un JSON valide avec cette structure exacte (pas de markdown, pas de texte autour, pas de commentaire) :
 {

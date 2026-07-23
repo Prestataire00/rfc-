@@ -7,6 +7,7 @@ import { pdfResponse } from "@/lib/pdf/response";
 import { getParametres } from "@/lib/parametres";
 import { resolveBranding } from "@/lib/pdf/branding";
 import { renderDocumentTemplate } from "@/lib/document-templates";
+import { resolveDevisDetails } from "@/lib/devis-details";
 import { withErrorHandlerParams } from "@/lib/api-wrapper";
 
 export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextRequest, { params }) => {
@@ -86,6 +87,7 @@ export const GET = withErrorHandlerParams<{ id: string }>(async (_req: NextReque
     tauxTVA: devis.tauxTVA,
     montantTTC: devis.montantTTC,
     notes: devis.notes || undefined,
+    formationDetails: (await resolveDevisDetails(devis.id)) || undefined,
   }, {
     branding: await resolveBranding(await getParametres()),
     template: (await renderDocumentTemplate("devis", {

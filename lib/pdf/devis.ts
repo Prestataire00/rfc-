@@ -38,6 +38,16 @@ export function devisPdf(data: {
   // Sessions rattachées au devis — pour la section « Délais d'exécution »
   // (art. L111-1 C.conso). Reprend les dates de début/fin de chaque session.
   sessions?: { dateDebut: string | Date; dateFin: string | Date }[];
+  // Bloc « Détails de la formation » dérivé automatiquement (intitulé, nb
+  // apprenants, heures, jours, date, lieu). Affiché sous l'objet si fourni.
+  formationDetails?: {
+    intitule?: string;
+    nbApprenants?: number;
+    nbHeures?: string;
+    nbJours?: number;
+    dateTexte?: string;
+    lieu?: string;
+  };
   // Si true, ajoute une page annexe « Formulaire de rétractation » au devis
   // (art. L221-18 + R221-1 C.conso) — applicable aux particuliers (B2C).
   isB2C?: boolean;
@@ -206,6 +216,35 @@ export function devisPdf(data: {
       // ── OBJET ──
       { text: `Objet : ${data.objet}`, fontSize: 10, bold: true, color: COLORS.dark, margin: [0, 0, 0, 12] as [number, number, number, number] },
 
+      // ── DÉTAILS DE LA FORMATION (dérivé automatiquement) ──
+      ...(data.formationDetails
+        ? (() => {
+            const d = data.formationDetails;
+            const rows: [string, string][] = [];
+            if (d.intitule) rows.push(["Intitulé de la formation", d.intitule]);
+            if (d.dateTexte) rows.push(["Date de la formation", d.dateTexte]);
+            if (d.nbApprenants != null) rows.push(["Nombre d'apprenants", String(d.nbApprenants)]);
+            if (d.nbJours != null) rows.push(["Nombre de jours", String(d.nbJours)]);
+            if (d.nbHeures) rows.push(["Nombre d'heures", d.nbHeures]);
+            if (d.lieu) rows.push(["Lieu de formation", d.lieu]);
+            if (rows.length === 0) return [];
+            return [
+              { text: "DÉTAILS DE LA FORMATION", fontSize: 10, bold: true, color: primary, margin: [0, 0, 0, 4] as [number, number, number, number] },
+              {
+                table: {
+                  widths: ["35%", "65%"],
+                  body: rows.map(([k, v]) => [
+                    { text: k, fontSize: 9, bold: true, color: COLORS.dark, margin: [4, 3, 4, 3] as [number, number, number, number] },
+                    { text: v, fontSize: 9, color: COLORS.dark, margin: [4, 3, 4, 3] as [number, number, number, number] },
+                  ]),
+                },
+                layout: "lightHorizontalLines",
+                margin: [0, 0, 0, 12] as [number, number, number, number],
+              },
+            ];
+          })()
+        : []),
+
       // ── DÉLAIS D'EXÉCUTION (si sessions rattachées) ──
       // Conformité art. L111-1 C.conso : indication des délais d'exécution
       // de la prestation. Reprend les dates de toutes les sessions liées.
@@ -349,7 +388,7 @@ export function devisPdf(data: {
       // ── SIGNATURE ──
       signatureBlock(
         { titre: `Pour ${nomSociete}`, nom: nomSociete },
-        { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || data.contact ? `${data.contact?.prenom} ${data.contact?.nom}` : undefined },
+        { titre: "Bon pour accord — Client", nom: data.entreprise?.nom || (data.contact ? `${data.contact.prenom} ${data.contact.nom}` : undefined) },
         { tamponBase64: branding?.tamponBase64 }
       ),
 

@@ -192,6 +192,14 @@ export const GET = withErrorHandlerParams<{ type: string }>(async (req: NextRequ
         montantHT: 1480,
         tauxTVA: 20,
         montantTTC: 1776,
+        formationDetails: {
+          intitule: fakeFormation.titre,
+          nbApprenants: 4,
+          nbHeures: "07h00",
+          nbJours: 1,
+          dateTexte: "le 03/08/2026",
+          lieu: "202 L'Agora Parc, Chemin des champs de pruniers, 04100 Manosque",
+        },
       }, { branding, template: template || undefined });
       break;
 

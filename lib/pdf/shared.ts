@@ -90,6 +90,12 @@ export function header(title: string, branding?: PdfBranding) {
   ];
 }
 
+// Mention RGPD standard, ajoutée en pied de tous les documents générés.
+export const RGPD_MENTION =
+  "Données personnelles traitées par l'organisme de formation pour la gestion de la formation " +
+  "(base légale : contrat), conservées 3 ans. Droit d'accès, de rectification, d'effacement et " +
+  "d'opposition (RGPD, règlement UE 2016/679) sur simple demande auprès de l'organisme.";
+
 export function footer(branding?: PdfBranding) {
   const line1 = branding
     ? [branding.nomEntreprise, branding.slogan].filter(Boolean).join(" | ")
@@ -99,8 +105,9 @@ export function footer(branding?: PdfBranding) {
     stack: [
       { text: line1, fontSize: 8, color: "#333333", alignment: "center" as const },
       ...(line2 ? [{ text: line2, fontSize: 8, color: "#333333", alignment: "center" as const, margin: [0, 2, 0, 0] as [number, number, number, number] }] : []),
+      { text: RGPD_MENTION, fontSize: 6, color: "#888888", alignment: "center" as const, margin: [0, 3, 0, 0] as [number, number, number, number] },
     ],
-    margin: [0, 20, 0, 0] as [number, number, number, number],
+    margin: [0, 14, 0, 0] as [number, number, number, number],
   };
 }
 

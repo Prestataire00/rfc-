@@ -36,6 +36,15 @@ type Fiche = {
   aStagiairesHandicap: boolean;
   detailsHandicap: string | null;
   stagiairesData?: string | null;
+  sourceContact?: string | null;
+  natureEntreprise?: string | null;
+  adresseEntreprise?: string | null;
+  intituleFormationSouhaite?: string | null;
+  lieuFormationSouhaite?: string | null;
+  datesSouhaitees?: string | null;
+  besoinParticulier?: string | null;
+  materielSurPlace?: string | null;
+  observation?: string | null;
 };
 
 type StagiaireRow = {
@@ -66,6 +75,28 @@ const OBJECTIFS = [
   { value: "autre", label: "Autre" },
 ];
 
+const SOURCES = [
+  { value: "telephone", label: "Téléphone" },
+  { value: "mail", label: "Mail" },
+  { value: "agence", label: "Agence" },
+  { value: "site_internet", label: "Site internet" },
+];
+
+const MATERIELS = [
+  { value: "salles", label: "Salles" },
+  { value: "videoprojecteur", label: "Vidéoprojecteur" },
+  { value: "paperboard", label: "Paperboard" },
+];
+
+function parseJsonArray(s?: string | null): string[] {
+  try {
+    const a = JSON.parse(s || "[]");
+    return Array.isArray(a) ? a.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function FichePreFormationEntreprisePage() {
   const { token } = useParams<{ token: string }>();
   const { data: fiche, error: fetchError, isLoading, mutate } = useApi<Fiche>(
@@ -79,6 +110,8 @@ export default function FichePreFormationEntreprisePage() {
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [stagiaires, setStagiaires] = useState<StagiaireRow[]>([]);
+  const [datesSouhaitees, setDatesSouhaitees] = useState<string[]>([]);
+  const [materiel, setMateriel] = useState<string[]>([]);
 
   const loading = isLoading;
   const saving = submitMutation.isMutating;
@@ -102,7 +135,16 @@ export default function FichePreFormationEntreprisePage() {
       contraintesHoraires: fiche.contraintesHoraires ?? "",
       aStagiairesHandicap: fiche.aStagiairesHandicap ?? false,
       detailsHandicap: fiche.detailsHandicap ?? "",
+      sourceContact: fiche.sourceContact ?? "",
+      natureEntreprise: fiche.natureEntreprise ?? "",
+      adresseEntreprise: fiche.adresseEntreprise ?? "",
+      intituleFormationSouhaite: fiche.intituleFormationSouhaite ?? "",
+      lieuFormationSouhaite: fiche.lieuFormationSouhaite ?? "",
+      besoinParticulier: fiche.besoinParticulier ?? "",
+      observation: fiche.observation ?? "",
     });
+    setDatesSouhaitees(parseJsonArray(fiche.datesSouhaitees));
+    setMateriel(parseJsonArray(fiche.materielSurPlace));
   }, [fiche]);
 
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
@@ -111,6 +153,12 @@ export default function FichePreFormationEntreprisePage() {
   const removeStagiaire = (i: number) => setStagiaires((p) => p.filter((_, idx) => idx !== i));
   const updateStagiaire = (i: number, k: keyof StagiaireRow, v: string) =>
     setStagiaires((p) => p.map((s, idx) => (idx === i ? { ...s, [k]: v } : s)));
+
+  const addDate = () => setDatesSouhaitees((p) => [...p, ""]);
+  const removeDate = (i: number) => setDatesSouhaitees((p) => p.filter((_, idx) => idx !== i));
+  const updateDate = (i: number, v: string) => setDatesSouhaitees((p) => p.map((d, idx) => (idx === i ? v : d)));
+  const toggleMateriel = (v: string) =>
+    setMateriel((p) => (p.includes(v) ? p.filter((x) => x !== v) : [...p, v]));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +183,8 @@ export default function FichePreFormationEntreprisePage() {
       ...form,
       effectifTotal: form.effectifTotal ? Number(form.effectifTotal) : null,
       effectifConcerne: form.effectifConcerne ? Number(form.effectifConcerne) : null,
+      datesSouhaitees: JSON.stringify(datesSouhaitees.filter(Boolean)),
+      materielSurPlace: JSON.stringify(materiel),
       stagiaires: stagiairesRemplis.map((s) => ({
         prenom: s.prenom.trim(),
         nom: s.nom.trim(),
@@ -297,11 +347,27 @@ export default function FichePreFormationEntreprisePage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Section 1 - Entreprise */}
           <Section title="L'entreprise" icon={Building2}>
+            <Field label="Comment nous avez-vous contactés ?">
+              <div className="flex flex-wrap gap-3">
+                {SOURCES.map((s) => (
+                  <label key={s.value} className="inline-flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                    <input type="radio" name="sourceContact" checked={form.sourceContact === s.value} onChange={() => set("sourceContact", s.value)} className="h-4 w-4" />
+                    {s.label}
+                  </label>
+                ))}
+              </div>
+            </Field>
+            <Field label="Nature de l'entreprise">
+              <input value={form.natureEntreprise as string} onChange={(e) => set("natureEntreprise", e.target.value)} placeholder="Ex : société de sécurité privée, BTP, restauration..." className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            </Field>
             <Field label="Secteur d'activite">
               <select value={form.secteurActivite as string} onChange={(e) => set("secteurActivite", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white">
                 <option value="">Selectionner...</option>
                 {SECTEURS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
+            </Field>
+            <Field label="Adresse de l'entreprise">
+              <input value={form.adresseEntreprise as string} onChange={(e) => set("adresseEntreprise", e.target.value)} placeholder="N°, rue, code postal, ville" className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
             </Field>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Effectif total">
@@ -388,6 +454,31 @@ export default function FichePreFormationEntreprisePage() {
 
           {/* Section 3 - Formation */}
           <Section title="La formation" icon={BookOpen}>
+            <Field label="Intitulé de la formation souhaitée">
+              <input value={form.intituleFormationSouhaite as string} onChange={(e) => set("intituleFormationSouhaite", e.target.value)} placeholder="Ex : SST, Initiation aux gestes de premiers secours..." className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            </Field>
+            <Field label="Lieu souhaité pour la formation">
+              <input value={form.lieuFormationSouhaite as string} onChange={(e) => set("lieuFormationSouhaite", e.target.value)} placeholder="Dans vos locaux, centre RFC, autre..." className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm" />
+            </Field>
+            <Field label="Dates souhaitées">
+              <p className="text-xs text-gray-500 -mt-1 mb-2">Ajoutez une ou plusieurs dates (les jours peuvent ne pas être consécutifs).</p>
+              <div className="space-y-2">
+                {datesSouhaitees.map((d, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input type="date" value={d} onChange={(e) => updateDate(i, e.target.value)} className="h-10 rounded-md border border-gray-300 px-3 text-sm" />
+                    <button type="button" onClick={() => removeDate(i)} className="text-gray-400 hover:text-red-600 inline-flex items-center gap-1 text-xs">
+                      <Trash2 className="h-3.5 w-3.5" /> Retirer
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={addDate} className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700">
+                <Plus className="h-4 w-4" /> Ajouter une date
+              </button>
+            </Field>
+            <Field label="Avez-vous un besoin particulier ?">
+              <textarea value={form.besoinParticulier as string} onChange={(e) => set("besoinParticulier", e.target.value)} rows={2} placeholder="Matériel spécifique, thématique précise, public particulier..." className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+            </Field>
             <Field label="Objectif principal">
               <select value={form.objectifPrincipal as string} onChange={(e) => set("objectifPrincipal", e.target.value)} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white">
                 <option value="">Selectionner...</option>
@@ -427,6 +518,32 @@ export default function FichePreFormationEntreprisePage() {
               </Field>
             ) : null}
           </Section>
+
+          {/* Section 5 - Matériel sur place & observation */}
+          <Section title="Matériel sur place & observation" icon={Building2}>
+            <Field label="Matériel disponible sur le lieu de formation">
+              <div className="flex flex-wrap gap-4">
+                {MATERIELS.map((m) => (
+                  <label key={m.value} className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input type="checkbox" checked={materiel.includes(m.value)} onChange={() => toggleMateriel(m.value)} className="h-4 w-4" />
+                    {m.label}
+                  </label>
+                ))}
+              </div>
+            </Field>
+            <Field label="Observation (facultatif)">
+              <textarea value={form.observation as string} onChange={(e) => set("observation", e.target.value)} rows={3} placeholder="Toute information complémentaire utile à l'organisation de la formation." className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
+            </Field>
+          </Section>
+
+          {/* Mention RGPD */}
+          <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-md p-3">
+            Les informations recueillies via ce formulaire sont traitées par Rescue Formation Conseil pour la gestion
+            de votre demande de formation (base légale : mesures précontractuelles / contrat). Elles sont conservées
+            3 ans et destinées au seul organisme de formation. Conformément au RGPD (règlement UE 2016/679), vous
+            disposez d&apos;un droit d&apos;accès, de rectification, d&apos;effacement et d&apos;opposition en écrivant à
+            haitazzouzpro@gmail.com.
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm">{error}</div>

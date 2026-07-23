@@ -132,11 +132,29 @@ export const POST = withErrorHandlerParams(async (req: NextRequest, { params }: 
       });
     }
 
-    // Nombre de stagiaires renseignés → aligne la Demande (capaciteMax session).
-    if (fiche.demandeId && stagiairesData.length > 0) {
+    // Propage les infos "analyse des besoins" vers la Demande (vue commerciale).
+    if (fiche.demandeId) {
+      // Dates souhaitées : JSON ["YYYY-MM-DD", …] → chaîne lisible pour la Demande.
+      let datesLisibles: string | undefined;
+      try {
+        const arr = JSON.parse(ficheData.datesSouhaitees || "[]");
+        if (Array.isArray(arr) && arr.length > 0) {
+          datesLisibles = arr
+            .filter((d): d is string => typeof d === "string" && !!d)
+            .map((d) => new Date(d).toLocaleDateString("fr-FR"))
+            .join(", ");
+        }
+      } catch { /* ignore */ }
+
       await tx.demande.update({
         where: { id: fiche.demandeId },
-        data: { nbStagiaires: stagiairesData.length },
+        data: {
+          ...(stagiairesData.length > 0 ? { nbStagiaires: stagiairesData.length } : {}),
+          ...(ficheData.sourceContact ? { sourceContact: ficheData.sourceContact } : {}),
+          ...(datesLisibles ? { datesSouhaitees: datesLisibles } : {}),
+          ...(ficheData.materielSurPlace ? { materielSurPlace: ficheData.materielSurPlace } : {}),
+          ...(ficheData.observation ? { observation: ficheData.observation } : {}),
+        },
       });
     }
 

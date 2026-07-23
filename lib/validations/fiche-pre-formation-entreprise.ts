@@ -17,6 +17,9 @@ export const OBJECTIFS_FORMATION = [
   "autre",
 ] as const;
 
+export const SOURCES_CONTACT = ["telephone", "mail", "agence", "site_internet"] as const;
+export const MATERIELS_SUR_PLACE = ["salles", "videoprojecteur", "paperboard"] as const;
+
 // Un stagiaire nominatif saisi par l'entreprise sur la fiche de besoin.
 export const stagiaireSaisiSchema = z.object({
   prenom: z.string().trim().min(1, "Prénom requis"),
@@ -50,6 +53,19 @@ export const fichePreFormationEntrepriseReponseSchema = z.object({
   // Section 4
   aStagiairesHandicap: z.boolean().optional().default(false),
   detailsHandicap: z.string().optional().nullable(),
+
+  // Section 5 - Analyse des besoins (fiche papier RFC).
+  // datesSouhaitees & materielSurPlace : chaînes JSON (sérialisées côté form),
+  // spreadées telles quelles dans les colonnes String de la fiche.
+  sourceContact: z.enum(SOURCES_CONTACT).optional().nullable(),
+  natureEntreprise: z.string().optional().nullable(),
+  adresseEntreprise: z.string().optional().nullable(),
+  intituleFormationSouhaite: z.string().optional().nullable(),
+  lieuFormationSouhaite: z.string().optional().nullable(),
+  datesSouhaitees: z.string().optional(),
+  besoinParticulier: z.string().optional().nullable(),
+  materielSurPlace: z.string().optional(),
+  observation: z.string().optional().nullable(),
 });
 
 export type FichePreFormationEntrepriseReponseData = z.infer<typeof fichePreFormationEntrepriseReponseSchema>;

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { COLORS, LOGO_BASE64, type PdfOpts } from "./shared";
+import { COLORS, LOGO_BASE64, RGPD_MENTION, type PdfOpts } from "./shared";
 
 // ==================== ATTESTATION DE FIN DE FORMATION ====================
 // Mise en page fidèle au modèle RFC (art. L.6353-1) : en-tête coordonnées OF,
@@ -197,15 +197,18 @@ export function attestationPdf(data: {
       // Tampon / signature
       signatureBloc,
     ],
-    // Pied de page : coordonnées OF centrées (gras).
+    // Pied de page : coordonnées OF centrées (gras) + mention RGPD.
     footer: () => ({
-      stack: coordsLignes.map((l, i) => ({
-        text: l,
-        fontSize: 7.5,
-        bold: i === 0 || i === 1,
-        alignment: "center" as const,
-        color: COLORS.dark,
-      })),
+      stack: [
+        ...coordsLignes.map((l, i) => ({
+          text: l,
+          fontSize: 7.5,
+          bold: i === 0 || i === 1,
+          alignment: "center" as const,
+          color: COLORS.dark,
+        })),
+        { text: RGPD_MENTION, fontSize: 6, color: "#888888", alignment: "center" as const, margin: [0, 3, 0, 0] as [number, number, number, number] },
+      ],
       margin: [40, 6, 40, 0] as [number, number, number, number],
     }),
     defaultStyle: { font: "Roboto" },

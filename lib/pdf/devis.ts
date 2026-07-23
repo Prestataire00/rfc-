@@ -2,6 +2,7 @@
 import {
   COLORS,
   LOGO_BASE64,
+  RGPD_MENTION,
   fmtCurrency,
   fmtDate,
   signatureBlock,
@@ -402,11 +403,11 @@ export function devisPdf(data: {
         : []),
     ],
     footer: (_currentPage: number, _pageCount: number) => ({
-      text: footerText,
-      fontSize: 8,
-      color: COLORS.gray,
-      alignment: "center" as const,
-      margin: [40, 10, 40, 0] as [number, number, number, number],
+      stack: [
+        { text: footerText, fontSize: 8, color: COLORS.gray, alignment: "center" as const },
+        { text: RGPD_MENTION, fontSize: 6, color: "#999999", alignment: "center" as const, margin: [0, 3, 0, 0] as [number, number, number, number] },
+      ],
+      margin: [40, 8, 40, 0] as [number, number, number, number],
     }),
     styles: stylesFor(branding),
     defaultStyle: { font: "Roboto" },

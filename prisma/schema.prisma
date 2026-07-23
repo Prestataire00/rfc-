@@ -1434,6 +1434,17 @@ model FichePreFormationEntreprise {
   aStagiairesHandicap Boolean @default(false)
   detailsHandicap     String?
 
+  // Section 5 - Analyse des besoins (repris de la fiche papier RFC)
+  sourceContact            String? // telephone | mail | agence | site_internet
+  natureEntreprise         String? // nature/activité de l'entreprise (texte libre)
+  adresseEntreprise        String? // adresse déclarée sur la fiche
+  intituleFormationSouhaite String? // intitulé de la formation souhaitée
+  lieuFormationSouhaite     String? // lieu souhaité pour la formation
+  datesSouhaitees           String  @default("[]") // JSON array de dates "YYYY-MM-DD" (jours non consécutifs possibles)
+  besoinParticulier         String? // "avez-vous un besoin particulier"
+  materielSurPlace          String  @default("[]") // JSON array: ["salles","videoprojecteur","paperboard"]
+  observation               String?
+
   @@index([sessionId])
   @@index([demandeId])
   @@index([formationId])

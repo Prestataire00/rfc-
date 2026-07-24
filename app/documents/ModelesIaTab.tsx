@@ -7,8 +7,8 @@
 // Anciennement à /documents/modeles ; intégré ici pour éviter d'éclater
 // la gestion documentaire en deux pages.
 
-import { useState } from "react";
-import { Sparkles, FileText, Download, Trash2, Save, Wand2, Pencil, X, Send } from "lucide-react";
+import { useState, useRef } from "react";
+import { Sparkles, FileText, Download, Trash2, Save, Wand2, Pencil, X, Send, Upload } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,8 @@ export function ModelesIaTab() {
 
   const [description, setDescription] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [draft, setDraft] = useState<AiOutput | null>(null);
   const [nom, setNom] = useState("");
   const [saving, setSaving] = useState(false);
@@ -108,6 +110,28 @@ export function ModelesIaTab() {
       notify.error("Generation impossible", err instanceof Error ? err.message : undefined);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleImport = async (file: File) => {
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/modeles-document/import", { method: "POST", body: formData });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Erreur ${res.status}`);
+      }
+      const { modele } = (await res.json()) as { modele: ModeleDocument };
+      await mutate();
+      notify.success("Document importé et adapté", "Relisez les variables détectées avant de générer par client.");
+      handleEdit(modele); // ouvre le modèle créé pour relecture/ajustement
+    } catch (err) {
+      notify.error("Import impossible", err instanceof Error ? err.message : undefined);
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
     }
   };
 
@@ -175,12 +199,27 @@ export function ModelesIaTab() {
           placeholder="Ex : un courrier de relance pour facture impayee, ton ferme mais courtois"
           className={fieldCls}
         />
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <Button onClick={handleGenerate} disabled={generating} className="gap-2">
             <Wand2 className="h-4 w-4" />
             {generating ? "Generation en cours..." : "Generer avec l'IA"}
           </Button>
+          <span className="text-xs text-gray-400">ou</span>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/pdf,.pdf,.txt,text/plain,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f); }}
+          />
+          <Button variant="outline" onClick={() => importInputRef.current?.click()} disabled={importing} className="gap-2">
+            <Upload className="h-4 w-4" />
+            {importing ? "Import en cours..." : "Importer un document"}
+          </Button>
         </div>
+        <p className="mt-2 text-xs text-gray-400">
+          PDF, Word (.docx), image ou texte. L&apos;IA le transforme en modèle avec variables, adaptable à chaque client.
+        </p>
       </section>
 
       {/* Preview éditable */}
